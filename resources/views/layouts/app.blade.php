@@ -311,9 +311,10 @@
   <x-media-picker />
 
   </div>
-
-
+  
+  
   <!-- ========================= SCRIPTS (IDs únicos prefijados con dash-) ========================= -->
+  <script src="{{ asset('js/media-inputs.js') }}"></script>
   <script src="{{ asset('js/media-picker.js') }}"></script>
   <script>
     (function(){
@@ -451,8 +452,15 @@
         }
       });
 
-      // --- Acciones simuladas ---
-      document.getElementById('dash-action-new')?.addEventListener('click', ()=>{
+      // --- Acción global "Nuevo" ---
+      // Cada vista puede definir `window.dashNewAction = () => { ... }`
+      // para reutilizar el botón del header sin romper el estándar.
+      document.getElementById('dash-action-new')?.addEventListener('click', (e)=>{
+        if (typeof window.dashNewAction === 'function') {
+          e.preventDefault();
+          window.dashNewAction();
+          return;
+        }
         alert('Acción: Crear nuevo registro');
       });
     })();
