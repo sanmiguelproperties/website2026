@@ -12,6 +12,107 @@ use Illuminate\Validation\Rule;
 class PropertyController extends Controller
 {
     /**
+     * GET /api/public/properties
+     * Public endpoint for the website (no authentication required)
+     */
+    public function indexPublic(Request $request): JsonResponse
+    {
+        $query = Property::query()
+            ->where('published', true)
+            ->with([
+                'agency',
+                'agentUser.profileImage',
+                'coverMediaAsset',
+                'location',
+                'operations.currency',
+            ]);
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('property_type_name', 'like', "%{$search}%")
+                    ->orWhereHas('location', function ($loc) use ($search) {
+                        $loc->where('city', 'like', "%{$search}%")
+                            ->orWhere('city_area', 'like', "%{$search}%")
+                            ->orWhere('region', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('property_type_name')) {
+            $query->where('property_type_name', (string) $request->input('property_type_name'));
+        }
+
+        if ($request->filled('operation_type')) {
+            $operationType = $request->input('operation_type');
+            $query->whereHas('operations', function ($op) use ($operationType) {
+                $op->where('operation_type', $operationType);
+            });
+        }
+
+        if ($request->filled('min_price')) {
+            $minPrice = (float) $request->input('min_price');
+            $query->whereHas('operations', function ($op) use ($minPrice) {
+                $op->where('amount', '>=', $minPrice);
+            });
+        }
+
+        if ($request->filled('max_price')) {
+            $maxPrice = (float) $request->input('max_price');
+            $query->whereHas('operations', function ($op) use ($maxPrice) {
+                $op->where('amount', '<=', $maxPrice);
+            });
+        }
+
+        if ($request->filled('bedrooms')) {
+            $query->where('bedrooms', '>=', (int) $request->input('bedrooms'));
+        }
+
+        if ($request->filled('bathrooms')) {
+            $query->where('bathrooms', '>=', (int) $request->input('bathrooms'));
+        }
+
+        $sort = $request->input('sort', 'desc');
+        $order = $request->input('order', 'updated_at');
+        $validOrders = ['created_at', 'updated_at', 'title', 'property_type_name'];
+        if (!in_array($order, $validOrders, true)) {
+            $order = 'updated_at';
+        }
+        $sort = $sort === 'asc' ? 'asc' : 'desc';
+        $query->orderBy($order, $sort);
+
+        $perPage = (int) $request->input('per_page', 6);
+        $perPage = max(1, min(50, $perPage));
+
+        return $this->apiSuccess('Listado de propiedades públicas', 'PUBLIC_PROPERTIES_LIST', $query->paginate($perPage));
+    }
+
+    /**
+     * GET /api/public/properties/{property}
+     * Public endpoint to show a single property (no authentication required)
+     */
+    public function showPublic(Request $request, Property $property): JsonResponse
+    {
+        if (!$property->published) {
+            return $this->apiError('Propiedad no disponible', 'PROPERTY_NOT_PUBLISHED', null, null, 404);
+        }
+
+        $property->load([
+            'agency',
+            'agentUser.profileImage',
+            'coverMediaAsset',
+            'location',
+            'operations.currency',
+            'features',
+            'tags',
+            'mediaAssets'
+        ]);
+
+        return $this->apiSuccess('Propiedad obtenida', 'PUBLIC_PROPERTY_SHOWN', $property);
+    }
+
+    /**
      * GET /api/properties
      */
     public function index(Request $request): JsonResponse

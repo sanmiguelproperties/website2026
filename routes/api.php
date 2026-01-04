@@ -39,6 +39,12 @@ Route::post('/login', [AuthController::class, 'apiLogin']);
 // Media Manager routes
 Route::apiResource('media', MediaAssetController::class);
 
+// Rutas públicas para el portal inmobiliario (sin autenticación)
+Route::prefix('public')->group(function () {
+    Route::get('properties', [PropertyController::class, 'indexPublic']);
+    Route::get('properties/{property}', [PropertyController::class, 'showPublic']);
+});
+
 // User Management routes protegidas con autenticación Passport
 Route::middleware(['auth.api', 'admin.api'])->group(function () {
     Route::apiResource('users', UserController::class)->only(['index', 'store', 'show', 'update', 'destroy']);

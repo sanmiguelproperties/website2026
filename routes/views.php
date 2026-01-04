@@ -12,10 +12,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Ruta principal
+// Ruta principal - Página de inicio pública
 Route::get('/', function () {
-    return view('welcome');
-})->middleware('guest');
+    return view('home');
+})->name('home');
 
 // Rutas de autenticación (vistas)
 Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login')->middleware('guest');
