@@ -14,6 +14,19 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700,800&display=swap" rel="stylesheet" />
 
+    <!-- Frontend Color Variables (Dynamic from Database) -->
+    @php
+        $frontendColorService = app(\App\Services\FrontendColorService::class);
+        // Detectar la vista actual basándose en la ruta
+        $currentView = $frontendColorService->detectCurrentView();
+        // Generar CSS con colores combinados (global + vista específica)
+        $frontendCss = $frontendColorService->generateCssForView($currentView);
+    @endphp
+    <style id="frontend-color-variables">
+        /* Vista actual: {{ $currentView }} */
+        {!! $frontendCss !!}
+    </style>
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -89,9 +102,9 @@
     <!-- Swiper.js CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
-    <!-- Custom Styles -->
+    <!-- Custom Styles (Using Dynamic Variables) -->
     <style>
-        /* Scrollbar personalizado */
+        /* Scrollbar personalizado - Usa variables CSS dinámicas */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -100,25 +113,25 @@
             background: #f1f5f9;
         }
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #6366f1, #10b981);
+            background: linear-gradient(180deg, var(--fe-ui-scrollbar_from, #6366f1), var(--fe-ui-scrollbar_to, #10b981));
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, #4f46e5, #059669);
+            background: linear-gradient(180deg, var(--fe-ui-scrollbar_hover_from, #4f46e5), var(--fe-ui-scrollbar_hover_to, #059669));
         }
 
-        /* Gradient text helper */
+        /* Gradient text helper - Usa variables CSS dinámicas */
         .text-gradient {
-            background: linear-gradient(135deg, #6366f1 0%, #10b981 100%);
+            background: linear-gradient(135deg, var(--fe-primary-from, #6366f1) 0%, var(--fe-primary-to, #10b981) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        /* Gradient border helper */
+        /* Gradient border helper - Usa variables CSS dinámicas */
         .border-gradient {
             border: 2px solid transparent;
-            background: linear-gradient(white, white) padding-box, linear-gradient(135deg, #6366f1, #10b981) border-box;
+            background: linear-gradient(white, white) padding-box, linear-gradient(135deg, var(--fe-primary-from, #6366f1), var(--fe-primary-to, #10b981)) border-box;
         }
 
         /* Glass effect */
@@ -128,7 +141,7 @@
             -webkit-backdrop-filter: blur(12px);
         }
 
-        /* Swiper custom styles */
+        /* Swiper custom styles - Usa variables CSS dinámicas */
         .swiper-pagination-bullet {
             width: 12px;
             height: 12px;
@@ -136,7 +149,7 @@
             opacity: 1;
         }
         .swiper-pagination-bullet-active {
-            background: linear-gradient(135deg, #6366f1, #10b981);
+            background: linear-gradient(135deg, var(--fe-primary-from, #6366f1), var(--fe-primary-to, #10b981));
         }
         .swiper-button-next,
         .swiper-button-prev {
@@ -148,7 +161,7 @@
         }
         .swiper-button-next:hover,
         .swiper-button-prev:hover {
-            background: linear-gradient(135deg, #6366f1, #10b981);
+            background: linear-gradient(135deg, var(--fe-primary-from, #6366f1), var(--fe-primary-to, #10b981));
         }
         .swiper-button-next::after,
         .swiper-button-prev::after {
@@ -176,15 +189,65 @@
             100% { background-position: -200% 0; }
         }
 
-        /* Filter chip active state */
+        /* Filter chip active state - Usa variables CSS dinámicas */
         .filter-chip.active {
-            background: linear-gradient(135deg, #6366f1, #10b981);
+            background: linear-gradient(135deg, var(--fe-filters-active_from, #6366f1), var(--fe-filters-active_to, #10b981));
             color: white;
+        }
+        
+        /* Filter tag states for properties section */
+        .filter-tag-active {
+            background: linear-gradient(to right, var(--fe-properties-tag_active_from, #4f46e5), var(--fe-properties-tag_active_to, #10b981));
+            color: white;
+        }
+        .filter-tag-inactive {
+            background-color: var(--fe-properties-tag_inactive_bg, #f1f5f9);
+            color: var(--fe-properties-tag_inactive_text, #475569);
+        }
+        .filter-tag-inactive:hover {
+            background-color: var(--fe-properties-tag_inactive_hover, #e2e8f0);
         }
 
         /* Hero overlay gradient */
         .hero-overlay {
             background: linear-gradient(135deg, rgba(99, 102, 241, 0.85) 0%, rgba(16, 185, 129, 0.75) 100%);
+        }
+
+        /* Clases de utilidad para usar variables CSS dinámicas */
+        
+        /* Gradientes primarios */
+        .bg-fe-gradient-primary {
+            background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));
+        }
+        
+        /* Gradiente para títulos hero */
+        .text-fe-hero-gradient {
+            background: linear-gradient(to right, var(--fe-hero-title_gradient_from, #818cf8), var(--fe-hero-title_gradient_via, #c084fc), var(--fe-hero-title_gradient_to, #34d399));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Colores para badges de venta/renta */
+        .bg-fe-sale-badge {
+            background-color: var(--fe-property_cards-sale_badge, #10b981);
+        }
+        .bg-fe-rent-badge {
+            background-color: var(--fe-property_cards-rent_badge, #f59e0b);
+        }
+        
+        /* Precio de propiedades */
+        .text-fe-price-gradient {
+            background: linear-gradient(to right, var(--fe-property_cards-price_from, #4f46e5), var(--fe-property_cards-price_to, #10b981));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Focus en inputs */
+        .focus-fe-primary:focus {
+            border-color: var(--fe-filters-focus_border, #6366f1);
+            box-shadow: 0 0 0 3px var(--fe-filters-focus_ring, rgba(99,102,241,0.2));
         }
     </style>
 

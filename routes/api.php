@@ -17,6 +17,7 @@ use App\Http\Controllers\FeatureController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\LocationCatalogController;
 use App\Http\Controllers\ContactRequestController;
+use App\Http\Controllers\FrontendColorController;
 
 /*
 |--------------------------------------------------------------------------
@@ -81,9 +82,59 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('rbac')->group(function () 
     Route::post('roles/{roleId}/permissions/detach', [RolePermissionController::class, 'detach']);
 });
 
-// Color Theme routes protegidas con autenticación Passport
+// Color Theme routes protegidas con autenticación Passport (Dashboard)
 Route::middleware(['auth.api', 'admin.api'])->group(function () {
     Route::apiResource('color-themes', ColorThemeController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('color-themes/{id}/activate', [ColorThemeController::class, 'activate']);
     Route::get('color-themes/active', [ColorThemeController::class, 'active']);
+});
+
+// Frontend Color Settings routes (públicas y protegidas)
+// Rutas públicas: CSS y colores activos (necesarios para renderizar el frontend)
+Route::prefix('frontend-colors')->group(function () {
+    // CSS para cualquier vista
+    Route::get('css', [FrontendColorController::class, 'css']);
+    Route::get('css/{viewSlug}', [FrontendColorController::class, 'cssForView']);
+    
+    // Colores activos
+    Route::get('active', [FrontendColorController::class, 'active']);
+    Route::get('active/{viewSlug}', [FrontendColorController::class, 'activeForView']);
+    
+    // Colores por defecto
+    Route::get('defaults', [FrontendColorController::class, 'defaults']);
+    Route::get('defaults/{viewSlug}', [FrontendColorController::class, 'defaultsForView']);
+    
+    // Vistas disponibles (público para que el frontend sepa qué vistas existen)
+    Route::get('views', [FrontendColorController::class, 'views']);
+});
+
+// Rutas protegidas para administración de colores del frontend
+Route::middleware(['auth.api', 'admin.api'])->prefix('frontend-colors')->group(function () {
+    // Listado y creación
+    Route::get('/', [FrontendColorController::class, 'index']);
+    Route::post('/', [FrontendColorController::class, 'store']);
+    
+    // Agrupado por vista
+    Route::get('grouped', [FrontendColorController::class, 'groupedByView']);
+    
+    // Grupos de colores
+    Route::get('groups', [FrontendColorController::class, 'groups']);
+    Route::get('groups/{viewSlug}', [FrontendColorController::class, 'groupsForView']);
+    
+    // Configuraciones por vista
+    Route::get('view/{viewSlug}', [FrontendColorController::class, 'viewConfigs']);
+    
+    // CRUD individual
+    Route::get('{id}', [FrontendColorController::class, 'show'])->where('id', '[0-9]+');
+    Route::put('{id}', [FrontendColorController::class, 'update'])->where('id', '[0-9]+');
+    Route::delete('{id}', [FrontendColorController::class, 'destroy'])->where('id', '[0-9]+');
+    
+    // Acciones
+    Route::post('{id}/activate', [FrontendColorController::class, 'activate'])->where('id', '[0-9]+');
+    Route::post('{id}/reset-defaults', [FrontendColorController::class, 'resetDefaults'])->where('id', '[0-9]+');
+    Route::post('{id}/duplicate', [FrontendColorController::class, 'duplicate'])->where('id', '[0-9]+');
+    Route::get('{id}/export', [FrontendColorController::class, 'export'])->where('id', '[0-9]+');
+    
+    // Importar
+    Route::post('import', [FrontendColorController::class, 'import']);
 });

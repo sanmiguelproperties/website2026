@@ -226,6 +226,13 @@
                   Temas de Color
                 </a>
 
+                <a href="{{ route('frontend-colors') }}" data-route="frontend-colors" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 7.76 2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>
+                  </span>
+                  Colores Frontend
+                </a>
+
                 <a href="{{ route('rbac') }}" data-route="rbac" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"/><path d="M9 12l2 2 4-4"/></svg>
@@ -329,6 +336,7 @@
         'users': 2,
         'currencies': 2,
         'color-themes': 2,
+        'frontend-colors': 2,
         'rbac': 2,
       };
 

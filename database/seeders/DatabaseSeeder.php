@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             CleanUploadsSeeder::class,
             UserSeeder::class,
             ColorThemeSeeder::class,
+            FrontendColorSettingsSeeder::class,
             PropertySeeder::class,
         ]);
     }

@@ -19,6 +19,7 @@
           'rbac' => [['Inicio', route('dashboard')], ['Admin', '#'], ['RBAC', '#']],
           'currencies' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Monedas', '#']],
           'color-themes' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Temas de Color', '#']],
+          'frontend-colors' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Colores Frontend', '#']],
         ];
         $crumbs = $breadcrumbs[$currentRoute] ?? [['Inicio', '/'], ['Página', '#']];
       @endphp

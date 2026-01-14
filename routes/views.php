@@ -17,6 +17,16 @@ Route::get('/', function () {
     return view('home');
 })->name('home');
 
+// Vista pública (de prueba) para detalle de propiedad
+// Nota: por ahora NO hacemos binding con el modelo para permitir probar con cualquier ID.
+Route::get('/propiedades/{propertyId}', function (string $propertyId) {
+    return view('public.property-show', [
+        'propertyId' => (int) $propertyId,
+    ]);
+})
+    ->where('propertyId', '[0-9]+')
+    ->name('public.properties.show');
+
 // Rutas de autenticación (vistas)
 Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 
@@ -50,5 +60,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/color-themes', function () {
             return view('color-themes.manage');
         })->name('color-themes');
+
+        Route::get('/frontend-colors', function () {
+            return view('frontend-colors.manage');
+        })->name('frontend-colors');
     });
 });
