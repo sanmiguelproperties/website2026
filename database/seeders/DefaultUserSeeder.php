@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class DefaultUserSeeder extends Seeder
 {
@@ -12,46 +13,57 @@ class DefaultUserSeeder extends Seeder
     {
         $guards = ['web', 'api'];
 
-        $user = User::updateOrCreate(
-            ['email' => 'gusgusnoriega@gmail.com'],
+        $defaultAdminPassword = '852456357';
+
+        $defaultAdminUsers = [
+            // existentes
             [
-                'name'              => 'Gustavo Noriega',
-                'password'          => Hash::make('12345678'),
-                'email_verified_at' => now(),
-            ]
-        );
-
-        // Asignar rol admin para ambos guards
-        foreach ($guards as $guard) {
-            $user->assignRole('admin');
-        }
-
-        // Usuario adicional 1
-        $user2 = User::updateOrCreate(
-            ['email' => 'atencion@britishhouseinternational.net'],
+                'email' => 'gusgusnoriega@gmail.com',
+                'name'  => 'Gustavo Noriega',
+            ],
             [
-                'name'              => 'Admin Atencion',
-                'password'          => Hash::make('12345678'),
-                'email_verified_at' => now(),
-            ]
-        );
-
-        foreach ($guards as $guard) {
-            $user2->assignRole('admin');
-        }
-
-        // Usuario adicional 2
-        $user3 = User::updateOrCreate(
-            ['email' => 'izamar_lucely@hotmail.com'],
+                'email' => 'atencion@britishhouseinternational.net',
+                'name'  => 'Admin Atencion',
+            ],
             [
-                'name'              => 'Izamar Lucely',
-                'password'          => Hash::make('12345678'),
-                'email_verified_at' => now(),
-            ]
-        );
+                'email' => 'izamar_lucely@hotmail.com',
+                'name'  => 'Izamar Lucely',
+            ],
 
-        foreach ($guards as $guard) {
-            $user3->assignRole('admin');
+            // solicitados
+            [
+                'email' => 'admin@controldecierresinmobiliarios.com',
+                'name'  => 'Admin Control de Cierres Inmobiliarios',
+            ],
+            [
+                'email' => 'alex@smarternotharder.consulting',
+                'name'  => 'Alex (Smarter Not Harder)',
+            ],
+            [
+                'email' => 'sanmiguelpropertiesmkt@gmail.com',
+                'name'  => 'San Miguel Properties MKT',
+            ],
+            [
+                'email' => 'erwitr@gmail.com',
+                'name'  => 'Erwitr',
+            ],
+        ];
+
+        foreach ($defaultAdminUsers as $data) {
+            $user = User::updateOrCreate(
+                ['email' => $data['email']],
+                [
+                    'name'              => $data['name'],
+                    'password'          => Hash::make($defaultAdminPassword),
+                    'email_verified_at' => now(),
+                ]
+            );
+
+            // Asignar rol admin para ambos guards
+            foreach ($guards as $guard) {
+                $role = Role::findByName('admin', $guard);
+                $user->assignRole($role);
+            }
         }
     }
 }
