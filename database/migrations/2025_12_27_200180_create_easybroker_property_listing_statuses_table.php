@@ -26,7 +26,9 @@ return new class extends Migration
             $table->dateTime('last_polled_at')->nullable();
             $table->json('raw_payload')->nullable();
 
-            $table->unique(['agency_id', 'easybroker_public_id']);
+            // NOTE: MySQL has a 64-character identifier limit. The default Laravel-generated
+            // unique index name for this table exceeds that limit on some servers.
+            $table->unique(['agency_id', 'easybroker_public_id'], 'eb_pls_agency_public_unique');
 
             $table->foreign('agency_id')
                 ->references('id')
