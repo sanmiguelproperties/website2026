@@ -1,5 +1,9 @@
-{{-- MODAL raíz (biblioteca) --}}
-<div id="archive_manager-root" class="fixed inset-0 z-[9999] hidden" aria-modal="true" role="dialog">
+{{-- MODAL raíz (biblioteca)
+   Stack order requerido:
+   - JSON Response Modal: z-[12000] (siempre arriba)
+   - Media Picker:        z-[11500] (arriba de drawers/modals de edición)
+--}}
+<div id="archive_manager-root" class="fixed inset-0 z-[11500] hidden" aria-modal="true" role="dialog">
   <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" data-mf="backdrop"></div>
 
    <div class="relative mx-auto my-0 w-screen max-w-[98vw] md:my-10 md:w-[98vw]">
@@ -123,8 +127,8 @@
   <div id="archive_manager-toast" class="fixed left-1/2 -translate-x-1/2 bottom-6 px-4 py-2 rounded-xl text-[var(--c-primary-ink)] bg-[var(--c-surface)]/90 hidden" role="status" aria-live="polite"></div>
 </div>
 
-{{-- MODAL: Subir archivo --}}
-<div id="archive_manager-upload" class="fixed inset-0 z-[10000] hidden">
+{{-- MODAL: Subir archivo (debe estar por encima del picker root) --}}
+<div id="archive_manager-upload" class="fixed inset-0 z-[11510] hidden">
   <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" data-up="backdrop"></div>
   <div class="relative mx-auto my-6 w-[95vw] max-w-lg">
     <div class="transform transition duration-200 ease-out translate-y-2 opacity-0 rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)]/90 backdrop-blur-xl shadow-2xl overflow-hidden">
@@ -154,8 +158,8 @@
   </div>
 </div>
 
-{{-- MODAL: Agregar URL / Video --}}
-<div id="archive_manager-url" class="fixed inset-0 z-[10000] hidden">
+{{-- MODAL: Agregar URL / Video (debe estar por encima del picker root) --}}
+<div id="archive_manager-url" class="fixed inset-0 z-[11510] hidden">
   <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" data-ur="backdrop"></div>
   <div class="relative mx-auto my-6 w-[95vw] max-w-lg">
     <div class="transform transition duration-200 ease-out translate-y-2 opacity-0 rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)]/90 backdrop-blur-xl shadow-2xl overflow-hidden">
