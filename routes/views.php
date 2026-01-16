@@ -17,15 +17,30 @@ Route::get('/', function () {
     return view('home');
 })->name('home');
 
+// Listado público de propiedades (paginación + filtros, consumiendo API pública)
+Route::get('/propiedades', function () {
+    return view('public.properties-index');
+})->name('public.properties.index');
+
 // Vista pública (de prueba) para detalle de propiedad
 // Nota: por ahora NO hacemos binding con el modelo para permitir probar con cualquier ID.
 Route::get('/propiedades/{propertyId}', function (string $propertyId) {
-    return view('public.property-show', [
+    return view('public.property-detail', [
         'propertyId' => (int) $propertyId,
     ]);
 })
     ->where('propertyId', '[0-9]+')
     ->name('public.properties.show');
+
+// Página de contacto pública
+Route::get('/contacto', function () {
+    return view('public.contact');
+})->name('public.contact');
+
+// Página pública: Nosotros
+Route::get('/nosotros', function () {
+    return view('public.about');
+})->name('about');
 
 // Rutas de autenticación (vistas)
 Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login')->middleware('guest');

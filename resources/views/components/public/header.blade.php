@@ -1,8 +1,22 @@
 {{-- Header Público - San Miguel Properties --}}
 {{-- Usa variables CSS dinámicas del frontend color system --}}
-<header x-data="{ mobileMenuOpen: false, scrolled: false }" 
-        x-init="window.addEventListener('scroll', () => { scrolled = window.pageYOffset > 50 })"
-        :class="{ 'bg-white/95 shadow-soft backdrop-blur-lg': scrolled, 'bg-transparent': !scrolled }"
+@php
+    // Solo en la Home el header inicia transparente con texto blanco.
+    // En el resto de vistas debe iniciar como si estuviera "scrolleado" (texto oscuro) para que sea legible sobre fondo blanco.
+    $isHome = request()->routeIs('home');
+@endphp
+
+<header
+        x-data="{ mobileMenuOpen: false, scrolled: {{ $isHome ? 'false' : 'true' }}, isHome: {{ $isHome ? 'true' : 'false' }} }"
+        x-init="
+            if (isHome) {
+                scrolled = window.pageYOffset > 50;
+                window.addEventListener('scroll', () => { scrolled = window.pageYOffset > 50 });
+            } else {
+                scrolled = true;
+            }
+        "
+        :class="scrolled ? 'bg-white/95 shadow-soft backdrop-blur-lg' : 'bg-transparent'"
         class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
     <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-20 items-center justify-between">
@@ -34,27 +48,17 @@
                    class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
                     Inicio
                 </a>
-                <a href="#propiedades" 
+                <a href="{{ route('public.properties.index') }}" 
                    :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
                    class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
                     Propiedades
                 </a>
-                <a href="#venta" 
-                   :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
-                   class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
-                    En Venta
-                </a>
-                <a href="#renta" 
-                   :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
-                   class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
-                    En Renta
-                </a>
-                <a href="#nosotros" 
+                <a href="{{ route('about') }}" 
                    :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
                    class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
                     Nosotros
                 </a>
-                <a href="#contacto" 
+                <a href="{{ route('public.contact') }}" 
                    :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
                    class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
                     Contacto
@@ -126,31 +130,19 @@
                     </svg>
                     Inicio
                 </a>
-                <a href="#propiedades" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
+                <a href="{{ route('public.properties.index') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-header-mobile_menu_icon_active, #4f46e5);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                     Propiedades
                 </a>
-                <a href="#venta" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-primary-to, #10b981);">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    En Venta
-                </a>
-                <a href="#renta" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-primary-to, #10b981);">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    En Renta
-                </a>
-                <a href="#nosotros" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
+                <a href="{{ route('about') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-header-mobile_menu_icon_active, #4f46e5);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     Nosotros
                 </a>
-                <a href="#contacto" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
+                <a href="{{ route('public.contact') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-header-mobile_menu_icon_active, #4f46e5);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>

@@ -62,39 +62,40 @@
             </p>
 
             {{-- Search Bar - Usa variables CSS dinámicas --}}
-            <div class="relative max-w-3xl mx-auto animate-slide-up" style="animation-delay: 0.2s;">
-                <div class="flex flex-col sm:flex-row gap-3 p-3 backdrop-blur-md rounded-2xl border border-white/20" style="background: var(--fe-hero-search_bg, rgba(255,255,255,0.1));">
+            <div class="relative max-w-3xl mx-auto animate-slide-up" style="animation-delay: 0.2s;" x-data="heroSearch()">
+                <form @submit.prevent="submitSearch()" class="flex flex-col sm:flex-row gap-3 p-3 backdrop-blur-md rounded-2xl border border-white/20" style="background: var(--fe-hero-search_bg, rgba(255,255,255,0.1));">
                     <div class="relative flex-1">
                         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         <input type="text"
+                               x-model="searchQuery"
                                placeholder="Buscar por ubicación, tipo o características..."
                                class="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none transition-all"
                                style="--tw-ring-color: var(--fe-hero-search_focus, #818cf8);">
                     </div>
-                    <button class="px-8 py-4 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2" style="background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981)); --tw-shadow-color: var(--fe-primary-from, #4f46e5);">
+                    <button type="submit" class="px-8 py-4 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2" style="background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981)); --tw-shadow-color: var(--fe-primary-from, #4f46e5);">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         Buscar
                     </button>
-                </div>
+                </form>
 
                 {{-- Quick Filters --}}
                 <div class="flex flex-wrap justify-center gap-2 mt-4">
-                    <button class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
+                    <a href="/propiedades?property_type_name=Casa" class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
                         🏠 Casas
-                    </button>
-                    <button class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
+                    </a>
+                    <a href="/propiedades?property_type_name=Departamento" class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
                         🏢 Departamentos
-                    </button>
-                    <button class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
+                    </a>
+                    <a href="/propiedades?property_type_name=Terreno" class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
                         🏗️ Terrenos
-                    </button>
-                    <button class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
+                    </a>
+                    <a href="/propiedades?property_type_name=Local Comercial" class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
                         🏪 Locales
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
@@ -283,7 +284,7 @@
 
             {{-- CTA Buttons --}}
             <div class="flex flex-col sm:flex-row gap-4">
-                <a href="#propiedades" class="inline-flex items-center justify-center gap-2 px-8 py-4 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105" style="background: linear-gradient(to right, var(--fe-cta_sale-btn_primary_from, #10b981), var(--fe-cta_sale-btn_primary_to, #06b6d4));">
+                <a href="/propiedades?operation_type=sale" class="inline-flex items-center justify-center gap-2 px-8 py-4 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105" style="background: linear-gradient(to right, var(--fe-cta_sale-btn_primary_from, #10b981), var(--fe-cta_sale-btn_primary_to, #06b6d4));">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
@@ -359,7 +360,7 @@
 
             {{-- CTA Buttons --}}
             <div class="flex flex-col sm:flex-row gap-4 justify-end">
-                <a href="#propiedades" class="inline-flex items-center justify-center gap-2 px-8 py-4 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105" style="background: linear-gradient(to right, var(--fe-cta_rent-btn_primary_from, #f59e0b), var(--fe-cta_rent-btn_primary_to, #f97316));">
+                <a href="/propiedades?operation_type=rental" class="inline-flex items-center justify-center gap-2 px-8 py-4 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105" style="background: linear-gradient(to right, var(--fe-cta_rent-btn_primary_from, #f59e0b), var(--fe-cta_rent-btn_primary_to, #f97316));">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
@@ -1308,6 +1309,22 @@ function propertiesFilter() {
             
             // Scroll to properties section
             document.getElementById('propiedades').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+}
+
+// ============================================
+// HERO SEARCH - Función para el buscador del hero
+// ============================================
+function heroSearch() {
+    return {
+        searchQuery: '',
+        submitSearch() {
+            if (this.searchQuery.trim()) {
+                window.location.href = '/propiedades?search=' + encodeURIComponent(this.searchQuery.trim());
+            } else {
+                window.location.href = '/propiedades';
+            }
         }
     };
 }

@@ -73,6 +73,42 @@ class PropertyController extends Controller
             $query->where('bathrooms', '>=', (int) $request->input('bathrooms'));
         }
 
+        // ===== Filtros avanzados (opcionales) =====
+        // Nota: si el frontend envía estos parámetros, la API los soporta sin romper compatibilidad.
+        if ($request->filled('parking_spaces')) {
+            $query->where('parking_spaces', '>=', (int) $request->input('parking_spaces'));
+        }
+
+        if ($request->filled('min_construction_size')) {
+            $query->where('construction_size', '>=', (float) $request->input('min_construction_size'));
+        }
+
+        if ($request->filled('min_lot_size')) {
+            $query->where('lot_size', '>=', (float) $request->input('min_lot_size'));
+        }
+
+        if (
+            $request->filled('region') ||
+            $request->filled('city') ||
+            $request->filled('city_area')
+        ) {
+            $region = $request->filled('region') ? trim((string) $request->input('region')) : null;
+            $city = $request->filled('city') ? trim((string) $request->input('city')) : null;
+            $cityArea = $request->filled('city_area') ? trim((string) $request->input('city_area')) : null;
+
+            $query->whereHas('location', function ($loc) use ($region, $city, $cityArea) {
+                if ($region) {
+                    $loc->where('region', 'like', "%{$region}%");
+                }
+                if ($city) {
+                    $loc->where('city', 'like', "%{$city}%");
+                }
+                if ($cityArea) {
+                    $loc->where('city_area', 'like', "%{$cityArea}%");
+                }
+            });
+        }
+
         $sort = $request->input('sort', 'desc');
         $order = $request->input('order', 'updated_at');
         $validOrders = ['created_at', 'updated_at', 'title', 'property_type_name'];

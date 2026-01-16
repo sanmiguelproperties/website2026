@@ -249,6 +249,14 @@
             border-color: var(--fe-filters-focus_border, #6366f1);
             box-shadow: 0 0 0 3px var(--fe-filters-focus_ring, rgba(99,102,241,0.2));
         }
+
+        /* Line clamp (Tailwind CDN no incluye plugin por defecto) */
+        .line-clamp-2 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
     </style>
 
     @stack('styles')
