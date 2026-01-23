@@ -9,6 +9,7 @@ class Feature extends Model
 {
     protected $fillable = [
         'name',
+        'category',
         'locale',
     ];
 

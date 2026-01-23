@@ -35,4 +35,21 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | EasyBroker API Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuración para la integración con la API de EasyBroker.
+    | Documentación: https://api.easybroker.com/v1/docs
+    |
+    */
+    'easybroker' => [
+        'api_key' => env('EASYBROKER_API_KEY'),
+        'base_url' => env('EASYBROKER_BASE_URL', 'https://api.easybroker.com/v1'),
+        'agency_id' => env('EASYBROKER_AGENCY_ID'),
+        'rate_limit' => env('EASYBROKER_RATE_LIMIT', 20), // requests per second
+        'timeout' => env('EASYBROKER_TIMEOUT', 30), // seconds
+    ],
+
 ];

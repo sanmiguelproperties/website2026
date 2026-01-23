@@ -18,6 +18,7 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\LocationCatalogController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\FrontendColorController;
+use App\Http\Controllers\EasyBrokerSyncController;
 
 /*
 |--------------------------------------------------------------------------
@@ -137,4 +138,21 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('frontend-colors')->group(f
     
     // Importar
     Route::post('import', [FrontendColorController::class, 'import']);
+});
+
+// EasyBroker Sync routes (protegidas con autenticación Passport)
+Route::middleware(['auth.api', 'admin.api'])->prefix('easybroker')->group(function () {
+    // Estado de configuración
+    Route::get('status', [EasyBrokerSyncController::class, 'status']);
+    
+    // Gestión de configuración
+    Route::get('config', [EasyBrokerSyncController::class, 'getConfig']);
+    Route::put('config', [EasyBrokerSyncController::class, 'updateConfig']);
+    Route::delete('config/api-key', [EasyBrokerSyncController::class, 'deleteApiKey']);
+    
+    // Probar conexión
+    Route::get('test-connection', [EasyBrokerSyncController::class, 'testConnection']);
+    
+    // Ejecutar sincronización
+    Route::post('sync', [EasyBrokerSyncController::class, 'sync']);
 });

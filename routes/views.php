@@ -79,5 +79,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/frontend-colors', function () {
             return view('frontend-colors.manage');
         })->name('frontend-colors');
+
+        Route::get('/easybroker', function () {
+            return view('easybroker.sync');
+        })->name('easybroker');
     });
 });
