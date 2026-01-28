@@ -197,4 +197,23 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('mls')->group(function () {
 
     // Eliminar todas las propiedades del MLS
     Route::delete('properties', [MLSSyncController::class, 'deleteAllMLSProperties']);
+    
+    // Nuevas rutas para manejo robusto de errores
+    // Obtener detalles de errores de la última sincronización
+    Route::get('error-details', [MLSSyncController::class, 'getErrorDetails']);
+    
+    // Obtener estado del circuit breaker
+    Route::get('circuit-breaker', [MLSSyncController::class, 'getCircuitBreakerStatus']);
+    
+    // Reiniciar circuit breaker manualmente
+    Route::post('circuit-breaker/reset', [MLSSyncController::class, 'resetCircuitBreaker']);
+    
+    // Obtener checkpoint de sincronización
+    Route::get('checkpoint', [MLSSyncController::class, 'getCheckpoint']);
+    
+    // Limpiar checkpoint de sincronización
+    Route::delete('checkpoint', [MLSSyncController::class, 'clearCheckpoint']);
+    
+    // Retomar sincronización desde checkpoint
+    Route::post('sync/resume', [MLSSyncController::class, 'syncResume']);
 });

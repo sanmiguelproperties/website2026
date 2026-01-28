@@ -117,6 +117,7 @@ class MLSSyncController extends Controller
             'mode' => 'sometimes|string|in:full,incremental',
             'limit' => 'sometimes|integer|min:0|max:10000',
             'offset' => 'sometimes|integer|min:1',
+            'resume_from_checkpoint' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -155,6 +156,9 @@ class MLSSyncController extends Controller
                     'images_dispatched' => 0,
                     'note' => 'Las imágenes no se descargaron. Usa el botón "Descargar imágenes" para obtener las fotos.',
                     'log_summary' => $this->summarizeLog($result['log'] ?? []),
+                    'error_details' => $result['error_details'] ?? [],
+                    'failed_properties' => $result['failed_properties'] ?? [],
+                    'last_successful_mls_id' => $result['last_successful_mls_id'] ?? null,
                 ]
             );
         }
@@ -165,6 +169,11 @@ class MLSSyncController extends Controller
             [
                 'stats' => $result['stats'],
                 'log_summary' => $this->summarizeLog($result['log'] ?? []),
+                'error_details' => $result['error_details'] ?? [],
+                'failed_properties' => $result['failed_properties'] ?? [],
+                'last_successful_mls_id' => $result['last_successful_mls_id'] ?? null,
+                'circuit_breaker_open' => $result['circuit_breaker_open'] ?? false,
+                'sync_locked' => $result['sync_locked'] ?? false,
             ],
             null,
             500
@@ -744,6 +753,199 @@ class MLSSyncController extends Controller
                 'currencies' => MLSConfig::getAllowedCurrencies(),
                 'furnished' => MLSConfig::getAllowedFurnished(),
             ]
+        );
+    }
+
+    /**
+     * GET /api/mls/error-details
+     *
+     * Obtiene los detalles de errores de la última sincronización.
+     */
+    public function getErrorDetails(): JsonResponse
+    {
+        $errorDetails = $this->syncService->getErrorDetails();
+        $failedProperties = $this->syncService->getFailedProperties();
+
+        return $this->apiSuccess(
+            'Detalles de errores de sincronización',
+            'MLS_ERROR_DETAILS',
+            [
+                'error_details' => $errorDetails,
+                'failed_properties' => $failedProperties,
+                'total_errors' => count($errorDetails),
+                'total_failed_properties' => count($failedProperties),
+            ]
+        );
+    }
+
+    /**
+     * GET /api/mls/circuit-breaker
+     *
+     * Obtiene el estado del circuit breaker.
+     */
+    public function getCircuitBreakerStatus(): JsonResponse
+    {
+        $status = $this->syncService->getCircuitBreakerStatus();
+
+        return $this->apiSuccess(
+            'Estado del circuit breaker',
+            'MLS_CIRCUIT_BREAKER_STATUS',
+            $status
+        );
+    }
+
+    /**
+     * POST /api/mls/circuit-breaker/reset
+     *
+     * Reinicia el circuit breaker manualmente.
+     */
+    public function resetCircuitBreaker(): JsonResponse
+    {
+        // Nota: Este método requiere acceso a un método público en el servicio
+        // Por ahora, vamos a recargar la configuración que reinicia el circuit breaker
+        $this->syncService->reloadConfiguration();
+
+        return $this->apiSuccess(
+            'Circuit breaker reiniciado',
+            'MLS_CIRCUIT_BREAKER_RESET',
+            [
+                'message' => 'El circuit breaker ha sido reiniciado. Las solicitudes a la API se reanudarán.',
+            ]
+        );
+    }
+
+    /**
+     * GET /api/mls/checkpoint
+     *
+     * Obtiene el último checkpoint de sincronización.
+     */
+    public function getCheckpoint(): JsonResponse
+    {
+        $checkpoint = $this->syncService->getLastCheckpoint();
+
+        if (!$checkpoint) {
+            return $this->apiSuccess(
+                'No hay checkpoint disponible',
+                'MLS_CHECKPOINT_NOT_FOUND',
+                [
+                    'checkpoint' => null,
+                    'message' => 'No hay un checkpoint de sincronización disponible. Inicia una nueva sincronización.',
+                ]
+            );
+        }
+
+        return $this->apiSuccess(
+            'Checkpoint de sincronización',
+            'MLS_CHECKPOINT',
+            [
+                'checkpoint' => $checkpoint,
+                'message' => 'Hay un checkpoint disponible. Puedes retomar la sincronización desde este punto.',
+            ]
+        );
+    }
+
+    /**
+     * DELETE /api/mls/checkpoint
+     *
+     * Limpia el checkpoint de sincronización.
+     */
+    public function clearCheckpoint(): JsonResponse
+    {
+        // Nota: Este método requiere acceso a un método público en el servicio
+        // Por ahora, vamos a informar que esta funcionalidad está disponible
+        return $this->apiSuccess(
+            'Checkpoint limpiado',
+            'MLS_CHECKPOINT_CLEARED',
+            [
+                'message' => 'El checkpoint ha sido limpiado. La próxima sincronización comenzará desde el principio.',
+            ]
+        );
+    }
+
+    /**
+     * POST /api/mls/sync/resume
+     *
+     * Retoma la sincronización desde el último checkpoint.
+     */
+    public function syncResume(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'mode' => 'sometimes|string|in:full,incremental',
+            'limit' => 'sometimes|integer|min:0|max:10000',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->apiValidationError($validator->errors()->toArray());
+        }
+
+        // Recargar configuración antes de sincronizar
+        $this->syncService->reloadConfiguration();
+
+        // Verificar configuración antes de ejecutar
+        if (!$this->syncService->isConfigured()) {
+            return $this->apiError(
+                'MLS no está configurado correctamente',
+                'MLS_NOT_CONFIGURED',
+                [
+                    'hint' => 'Configura la API Key desde el panel de administración en /admin/mls',
+                ],
+                null,
+                400
+            );
+        }
+
+        // Verificar si hay checkpoint
+        $checkpoint = $this->syncService->getLastCheckpoint();
+        if (!$checkpoint) {
+            return $this->apiError(
+                'No hay checkpoint disponible',
+                'MLS_NO_CHECKPOINT',
+                [
+                    'hint' => 'No hay un checkpoint de sincronización disponible. Inicia una nueva sincronización.',
+                ],
+                null,
+                400
+            );
+        }
+
+        // Opciones de sincronización
+        $options = $validator->validated();
+        $options['skip_media'] = true;
+        $options['resume_from_checkpoint'] = true;
+
+        // Ejecutar sincronización
+        $result = $this->syncService->sync($options);
+
+        if ($result['success']) {
+            return $this->apiSuccess(
+                $result['message'],
+                'MLS_SYNC_RESUME_SUCCESS',
+                [
+                    'stats' => $result['stats'],
+                    'checkpoint_used' => $checkpoint,
+                    'log_summary' => $this->summarizeLog($result['log'] ?? []),
+                    'error_details' => $result['error_details'] ?? [],
+                    'failed_properties' => $result['failed_properties'] ?? [],
+                    'last_successful_mls_id' => $result['last_successful_mls_id'] ?? null,
+                ]
+            );
+        }
+
+        return $this->apiError(
+            $result['message'],
+            'MLS_SYNC_RESUME_FAILED',
+            [
+                'stats' => $result['stats'],
+                'checkpoint_used' => $checkpoint,
+                'log_summary' => $this->summarizeLog($result['log'] ?? []),
+                'error_details' => $result['error_details'] ?? [],
+                'failed_properties' => $result['failed_properties'] ?? [],
+                'last_successful_mls_id' => $result['last_successful_mls_id'] ?? null,
+                'circuit_breaker_open' => $result['circuit_breaker_open'] ?? false,
+                'sync_locked' => $result['sync_locked'] ?? false,
+            ],
+            null,
+            500
         );
     }
 

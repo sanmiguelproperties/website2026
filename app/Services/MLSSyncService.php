@@ -46,6 +46,18 @@ class MLSSyncService
     protected int $errors = 0;
     protected int $totalFetched = 0;
     protected bool $skipMedia = false;
+    
+    // Nuevas propiedades para manejo robusto de errores
+    protected array $errorDetails = [];
+    protected array $failedProperties = [];
+    protected ?string $lastSuccessfulMlsId = null;
+    protected bool $circuitBreakerOpen = false;
+    protected int $circuitBreakerFailures = 0;
+    protected ?\Carbon\Carbon $circuitBreakerOpenedAt = null;
+    protected int $circuitBreakerThreshold = 5;
+    protected int $circuitBreakerTimeoutSeconds = 300; // 5 minutos
+    protected ?string $syncLockKey = null;
+    protected bool $isLocked = false;
 
     public function __construct()
     {
@@ -134,6 +146,7 @@ class MLSSyncService
      *   - 'limit': Número máximo de propiedades a sincronizar (0 = sin límite)
      *   - 'offset': Página inicial (para retomar)
      *   - 'skip_media': Si es true, no sincroniza medios (imágenes/videos)
+     *   - 'resume_from_checkpoint': Si es true, retoma desde el último checkpoint
      * @return array Resultado de la sincronización con estadísticas
      */
     public function sync(array $options = []): array
@@ -142,7 +155,7 @@ class MLSSyncService
 
         $this->log('info', "================================================");
         $this->log('info', '[SYNC START] INICIANDO SINCRONIZACIÓN MLS');
-        $this->log('info', "[SYNC CONFIG] Mode: " . ($options['mode'] ?? 'default') . " | Limit: " . ($options['limit'] ?? 0) . " | Offset: " . ($options['offset'] ?? 1) . " | Skip Media: " . (($options['skip_media'] ?? false) ? 'SÍ' : 'NO'));
+        $this->log('info', "[SYNC CONFIG] Mode: " . ($options['mode'] ?? 'default') . " | Limit: " . ($options['limit'] ?? 0) . " | Offset: " . ($options['offset'] ?? 1) . " | Skip Media: " . (($options['skip_media'] ?? false) ? 'SÍ' : 'NO') . " | Resume from Checkpoint: " . (($options['resume_from_checkpoint'] ?? false) ? 'SÍ' : 'NO'));
         $this->log('info', "[SYNC API] Base URL: {$this->baseUrl} | Rate Limit: {$this->rateLimit}/seg | Timeout: {$this->timeout}s | Batch Size: {$this->batchSize}");
 
         // Guardar opción skip_media para usar en syncProperty
@@ -157,6 +170,27 @@ class MLSSyncService
             ];
         }
 
+        // Verificar circuit breaker
+        if ($this->isCircuitBreakerOpen()) {
+            $this->log('error', '[SYNC ERROR] Circuit breaker está abierto. La API ha fallado repetidamente. Intenta más tarde.');
+            return [
+                'success' => false,
+                'message' => 'Circuit breaker abierto. La API ha fallado repetidamente. Intenta más tarde.',
+                'stats' => $this->getStats(),
+                'circuit_breaker_open' => true,
+            ];
+        }
+
+        // Adquirir lock para evitar sincronizaciones simultáneas
+        if (!$this->acquireSyncLock()) {
+            return [
+                'success' => false,
+                'message' => 'Ya existe una sincronización en curso. Intenta más tarde.',
+                'stats' => $this->getStats(),
+                'sync_locked' => true,
+            ];
+        }
+
         try {
             $this->log('info', '[SYNC] Obteniendo propiedades del MLS...');
 
@@ -164,16 +198,30 @@ class MLSSyncService
             $mode = $options['mode'] ?? ($this->config?->sync_mode ?? 'incremental');
             $limit = $options['limit'] ?? 0;
             $startPage = $options['offset'] ?? 1;
+            $resumeFromCheckpoint = $options['resume_from_checkpoint'] ?? false;
+
+            // Obtener checkpoint si se solicita retomar
+            $checkpoint = null;
+            if ($resumeFromCheckpoint) {
+                $checkpoint = $this->getLastCheckpoint();
+                if ($checkpoint) {
+                    $this->log('info', "[SYNC CHECKPOINT] Retomando desde checkpoint: MLS ID {$checkpoint['last_mls_id']} | Timestamp: {$checkpoint['timestamp']}");
+                } else {
+                    $this->log('warning', '[SYNC CHECKPOINT] No se encontró checkpoint, iniciando desde el principio');
+                }
+            }
 
             // Paso 1: Obtener propiedades del MLS usando el endpoint de búsqueda
             $properties = $this->fetchAllProperties($startPage, $limit);
 
             if ($properties === null) {
                 $this->log('error', '[SYNC ERROR] Error al obtener propiedades del MLS');
+                $this->recordCircuitBreakerFailure();
                 return [
                     'success' => false,
                     'message' => 'Error al obtener propiedades del MLS',
                     'stats' => $this->getStats(),
+                    'circuit_breaker_failures' => $this->circuitBreakerFailures,
                 ];
             }
 
@@ -184,16 +232,63 @@ class MLSSyncService
             $mlsIds = [];
             $this->log('info', '[SYNC] Iniciando sincronización de propiedades...');
 
+            $resumeMode = $resumeFromCheckpoint && $checkpoint !== null;
+            $foundCheckpoint = !$resumeMode;
+
             foreach ($properties as $index => $propertyData) {
                 $mlsId = $propertyData['mls_id'] ?? null;
+                
+                // Validar datos de la propiedad
+                $validation = $this->validatePropertyData($propertyData);
+                if (!$validation['valid']) {
+                    $this->log('warning', "[SYNC VALIDATION] Propiedad {$mlsId} tiene errores de validación: " . implode(', ', $validation['errors']));
+                    $this->recordError($mlsId ?? 'unknown', 'validation', implode(', ', $validation['errors']));
+                    $this->errors++;
+                    continue;
+                }
+
+                // Si estamos en modo resume, saltar hasta encontrar el checkpoint
+                if ($resumeMode && !$foundCheckpoint) {
+                    if ($mlsId === $checkpoint['last_mls_id']) {
+                        $foundCheckpoint = true;
+                        $this->log('info', "[SYNC CHECKPOINT] Checkpoint encontrado en MLS ID {$mlsId}, continuando...");
+                    } else {
+                        $this->log('debug', "[SYNC CHECKPOINT] Saltando MLS ID {$mlsId} (buscando checkpoint...)");
+                        continue;
+                    }
+                }
+
                 if ($mlsId) {
                     $mlsIds[] = $mlsId;
                     $this->log('info', "[SYNC PROPERTY] ({" . ($index + 1) . "/" . count($properties) . ") MLS ID: {$mlsId}");
-                    $this->syncProperty($propertyData);
+                    
+                    try {
+                        $this->syncProperty($propertyData);
+                        
+                        // Guardar checkpoint después de cada propiedad exitosa
+                        $this->saveCheckpoint($mlsId);
+                        $this->lastSuccessfulMlsId = $mlsId;
+                        
+                        // Registrar éxito en circuit breaker
+                        $this->recordCircuitBreakerSuccess();
+                    } catch (\Throwable $e) {
+                        $this->log('error', "[SYNC PROPERTY ERROR] Error al sincronizar propiedad {$mlsId}: " . $e->getMessage());
+                        $this->recordError($mlsId, 'sync', $e->getMessage(), $e);
+                        $this->errors++;
+                        $this->recordCircuitBreakerFailure();
+                        
+                        // Continuar con la siguiente propiedad
+                        continue;
+                    }
                 }
 
                 // Rate limiting
                 usleep((int) (1000000 / $this->rateLimit));
+                
+                // Liberar memoria periódicamente
+                if (($index + 1) % 50 === 0) {
+                    gc_collect_cycles();
+                }
             }
 
             $this->log('info', "[SYNC] Propiedades procesadas: " . count($mlsIds));
@@ -204,6 +299,11 @@ class MLSSyncService
                 $this->unpublishRemovedProperties($mlsIds);
             } elseif ($mode === 'incremental') {
                 $this->log('info', '[SYNC] Modo incremental - omitiendo despublicación');
+            }
+
+            // Limpiar checkpoint si la sincronización fue exitosa
+            if ($this->errors === 0 || $this->errors < count($properties) * 0.1) {
+                $this->clearCheckpoint();
             }
 
             $this->log('info', '[SYNC COMPLETE] Sincronización completada');
@@ -221,10 +321,14 @@ class MLSSyncService
                 'message' => 'Sincronización completada exitosamente',
                 'stats' => $this->getStats(),
                 'log' => $this->syncLog,
+                'error_details' => $this->errorDetails,
+                'failed_properties' => $this->failedProperties,
+                'last_successful_mls_id' => $this->lastSuccessfulMlsId,
             ];
 
         } catch (\Throwable $e) {
             $this->log('error', '[SYNC CRITICAL ERROR] ' . $e->getMessage());
+            $this->recordError('critical', 'critical', $e->getMessage(), $e);
             Log::error('MLS sync error: ' . $e->getMessage(), [
                 'exception' => $e,
             ]);
@@ -234,7 +338,12 @@ class MLSSyncService
                 'message' => 'Error durante la sincronización: ' . $e->getMessage(),
                 'stats' => $this->getStats(),
                 'log' => $this->syncLog,
+                'error_details' => $this->errorDetails,
+                'last_successful_mls_id' => $this->lastSuccessfulMlsId,
             ];
+        } finally {
+            // Siempre liberar el lock
+            $this->releaseSyncLock();
         }
     }
 
@@ -1005,14 +1114,16 @@ class MLSSyncService
      * @param string $method Método HTTP (GET, POST, etc.)
      * @param string $endpoint Endpoint de la API
      * @param array $query Parámetros de query string
+     * @param int|null $customTimeout Timeout personalizado para esta petición
      * @return array|null Los datos de respuesta o null si todos los reintentos fallan
      */
-    protected function makeRequest(string $method, string $endpoint, array $query = []): ?array
+    protected function makeRequest(string $method, string $endpoint, array $query = [], ?int $customTimeout = null): ?array
     {
         $url = rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
         $lastException = null;
         $lastResponseBody = null;
         $requestStartTime = microtime(true);
+        $timeout = $customTimeout ?? $this->timeout;
 
         for ($attempt = 1; $attempt <= $this->maxRetries; $attempt++) {
             try {
@@ -1021,14 +1132,14 @@ class MLSSyncService
                 $this->log('debug', "[API REQUEST] Intento {$attempt}/{$this->maxRetries} | {$method} {$endpoint}");
                 $this->log('debug', "[API REQUEST] URL: {$url}");
                 $this->log('debug', "[API REQUEST] Query: " . json_encode($query));
-                $this->log('debug', "[API REQUEST] Timeout: {$this->timeout}s");
+                $this->log('debug', "[API REQUEST] Timeout: {$timeout}s");
 
                 $response = Http::withHeaders([
                     'X-Api-Key' => $this->apiKey,
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json',
                 ])
-                    ->timeout($this->timeout)
+                    ->timeout($timeout)
                     ->$method($url, $query);
 
                 $responseTime = round((microtime(true) - $requestStartTime) * 1000, 2);
@@ -1072,6 +1183,12 @@ class MLSSyncService
 
                 $this->log('debug', "[API RESPONSE] Raw JSON: " . json_encode($responseData, JSON_PRETTY_PRINT));
 
+                // Validar estructura de respuesta
+                if (!$this->validateApiResponse($responseData)) {
+                    $this->log('error', "[API VALIDATION] Estructura de respuesta inválida");
+                    return null;
+                }
+
                 if (is_array($responseData) && isset($responseData['success']) && $responseData['success'] === false) {
                     $errorCode = $responseData['code'] ?? 'UNKNOWN';
                     $errorMessage = $responseData['message'] ?? 'Error desconocido';
@@ -1102,6 +1219,40 @@ class MLSSyncService
                 $this->log('debug', "[API SUCCESS] {$method} {$endpoint} | Status: {$response->status()} | Tiempo: {$responseTime}ms");
                 return $responseData;
 
+            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                $lastException = $e;
+                $errorClass = get_class($e);
+                $errorFile = $e->getFile();
+                $errorLine = $e->getLine();
+
+                $this->log('error', "[API EXCEPTION] ════════════════════════════════════════════");
+                $this->log('error', "[API EXCEPTION] Tipo: {$errorClass}");
+                $this->log('error', "[API EXCEPTION] Mensaje: " . $e->getMessage());
+                $this->log('error', "[API EXCEPTION] Archivo: {$errorFile}:{$errorLine}");
+                $this->log('error', "[API EXCEPTION] Intento {$attempt}/{$this->maxRetries}");
+
+                if ($attempt < $this->maxRetries) {
+                    $delay = $this->retryDelays[$attempt - 1] ?? 5;
+                    $this->log('warning', "[API RETRY] Error de conexión, reintentando en {$delay}s...");
+                    sleep($delay);
+                }
+            } catch (\Illuminate\Http\Client\TimeoutException $e) {
+                $lastException = $e;
+                $errorClass = get_class($e);
+                $errorFile = $e->getFile();
+                $errorLine = $e->getLine();
+
+                $this->log('error', "[API TIMEOUT] ════════════════════════════════════════════");
+                $this->log('error', "[API TIMEOUT] Tipo: {$errorClass}");
+                $this->log('error', "[API TIMEOUT] Mensaje: " . $e->getMessage());
+                $this->log('error', "[API TIMEOUT] Archivo: {$errorFile}:{$errorLine}");
+                $this->log('error', "[API TIMEOUT] Intento {$attempt}/{$this->maxRetries}");
+
+                if ($attempt < $this->maxRetries) {
+                    $delay = $this->retryDelays[$attempt - 1] ?? 5;
+                    $this->log('warning', "[API RETRY] Timeout, reintentando en {$delay}s...");
+                    sleep($delay);
+                }
             } catch (\Throwable $e) {
                 $lastException = $e;
                 $errorClass = get_class($e);
@@ -1187,6 +1338,259 @@ class MLSSyncService
         $this->unpublished = 0;
         $this->errors = 0;
         $this->totalFetched = 0;
+        $this->errorDetails = [];
+        $this->failedProperties = [];
+        $this->lastSuccessfulMlsId = null;
+    }
+
+    /**
+     * Verifica si el circuit breaker está abierto.
+     * El circuit breaker se abre después de N fallos consecutivos y se cierra después de un período de tiempo.
+     */
+    protected function isCircuitBreakerOpen(): bool
+    {
+        if (!$this->circuitBreakerOpen) {
+            return false;
+        }
+
+        // Verificar si ha pasado el tiempo de espera para intentar recuperar
+        if ($this->circuitBreakerOpenedAt && $this->circuitBreakerOpenedAt->addSeconds($this->circuitBreakerTimeoutSeconds)->isPast()) {
+            $this->log('info', '[CIRCUIT BREAKER] Tiempo de espera cumplido, intentando recuperar...');
+            $this->resetCircuitBreaker();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Registra un fallo en el circuit breaker.
+     * Si se alcanza el umbral de fallos, se abre el circuit breaker.
+     */
+    protected function recordCircuitBreakerFailure(): void
+    {
+        $this->circuitBreakerFailures++;
+        
+        if ($this->circuitBreakerFailures >= $this->circuitBreakerThreshold) {
+            $this->circuitBreakerOpen = true;
+            $this->circuitBreakerOpenedAt = now();
+            $this->log('error', "[CIRCUIT BREAKER] Circuit breaker abierto después de {$this->circuitBreakerFailures} fallos consecutivos");
+            $this->log('error', "[CIRCUIT BREAKER] Se cerrará automáticamente en {$this->circuitBreakerTimeoutSeconds} segundos");
+        }
+    }
+
+    /**
+     * Registra un éxito en el circuit breaker.
+     * Si el circuit breaker estaba abierto, se cierra.
+     */
+    protected function recordCircuitBreakerSuccess(): void
+    {
+        $this->circuitBreakerFailures = 0;
+        
+        if ($this->circuitBreakerOpen) {
+            $this->circuitBreakerOpen = false;
+            $this->circuitBreakerOpenedAt = null;
+            $this->log('info', '[CIRCUIT BREAKER] Circuit breaker cerrado exitosamente');
+        }
+    }
+
+    /**
+     * Reinicia el circuit breaker.
+     */
+    protected function resetCircuitBreaker(): void
+    {
+        $this->circuitBreakerOpen = false;
+        $this->circuitBreakerFailures = 0;
+        $this->circuitBreakerOpenedAt = null;
+    }
+
+    /**
+     * Intenta adquirir un lock para evitar sincronizaciones simultáneas.
+     * 
+     * @return bool True si se adquirió el lock, false si ya existe una sincronización en curso
+     */
+    protected function acquireSyncLock(): bool
+    {
+        $this->syncLockKey = 'mls_sync_lock';
+        
+        try {
+            $this->isLocked = \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, 3600)->block(0);
+            
+            if (!$this->isLocked) {
+                $this->log('warning', '[SYNC LOCK] Ya existe una sincronización en curso. Intenta más tarde.');
+                return false;
+            }
+            
+            $this->log('info', '[SYNC LOCK] Lock adquirido exitosamente');
+            return true;
+        } catch (\Throwable $e) {
+            $this->log('error', '[SYNC LOCK] Error al adquirir lock: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Libera el lock de sincronización.
+     */
+    protected function releaseSyncLock(): void
+    {
+        if ($this->syncLockKey && $this->isLocked) {
+            try {
+                \Illuminate\Support\Facades\Cache::lock($this->syncLockKey)->release();
+                $this->isLocked = false;
+                $this->log('info', '[SYNC LOCK] Lock liberado exitosamente');
+            } catch (\Throwable $e) {
+                $this->log('error', '[SYNC LOCK] Error al liberar lock: ' . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * Registra un error detallado para análisis posterior.
+     * 
+     * @param string $mlsId ID de la propiedad que falló
+     * @param string $errorType Tipo de error (api, database, validation, etc.)
+     * @param string $message Mensaje de error
+     * @param \Throwable|null $exception Excepción si está disponible
+     */
+    protected function recordError(string $mlsId, string $errorType, string $message, ?\Throwable $exception = null): void
+    {
+        $errorDetail = [
+            'mls_id' => $mlsId,
+            'error_type' => $errorType,
+            'message' => $message,
+            'timestamp' => now()->toIso8601String(),
+        ];
+
+        if ($exception) {
+            $errorDetail['exception'] = [
+                'class' => get_class($exception),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+                'trace' => $exception->getTraceAsString(),
+            ];
+        }
+
+        $this->errorDetails[] = $errorDetail;
+        
+        if ($mlsId) {
+            $this->failedProperties[] = $mlsId;
+        }
+
+        // Log adicional para debugging
+        $this->log('error', "[ERROR DETAIL] Type: {$errorType} | MLS ID: {$mlsId} | Message: {$message}");
+    }
+
+    /**
+     * Valida la estructura de datos de una propiedad del API.
+     * 
+     * @param array $propertyData Datos de la propiedad
+     * @return array Array con ['valid' => bool, 'errors' => array]
+     */
+    protected function validatePropertyData(array $propertyData): array
+    {
+        $errors = [];
+        
+        // Campos requeridos
+        $requiredFields = ['mls_id', 'id'];
+        foreach ($requiredFields as $field) {
+            if (!isset($propertyData[$field]) || empty($propertyData[$field])) {
+                $errors[] = "Campo requerido faltante: {$field}";
+            }
+        }
+
+        // Validar tipos de datos
+        if (isset($propertyData['price']) && !is_numeric($propertyData['price'])) {
+            $errors[] = "El campo 'price' debe ser numérico";
+        }
+
+        if (isset($propertyData['bedrooms']) && !is_numeric($propertyData['bedrooms'])) {
+            $errors[] = "El campo 'bedrooms' debe ser numérico";
+        }
+
+        if (isset($propertyData['bathrooms']) && !is_numeric($propertyData['bathrooms'])) {
+            $errors[] = "El campo 'bathrooms' debe ser numérico";
+        }
+
+        return [
+            'valid' => empty($errors),
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * Valida la estructura de respuesta del API.
+     * 
+     * @param array|null $response Respuesta del API
+     * @return bool True si la respuesta es válida
+     */
+    protected function validateApiResponse(?array $response): bool
+    {
+        if ($response === null) {
+            return false;
+        }
+
+        // Verificar que sea un array
+        if (!is_array($response)) {
+            $this->log('error', '[API VALIDATION] La respuesta no es un array');
+            return false;
+        }
+
+        // Verificar que no tenga el campo success: false
+        if (isset($response['success']) && $response['success'] === false) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Obtiene el último checkpoint de sincronización.
+     * 
+     * @return array|null Checkpoint con ['last_mls_id' => string, 'timestamp' => string]
+     */
+    protected function getLastCheckpoint(): ?array
+    {
+        try {
+            $checkpoint = \Illuminate\Support\Facades\Cache::get('mls_sync_checkpoint');
+            return $checkpoint;
+        } catch (\Throwable $e) {
+            $this->log('error', '[CHECKPOINT] Error al obtener checkpoint: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Guarda un checkpoint de sincronización.
+     * 
+     * @param string $mlsId Último MLS ID procesado exitosamente
+     */
+    protected function saveCheckpoint(string $mlsId): void
+    {
+        try {
+            $checkpoint = [
+                'last_mls_id' => $mlsId,
+                'timestamp' => now()->toIso8601String(),
+            ];
+            
+            \Illuminate\Support\Facades\Cache::put('mls_sync_checkpoint', $checkpoint, 86400); // 24 horas
+            $this->log('info', "[CHECKPOINT] Guardado: MLS ID {$mlsId}");
+        } catch (\Throwable $e) {
+            $this->log('error', '[CHECKPOINT] Error al guardar checkpoint: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Limpia el checkpoint de sincronización.
+     */
+    protected function clearCheckpoint(): void
+    {
+        try {
+            \Illuminate\Support\Facades\Cache::forget('mls_sync_checkpoint');
+            $this->log('info', '[CHECKPOINT] Checkpoint limpiado');
+        } catch (\Throwable $e) {
+            $this->log('error', '[CHECKPOINT] Error al limpiar checkpoint: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -1580,6 +1984,44 @@ class MLSSyncService
             'unpublished' => $this->unpublished,
             'errors' => $this->errors,
             'total_fetched' => $this->totalFetched,
+            'failed_properties_count' => count($this->failedProperties),
+            'error_details_count' => count($this->errorDetails),
+            'last_successful_mls_id' => $this->lastSuccessfulMlsId,
+            'circuit_breaker_open' => $this->circuitBreakerOpen,
+            'circuit_breaker_failures' => $this->circuitBreakerFailures,
+        ];
+    }
+
+    /**
+     * Obtiene los detalles de errores de la sincronización.
+     */
+    public function getErrorDetails(): array
+    {
+        return $this->errorDetails;
+    }
+
+    /**
+     * Obtiene la lista de propiedades que fallaron durante la sincronización.
+     */
+    public function getFailedProperties(): array
+    {
+        return $this->failedProperties;
+    }
+
+    /**
+     * Obtiene el estado del circuit breaker.
+     */
+    public function getCircuitBreakerStatus(): array
+    {
+        return [
+            'open' => $this->circuitBreakerOpen,
+            'failures' => $this->circuitBreakerFailures,
+            'threshold' => $this->circuitBreakerThreshold,
+            'opened_at' => $this->circuitBreakerOpenedAt?->toIso8601String(),
+            'timeout_seconds' => $this->circuitBreakerTimeoutSeconds,
+            'will_close_at' => $this->circuitBreakerOpenedAt 
+                ? $this->circuitBreakerOpenedAt->addSeconds($this->circuitBreakerTimeoutSeconds)->toIso8601String()
+                : null,
         ];
     }
 
@@ -1625,6 +2067,9 @@ class MLSSyncService
             }
         }
 
+        // Obtener checkpoint
+        $checkpoint = $this->getLastCheckpoint();
+
         return [
             'configured' => $this->isConfigured(),
             'config_source' => $this->config ? 'database' : 'env',
@@ -1641,6 +2086,9 @@ class MLSSyncService
             ],
             'total_properties' => $totalProperties,
             'published_properties' => $publishedProperties,
+            'circuit_breaker' => $this->getCircuitBreakerStatus(),
+            'checkpoint' => $checkpoint,
+            'sync_locked' => $this->isLocked,
         ];
     }
 }
