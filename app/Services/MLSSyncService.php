@@ -990,32 +990,80 @@ class MLSSyncService
     }
 
     /**
-     * Realiza una petición HTTP a la API del MLS.
+     * Número máximo de reintentos en caso de error de conexión.
+     */
+    protected int $maxRetries = 3;
+
+    /**
+     * Segundos de espera entre reintentos (backoff exponencial).
+     */
+    protected array $retryDelays = [1, 3, 5];
+
+    /**
+     * Realiza una petición HTTP a la API del MLS con reintentos automáticos.
+     *
+     * @param string $method Método HTTP (GET, POST, etc.)
+     * @param string $endpoint Endpoint de la API
+     * @param array $query Parámetros de query string
+     * @return array|null Los datos de respuesta o null si todos los reintentos fallan
      */
     protected function makeRequest(string $method, string $endpoint, array $query = []): ?array
     {
-        try {
-            $url = rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
-            
-            $response = Http::withHeaders([
-                'X-Api-Key' => $this->apiKey,
-                'Accept' => 'application/json',
-                'Content-Type' => 'application/json',
-            ])
-                ->timeout($this->timeout)
-                ->$method($url, $query);
+        $url = rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
+        $lastException = null;
 
-            if ($response->failed()) {
-                $this->log('error', "MLS API Error [{$response->status()}]: " . $response->body());
-                return null;
+        for ($attempt = 1; $attempt <= $this->maxRetries; $attempt++) {
+            try {
+                $this->log('debug', "[API REQUEST] Intento {$attempt}/{$this->maxRetries} | {$method} {$endpoint}");
+
+                $response = Http::withHeaders([
+                    'X-Api-Key' => $this->apiKey,
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ])
+                    ->timeout($this->timeout)
+                    ->$method($url, $query);
+
+                if ($response->failed()) {
+                    $statusCode = $response->status();
+                    $this->log('error', "MLS API Error [{$statusCode}] en intento {$attempt}: " . $response->body());
+
+                    // Si es error 5xx (error del servidor), reintentar
+                    if ($statusCode >= 500 && $attempt < $this->maxRetries) {
+                        $delay = $this->retryDelays[$attempt - 1] ?? 5;
+                        $this->log('warning', "[API RETRY] Error del servidor ({$statusCode}), reintentando en {$delay}s...");
+                        sleep($delay);
+                        continue;
+                    }
+
+                    // Error 4xx (cliente) no reintentar
+                    return null;
+                }
+
+                $this->log('debug', "[API SUCCESS] {$method} {$endpoint} | Status: {$response->status()}");
+                return $response->json();
+
+            } catch (\Throwable $e) {
+                $lastException = $e;
+                $this->log('error', "MLS HTTP Error en intento {$attempt}/{$this->maxRetries}: " . $e->getMessage());
+
+                if ($attempt < $this->maxRetries) {
+                    $delay = $this->retryDelays[$attempt - 1] ?? 5;
+                    $this->log('warning', "[API RETRY] Error de conexión, reintentando en {$delay}s...");
+                    sleep($delay);
+                }
             }
-
-            return $response->json();
-
-        } catch (\Throwable $e) {
-            $this->log('error', "MLS HTTP Error: " . $e->getMessage());
-            return null;
         }
+
+        // Todos los reintentos fallaron
+        $this->log('error', "[API FAIL] Todos los {$this->maxRetries} reintentos fallaron para {$method} {$endpoint}");
+        Log::error('MLS API - Todos los reintentos fallaron', [
+            'method' => $method,
+            'endpoint' => $endpoint,
+            'exception' => $lastException,
+        ]);
+
+        return null;
     }
 
     /**
