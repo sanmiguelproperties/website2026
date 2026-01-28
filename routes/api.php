@@ -19,6 +19,7 @@ use App\Http\Controllers\LocationCatalogController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\FrontendColorController;
 use App\Http\Controllers\EasyBrokerSyncController;
+use App\Http\Controllers\MLSSyncController;
 
 /*
 |--------------------------------------------------------------------------
@@ -155,4 +156,45 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('easybroker')->group(functi
     
     // Ejecutar sincronización
     Route::post('sync', [EasyBrokerSyncController::class, 'sync']);
+});
+
+// MLS AMPI San Miguel de Allende Sync routes (protegidas con autenticación Passport)
+Route::middleware(['auth.api', 'admin.api'])->prefix('mls')->group(function () {
+    // Estado de configuración
+    Route::get('status', [MLSSyncController::class, 'status']);
+    
+    // Gestión de configuración
+    Route::get('config', [MLSSyncController::class, 'getConfig']);
+    Route::put('config', [MLSSyncController::class, 'updateConfig']);
+    Route::delete('config/api-key', [MLSSyncController::class, 'deleteApiKey']);
+    
+    // Probar conexión
+    Route::get('test-connection', [MLSSyncController::class, 'testConnection']);
+    
+    // Ejecutar sincronización (solo datos, sin imágenes)
+    Route::post('sync', [MLSSyncController::class, 'sync']);
+
+    // Ejecutar sincronización completa incluyendo imágenes
+    Route::post('sync-with-images', [MLSSyncController::class, 'syncWithImages']);
+
+    // Sincronizar imágenes de propiedades existentes
+    Route::post('sync-images', [MLSSyncController::class, 'syncImages']);
+    
+    // Sincronización progresiva de imágenes (procesa en lotes)
+    Route::post('sync-images/progressive', [MLSSyncController::class, 'syncImagesProgressive']);
+    
+    // Obtener progreso de sincronización de imágenes
+    Route::get('sync-images/progress', [MLSSyncController::class, 'getImagesSyncProgress']);
+    
+    // Catálogos del MLS
+    Route::get('features', [MLSSyncController::class, 'features']);
+    Route::get('neighborhoods', [MLSSyncController::class, 'neighborhoods']);
+    Route::get('agents', [MLSSyncController::class, 'agents']);
+    Route::get('allowed-values', [MLSSyncController::class, 'allowedValues']);
+    
+    // Consultar propiedad específica del MLS
+    Route::get('property/{mlsId}', [MLSSyncController::class, 'property']);
+
+    // Eliminar todas las propiedades del MLS
+    Route::delete('properties', [MLSSyncController::class, 'deleteAllMLSProperties']);
 });

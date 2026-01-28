@@ -246,6 +246,13 @@
                   </span>
                   EasyBroker Sync
                 </a>
+
+                <a href="{{ route('mls') }}" data-route="mls" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
+                  </span>
+                  MLS AMPI Sync
+                </a>
               </div>
             </div>
           </section>
@@ -346,6 +353,7 @@
         'frontend-colors': 2,
         'rbac': 2,
         'easybroker': 2,
+        'mls': 2,
       };
 
       // --- Año del footer ---

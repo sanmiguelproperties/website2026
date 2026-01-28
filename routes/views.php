@@ -83,5 +83,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/easybroker', function () {
             return view('easybroker.sync');
         })->name('easybroker');
+
+        Route::get('/mls', function () {
+            return view('mls.sync');
+        })->name('mls');
     });
 });

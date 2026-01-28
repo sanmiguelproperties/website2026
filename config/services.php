@@ -52,4 +52,21 @@ return [
         'timeout' => env('EASYBROKER_TIMEOUT', 30), // seconds
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | MLS AMPI San Miguel de Allende API Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuración para la integración con la API del MLS.
+    | Documentación: https://ampisanmigueldeallende.com/api/documentation
+    |
+    */
+    'mls' => [
+        'api_key' => env('MLS_API_KEY'),
+        'base_url' => env('MLS_BASE_URL', 'https://ampisanmigueldeallende.com/api/v1'),
+        'rate_limit' => env('MLS_RATE_LIMIT', 10), // requests per second
+        'timeout' => env('MLS_TIMEOUT', 30), // seconds
+        'batch_size' => env('MLS_BATCH_SIZE', 50), // properties per batch
+    ],
+
 ];

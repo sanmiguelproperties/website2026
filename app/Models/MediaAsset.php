@@ -21,7 +21,9 @@ class MediaAsset extends Model
         'mime_type',
         'size_bytes',
         'duration_seconds',
+        'checksum',
         'created_at',
+        'downloaded_at',
         'name',
         'alt',
     ];
@@ -29,6 +31,8 @@ class MediaAsset extends Model
     protected $casts = [
         'size_bytes' => 'integer',
         'duration_seconds' => 'integer',
+        'checksum' => 'string',
         'created_at' => 'datetime',
+        'downloaded_at' => 'datetime',
     ];
 }
