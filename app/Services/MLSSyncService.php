@@ -1011,6 +1011,7 @@ class MLSSyncService
     {
         $url = rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
         $lastException = null;
+        $lastResponseBody = null;
 
         for ($attempt = 1; $attempt <= $this->maxRetries; $attempt++) {
             try {
@@ -1040,8 +1041,29 @@ class MLSSyncService
                     return null;
                 }
 
+                // Verificar si la respuesta JSON contiene un error (success: false)
+                $responseData = $response->json();
+                $lastResponseBody = $responseData;
+
+                if (is_array($responseData) && isset($responseData['success']) && $responseData['success'] === false) {
+                    $errorCode = $responseData['code'] ?? 'UNKNOWN';
+                    $errorMessage = $responseData['message'] ?? 'Error desconocido';
+                    $this->log('error', "MLS API Error [{$errorCode}] en intento {$attempt}: {$errorMessage}");
+
+                    // Errores de servidor (como SERVER_ERROR) requieren reintento
+                    if (in_array($errorCode, ['SERVER_ERROR', 'TIMEOUT', 'CONNECTION_ERROR', 'SERVICE_UNAVAILABLE']) && $attempt < $this->maxRetries) {
+                        $delay = $this->retryDelays[$attempt - 1] ?? 5;
+                        $this->log('warning', "[API RETRY] Error de API ({$errorCode}), reintentando en {$delay}s...");
+                        sleep($delay);
+                        continue;
+                    }
+
+                    // Otros errores de API (auth, validation, etc.) no reintentar
+                    return null;
+                }
+
                 $this->log('debug', "[API SUCCESS] {$method} {$endpoint} | Status: {$response->status()}");
-                return $response->json();
+                return $responseData;
 
             } catch (\Throwable $e) {
                 $lastException = $e;
@@ -1061,6 +1083,7 @@ class MLSSyncService
             'method' => $method,
             'endpoint' => $endpoint,
             'exception' => $lastException,
+            'last_response' => $lastResponseBody,
         ]);
 
         return null;

@@ -396,7 +396,7 @@ class MLSSyncController extends Controller
     /**
      * GET /api/mls/test-connection
      *
-     * Prueba la conexión con la API del MLS.
+     * Prueba la conexión con la API del MLS con reintentos automáticos.
      */
     public function testConnection(): JsonResponse
     {
@@ -421,59 +421,90 @@ class MLSSyncController extends Controller
         $baseUrl = $config ? $config->base_url : config('services.mls.base_url', 'https://ampisanmigueldeallende.com/api/v1');
         $timeout = $config ? $config->timeout : config('services.mls.timeout', 30);
 
-        // Intentar obtener features para probar conexión
-        try {
-            $response = \Illuminate\Support\Facades\Http::withHeaders([
-                'X-Api-Key' => $apiKey,
-                'Accept' => 'application/json',
-            ])
-                ->timeout($timeout)
-                ->get(rtrim($baseUrl, '/') . '/features');
+        $maxRetries = 3;
+        $retryDelays = [1, 3, 5];
+        $lastResponse = null;
+        $lastException = null;
 
-            if ($response->successful()) {
-                $data = $response->json();
-                $featuresCount = is_array($data) ? count($data['data'] ?? $data) : 0;
+        // Intentar obtener features para probar conexión con reintentos
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'X-Api-Key' => $apiKey,
+                    'Accept' => 'application/json',
+                ])
+                    ->timeout($timeout)
+                    ->get(rtrim($baseUrl, '/') . '/features');
 
-                return $this->apiSuccess(
-                    'Conexión exitosa con el MLS',
-                    'MLS_CONNECTION_OK',
+                $lastResponse = $response;
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $featuresCount = is_array($data) ? count($data['data'] ?? $data) : 0;
+
+                    return $this->apiSuccess(
+                        'Conexión exitosa con el MLS',
+                        'MLS_CONNECTION_OK',
+                        [
+                            'features_count' => $featuresCount,
+                            'api_version' => 'v1',
+                            'base_url' => $baseUrl,
+                            'attempts' => $attempt,
+                        ]
+                    );
+                }
+
+                // Si es error 5xx, reintentar
+                if ($response->status() >= 500 && $attempt < $maxRetries) {
+                    $delay = $retryDelays[$attempt - 1] ?? 5;
+                    sleep($delay);
+                    continue;
+                }
+
+                // Error 4xx - no reintentar
+                $errorMessage = 'Error de conexión con el MLS';
+                $responseData = $response->json();
+                
+                if ($response->status() === 401) {
+                    $errorMessage = 'API Key inválida o no autorizada';
+                } elseif ($response->status() === 403) {
+                    $errorMessage = 'Acceso denegado. Verifica los permisos de tu API Key';
+                } elseif ($response->status() === 404) {
+                    $errorMessage = 'Endpoint no encontrado. Verifica la URL base.';
+                }
+
+                return $this->apiError(
+                    $errorMessage,
+                    'MLS_CONNECTION_FAILED',
                     [
-                        'features_count' => $featuresCount,
-                        'api_version' => 'v1',
-                        'base_url' => $baseUrl,
-                    ]
+                        'status_code' => $response->status(),
+                        'response' => $responseData,
+                    ],
+                    null,
+                    $response->status()
                 );
+
+            } catch (\Throwable $e) {
+                $lastException = $e;
+
+                if ($attempt < $maxRetries) {
+                    $delay = $retryDelays[$attempt - 1] ?? 5;
+                    sleep($delay);
+                }
             }
-
-            $errorMessage = 'Error de conexión con el MLS';
-            $responseData = $response->json();
-            
-            if ($response->status() === 401) {
-                $errorMessage = 'API Key inválida o no autorizada';
-            } elseif ($response->status() === 403) {
-                $errorMessage = 'Acceso denegado. Verifica los permisos de tu API Key';
-            }
-
-            return $this->apiError(
-                $errorMessage,
-                'MLS_CONNECTION_FAILED',
-                [
-                    'status_code' => $response->status(),
-                    'response' => $responseData,
-                ],
-                null,
-                $response->status()
-            );
-
-        } catch (\Throwable $e) {
-            return $this->apiError(
-                'Error al conectar con el MLS: ' . $e->getMessage(),
-                'MLS_CONNECTION_ERROR',
-                null,
-                null,
-                500
-            );
         }
+
+        // Todos los reintentos fallaron
+        return $this->apiError(
+            'Error de conexión con el MLS después de ' . $maxRetries . ' intentos',
+            'MLS_CONNECTION_FAILED_AFTER_RETRIES',
+            [
+                'last_status_code' => $lastResponse?->status(),
+                'last_error' => $lastException?->getMessage(),
+            ],
+            null,
+            500
+        );
     }
 
     /**
