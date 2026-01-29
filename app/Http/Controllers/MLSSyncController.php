@@ -959,11 +959,11 @@ class MLSSyncController extends Controller
     public function syncProgressive(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'batch_size' => 'sometimes|integer|min:5|max:50',
+            'batch_size' => 'sometimes|integer|min:5|max:20',
             'skip_media' => 'sometimes|boolean',
             'offset' => 'sometimes|integer|min:0',
             'mode' => 'sometimes|string|in:full,incremental',
-        ]);
+        ]);;
 
         if ($validator->fails()) {
             return $this->apiValidationError($validator->errors()->toArray());
@@ -986,7 +986,7 @@ class MLSSyncController extends Controller
         }
 
         $options = $validator->validated();
-        $batchSize = (int) ($options['batch_size'] ?? 20);
+        $batchSize = (int) ($options['batch_size'] ?? 10);
         $skipMedia = (bool) ($options['skip_media'] ?? true);
         $offset = isset($options['offset']) ? (int) $options['offset'] : null;
         $mode = $options['mode'] ?? null;

@@ -40,7 +40,7 @@ class MLSSyncService
     protected int $batchSize = 50;
 
     // Nuevos parámetros para sincronización progresiva
-    protected int $progressiveBatchSize = 20; // Lote más pequeño para servidores limitados
+    protected int $progressiveBatchSize = 10; // Lote más pequeño para servidores limitados
     protected int $maxExecutionTimeWarning = 45; // Warning a los 45 segundos
     protected int $lockTtlSeconds = 7200; // 2 horas TTL para el lock
     protected int $progressiveLockTtlSeconds = 300; // 5 minutos TTL para sincronización progresiva (expira más rápido si el proceso muere)
@@ -425,6 +425,57 @@ class MLSSyncService
         }
 
         return $allProperties;
+    }
+
+    /**
+     * Obtiene solo el total de propiedades del MLS.
+     * Optimizado para no descargar todas las propiedades, solo obtener el conteo.
+     *
+     * @return array|null Array con ['total' => int, 'total_pages' => int] o null si falla
+     */
+    protected function fetchTotalPropertiesCount(): ?array
+    {
+        $this->log('debug', '[COUNT] Obteniendo total de propiedades del MLS...');
+        
+        // Hacer una petición con per_page=1 para obtener solo la información de paginación
+        $response = $this->makeRequest('GET', '/properties/search', [
+            'page' => 1,
+            'per_page' => 1,
+        ]);
+
+        if ($response === null) {
+            $this->log('warning', '[COUNT] Error al obtener total de propiedades');
+            return null;
+        }
+        
+        // La estructura de respuesta del MLS puede variar
+        $pagination = $response['pagination'] ?? $response['meta'] ?? [];
+        $totalPages = $pagination['total_pages'] ?? $pagination['last_page'] ?? null;
+        $totalItems = $pagination['total'] ?? $pagination['total_items'] ?? null;
+        $perPage = $pagination['per_page'] ?? $pagination['per_page'] ?? 10;
+        
+        // Si no hay info de paginación, intentar obtener de otra manera
+        if ($totalItems === null && $totalPages !== null) {
+            $properties = $response['data'] ?? $response['properties'] ?? $response;
+            if (is_array($properties)) {
+                $totalItems = count($properties) * $totalPages;
+            }
+        }
+        
+        // Si aún no tenemos total, hacer una estimación o devolver 0
+        if ($totalItems === null) {
+            // Intentar obtener el total de otra página
+            $this->log('warning', '[COUNT] No se pudo obtener el total exacto, estimando...');
+            $totalItems = 0;
+        }
+        
+        $this->log('debug', "[COUNT] Total propiedades: {$totalItems}, Páginas: {$totalPages}, Por página: {$perPage}");
+        
+        return [
+            'total' => (int) $totalItems,
+            'total_pages' => $totalPages ? (int) $totalPages : null,
+            'per_page' => $perPage,
+        ];
     }
 
     /**
@@ -2103,15 +2154,18 @@ class MLSSyncService
      * Sincroniza propiedades MLS en modo progresivo.
      * Procesa un lote de propiedades y retorna el offset para continuar.
      * Ideal para sincronizaciones largas que requieren múltiples llamadas HTTP cortas.
+     * 
+     * OPTIMIZADO: Ahora obtiene solo el total de propiedades del MLS
+     * y procesa las propiedades de una en una usando paginación del API.
      *
-     * @param int $batchSize Tamaño del lote (default: 20 para servidores limitados)
+     * @param int $batchSize Tamaño del lote (número de propiedades a procesar por llamada)
      * @param bool $skipMedia Si true, no sincroniza medios
      * @param int|null $startOffset Offset inicial (si es null, usa el checkpoint o comienza desde 0)
      * @param string|null $mode Modo de sincronización ('full' o 'incremental')
      * @return array Resultado con estadísticas detalladas y next_offset para continuar
      */
     public function syncPropertiesProgressive(
-        int $batchSize = 20,
+        int $batchSize = 10,
         bool $skipMedia = true,
         ?int $startOffset = null,
         ?string $mode = null
@@ -2141,7 +2195,7 @@ class MLSSyncService
             ];
         }
 
-        // Determinar el offset
+        // Determinar el offset inicial
         $currentOffset = $startOffset ?? 0;
         
         // Verificar checkpoint existente
@@ -2151,41 +2205,70 @@ class MLSSyncService
             $this->log('info', "[SYNC PROGRESSIVE] Usando offset del checkpoint: {$currentOffset}");
         }
 
-        // Usar batch size más pequeño si no se especifica
-        $effectiveBatchSize = min($batchSize, $this->progressiveBatchSize);
+        // Usar batch size especificado (ahora representa propiedades por llamada, no páginas)
+        $propertiesPerPage = min($batchSize, $this->progressiveBatchSize);
         
         // Verificar tiempo de ejecución
         $startTime = microtime(true);
         
-        // NOTA: No usamos lock porque la sincronización solo se ejecuta desde el frontend
-        // donde el usuario está presente. No hay riesgo de procesos concurrentes.
-        $this->log('info', '[SYNC PROGRESSIVE] Iniciando sincronización (sin lock)');
+        // Verificar y liberar lock obsoleto si existe ANTES de intentar adquirir uno nuevo
+        if ($this->isLockStale(true)) {
+            $this->log('info', '[SYNC PROGRESSIVE] Lock obsoleto detectado, liberando antes de continuar');
+            $this->forceReleaseLock(true);
+        }
+
+        // Adquirir lock para evitar sincronizaciones simultáneas (TTL: 5 minutos para sync progresivo)
+        if (!$this->acquireSyncLock($this->progressiveLockTtlSeconds)) {
+            // Verificar de nuevo si el lock es obsoleto
+            if ($this->isLockStale(true)) {
+                // Forzar liberación y reintentar
+                $this->log('info', '[SYNC PROGRESSIVE] Lock activo pero obsoleto, forzando liberación y reintentando');
+                $this->forceReleaseLock(true);
+                
+                // Reintentar adquirir lock
+                if (!$this->acquireSyncLock($this->progressiveLockTtlSeconds)) {
+                    return [
+                        'success' => false,
+                        'message' => 'Ya existe una sincronización en curso. Intenta más tarde.',
+                        'sync_locked' => true,
+                    ];
+                }
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Ya existe una sincronización en curso. Intenta más tarde.',
+                    'sync_locked' => true,
+                ];
+            }
+        }
 
         try {
             // Determinar modo
             $syncMode = $mode ?? ($this->config?->sync_mode ?? 'incremental');
             $this->skipMedia = $skipMedia;
             
-            // Obtener propiedades del MLS
-            $properties = $this->fetchAllProperties(1, 0);
+            // OPTIMIZACIÓN: Obtener solo el total de propiedades del MLS (una petición rápida)
+            $this->log('info', '[SYNC PROGRESSIVE] Obteniendo total de propiedades del MLS...');
+            $totalInfo = $this->fetchTotalPropertiesCount();
             
-            if ($properties === null) {
+            if ($totalInfo === null) {
                 $this->recordCircuitBreakerFailure();
                 return [
                     'success' => false,
-                    'message' => 'Error al obtener propiedades del MLS',
+                    'message' => 'Error al obtener información del MLS',
                     'stats' => $this->getStats(),
                     'circuit_breaker_failures' => $this->circuitBreakerFailures,
                 ];
             }
-
-            $totalProperties = count($properties);
+            
+            $totalProperties = $totalInfo['total'] ?? 0;
             $this->totalFetched = $totalProperties;
             $this->log('info', "[SYNC PROGRESSIVE] Total propiedades en MLS: {$totalProperties}");
 
             // Verificar si ya procesamos todo
             if ($currentOffset >= $totalProperties) {
                 $this->log('info', '[SYNC PROGRESSIVE] Ya se procesaron todas las propiedades');
+                $this->clearCheckpoint();
                 return [
                     'success' => true,
                     'message' => 'Sincronización completada',
@@ -2201,11 +2284,26 @@ class MLSSyncService
                 ];
             }
 
-            // Extraer lote de propiedades
-            $batch = array_slice($properties, $currentOffset, $effectiveBatchSize);
-            $this->log('info', "[SYNC PROGRESSIVE] Procesando lote: offset {$currentOffset}, count " . count($batch));
+            // OPTIMIZACIÓN: Calcular página actual y obtener solo esa página
+            $currentPage = (int) floor($currentOffset / $propertiesPerPage) + 1;
+            $this->log('info', "[SYNC PROGRESSIVE] Obteniendo página {$currentPage} del MLS ({$propertiesPerPage} propiedades)...");
+            
+            // Obtener solo la página actual (no todas las propiedades)
+            $properties = $this->fetchAllProperties($currentPage, $propertiesPerPage);
+            
+            if ($properties === null) {
+                $this->recordCircuitBreakerFailure();
+                return [
+                    'success' => false,
+                    'message' => 'Error al obtener propiedades del MLS',
+                    'stats' => $this->getStats(),
+                    'circuit_breaker_failures' => $this->circuitBreakerFailures,
+                ];
+            }
 
-            if (empty($batch)) {
+            if (empty($properties)) {
+                $this->log('warning', '[SYNC PROGRESSIVE] No hay más propiedades que procesar');
+                $this->clearCheckpoint();
                 return [
                     'success' => true,
                     'message' => 'No hay más propiedades que procesar',
@@ -2217,11 +2315,15 @@ class MLSSyncService
                 ];
             }
 
-            // Procesar lote
+            $this->log('info', "[SYNC PROGRESSIVE] Procesando " . count($properties) . " propiedades de la página {$currentPage}");
+
+            // Procesar propiedades de esta página
             $processedInBatch = 0;
             $errorsInBatch = 0;
+            $firstMlsIdInBatch = null;
+            $lastMlsIdInBatch = null;
             
-            foreach ($batch as $index => $propertyData) {
+            foreach ($properties as $index => $propertyData) {
                 $mlsId = $propertyData['mls_id'] ?? null;
                 
                 // Verificar tiempo de ejecución (advertir a los 45 segundos)
@@ -2235,6 +2337,12 @@ class MLSSyncService
                     $errorsInBatch++;
                     continue;
                 }
+
+                // Guardar primer y último MLS ID del lote
+                if ($firstMlsIdInBatch === null) {
+                    $firstMlsIdInBatch = $mlsId;
+                }
+                $lastMlsIdInBatch = $mlsId;
 
                 try {
                     $this->syncProperty($propertyData);
@@ -2252,14 +2360,14 @@ class MLSSyncService
                 usleep((int) (1000000 / $this->rateLimit));
                 
                 // Liberar memoria periódicamente
-                if (($index + 1) % 10 === 0) {
+                if (($index + 1) % 5 === 0) {
                     gc_collect_cycles();
                 }
             }
 
             // Calcular progreso
             $newOffset = $currentOffset + $processedInBatch;
-            $completed = $newOffset >= $totalProperties || count($batch) < $effectiveBatchSize;
+            $completed = $newOffset >= $totalProperties || count($properties) < $propertiesPerPage;
             $progressPercentage = $totalProperties > 0 ? round(($newOffset / $totalProperties) * 100, 2) : 100;
 
             // Guardar checkpoint
@@ -2311,6 +2419,9 @@ class MLSSyncService
                 'stats' => $this->getStats(),
                 'errors' => $this->errors,
             ];
+        } finally {
+            // Siempre liberar el lock al final
+            $this->releaseSyncLock();
         }
     }
 

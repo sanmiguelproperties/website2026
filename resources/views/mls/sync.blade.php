@@ -637,7 +637,7 @@ document.addEventListener('DOMContentLoaded', () => {
           
           // Construir parámetros de la request
           const params = { 
-            batch_size: 20,  // Lote pequeño para servidores limitados
+            batch_size: 10,  // Lote más pequeño para servidores limitados (ahora propiedades por llamada)
             skip_media: true 
           };
           
@@ -692,7 +692,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Actualizar offset para la siguiente iteración
-            lastOffset = data.next_offset || lastOffset + 20;
+            // Solo confiar en next_offset del servicio (no usar fallback)
+            if (data.next_offset !== undefined && data.next_offset !== null) {
+              lastOffset = data.next_offset;
+            }
             
             // Pequeña pausa entre lotes para no saturar el servidor
             await new Promise(resolve => setTimeout(resolve, 500));
