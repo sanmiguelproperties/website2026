@@ -407,11 +407,16 @@ class MLSSyncService
             $allProperties = array_merge($allProperties, $properties);
 
             // Verificar paginación
-            $pagination = $response['pagination'] ?? $response['meta'] ?? [];
-            $totalPages = $pagination['total_pages'] ?? $pagination['last_page'] ?? null;
-            $currentPage = $pagination['current_page'] ?? $page;
+            // Los campos pueden estar en el nivel raíz (formato Laravel/Pagination estándar) o en 'pagination'/'meta'
+            $totalPages = $response['last_page'] ?? $response['pagination']['total_pages'] ?? $response['meta']['total_pages'] ?? null;
+            $currentPage = $response['current_page'] ?? $response['pagination']['current_page'] ?? $page;
+            $perPageFromResponse = $response['per_page'] ?? $response['pagination']['per_page'] ?? $perPage;
             
+            $this->log('debug', "[PAGINATION] current_page: {$currentPage}, total_pages: {$totalPages}, per_page: {$perPageFromResponse}");
+            
+            // Determinar si hay más páginas por procesar
             if ($totalPages !== null) {
+                // Usar información explícita del API sobre paginación
                 $hasMore = $currentPage < $totalPages;
             } else {
                 // Si no hay info de paginación, continuar mientras haya resultados
@@ -448,11 +453,14 @@ class MLSSyncService
             return null;
         }
         
-        // La estructura de respuesta del MLS puede variar
-        $pagination = $response['pagination'] ?? $response['meta'] ?? [];
-        $totalPages = $pagination['total_pages'] ?? $pagination['last_page'] ?? null;
-        $totalItems = $pagination['total'] ?? $pagination['total_items'] ?? null;
-        $perPage = $pagination['per_page'] ?? $pagination['per_page'] ?? 10;
+        // Los campos de paginación pueden estar en el nivel raíz (data key) o en 'pagination'/'meta'
+        // El MLS AMPI San Miguel usa el formato Laravel/Pagination estándar en el nivel raíz
+        $totalItems = $response['total'] ?? $response['pagination']['total'] ?? $response['meta']['total'] ?? $response['total_items'] ?? null;
+        $totalPages = $response['last_page'] ?? $response['pagination']['total_pages'] ?? $response['meta']['last_page'] ?? null;
+        $perPage = $response['per_page'] ?? $response['pagination']['per_page'] ?? $response['meta']['per_page'] ?? 10;
+        
+        $this->log('debug', "[COUNT] Raw response keys: " . implode(', ', array_keys($response)));
+        $this->log('debug', "[COUNT] Found - total: {$totalItems}, last_page: {$totalPages}, per_page: {$perPage}");
         
         // Si no hay info de paginación, intentar obtener de otra manera
         if ($totalItems === null && $totalPages !== null) {
