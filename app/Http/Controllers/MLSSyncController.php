@@ -991,47 +991,77 @@ class MLSSyncController extends Controller
         $offset = isset($options['offset']) ? (int) $options['offset'] : null;
         $mode = $options['mode'] ?? null;
 
-        $result = $this->syncService->syncPropertiesProgressive(
-            $batchSize,
-            $skipMedia,
-            $offset,
-            $mode
-        );
+        try {
+            $result = $this->syncService->syncPropertiesProgressive(
+                $batchSize,
+                $skipMedia,
+                $offset,
+                $mode
+            );
 
-        if ($result['success']) {
-            return $this->apiSuccess(
+            if ($result['success']) {
+                return $this->apiSuccess(
+                    $result['message'],
+                    'MLS_SYNC_PROGRESSIVE_SUCCESS',
+                    [
+                        'total_in_mls' => $result['total_in_mls'] ?? 0,
+                        'processed' => $result['processed'] ?? 0,
+                        'created' => $result['created'] ?? 0,
+                        'updated' => $result['updated'] ?? 0,
+                        'unpublished' => $result['unpublished'] ?? 0,
+                        'errors' => $result['errors'] ?? 0,
+                        'next_offset' => $result['next_offset'] ?? 0,
+                        'completed' => $result['completed'] ?? false,
+                        'progress_percentage' => $result['progress_percentage'] ?? 0,
+                        'execution_time_seconds' => $result['execution_time_seconds'] ?? 0,
+                        'hint' => $result['completed']
+                            ? 'Sincronización completada. No necesitas hacer más llamadas.'
+                            : "Para continuar la sincronización, llama nuevamente a este endpoint con offset={$result['next_offset']}. Progress: {$result['progress_percentage']}%",
+                    ]
+                );
+            }
+
+            return $this->apiError(
                 $result['message'],
-                'MLS_SYNC_PROGRESSIVE_SUCCESS',
+                'MLS_SYNC_PROGRESSIVE_FAILED',
                 [
-                    'total_in_mls' => $result['total_in_mls'] ?? 0,
-                    'processed' => $result['processed'] ?? 0,
-                    'created' => $result['created'] ?? 0,
-                    'updated' => $result['updated'] ?? 0,
-                    'unpublished' => $result['unpublished'] ?? 0,
-                    'errors' => $result['errors'] ?? 0,
-                    'next_offset' => $result['next_offset'] ?? 0,
-                    'completed' => $result['completed'] ?? false,
-                    'progress_percentage' => $result['progress_percentage'] ?? 0,
-                    'execution_time_seconds' => $result['execution_time_seconds'] ?? 0,
-                    'hint' => $result['completed']
-                        ? 'Sincronización completada. No necesitas hacer más llamadas.'
-                        : "Para continuar la sincronización, llama nuevamente a este endpoint con offset={$result['next_offset']}. Progress: {$result['progress_percentage']}%",
-                ]
+                    'sync_locked' => $result['sync_locked'] ?? false,
+                    'circuit_breaker_open' => $result['circuit_breaker_open'] ?? false,
+                    'configured' => $result['configured'] ?? true,
+                    'stats' => $result['stats'] ?? [],
+                ],
+                null,
+                500
+            );
+        } catch (\Throwable $e) {
+            // Error no manejado - capturar detalles
+            $exceptionDetails = [
+                'class' => get_class($e),
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ];
+            
+            // Log del error
+            \Illuminate\Support\Facades\Log::error('MLS syncProgressive exception', [
+                'exception' => $e,
+                'options' => $options,
+            ]);
+
+            return $this->apiError(
+                'Error durante la sincronización: ' . $e->getMessage(),
+                'MLS_SYNC_PROGRESSIVE_EXCEPTION',
+                [
+                    'exception_class' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'hint' => 'Verificar los logs del servidor para más detalles',
+                ],
+                null,
+                500
             );
         }
-
-        return $this->apiError(
-            $result['message'],
-            'MLS_SYNC_PROGRESSIVE_FAILED',
-            [
-                'sync_locked' => $result['sync_locked'] ?? false,
-                'circuit_breaker_open' => $result['circuit_breaker_open'] ?? false,
-                'configured' => $result['configured'] ?? true,
-                'stats' => $result['stats'] ?? [],
-            ],
-            null,
-            500
-        );
     }
 
     /**

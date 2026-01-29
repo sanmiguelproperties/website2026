@@ -362,14 +362,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const res = await fetch(url, { ...options, method, headers });
     let json = null;
-    try { json = await res.clone().json(); } catch (_e) {}
+    let responseText = null;
+    try { 
+      json = await res.clone().json(); 
+      responseText = JSON.stringify(json, null, 2);
+    } catch (_e) {
+      try {
+        responseText = await res.clone().text();
+      } catch (_e2) {
+        responseText = 'No se pudo leer la respuesta';
+      }
+    }
 
     if (!res.ok) {
       const detail = {
         success: false,
         message: json?.message || res.statusText || 'Error de API',
-        code: json?.code || 'SERVER_ERROR',
+        code: json?.code || `HTTP_${res.status}`,
         errors: json?.errors || null,
+        status: res.status,
+        response: responseText,
       };
       window.dispatchEvent(new CustomEvent('api:response', { detail }));
       throw detail;
@@ -615,76 +627,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastOffset = 0;
     
     try {
-      // === BLOQUE DE DETECCIÓN Y LIBERACIÓN DE LOCKS OBSOLETOS ===
-      let lockFreed = false;
-      let lockAttempts = 0;
-      const maxLockAttempts = 3;
-      
-      while (lockAttempts < maxLockAttempts) {
-        lockAttempts++;
-        
-        // Verificar estado del lock
-        const statusPayload = await apiFetch(`${API_BASE}/mls/status`);
-        
-        if (statusPayload?.success && statusPayload.data) {
-          const isLocked = statusPayload.data.sync_locked;
-          const isStale = statusPayload.data.lock_stale;
-          
-          if (!isLocked) {
-            // No hay lock, podemos proceder
-            addLogEntry('info', '✓ Lock disponible, iniciando sincronización');
-            break;
-          }
-          
-          if (isLocked) {
-            // Lock activo - intentar liberar
-            if (isStale) {
-              // Lock obsoleto, intentar liberar
-              addLogEntry('warning', `⚠️ Lock obsoleto detectado (intento ${lockAttempts}/${maxLockAttempts}). Intentando liberar...`);
-            } else {
-              // Lock activo pero no obsoleto - usuario quiere continuar, liberar forzosamente
-              addLogEntry('warning', `⚠️ Lock activo detectado (intento ${lockAttempts}/${maxLockAttempts}). Liberando para continuar...`);
-            }
-            
-            try {
-              const unlockResult = await apiFetch(`${API_BASE}/mls/sync/unlock`, { 
-                method: 'POST',
-                body: JSON.stringify({ force: true })
-              });
-              if (unlockResult?.success) {
-                addLogEntry('success', '✓ Lock liberado exitosamente');
-                lockFreed = true;
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar un poco
-                break;
-              } else {
-                addLogEntry('warning', 'Error liberando lock: ' + (unlockResult?.message || 'Error desconocido'));
-              }
-            } catch (e) {
-              addLogEntry('warning', 'Error liberando lock: ' + e.message);
-            }
-          }
-        }
-        
-        // Si llegamos aquí, esperar antes de reintentar
-        if (lockAttempts < maxLockAttempts) {
-          addLogEntry('info', `Esperando 3 segundos antes de reintentar...`);
-          await new Promise(resolve => setTimeout(resolve, 3000));
-        }
-      }
-      
-      // Si después de todos los intentos el lock sigue activo, informar al usuario
-      if (lockAttempts >= maxLockAttempts) {
-        // Verificar una última vez el estado
-        const finalStatus = await apiFetch(`${API_BASE}/mls/status`);
-        if (finalStatus?.success && finalStatus.data?.sync_locked) {
-          addLogEntry('error', '✗ No se pudo liberar el lock después de múltiples intentos.');
-          addLogEntry('info', '💡 El lock está activo. Espera a que termine o usa el botón "Desbloquear" si el proceso se quedó colgado.');
-          // No retornamos, dejamos que el loop principal maneje el error de sync_locked
-        }
-      }
-      
-      // === FIN BLOQUE DE LOCK ===
-      
       // Loop de sincronización progresiva
       let maxRetries = 5;
       let retryCount = 0;
@@ -755,39 +697,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Pequeña pausa entre lotes para no saturar el servidor
             await new Promise(resolve => setTimeout(resolve, 500));
           } else {
-            // Verificar si es error de lock
-            if (payload?.errors?.sync_locked) {
-              addLogEntry('warning', `⚠️ Sincronización bloqueada por lock activo. Intentando liberar...`);
-              retryCount++;
-              
-              // Intentar liberar el lock automáticamente
-              try {
-                const unlockResult = await apiFetch(`${API_BASE}/mls/sync/unlock`, { 
-                  method: 'POST',
-                  body: JSON.stringify({ force: true })
-                });
-                if (unlockResult?.success) {
-                  addLogEntry('success', '✓ Lock liberado automáticamente. Reintentando...');
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                  continue; // Reintentar la sincronización
-                }
-              } catch (e) {
-                addLogEntry('warning', 'Error liberando lock automáticamente: ' + e.message);
-              }
-              
-              // Si no se pudo liberar automáticamente, esperar más tiempo
-              if (retryCount < maxRetries) {
-                addLogEntry('warning', `⚠️ Esperando 5 segundos antes de reintentar (${retryCount}/${maxRetries})...`);
-                await new Promise(resolve => setTimeout(resolve, 5000));
-                continue;
-              } else {
-                addLogEntry('error', `✗ No se pudo liberar el lock después de ${maxRetries} intentos.`);
-                addLogEntry('info', '💡 Usa el botón "Desbloquear" si el proceso se quedó colgado.');
-                break;
-              }
-            }
+            // Mostrar detalles del error
+            const errorStatus = payload?.status || 'N/A';
+            const errorCode = payload?.code || 'UNKNOWN';
+            const errorMessage = payload?.message || 'Error desconocido';
+            const errorResponse = payload?.response || 'Sin detalles';
             
-            addLogEntry('error', `✗ Error en lote ${batchCount + 1}: ${payload?.message || 'Error desconocido'}`);
+            addLogEntry('error', `✗ Error en lote ${batchCount + 1}: [${errorStatus}] ${errorCode}: ${errorMessage}`);
+            addLogEntry('debug', `Respuesta del servidor: ${errorResponse}`);
             break;
           }
         } catch (e) {
