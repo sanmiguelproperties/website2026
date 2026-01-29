@@ -702,9 +702,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const errorCode = payload?.code || 'UNKNOWN';
             const errorMessage = payload?.message || 'Error desconocido';
             const errorResponse = payload?.response || 'Sin detalles';
+            const isLockedError = payload?.errors?.sync_locked === true;
             
             addLogEntry('error', `✗ Error en lote ${batchCount + 1}: [${errorStatus}] ${errorCode}: ${errorMessage}`);
             addLogEntry('debug', `Respuesta del servidor: ${errorResponse}`);
+            
+            // Si es error de lock, intentar liberar y continuar
+            if (isLockedError) {
+              addLogEntry('warning', '⚠️ Lock detectado, intentando liberar automáticamente...');
+              try {
+                const unlockPayload = await apiFetch(`${API_BASE}/mls/sync/unlock`, {
+                  method: 'POST',
+                  body: JSON.stringify({ force: true }),
+                });
+                
+                if (unlockPayload?.success) {
+                  addLogEntry('success', '✓ Lock liberado automáticamente, continuando sincronización...');
+                  // Recargar estado
+                  await loadStatus();
+                  // Continuar con el mismo offset
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  continue; // Reintentar el mismo lote
+                } else {
+                  addLogEntry('error', '✗ No se pudo liberar el lock automáticamente. Usa el botón "Desbloquear" manualmente.');
+                }
+              } catch (unlockError) {
+                addLogEntry('error', '✗ Error al intentar liberar el lock: ' + unlockError.message);
+              }
+            }
             break;
           }
         } catch (e) {

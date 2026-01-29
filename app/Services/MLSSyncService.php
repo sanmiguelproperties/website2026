@@ -2344,6 +2344,21 @@ class MLSSyncService
     {
         $checkpoint = $this->getLastCheckpoint();
         
+        // Verificar estado real del lock desde el caché
+        $cacheLockExists = \Illuminate\Support\Facades\Cache::has('mls_sync_locked_at');
+        $lockedAt = \Illuminate\Support\Facades\Cache::get('mls_sync_locked_at');
+        $isActuallyLocked = false;
+        $isStale = false;
+        
+        if ($cacheLockExists && $lockedAt) {
+            $lockedAtCarbon = \Carbon\Carbon::parse($lockedAt);
+            $minutesAgo = $lockedAtCarbon->diffInMinutes(now());
+            $secondsAgo = $lockedAtCarbon->diffInSeconds(now());
+            
+            $isActuallyLocked = true;
+            $isStale = $minutesAgo > 30 || $secondsAgo > 5;
+        }
+        
         // Obtener total de propiedades en MLS
         $totalInMls = 0;
         try {
@@ -2369,8 +2384,9 @@ class MLSSyncService
             'has_checkpoint' => $checkpoint !== null,
             'checkpoint' => $checkpoint,
             'local_properties_count' => $localMlsCount,
-            'lock_active' => $this->isLocked,
-            'lock_stale' => $this->isLockStale(),
+            // Usar verificación real del caché, no la propiedad de instancia
+            'lock_active' => $isActuallyLocked, 
+            'lock_stale' => $isStale,
         ];
     }
 
@@ -2470,6 +2486,33 @@ class MLSSyncService
 
         // Obtener checkpoint
         $checkpoint = $this->getLastCheckpoint();
+        
+        // Verificar estado real del lock desde el caché
+        // No usamos $this->isLocked porque syncPropertiesProgressive() no usa lock
+        $cacheLockExists = \Illuminate\Support\Facades\Cache::has('mls_sync_locked_at');
+        $lockedAt = \Illuminate\Support\Facades\Cache::get('mls_sync_locked_at');
+        $isActuallyLocked = false;
+        $isStale = false;
+        
+        if ($cacheLockExists && $lockedAt) {
+            $lockedAtCarbon = \Carbon\Carbon::parse($lockedAt);
+            $minutesAgo = $lockedAtCarbon->diffInMinutes(now());
+            $secondsAgo = $lockedAtCarbon->diffInSeconds(now());
+            
+            // Si hay más de 30 minutos o más de 5 segundos (para lock obsoleto), considerar obsoleto
+            $isActuallyLocked = true;
+            $isStale = $minutesAgo > 30 || $secondsAgo > 5;
+            
+            if ($isStale) {
+                $this->log('info', '[STATUS] Lock en caché pero obsoleto: ' . $minutesAgo . ' minutos');
+            }
+        }
+        
+        // Si syncPropertiesProgressive() se ejecutó, el lock debería estar limpio
+        // Si hay un lock obsoleto, informarlo
+        if ($isActuallyLocked && $isStale) {
+            $this->log('warning', '[STATUS] Lock obsoleto detectado: ' . $minutesAgo . ' minutos');
+        }
 
         return [
             'configured' => $this->isConfigured(),
@@ -2490,9 +2533,10 @@ class MLSSyncService
             'published_properties' => $publishedProperties,
             'circuit_breaker' => $this->getCircuitBreakerStatus(),
             'checkpoint' => $checkpoint,
-            'sync_locked' => $this->isLocked,
-            'lock_stale' => $this->isLockStale(),
-            'can_force_unlock' => true, // Siempre permitir forzar unlock si el usuario lo confirma
+            // Usar verificación real del caché, no la propiedad de instancia
+            'sync_locked' => $isActuallyLocked, 
+            'lock_stale' => $isStale,
+            'can_force_unlock' => true, // Siempre permitir forzar unlock si el lock está obsoleto
         ];
     }
 
