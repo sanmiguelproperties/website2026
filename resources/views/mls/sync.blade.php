@@ -39,11 +39,18 @@
         </svg>
         Eliminar propiedades MLS
       </button>
+
+      <button id="btn-force-unlock" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] hover:bg-[var(--c-warning)] hover:border-[var(--c-warning)] hover:text-white transition" title="Fuerza la liberación del lock de sincronización">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+        Desbloquear
+      </button>
     </div>
   </div>
 
   <!-- Status Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
     <!-- Estado de configuración -->
     <div class="rounded-2xl bg-[var(--c-surface)] border border-[var(--c-border)] p-5">
       <div class="flex items-start justify-between gap-4">
@@ -103,6 +110,22 @@
         <div class="size-10 rounded-xl grid place-items-center bg-[var(--c-elev)] border border-[var(--c-border)]">
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado del Lock -->
+    <div id="lock-status-card" class="rounded-2xl bg-[var(--c-surface)] border border-[var(--c-border)] p-5">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-xs text-[var(--c-muted)]">Lock de sincronización</p>
+          <p id="status-lock" class="mt-1 text-lg font-semibold">—</p>
+          <p id="status-lock-hint" class="mt-1 text-xs text-[var(--c-muted)]">—</p>
+        </div>
+        <div id="lock-indicator" class="size-10 rounded-xl grid place-items-center bg-[var(--c-elev)] border border-[var(--c-border)]">
+          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
         </div>
       </div>
@@ -374,10 +397,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function escapeHtml(s) {
     return String(s ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
+      .replace(/&/g, '&')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+      .replace(/"/g, '"')
       .replace(/'/g, '&#039;');
   }
 
@@ -426,6 +449,36 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           $('#status-last-sync').textContent = 'Nunca';
           $('#status-last-sync-hint').textContent = 'Ejecuta la primera sincronización';
+        }
+
+        // Estado del lock
+        const isLocked = data.sync_locked;
+        const isStale = data.lock_stale;
+        const lockCard = $('#lock-status-card');
+        const lockIndicator = $('#lock-indicator');
+        
+        if (isLocked) {
+          $('#status-lock').textContent = 'Bloqueado';
+          $('#status-lock').className = 'mt-1 text-lg font-semibold text-red-500';
+          
+          if (isStale) {
+            $('#status-lock-hint').textContent = 'Obsoleto - Usa Desbloquear';
+            $('#status-lock-hint').className = 'mt-1 text-xs text-yellow-500 font-medium';
+            lockCard.className = 'rounded-2xl bg-yellow-50 border border-yellow-300 p-5';
+            lockIndicator.className = 'size-10 rounded-xl grid place-items-center bg-yellow-100 border border-yellow-300';
+          } else {
+            $('#status-lock-hint').textContent = 'Sincronización en curso';
+            $('#status-lock-hint').className = 'mt-1 text-xs text-blue-500';
+            lockCard.className = 'rounded-2xl bg-[var(--c-surface)] border border-[var(--c-border)] p-5';
+            lockIndicator.className = 'size-10 rounded-xl grid place-items-center bg-[var(--c-elev)] border border-[var(--c-border)]';
+          }
+        } else {
+          $('#status-lock').textContent = 'Libre';
+          $('#status-lock').className = 'mt-1 text-lg font-semibold text-green-500';
+          $('#status-lock-hint').textContent = 'Listo para sincronizar';
+          $('#status-lock-hint').className = 'mt-1 text-xs text-[var(--c-muted)]';
+          lockCard.className = 'rounded-2xl bg-[var(--c-surface)] border border-[var(--c-border)] p-5';
+          lockIndicator.className = 'size-10 rounded-xl grid place-items-center bg-green-100 border border-green-300';
         }
       }
     } catch (e) {
@@ -537,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Sync properties only (without images)
+  // Sync properties only (without images) - Uses progressive sync for server-limited environments
   async function syncProperties() {
     if (isSyncing) return;
     
@@ -545,44 +598,226 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#btn-sync-properties').disabled = true;
     $('#btn-sync-properties-text').textContent = 'Sincronizando...';
     $('#sync-progress').classList.remove('hidden');
-    $('#sync-progress-text').textContent = 'Obteniendo propiedades del MLS...';
     $('#sync-stats').classList.add('hidden');
     
     // Limpiar log
     $('#sync-log').innerHTML = '';
-    addLogEntry('info', 'Iniciando sincronización de propiedades (sin imágenes)...');
-
+    addLogEntry('info', 'Iniciando sincronización progresiva de propiedades...');
+    addLogEntry('info', '💡 Usando sincronización por lotes para servidores con límites de tiempo');
+    
+    // Acumular estadísticas
+    let totalCreated = 0;
+    let totalUpdated = 0;
+    let totalUnpublished = 0;
+    let totalErrors = 0;
+    let batchCount = 0;
+    let totalProperties = 0;
+    let lastOffset = 0;
+    
     try {
-      const payload = await apiFetch(`${API_BASE}/mls/sync`, {
-        method: 'POST'
-      });
-
-      if (payload?.success) {
-        const stats = payload.data?.stats || {};
-        const logSummary = payload.data?.log_summary || {};
-
-        // Mostrar estadísticas
-        $('#sync-stats').classList.remove('hidden');
-        $('#sync-stat-created').textContent = stats.created || 0;
-        $('#sync-stat-updated').textContent = stats.updated || 0;
-        $('#sync-stat-skipped').textContent = stats.skipped || 0;
-        $('#sync-stat-unpublished').textContent = stats.unpublished || 0;
-        $('#sync-stat-errors').textContent = stats.errors || 0;
-
-        // Agregar entradas de log
-        (logSummary.last_entries || []).forEach(entry => {
-          addLogEntry(entry.level, entry.message);
-        });
-
-        addLogEntry('info', '✓ Sincronización de propiedades completada');
-        addLogEntry('info', '💡 Usa el botón "Descargar imágenes" para obtener las fotos');
-        $('#sync-subtitle').textContent = `Última ejecución: ${fmtDate(new Date().toISOString())}`;
-
-        window.dispatchEvent(new CustomEvent('api:response', { detail: payload }));
-
-        // Recargar estado
-        await loadStatus();
+      // === BLOQUE DE DETECCIÓN Y LIBERACIÓN DE LOCKS OBSOLETOS ===
+      let lockFreed = false;
+      let lockAttempts = 0;
+      const maxLockAttempts = 3;
+      
+      while (lockAttempts < maxLockAttempts) {
+        lockAttempts++;
+        
+        // Verificar estado del lock
+        const statusPayload = await apiFetch(`${API_BASE}/mls/status`);
+        
+        if (statusPayload?.success && statusPayload.data) {
+          const isLocked = statusPayload.data.sync_locked;
+          const isStale = statusPayload.data.lock_stale;
+          
+          if (!isLocked) {
+            // No hay lock, podemos proceder
+            addLogEntry('info', '✓ Lock disponible, iniciando sincronización');
+            break;
+          }
+          
+          if (isLocked) {
+            // Lock activo - intentar liberar
+            if (isStale) {
+              // Lock obsoleto, intentar liberar
+              addLogEntry('warning', `⚠️ Lock obsoleto detectado (intento ${lockAttempts}/${maxLockAttempts}). Intentando liberar...`);
+            } else {
+              // Lock activo pero no obsoleto - usuario quiere continuar, liberar forzosamente
+              addLogEntry('warning', `⚠️ Lock activo detectado (intento ${lockAttempts}/${maxLockAttempts}). Liberando para continuar...`);
+            }
+            
+            try {
+              const unlockResult = await apiFetch(`${API_BASE}/mls/sync/unlock`, { 
+                method: 'POST',
+                body: JSON.stringify({ force: true })
+              });
+              if (unlockResult?.success) {
+                addLogEntry('success', '✓ Lock liberado exitosamente');
+                lockFreed = true;
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar un poco
+                break;
+              } else {
+                addLogEntry('warning', 'Error liberando lock: ' + (unlockResult?.message || 'Error desconocido'));
+              }
+            } catch (e) {
+              addLogEntry('warning', 'Error liberando lock: ' + e.message);
+            }
+          }
+        }
+        
+        // Si llegamos aquí, esperar antes de reintentar
+        if (lockAttempts < maxLockAttempts) {
+          addLogEntry('info', `Esperando 3 segundos antes de reintentar...`);
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
       }
+      
+      // Si después de todos los intentos el lock sigue activo, informar al usuario
+      if (lockAttempts >= maxLockAttempts) {
+        // Verificar una última vez el estado
+        const finalStatus = await apiFetch(`${API_BASE}/mls/status`);
+        if (finalStatus?.success && finalStatus.data?.sync_locked) {
+          addLogEntry('error', '✗ No se pudo liberar el lock después de múltiples intentos.');
+          addLogEntry('info', '💡 El lock está activo. Espera a que termine o usa el botón "Desbloquear" si el proceso se quedó colgado.');
+          // No retornamos, dejamos que el loop principal maneje el error de sync_locked
+        }
+      }
+      
+      // === FIN BLOQUE DE LOCK ===
+      
+      // Loop de sincronización progresiva
+      let maxRetries = 5;
+      let retryCount = 0;
+      
+      while (true) {
+        try {
+          $('#sync-progress-text').textContent = `Procesando lote ${batchCount + 1}...`;
+          
+          // Construir parámetros de la request
+          const params = { 
+            batch_size: 20,  // Lote pequeño para servidores limitados
+            skip_media: true 
+          };
+          
+          // Incluir offset si ya tenemos uno
+          if (lastOffset > 0) {
+            params.offset = lastOffset;
+          }
+          
+          const payload = await apiFetch(`${API_BASE}/mls/sync/progressive`, {
+            method: 'POST',
+            body: JSON.stringify(params),
+          });
+
+          if (payload?.success) {
+            const data = payload.data || {};
+            retryCount = 0; // Resetear reintentos en éxito
+            
+            // Acumular estadísticas
+            totalCreated += data.created || 0;
+            totalUpdated += data.updated || 0;
+            totalUnpublished += data.unpublished || 0;
+            totalErrors += data.errors || 0;
+            totalProperties = data.total_in_mls || totalProperties;
+            batchCount++;
+            
+            // Actualizar progreso visual
+            const progress = data.progress_percentage || 0;
+            $('#sync-progress-text').textContent = `Lote ${batchCount}: ${data.processed || 0} propiedades (${progress.toFixed(1)}% completado)`;
+            
+            addLogEntry('info', `📦 Lote ${batchCount}: ${data.processed || 0} procesadas | +${data.created || 0} creadas | ~${data.updated || 0} actualizadas`);
+            
+            // Mostrar estadísticas en tiempo real
+            $('#sync-stats').classList.remove('hidden');
+            $('#sync-stat-created').textContent = totalCreated;
+            $('#sync-stat-updated').textContent = totalUpdated;
+            $('#sync-stat-skipped').textContent = totalProperties - totalCreated - totalUpdated - totalErrors;
+            $('#sync-stat-unpublished').textContent = totalUnpublished;
+            $('#sync-stat-errors').textContent = totalErrors;
+            
+            // Verificar si completó
+            if (data.completed) {
+              addLogEntry('success', `✓ Sincronización completada en ${batchCount} lotes`);
+              addLogEntry('info', `📊 Total: ${totalCreated} creadas, ${totalUpdated} actualizadas, ${totalUnpublished} despublicadas`);
+              
+              if (totalErrors > 0) {
+                addLogEntry('warning', `⚠️ Errores encontrados: ${totalErrors}`);
+              }
+              
+              $('#sync-subtitle').textContent = `Última ejecución: ${fmtDate(new Date().toISOString())}`;
+              
+              break;
+            }
+            
+            // Actualizar offset para la siguiente iteración
+            lastOffset = data.next_offset || lastOffset + 20;
+            
+            // Pequeña pausa entre lotes para no saturar el servidor
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } else {
+            // Verificar si es error de lock
+            if (payload?.errors?.sync_locked) {
+              addLogEntry('warning', `⚠️ Sincronización bloqueada por lock activo. Intentando liberar...`);
+              retryCount++;
+              
+              // Intentar liberar el lock automáticamente
+              try {
+                const unlockResult = await apiFetch(`${API_BASE}/mls/sync/unlock`, { 
+                  method: 'POST',
+                  body: JSON.stringify({ force: true })
+                });
+                if (unlockResult?.success) {
+                  addLogEntry('success', '✓ Lock liberado automáticamente. Reintentando...');
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  continue; // Reintentar la sincronización
+                }
+              } catch (e) {
+                addLogEntry('warning', 'Error liberando lock automáticamente: ' + e.message);
+              }
+              
+              // Si no se pudo liberar automáticamente, esperar más tiempo
+              if (retryCount < maxRetries) {
+                addLogEntry('warning', `⚠️ Esperando 5 segundos antes de reintentar (${retryCount}/${maxRetries})...`);
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                continue;
+              } else {
+                addLogEntry('error', `✗ No se pudo liberar el lock después de ${maxRetries} intentos.`);
+                addLogEntry('info', '💡 Usa el botón "Desbloquear" si el proceso se quedó colgado.');
+                break;
+              }
+            }
+            
+            addLogEntry('error', `✗ Error en lote ${batchCount + 1}: ${payload?.message || 'Error desconocido'}`);
+            break;
+          }
+        } catch (e) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            addLogEntry('warning', `⚠️ Error de conexión (intento ${retryCount}/${maxRetries}). Reintentando en 3 segundos...`);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            continue;
+          }
+          addLogEntry('error', `✗ Error en lote ${batchCount + 1}: ${e.message}`);
+          break;
+        }
+      }
+      
+      window.dispatchEvent(new CustomEvent('api:response', { 
+        detail: { 
+          success: true, 
+          data: { 
+            totalCreated, 
+            totalUpdated, 
+            totalUnpublished, 
+            totalErrors, 
+            batchCount 
+          } 
+        } 
+      }));
+      
+      // Recargar estado
+      await loadStatus();
+      
     } catch (e) {
       addLogEntry('error', `✗ Error: ${e.message}`);
       $('#sync-stats').classList.remove('hidden');
@@ -803,6 +1038,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Force unlock the sync lock
+  async function forceUnlock() {
+    if (!confirm('¿Estás seguro de que deseas forzar la liberación del lock de sincronización?\n\nEsto solo debería hacerse si otra sincronización se quedó colgada o no responde.')) {
+      return;
+    }
+
+    try {
+      addLogEntry('warning', 'Intentando liberar el lock de sincronización (forzado)...');
+      
+      const payload = await apiFetch(`${API_BASE}/mls/sync/unlock`, {
+        method: 'POST',
+        body: JSON.stringify({ force: true }),
+      });
+
+      if (payload?.success) {
+        addLogEntry('success', '✓ Lock liberado exitosamente');
+        addLogEntry('info', '💡 Ya puedes iniciar una nueva sincronización');
+        
+        // Recargar estado
+        await loadStatus();
+      } else {
+        const requiresForce = payload?.errors?.requires_force;
+        if (requiresForce) {
+          addLogEntry('error', `✗ No se pudo liberar el lock: ${payload?.message || 'Error desconocido'}`);
+          addLogEntry('info', '💡 El lock está activo y no está obsoleto. Espera a que termine o verifica si hay otro proceso en ejecución.');
+        } else {
+          addLogEntry('error', `✗ No se pudo liberar el lock: ${payload?.message || 'Error desconocido'}`);
+        }
+      }
+    } catch (e) {
+      addLogEntry('error', `✗ Error al liberar lock: ${e.message}`);
+    }
+  }
+
   // Events
   $('#btn-test-connection').addEventListener('click', testConnection);
   $('#btn-sync-properties').addEventListener('click', syncProperties);
@@ -811,6 +1080,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#btn-toggle-api-key').addEventListener('click', toggleApiKeyVisibility);
   $('#btn-delete-api-key').addEventListener('click', deleteApiKey);
   $('#btn-delete-mls-properties').addEventListener('click', deleteAllMLSProperties);
+  $('#btn-force-unlock').addEventListener('click', forceUnlock);
   
   $('#config-form').addEventListener('submit', (e) => {
     e.preventDefault();

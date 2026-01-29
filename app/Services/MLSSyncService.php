@@ -39,6 +39,12 @@ class MLSSyncService
     protected int $timeout = 30;
     protected int $batchSize = 50;
 
+    // Nuevos parámetros para sincronización progresiva
+    protected int $progressiveBatchSize = 20; // Lote más pequeño para servidores limitados
+    protected int $maxExecutionTimeWarning = 45; // Warning a los 45 segundos
+    protected int $lockTtlSeconds = 7200; // 2 horas TTL para el lock
+    protected int $progressiveLockTtlSeconds = 300; // 5 minutos TTL para sincronización progresiva (expira más rápido si el proceso muere)
+
     protected array $syncLog = [];
     protected int $created = 0;
     protected int $updated = 0;
@@ -1406,22 +1412,32 @@ class MLSSyncService
 
     /**
      * Intenta adquirir un lock para evitar sincronizaciones simultáneas.
-     * 
+     * Usa un TTL largo para que el lock no expire durante sincronizaciones largas.
+     *
+     * @param int $ttlSeconds TTL del lock en segundos (default: 2 horas para sync completo, 5 min para progresivo)
      * @return bool True si se adquirió el lock, false si ya existe una sincronización en curso
      */
-    protected function acquireSyncLock(): bool
+    protected function acquireSyncLock(int $ttlSeconds = null): bool
     {
         $this->syncLockKey = 'mls_sync_lock';
+        $ttl = $ttlSeconds ?? $this->lockTtlSeconds;
         
         try {
-            $this->isLocked = \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, 3600)->block(0);
+            // Usar lock con TTL para que se libere automáticamente después del tiempo límite
+            $this->isLocked = \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, $ttl)->block(5);
             
             if (!$this->isLocked) {
                 $this->log('warning', '[SYNC LOCK] Ya existe una sincronización en curso. Intenta más tarde.');
                 return false;
             }
             
-            $this->log('info', '[SYNC LOCK] Lock adquirido exitosamente');
+            // Guardar timestamp del lock para detectar locks obsoletos
+            $now = now()->toIso8601String();
+            \Illuminate\Support\Facades\Cache::put('mls_sync_locked_at', $now, $ttl);
+            \Illuminate\Support\Facades\Cache::put('mls_sync_lock_age', $now, $ttl);
+            \Illuminate\Support\Facades\Cache::put('mls_sync_lock_ttl', $ttl, $ttl);
+            
+            $this->log('info', '[SYNC LOCK] Lock adquirido exitosamente (TTL: ' . $ttl . 's)');
             return true;
         } catch (\Throwable $e) {
             $this->log('error', '[SYNC LOCK] Error al adquirir lock: ' . $e->getMessage());
@@ -1430,13 +1446,123 @@ class MLSSyncService
     }
 
     /**
+     * Verifica si el lock actual está obsoleto (expirado o proceso muerto).
+     * Un lock se considera obsoleto si:
+     * - Ha estado activo por más de 30 minutos (tiempo máximo de sincronización)
+     * - Ha estado activo por más de 5 minutos y force=true (para permitir liberación manual)
+     *
+     * @param bool $force Si es true, considera obsoleto cualquier lock activo para permitir liberación manual
+     * @return bool True si el lock está obsoleto y puede ser liberado
+     */
+    public function isLockStale(bool $force = false): bool
+    {
+        try {
+            // Verificar cuánto tiempo lleva bloqueado
+            $lockedAt = \Illuminate\Support\Facades\Cache::get('mls_sync_locked_at');
+            if ($lockedAt) {
+                $lockedAtCarbon = \Carbon\Carbon::parse($lockedAt);
+                $minutesAgo = $lockedAtCarbon->diffInMinutes(now());
+                $secondsAgo = $lockedAtCarbon->diffInSeconds(now());
+                
+                $this->log('info', '[SYNC LOCK] Lock activo desde hace ' . $minutesAgo . ' minutos');
+                
+                // Si force=true, considerar obsoleto cualquier lock activo (para liberación manual)
+                if ($force) {
+                    $this->log('info', '[SYNC LOCK] force=true, considerando lock como obsoleto para liberación manual');
+                    return true;
+                }
+                
+                // Si el lock tiene más de 30 minutos, considerarlo obsoleto
+                if ($minutesAgo > 30) {
+                    return true;
+                }
+                
+                // Si el lock tiene más de 5 minutos, probablemente el proceso murió
+                // (un lote de 20 propiedades no debería tomar más de 5 minutos)
+                if ($secondsAgo > 300) {
+                    $this->log('warning', '[SYNC LOCK] Lock activo por más de 5 minutos, probablemente el proceso murió');
+                    return true;
+                }
+                
+                // Lock está activo y dentro del tiempo límite, no está obsoleto
+                return false;
+            }
+            
+            // Si no hay timestamp, verificar si el lock de caché existe usando tryLock sin bloquear
+            try {
+                $lock = \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, 1, 'default');
+                // Intentar adquirir sin bloquear - si falla, significa que está en uso
+                if (!$lock->get(true)) {
+                    // El lock existe pero no podemos adquirirlo
+                    $lockAge = \Illuminate\Support\Facades\Cache::get('mls_sync_lock_age');
+                    if ($lockAge) {
+                        $lockAgeCarbon = \Carbon\Carbon::parse($lockAge);
+                        if ($lockAgeCarbon->diffInMinutes(now()) > 10) {
+                            return true;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Si no podemos verificar, asumir que no está obsoleto
+                $this->log('warning', '[SYNC LOCK] Error verificando lock: ' . $e->getMessage());
+            }
+            
+            return false;
+        } catch (\Throwable $e) {
+            $this->log('error', '[SYNC LOCK] Error verificando estado del lock: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Fuerza la liberación del lock si está obsoleto.
+     *
+     * @param bool $force Si es true, libera el lock aunque no esté obsoleto
+     * @return bool True si se liberó el lock, false si no se pudo
+     */
+    public function forceReleaseLock(bool $force = false): bool
+    {
+        try {
+            // Verificar si está obsoleto primero (a menos que force=true)
+            if (!$force && !$this->isLockStale()) {
+                $this->log('warning', '[SYNC LOCK] No se puede forzar liberación: el lock no está obsoleto');
+                return false;
+            }
+            
+            // Forzar liberación del lock
+            \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, 1, 'default')->forceRelease();
+            
+            // Limpiar todos los campos relacionados con el lock
+            \Illuminate\Support\Facades\Cache::forget('mls_sync_locked_at');
+            \Illuminate\Support\Facades\Cache::forget('mls_sync_lock_age');
+            \Illuminate\Support\Facades\Cache::forget('mls_sync_lock_ttl');
+            
+            $this->isLocked = false;
+            $this->log('info', '[SYNC LOCK] Lock ' . ($force ? 'liberado forzosamente' : 'obsoleto liberado forzosamente'));
+            return true;
+        } catch (\Throwable $e) {
+            $this->log('error', '[SYNC LOCK] Error forzando liberación del lock: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Libera el lock de sincronización.
+     * Usa forceRelease para garantizar liberación incluso si el proceso original terminó.
      */
     protected function releaseSyncLock(): void
     {
-        if ($this->syncLockKey && $this->isLocked) {
+        if ($this->syncLockKey) {
             try {
-                \Illuminate\Support\Facades\Cache::lock($this->syncLockKey)->release();
+                // Usar forceRelease para garantizar liberación del lock
+                // Esto es necesario porque el lock fue adquirido con TTL y block()
+                \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, 1, 'default')->forceRelease();
+                
+                // Limpiar todos los campos relacionados con el lock
+                \Illuminate\Support\Facades\Cache::forget('mls_sync_locked_at');
+                \Illuminate\Support\Facades\Cache::forget('mls_sync_lock_age');
+                \Illuminate\Support\Facades\Cache::forget('mls_sync_lock_ttl');
+                
                 $this->isLocked = false;
                 $this->log('info', '[SYNC LOCK] Lock liberado exitosamente');
             } catch (\Throwable $e) {
@@ -1974,6 +2100,288 @@ class MLSSyncService
     }
 
     /**
+     * Sincroniza propiedades MLS en modo progresivo.
+     * Procesa un lote de propiedades y retorna el offset para continuar.
+     * Ideal para sincronizaciones largas que requieren múltiples llamadas HTTP cortas.
+     *
+     * @param int $batchSize Tamaño del lote (default: 20 para servidores limitados)
+     * @param bool $skipMedia Si true, no sincroniza medios
+     * @param int|null $startOffset Offset inicial (si es null, usa el checkpoint o comienza desde 0)
+     * @param string|null $mode Modo de sincronización ('full' o 'incremental')
+     * @return array Resultado con estadísticas detalladas y next_offset para continuar
+     */
+    public function syncPropertiesProgressive(
+        int $batchSize = 20,
+        bool $skipMedia = true,
+        ?int $startOffset = null,
+        ?string $mode = null
+    ): array {
+        $this->resetCounters();
+        
+        $this->log('info', '[SYNC PROGRESSIVE START] ===================================');
+        $this->log('info', "[SYNC PROGRESSIVE] Iniciando sincronización progresiva | " .
+            "Batch: {$batchSize} | Skip Media: " . ($skipMedia ? 'SÍ' : 'NO') . " | " .
+            "Offset: " . ($startOffset !== null ? (string) $startOffset : 'AUTO'));
+
+        // Verificar si ya está configurado
+        if (!$this->isConfigured()) {
+            return [
+                'success' => false,
+                'message' => 'MLS no está configurado',
+                'configured' => false,
+            ];
+        }
+
+        // Verificar circuit breaker
+        if ($this->isCircuitBreakerOpen()) {
+            return [
+                'success' => false,
+                'message' => 'Circuit breaker está abierto',
+                'circuit_breaker_open' => true,
+            ];
+        }
+
+        // Determinar el offset
+        $currentOffset = $startOffset ?? 0;
+        
+        // Verificar checkpoint existente
+        $checkpoint = $this->getLastCheckpoint();
+        if ($startOffset === null && $checkpoint) {
+            $currentOffset = $checkpoint['offset'] ?? 0;
+            $this->log('info', "[SYNC PROGRESSIVE] Usando offset del checkpoint: {$currentOffset}");
+        }
+
+        // Usar batch size más pequeño si no se especifica
+        $effectiveBatchSize = min($batchSize, $this->progressiveBatchSize);
+        
+        // Verificar tiempo de ejecución
+        $startTime = microtime(true);
+        
+        // Adquirir lock con TTL más corto para sincronización progresiva (5 minutos)
+        if (!$this->acquireSyncLock($this->progressiveLockTtlSeconds)) {
+            return [
+                'success' => false,
+                'message' => 'Ya existe una sincronización en curso',
+                'sync_locked' => true,
+            ];
+        }
+
+        try {
+            // Determinar modo
+            $syncMode = $mode ?? ($this->config?->sync_mode ?? 'incremental');
+            $this->skipMedia = $skipMedia;
+            
+            // Obtener propiedades del MLS
+            $properties = $this->fetchAllProperties(1, 0);
+            
+            if ($properties === null) {
+                $this->recordCircuitBreakerFailure();
+                return [
+                    'success' => false,
+                    'message' => 'Error al obtener propiedades del MLS',
+                    'stats' => $this->getStats(),
+                    'circuit_breaker_failures' => $this->circuitBreakerFailures,
+                ];
+            }
+
+            $totalProperties = count($properties);
+            $this->totalFetched = $totalProperties;
+            $this->log('info', "[SYNC PROGRESSIVE] Total propiedades en MLS: {$totalProperties}");
+
+            // Verificar si ya procesamos todo
+            if ($currentOffset >= $totalProperties) {
+                $this->log('info', '[SYNC PROGRESSIVE] Ya se procesaron todas las propiedades');
+                return [
+                    'success' => true,
+                    'message' => 'Sincronización completada',
+                    'total_in_mls' => $totalProperties,
+                    'processed' => 0,
+                    'created' => $this->created,
+                    'updated' => $this->updated,
+                    'errors' => $this->errors,
+                    'next_offset' => 0,
+                    'completed' => true,
+                    'progress_percentage' => 100,
+                    'stats' => $this->getStats(),
+                ];
+            }
+
+            // Extraer lote de propiedades
+            $batch = array_slice($properties, $currentOffset, $effectiveBatchSize);
+            $this->log('info', "[SYNC PROGRESSIVE] Procesando lote: offset {$currentOffset}, count " . count($batch));
+
+            if (empty($batch)) {
+                return [
+                    'success' => true,
+                    'message' => 'No hay más propiedades que procesar',
+                    'total_in_mls' => $totalProperties,
+                    'processed' => 0,
+                    'next_offset' => $currentOffset,
+                    'completed' => true,
+                    'progress_percentage' => 100,
+                ];
+            }
+
+            // Procesar lote
+            $processedInBatch = 0;
+            $errorsInBatch = 0;
+            
+            foreach ($batch as $index => $propertyData) {
+                $mlsId = $propertyData['mls_id'] ?? null;
+                
+                // Verificar tiempo de ejecución (advertir a los 45 segundos)
+                $elapsed = microtime(true) - $startTime;
+                if ($elapsed > $this->maxExecutionTimeWarning) {
+                    $this->log('warning', "[SYNC PROGRESSIVE] Tiempo de ejecución: " . round($elapsed, 2) . "s - continuando...");
+                }
+                
+                if (!$mlsId) {
+                    $this->errors++;
+                    $errorsInBatch++;
+                    continue;
+                }
+
+                try {
+                    $this->syncProperty($propertyData);
+                    $processedInBatch++;
+                    $this->lastSuccessfulMlsId = $mlsId;
+                    $this->recordCircuitBreakerSuccess();
+                } catch (\Throwable $e) {
+                    $this->recordError($mlsId, 'sync', $e->getMessage(), $e);
+                    $this->errors++;
+                    $errorsInBatch++;
+                    $this->recordCircuitBreakerFailure();
+                }
+
+                // Rate limiting
+                usleep((int) (1000000 / $this->rateLimit));
+                
+                // Liberar memoria periódicamente
+                if (($index + 1) % 10 === 0) {
+                    gc_collect_cycles();
+                }
+            }
+
+            // Calcular progreso
+            $newOffset = $currentOffset + $processedInBatch;
+            $completed = $newOffset >= $totalProperties || count($batch) < $effectiveBatchSize;
+            $progressPercentage = $totalProperties > 0 ? round(($newOffset / $totalProperties) * 100, 2) : 100;
+
+            // Guardar checkpoint
+            if (!$completed && $this->lastSuccessfulMlsId) {
+                $this->saveProgressiveCheckpoint($newOffset, $syncMode, $skipMedia);
+            } else if ($completed) {
+                $this->clearCheckpoint();
+            }
+
+            // Despublicar propiedades si es modo full y completó
+            if ($completed && $syncMode === 'full') {
+                $mlsIds = array_map(function($p) { return $p['mls_id'] ?? $p['id'] ?? null; }, $properties);
+                $mlsIds = array_filter($mlsIds);
+                $this->unpublishRemovedProperties($mlsIds);
+            }
+
+            $executionTime = round(microtime(true) - $startTime, 2);
+            
+            $this->log('info', "[SYNC PROGRESSIVE END] Lote completado | " .
+                "Procesadas: {$processedInBatch} | Errores: {$errorsInBatch} | " .
+                "Offset: {$newOffset}/{$totalProperties} | Progreso: {$progressPercentage}% | " .
+                "Tiempo: {$executionTime}s");
+
+            return [
+                'success' => true,
+                'message' => $completed 
+                    ? "Sincronización completada"
+                    : "Lote procesado. Continúa con offset {$newOffset}",
+                'total_in_mls' => $totalProperties,
+                'processed' => $processedInBatch,
+                'created' => $this->created,
+                'updated' => $this->updated,
+                'unpublished' => $this->unpublished,
+                'errors' => $this->errors,
+                'next_offset' => $completed ? 0 : $newOffset,
+                'completed' => $completed,
+                'progress_percentage' => $progressPercentage,
+                'execution_time_seconds' => $executionTime,
+                'stats' => $this->getStats(),
+            ];
+
+        } catch (\Throwable $e) {
+            $this->log('error', '[SYNC PROGRESSIVE ERROR] ' . $e->getMessage());
+            $this->recordError('critical', 'critical', $e->getMessage(), $e);
+
+            return [
+                'success' => false,
+                'message' => 'Error durante la sincronización: ' . $e->getMessage(),
+                'stats' => $this->getStats(),
+                'errors' => $this->errors,
+            ];
+        } finally {
+            $this->releaseSyncLock();
+        }
+    }
+
+    /**
+     * Guarda un checkpoint para sincronización progresiva.
+     */
+    protected function saveProgressiveCheckpoint(int $offset, string $mode, bool $skipMedia): void
+    {
+        try {
+            $checkpoint = [
+                'offset' => $offset,
+                'mode' => $mode,
+                'skip_media' => $skipMedia,
+                'last_mls_id' => $this->lastSuccessfulMlsId,
+                'timestamp' => now()->toIso8601String(),
+            ];
+            
+            \Illuminate\Support\Facades\Cache::put('mls_sync_checkpoint', $checkpoint, 86400);
+            $this->log('info', "[CHECKPOINT PROGRESSIVE] Guardado offset: {$offset}");
+        } catch (\Throwable $e) {
+            $this->log('error', '[CHECKPOINT PROGRESSIVE] Error al guardar: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Obtiene el progreso actual de la sincronización de propiedades (no imágenes).
+     *
+     * @return array Información del progreso
+     */
+    public function getPropertiesSyncProgress(): array
+    {
+        $checkpoint = $this->getLastCheckpoint();
+        
+        // Obtener total de propiedades en MLS
+        $totalInMls = 0;
+        try {
+            $properties = $this->fetchAllProperties(1, 1);
+            if ($properties !== null) {
+                // Necesitamos el total real, no podemos obtenerlo directamente
+                // Usamos unapproach alternativo: contar propiedades locales como aproximación
+                $totalInMls = count($properties); // Esto no es preciso, es solo para referencia
+            }
+        } catch (\Throwable $e) {
+            // Ignorar errores al obtener progreso
+        }
+
+        // Contar propiedades locales del MLS
+        $localMlsCount = 0;
+        try {
+            $localMlsCount = Property::where('source', 'mls')->count();
+        } catch (\Throwable $e) {
+            // Tabla no existe aún
+        }
+
+        return [
+            'has_checkpoint' => $checkpoint !== null,
+            'checkpoint' => $checkpoint,
+            'local_properties_count' => $localMlsCount,
+            'lock_active' => $this->isLocked,
+            'lock_stale' => $this->isLockStale(),
+        ];
+    }
+
+    /**
      * Obtiene las estadísticas de la sincronización.
      */
     public function getStats(): array
@@ -2078,6 +2486,7 @@ class MLSSyncService
             'rate_limit' => $this->rateLimit,
             'timeout' => $this->timeout,
             'batch_size' => $this->batchSize,
+            'progressive_batch_size' => $this->progressiveBatchSize,
             'sync_mode' => $this->config?->sync_mode ?? 'incremental',
             'last_sync' => $lastSync ?: [
                 'last_sync_at' => null,
@@ -2089,6 +2498,41 @@ class MLSSyncService
             'circuit_breaker' => $this->getCircuitBreakerStatus(),
             'checkpoint' => $checkpoint,
             'sync_locked' => $this->isLocked,
+            'lock_stale' => $this->isLockStale(),
+            'can_force_unlock' => true, // Siempre permitir forzar unlock si el usuario lo confirma
+        ];
+    }
+
+    /**
+     * Fuerza la liberación del lock.
+     * Útil cuando una sincronización anterior murió y dejó el lock activo.
+     *
+     * @param bool $force Si es true, libera el lock aunque no esté obsoleto (requiere confirmación del usuario)
+     * @return array Resultado de la operación
+     */
+    public function forceUnlock(bool $force = false): array
+    {
+        $wasStale = $this->isLockStale($force);
+        
+        // Verificar si podemos liberar
+        if (!$wasStale && !$force) {
+            return [
+                'success' => false,
+                'message' => 'El lock no está obsoleto. Usa el botón "Desbloquear" en el panel para liberar forzosamente.',
+                'was_stale' => false,
+                'requires_force' => true,
+            ];
+        }
+
+        $released = $this->forceReleaseLock($force);
+        
+        return [
+            'success' => $released,
+            'message' => $released 
+                ? 'Lock liberado exitosamente'
+                : 'Error al liberar el lock',
+            'was_stale' => $wasStale,
+            'forced' => $force && !$wasStale,
         ];
     }
 }

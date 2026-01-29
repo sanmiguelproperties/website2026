@@ -452,3 +452,393 @@ Estas mejoras hacen el proceso de sincronización MLS mucho más robusto y resis
 - Manejar múltiples sincronizaciones sin conflictos
 
 Esto reduce significativamente el tiempo de inactividad y mejora la confiabilidad del sistema.
+
+---
+
+# Sincronización Progresiva para Servidores con Límites de Tiempo
+
+## Problema Original
+
+En servidores de producción con límites de tiempo de ejecución (max_execution_time) más estrictos que en desarrollo local, la sincronización MLS fallaba porque:
+
+1. **Timeouts de PHP**: Los servidores web tienen límites de tiempo que pueden ser más bajos (30-60 segundos vs 300+ en local)
+2. **Conexiones perdidas**: La API se cerraba durante sincronizaciones largas
+3. **Locks bloqueados**: Si el proceso moría por timeout, el lock quedaba activo y阻止 nuevas sincronizaciones
+4. **Memoria agotada**: Los servidores tienen menos memoria disponible
+
+## Solución: Sincronización Progresiva por Lotes
+
+Se implementó un nuevo método de sincronización que divide el trabajo en múltiples requests HTTP cortos, cada uno procesando un lote pequeño de propiedades.
+
+### Nuevos Parámetros de Configuración
+
+```php
+// En MLSSyncService.php
+protected int $progressiveBatchSize = 20;          // Lote pequeño para servidores limitados
+protected int $maxExecutionTimeWarning = 45;       // Warning a los 45 segundos
+protected int $lockTtlSeconds = 7200;              // 2 horas TTL para sync completo
+protected int $progressiveLockTtlSeconds = 300;    // 5 minutos TTL para sync progresivo
+```
+
+### Nuevos Endpoints API
+
+#### POST /api/mls/sync/progressive
+
+Sincroniza un lote de propiedades y retorna el offset para continuar.
+
+**Parámetros**:
+- `batch_size` (opcional): Tamaño del lote (default: 20, rango: 5-50)
+- `skip_media` (opcional): Si true, no sincroniza medios (default: true)
+- `offset` (opcional): Offset inicial (si es null, usa checkpoint o comienza desde 0)
+- `mode` (opcional): 'full' o 'incremental'
+
+**Ejemplo de uso**:
+```bash
+# Primera llamada - comienza desde el principio
+curl -X POST http://localhost:8000/api/mls/sync/progressive \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"batch_size": 20, "skip_media": true}'
+
+# Respuesta
+{
+  "success": true,
+  "message": "Lote procesado. Continúa con offset 20",
+  "data": {
+    "total_in_mls": 150,
+    "processed": 20,
+    "created": 5,
+    "updated": 15,
+    "errors": 0,
+    "next_offset": 20,
+    "completed": false,
+    "progress_percentage": 13.33,
+    "execution_time_seconds": 12.5
+  }
+}
+
+# Segunda llamada - continúa desde offset 20
+curl -X POST http://localhost:8000/api/mls/sync/progressive \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"batch_size": 20, "offset": 20}'
+
+# ... continuar hasta que completed sea true
+```
+
+#### GET /api/mls/sync/properties/progress
+
+Obtiene el progreso actual de la sincronización de propiedades.
+
+**Respuesta**:
+```json
+{
+  "success": true,
+  "message": "Progreso de sincronización de propiedades",
+  "data": {
+    "has_checkpoint": true,
+    "checkpoint": {
+      "offset": 40,
+      "mode": "incremental",
+      "skip_media": true,
+      "last_mls_id": "67890",
+      "timestamp": "2026-01-29T10:00:00.000000Z"
+    },
+    "local_properties_count": 100,
+    "lock_active": false,
+    "lock_stale": false
+  }
+}
+```
+
+#### POST /api/mls/sync/unlock
+
+Fuerza la liberación del lock si está obsoleto. Útil cuando una sincronización anterior murió y dejó el lock activo.
+
+**Respuesta exitosa**:
+```json
+{
+  "success": true,
+  "message": "Lock obsoleto liberado exitosamente",
+  "data": {
+    "was_stale": true
+  }
+}
+```
+
+**Respuesta cuando no está obsoleto**:
+```json
+{
+  "success": false,
+  "message": "El lock no está obsoleto, no se puede forzar liberación",
+  "data": {
+    "was_stale": false
+  }
+}
+```
+
+### Mejoras en el Sistema de Locks
+
+#### Lock con Timestamp
+
+Ahora el lock guarda un timestamp para detectar locks obsoletos:
+
+```php
+// Guardar timestamp del lock cuando se adquiere
+\Illuminate\Support\Facades\Cache::put('mls_sync_locked_at', now()->toIso8601String(), $ttl);
+```
+
+#### Detección de Locks Obsoletos
+
+Ahora el sistema detecta locks obsoletos de manera más inteligente:
+
+```php
+public function isLockStale(): bool
+{
+    // El lock se considera obsoleto si:
+    // 1. Ha estado activo por más de 30 minutos (tiempo máximo de sincronización)
+    // 2. Ha estado activo por más de 5 minutos en sync progresivo (un lote debería tomar menos de 1 minuto)
+    // 3. El proceso actual no puede adquirir el lock (indicando que podría estar muerto)
+    
+    $minutesAgo = $lockedAtCarbon->diffInMinutes(now());
+    $secondsAgo = $lockedAtCarbon->diffInSeconds(now());
+    
+    if ($minutesAgo > 30) {
+        return true; // Lock muy antiguo
+    }
+    
+    if ($secondsAgo > 300) {
+        return true; // Lock de más de 5 minutos - probablemente proceso muerto
+    }
+    
+    return false;
+}
+```
+
+El sistema ahora guarda múltiples timestamps para mejor detección:
+
+```php
+// Guardar cuando se adquiere el lock
+\Illuminate\Support\Facades\Cache::put('mls_sync_locked_at', $now, $ttl);
+\Illuminate\Support\Facades\Cache::put('mls_sync_lock_age', $now, $ttl);
+\Illuminate\Support\Facades\Cache::put('mls_sync_lock_ttl', $ttl, $ttl);
+```
+
+#### Liberación Forzada
+
+```php
+public function forceReleaseLock(): bool
+{
+    \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, 1, 'default')->forceRelease();
+    \Illuminate\Support\Facades\Cache::forget('mls_sync_locked_at');
+    return true;
+}
+```
+
+### Configuración Recomendada para Producción
+
+#### Ajuste de Timeouts de PHP
+
+En el servidor de producción, ajusta los timeouts en `php.ini`:
+
+```ini
+max_execution_time = 120
+max_input_time = 120
+memory_limit = 256M
+```
+
+O en el archivo `.htaccess` (Apache):
+
+```apache
+<IfModule mod_php7.c>
+    php_value max_execution_time 120
+    php_value memory_limit 256M
+</IfModule>
+```
+
+O en `public/index.php` (Laravel):
+
+```php
+<?php
+set_time_limit(120);
+// ... resto del archivo
+```
+
+#### Configuración de Laravel
+
+En `.env`, ajusta los timeouts de la API:
+
+```env
+MLS_TIMEOUT=60
+MLS_RATE_LIMIT=10
+MLS_BATCH_SIZE=20
+```
+
+### Estrategias de Sincronización para Servidores Limitados
+
+#### 1. Sincronización Progresiva Manual
+
+Llama al endpoint `/api/mls/sync/progressive` repetidamente hasta que `completed` sea true:
+
+```javascript
+async function syncAllProperties() {
+    let offset = 0;
+    let completed = false;
+    
+    while (!completed) {
+        const response = await fetch('/api/mls/sync/progressive', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                batch_size: 20,
+                skip_media: true,
+                offset: offset
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.data.completed) {
+            completed = true;
+            console.log('Sincronización completada');
+        } else {
+            offset = result.data.next_offset;
+            console.log(`Progreso: ${result.data.progress_percentage}%`);
+            
+            // Esperar un poco entre llamadas para no sobrecargar el servidor
+            await new Promise(r => setTimeout(r, 2000));
+        }
+    }
+}
+```
+
+#### 2. Sincronización Automática con Cron
+
+Crea un comando de Laravel que se ejecute cada cierto tiempo:
+
+```php
+// app/Console/Commands/ProgressiveMLSSyncCommand.php
+protected $signature = 'mls:sync-progressive {--offset=0} {--batch=20}';
+
+public function handle()
+{
+    $result = $this->syncService->syncPropertiesProgressive(
+        (int) $this->option('batch'),
+        true, // skip_media
+        (int) $this->option('offset')
+    );
+    
+    if (!$result['completed']) {
+        $this->info("No completado. Offset: {$result['next_offset']}");
+        $this->info("Ejecuta: php artisan mls:sync-progressive --offset={$result['next_offset']}");
+    } else {
+        $this->info("Sincronización completada");
+    }
+}
+```
+
+Agrega al crontab:
+```bash
+# Ejecutar cada hora, procesando 20 propiedades por vez
+0 * * * * cd /path/to/project && php artisan mls:sync-progressive --batch=20 >> /dev/null 2>&1
+```
+
+#### 3. Configuración de Supervisor para el Worker de Colas
+
+Si usas colas para descargar imágenes, configura Supervisor:
+
+```ini
+[program:laravel-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /ruta/a/tu/proyecto/artisan queue:work --sleep=3 --tries=3 --max-time=3600 --memory=128
+autostart=true
+autorestart=true
+user=www-data
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/ruta/a/tu/proyecto/storage/logs/worker.log
+stopwaitsecs=3600
+```
+
+### Monitoreo del Lock
+
+El endpoint `/api/mls/status` ahora incluye información del lock:
+
+```json
+{
+  "sync_locked": false,
+  "lock_stale": false,
+  "can_force_unlock": false,
+  "checkpoint": {
+    "offset": 40,
+    "mode": "incremental",
+    "skip_media": true
+  }
+}
+```
+
+### Solución de Problemas
+
+#### "Ya existe una sincronización en curso"
+
+1. Verifica si hay un proceso ejecutándose: `ps aux | grep "php artisan"
+2. Si no hay proceso pero el lock está activo, espera 30 minutos o usa:
+   ```bash
+   curl -X POST http://localhost:8000/api/mls/sync/unlock \
+     -H "Authorization: Bearer YOUR_TOKEN"
+   ```
+
+#### La sincronización no progresa
+
+1. Verifica el checkpoint: `GET /api/mls/checkpoint`
+2. Verifica el progreso: `GET /api/mls/sync/properties/progress`
+3. Limpia el checkpoint si está corrupto: `DELETE /api/mls/checkpoint`
+4. Comienza de nuevo: `POST /api/mls/sync/progressive`
+
+#### El frontend muestra "Ya existe una sincronización en curso"
+
+El frontend ahora tiene lógica automática para manejar esta situación:
+
+1. **Detección automática**: Antes de iniciar, verifica el estado del lock
+2. **Liberación automática**: Si el lock está obsoleto (>5 minutos), intenta liberarlo automáticamente
+3. **Reintentos inteligentes**: Si hay un lock activo pero no obsoleto, espera y reintenta hasta 3 veces
+4. **Mensajes claros**: Muestra al usuario qué está pasando y qué acción se está tomando
+
+El código del frontend hace lo siguiente:
+
+```javascript
+// Verificar estado del lock
+const statusPayload = await apiFetch(`${API_BASE}/mls/status`);
+
+if (statusPayload?.success && statusPayload.data) {
+  const isLocked = statusPayload.data.sync_locked;
+  const isStale = statusPayload.data.lock_stale;
+  
+  if (!isLocked) {
+    // No hay lock, podemos proceder
+    break;
+  }
+  
+  if (isLocked && isStale) {
+    // Lock obsoleto, intentar liberar automáticamente
+    const unlockResult = await apiFetch(`${API_BASE}/mls/sync/unlock`, { method: 'POST' });
+    if (unlockResult?.success) {
+      break; // Lock liberado, continuar
+    }
+  } else if (isLocked && !isStale) {
+    // Lock activo y no obsoleto, esperar
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    // Reintentar hasta 3 veces
+  }
+}
+```
+
+#### Errores de memoria
+
+1. Reduce el `batch_size` a 10 o menos
+2. Asegúrate de que `skip_media` sea true
+3. Verifica la memoria del servidor: `free -m`
+4. Aumenta el memory_limit en php.ini

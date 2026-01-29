@@ -216,4 +216,13 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('mls')->group(function () {
     
     // Retomar sincronización desde checkpoint
     Route::post('sync/resume', [MLSSyncController::class, 'syncResume']);
+    
+    // Sincronización progresiva de propiedades (para servidores con límites de tiempo)
+    Route::post('sync/progressive', [MLSSyncController::class, 'syncProgressive']);
+    
+    // Obtener progreso de sincronización de propiedades
+    Route::get('sync/properties/progress', [MLSSyncController::class, 'getPropertiesSyncProgress']);
+    
+    // Forzar liberación del lock (para desbloqueo de emergencia)
+    Route::post('sync/unlock', [MLSSyncController::class, 'forceUnlock']);
 });

@@ -950,6 +950,145 @@ class MLSSyncController extends Controller
     }
 
     /**
+     * POST /api/mls/sync/progressive
+     *
+     * Sincroniza propiedades MLS en modo progresivo.
+     * Procesa un lote de propiedades y retorna el offset para continuar.
+     * Ideal para servidores con límites de tiempo de ejecución.
+     */
+    public function syncProgressive(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'batch_size' => 'sometimes|integer|min:5|max:50',
+            'skip_media' => 'sometimes|boolean',
+            'offset' => 'sometimes|integer|min:0',
+            'mode' => 'sometimes|string|in:full,incremental',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->apiValidationError($validator->errors()->toArray());
+        }
+
+        // Recargar configuración antes de sincronizar
+        $this->syncService->reloadConfiguration();
+
+        // Verificar configuración antes de ejecutar
+        if (!$this->syncService->isConfigured()) {
+            return $this->apiError(
+                'MLS no está configurado correctamente',
+                'MLS_NOT_CONFIGURED',
+                [
+                    'hint' => 'Configura la API Key desde el panel de administración en /admin/mls',
+                ],
+                null,
+                400
+            );
+        }
+
+        $options = $validator->validated();
+        $batchSize = (int) ($options['batch_size'] ?? 20);
+        $skipMedia = (bool) ($options['skip_media'] ?? true);
+        $offset = isset($options['offset']) ? (int) $options['offset'] : null;
+        $mode = $options['mode'] ?? null;
+
+        $result = $this->syncService->syncPropertiesProgressive(
+            $batchSize,
+            $skipMedia,
+            $offset,
+            $mode
+        );
+
+        if ($result['success']) {
+            return $this->apiSuccess(
+                $result['message'],
+                'MLS_SYNC_PROGRESSIVE_SUCCESS',
+                [
+                    'total_in_mls' => $result['total_in_mls'] ?? 0,
+                    'processed' => $result['processed'] ?? 0,
+                    'created' => $result['created'] ?? 0,
+                    'updated' => $result['updated'] ?? 0,
+                    'unpublished' => $result['unpublished'] ?? 0,
+                    'errors' => $result['errors'] ?? 0,
+                    'next_offset' => $result['next_offset'] ?? 0,
+                    'completed' => $result['completed'] ?? false,
+                    'progress_percentage' => $result['progress_percentage'] ?? 0,
+                    'execution_time_seconds' => $result['execution_time_seconds'] ?? 0,
+                    'hint' => $result['completed']
+                        ? 'Sincronización completada. No necesitas hacer más llamadas.'
+                        : "Para continuar la sincronización, llama nuevamente a este endpoint con offset={$result['next_offset']}. Progress: {$result['progress_percentage']}%",
+                ]
+            );
+        }
+
+        return $this->apiError(
+            $result['message'],
+            'MLS_SYNC_PROGRESSIVE_FAILED',
+            [
+                'sync_locked' => $result['sync_locked'] ?? false,
+                'circuit_breaker_open' => $result['circuit_breaker_open'] ?? false,
+                'configured' => $result['configured'] ?? true,
+                'stats' => $result['stats'] ?? [],
+            ],
+            null,
+            500
+        );
+    }
+
+    /**
+     * GET /api/mls/sync/properties/progress
+     *
+     * Obtiene el progreso actual de la sincronización de propiedades.
+     */
+    public function getPropertiesSyncProgress(): JsonResponse
+    {
+        $progress = $this->syncService->getPropertiesSyncProgress();
+
+        return $this->apiSuccess(
+            'Progreso de sincronización de propiedades',
+            'MLS_PROPERTIES_SYNC_PROGRESS',
+            $progress
+        );
+    }
+
+    /**
+     * POST /api/mls/sync/unlock
+     *
+     * Fuerza la liberación del lock si está obsoleto o si se pasa force=true.
+     * Útil cuando una sincronización anterior murió y dejó el lock activo.
+     */
+    public function forceUnlock(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'force' => 'sometimes|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->apiValidationError($validator->errors()->toArray());
+        }
+
+        $options = $validator->validated();
+        $force = (bool) ($options['force'] ?? false);
+
+        $result = $this->syncService->forceUnlock($force);
+
+        if ($result['success']) {
+            return $this->apiSuccess(
+                $result['message'],
+                'MLS_UNLOCK_SUCCESS',
+                $result
+            );
+        }
+
+        return $this->apiError(
+            $result['message'],
+            'MLS_UNLOCK_FAILED',
+            $result,
+            null,
+            400
+        );
+    }
+
+    /**
      * Genera un resumen del log de sincronización.
      */
     protected function summarizeLog(array $log): array
