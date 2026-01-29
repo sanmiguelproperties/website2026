@@ -2157,14 +2157,9 @@ class MLSSyncService
         // Verificar tiempo de ejecución
         $startTime = microtime(true);
         
-        // Adquirir lock con TTL más corto para sincronización progresiva (5 minutos)
-        if (!$this->acquireSyncLock($this->progressiveLockTtlSeconds)) {
-            return [
-                'success' => false,
-                'message' => 'Ya existe una sincronización en curso',
-                'sync_locked' => true,
-            ];
-        }
+        // NOTA: No usamos lock porque la sincronización solo se ejecuta desde el frontend
+        // donde el usuario está presente. No hay riesgo de procesos concurrentes.
+        $this->log('info', '[SYNC PROGRESSIVE] Iniciando sincronización (sin lock)');
 
         try {
             // Determinar modo
@@ -2316,8 +2311,6 @@ class MLSSyncService
                 'stats' => $this->getStats(),
                 'errors' => $this->errors,
             ];
-        } finally {
-            $this->releaseSyncLock();
         }
     }
 
