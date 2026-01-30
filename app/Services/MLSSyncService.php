@@ -1945,9 +1945,11 @@ class MLSSyncService
                     }
                 }
 
-                // Actualizar el raw_payload con los datos completos y last_synced_at
+                // Actualizar el raw_payload con los datos del API pero EXCLUIR campos de estado
+                // para evitar que la sincronización de imágenes cambie el estado de publicación
+                $detailDataFiltered = array_diff_key($detailData, array_flip(['is_published', 'allow_integration', 'status', 'is_approved', 'published']));
                 $property->update([
-                    'raw_payload' => array_merge($property->raw_payload ?: [], $detailData),
+                    'raw_payload' => array_merge($property->raw_payload ?: [], $detailDataFiltered),
                     'last_synced_at' => now(),
                 ]);
 
