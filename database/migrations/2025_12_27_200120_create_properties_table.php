@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('easybroker_agent_id', 50)->nullable();
 
             // Publicación / sync
-            $table->boolean('published')->default(false);
+            $table->boolean('published')->default(true);
             $table->dateTime('easybroker_created_at')->nullable();
             $table->dateTime('easybroker_updated_at')->nullable();
             $table->dateTime('last_synced_at')->nullable();

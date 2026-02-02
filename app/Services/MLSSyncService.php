@@ -300,12 +300,13 @@ class MLSSyncService
             $this->log('info', "[SYNC] Propiedades procesadas: " . count($mlsIds));
 
             // Paso 3: Despublicar propiedades que ya no están en el MLS (solo en modo full)
-            if ($mode === 'full' && !empty($mlsIds)) {
-                $this->log('info', '[SYNC] Ejecutando despublicación de propiedades removidas...');
-                $this->unpublishRemovedProperties($mlsIds);
-            } elseif ($mode === 'incremental') {
-                $this->log('info', '[SYNC] Modo incremental - omitiendo despublicación');
-            }
+            // DESHABILITADO: Por decisión del usuario, las propiedades del MLS siempre permanecen publicadas
+            // if ($mode === 'full' && !empty($mlsIds)) {
+            //     $this->log('info', '[SYNC] Ejecutando despublicación de propiedades removidas...');
+            //     $this->unpublishRemovedProperties($mlsIds);
+            // } elseif ($mode === 'incremental') {
+            //     $this->log('info', '[SYNC] Modo incremental - omitiendo despublicación');
+            // }
 
             // Limpiar checkpoint si la sincronización fue exitosa
             if ($this->errors === 0 || $this->errors < count($properties) * 0.1) {
@@ -552,23 +553,15 @@ class MLSSyncService
 
                 // Preparar datos de la propiedad
                 $propertyAttributes = $this->mapPropertyData($fullData);
-                
-                // Obtener el valor de isPublished de mapPropertyData (puede ser null)
-                // Si es null, no cambiamos el campo 'published' para propiedades existentes
-                $isPublished = $propertyAttributes['published'] ?? null;
-                
-                // Eliminar published del array si es null para no actualizar el campo
-                if ($isPublished === null) {
-                    unset($propertyAttributes['published']);
-                }
 
                 if ($isNew) {
-                    // Para propiedades nuevas, usar el valor de published (que puede ser null)
+                    // Para propiedades nuevas, usar el valor de published de mapPropertyData
                     $property = Property::create($propertyAttributes);
                     $this->created++;
                     $this->log('info', "[SYNC CREATE] Propiedad MLS creada: {$mlsId}");
                 } else {
                     // Para propiedades existentes, solo actualizar si isPublished no es null
+                    // Esto preserva el estado actual si el API no envía datos de publicación
                     $existingProperty->update($propertyAttributes);
                     $property = $existingProperty;
                     $this->updated++;
@@ -636,18 +629,19 @@ class MLSSyncService
         $agents = $data['agents'] ?? [];
         $primaryAgentId = is_array($agents) && !empty($agents) ? (string) $agents[0] : null;
 
-        // Determinar si está publicado basándose en varios campos
-        // IMPORTANTE: Si el campo no viene en el API, mantener el estado actual (no cambiar a false)
-        $isPublished = null; // null significa "no cambiar"
+        // Determinar si está publicado
+        // IMPORTANTE: Para propiedades del MLS, siempre publicamos por defecto (true)
+        // porque el LMS trae sus propios filtros de publicación y el campo 'published'
+        // en nuestra base de datos debe reflejar si la propiedad es visible en nuestro sitio,
+        // no si el LMS la tiene como publicada internamente.
+        $isPublished = true;
         if (isset($data['is_published'])) {
             $isPublished = (bool) $data['is_published'];
         } elseif (isset($data['allow_integration'])) {
             $isPublished = (bool) $data['allow_integration'];
-        } else {
-            // Si no viene ningún campo de estado, no cambiar el estado existente
-            // Esto evita que las propiedades se desactiven por falta de datos
-            $isPublished = null;
         }
+        // Si no viene ningún campo de estado, $isPublished ya es true por defecto
+        // Nota: El valor del API del MLS no sobreescribe este true para propiedades del LMS
 
         return [
             'agency_id' => $this->getDefaultAgencyId(),
@@ -2401,11 +2395,12 @@ class MLSSyncService
             }
 
             // Despublicar propiedades si es modo full y completó
-            if ($completed && $syncMode === 'full') {
-                $mlsIds = array_map(function($p) { return $p['mls_id'] ?? $p['id'] ?? null; }, $properties);
-                $mlsIds = array_filter($mlsIds);
-                $this->unpublishRemovedProperties($mlsIds);
-            }
+            // DESHABILITADO: Por decisión del usuario, las propiedades del MLS siempre permanecen publicadas
+            // if ($completed && $syncMode === 'full') {
+            //     $mlsIds = array_map(function($p) { return $p['mls_id'] ?? $p['id'] ?? null; }, $properties);
+            //     $mlsIds = array_filter($mlsIds);
+            //     $this->unpublishRemovedProperties($mlsIds);
+            // }
 
             $executionTime = round(microtime(true) - $startTime, 2);
             
