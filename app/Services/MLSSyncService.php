@@ -552,12 +552,23 @@ class MLSSyncService
 
                 // Preparar datos de la propiedad
                 $propertyAttributes = $this->mapPropertyData($fullData);
+                
+                // Obtener el valor de isPublished de mapPropertyData (puede ser null)
+                // Si es null, no cambiamos el campo 'published' para propiedades existentes
+                $isPublished = $propertyAttributes['published'] ?? null;
+                
+                // Eliminar published del array si es null para no actualizar el campo
+                if ($isPublished === null) {
+                    unset($propertyAttributes['published']);
+                }
 
                 if ($isNew) {
+                    // Para propiedades nuevas, usar el valor de published (que puede ser null)
                     $property = Property::create($propertyAttributes);
                     $this->created++;
                     $this->log('info', "[SYNC CREATE] Propiedad MLS creada: {$mlsId}");
                 } else {
+                    // Para propiedades existentes, solo actualizar si isPublished no es null
                     $existingProperty->update($propertyAttributes);
                     $property = $existingProperty;
                     $this->updated++;
@@ -626,14 +637,16 @@ class MLSSyncService
         $primaryAgentId = is_array($agents) && !empty($agents) ? (string) $agents[0] : null;
 
         // Determinar si está publicado basándose en varios campos
-        $isPublished = false;
+        // IMPORTANTE: Si el campo no viene en el API, mantener el estado actual (no cambiar a false)
+        $isPublished = null; // null significa "no cambiar"
         if (isset($data['is_published'])) {
             $isPublished = (bool) $data['is_published'];
         } elseif (isset($data['allow_integration'])) {
             $isPublished = (bool) $data['allow_integration'];
         } else {
-            // Por defecto, si viene del MLS y tiene allow_integration, está publicado
-            $isPublished = true;
+            // Si no viene ningún campo de estado, no cambiar el estado existente
+            // Esto evita que las propiedades se desactiven por falta de datos
+            $isPublished = null;
         }
 
         return [
