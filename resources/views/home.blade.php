@@ -82,20 +82,9 @@
                     </button>
                 </form>
 
-                {{-- Quick Filters --}}
-                <div class="flex flex-wrap justify-center gap-2 mt-4">
-                    <a href="/propiedades?property_type_name=Casa" class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
-                        🏠 Casas
-                    </a>
-                    <a href="/propiedades?property_type_name=Departamento" class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
-                        🏢 Departamentos
-                    </a>
-                    <a href="/propiedades?property_type_name=Terreno" class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
-                        🏗️ Terrenos
-                    </a>
-                    <a href="/propiedades?property_type_name=Local Comercial" class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
-                        🏪 Locales
-                    </a>
+                {{-- Quick Filters (dinámicos) --}}
+                <div class="flex flex-wrap justify-center gap-2 mt-4" id="heroQuickFilters">
+                    {{-- Se llenan dinámicamente desde JS --}}
                 </div>
             </div>
         </div>
@@ -423,18 +412,16 @@
                         </div>
                     </div>
 
-                    {{-- Property Type Filter --}}
+                    {{-- Property Type Filter (dinámico) --}}
                     <div class="min-w-[180px]">
                         <select x-model="filters.property_type_name"
                                 @change="applyFilters()"
                                 class="w-full px-4 py-3 rounded-xl transition-all appearance-none cursor-pointer focus:outline-none"
                                 style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #0f172a);">
                             <option value="">Todos los tipos</option>
-                            <option value="Casa">Casa</option>
-                            <option value="Departamento">Departamento</option>
-                            <option value="Terreno">Terreno</option>
-                            <option value="Local Comercial">Local Comercial</option>
-                            <option value="Oficina">Oficina</option>
+                            <template x-for="type in dynamicPropertyTypes" :key="type">
+                                <option :value="type" x-text="type"></option>
+                            </template>
                         </select>
                     </div>
 
@@ -462,28 +449,20 @@
                     </button>
                 </div>
 
-                {{-- Quick Filter Tags --}}
+                {{-- Quick Filter Tags (dinámicos) --}}
                 <div class="flex flex-wrap gap-2 mt-4 pt-4" style="border-top: 1px solid var(--fe-properties-filter_divider, #f1f5f9);">
                     <button @click="togglePublished(true)"
                             :class="filters.published === true ? 'filter-tag-active' : 'filter-tag-inactive'"
                             class="px-4 py-2 rounded-full text-sm font-medium transition-all">
                         ✅ Publicadas
                     </button>
-                    <button @click="setPropertyType('Casa')"
-                            :class="filters.property_type_name === 'Casa' ? 'filter-tag-active' : 'filter-tag-inactive'"
-                            class="px-4 py-2 rounded-full text-sm font-medium transition-all">
-                        🏠 Casas
-                    </button>
-                    <button @click="setPropertyType('Departamento')"
-                            :class="filters.property_type_name === 'Departamento' ? 'filter-tag-active' : 'filter-tag-inactive'"
-                            class="px-4 py-2 rounded-full text-sm font-medium transition-all">
-                        🏢 Departamentos
-                    </button>
-                    <button @click="setPropertyType('Terreno')"
-                            :class="filters.property_type_name === 'Terreno' ? 'filter-tag-active' : 'filter-tag-inactive'"
-                            class="px-4 py-2 rounded-full text-sm font-medium transition-all">
-                        🏗️ Terrenos
-                    </button>
+                    <template x-for="type in dynamicPropertyTypes" :key="'tag-' + type">
+                        <button @click="setPropertyType(type)"
+                                :class="filters.property_type_name === type ? 'filter-tag-active' : 'filter-tag-inactive'"
+                                class="px-4 py-2 rounded-full text-sm font-medium transition-all"
+                                x-text="type">
+                        </button>
+                    </template>
                 </div>
             </div>
         </div>
@@ -996,7 +975,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Cargar propiedades para el slider desde la API
     loadHeroSlides();
+
+    // Cargar opciones de filtro dinámicas para el hero y la barra de stats
+    loadHomeFilterOptions();
 });
+
+async function loadHomeFilterOptions() {
+    try {
+        const res = await fetch('/api/public/properties/filter-options');
+        const data = await res.json();
+        if (data.success && data.data) {
+            const opts = data.data;
+
+            // Actualizar hero quick filters
+            const heroFiltersEl = document.getElementById('heroQuickFilters');
+            if (heroFiltersEl && opts.property_types && opts.property_types.length > 0) {
+                heroFiltersEl.innerHTML = opts.property_types.map(type =>
+                    `<a href="/propiedades?property_type_name=${encodeURIComponent(type)}" class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
+                        ${type}
+                    </a>`
+                ).join('');
+            }
+
+            // Actualizar badge con total de propiedades real
+            if (opts.total_properties > 0) {
+                const badge = document.querySelector('#hero .animate-fade-in');
+                if (badge) {
+                    const textNode = badge.childNodes[badge.childNodes.length - 1];
+                    if (textNode) {
+                        textNode.textContent = `${opts.total_properties}+ propiedades disponibles`;
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Error loading home filter options:', e);
+    }
+}
 
 async function loadHeroSlides() {
     try {
@@ -1008,7 +1023,7 @@ async function loadHeroSlides() {
             swiperWrapper.innerHTML = '';
             
             data.data.data.forEach((property, index) => {
-                const imageUrl = property.cover_media_asset?.url || 
+                const imageUrl = property.cover_media_asset?.url ||
                                `https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80`;
                 
                 const slide = document.createElement('div');
@@ -1058,11 +1073,25 @@ function propertiesFilter() {
         properties: [],
         pagination: null,
         loading: true,
+        dynamicPropertyTypes: [],
 
         init() {
+            this.loadFilterOptions();
             this.loadProperties();
             // Make this instance globally available
             window.propertiesApp = this;
+        },
+
+        async loadFilterOptions() {
+            try {
+                const res = await fetch('/api/public/properties/filter-options');
+                const data = await res.json();
+                if (data.success && data.data) {
+                    this.dynamicPropertyTypes = data.data.property_types || [];
+                }
+            } catch (e) {
+                console.error('Error loading filter options:', e);
+            }
         },
 
         async loadProperties() {

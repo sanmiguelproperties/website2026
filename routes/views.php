@@ -87,5 +87,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/mls', function () {
             return view('mls.sync');
         })->name('mls');
+
+        Route::get('/mls-agents', function () {
+            return view('mls-agents.manage');
+        })->name('mls-agents');
     });
 });

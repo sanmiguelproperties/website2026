@@ -7,6 +7,7 @@ use App\Models\Agency;
 use App\Models\Currency;
 use App\Models\Feature;
 use App\Models\MediaAsset;
+use App\Models\MLSAgent;
 use App\Models\MLSConfig;
 use App\Models\Property;
 use App\Models\Tag;
@@ -599,6 +600,14 @@ class MLSSyncService
                 } catch (\Throwable $e) {
                     $this->log('warning', "[SYNC MEDIA SKIP] {$mlsId}: " . $e->getMessage() . " | La propiedad se sincronizó sin medios");
                 }
+                
+                // Sincronizar agentes MLS de la propiedad
+                try {
+                    $this->syncPropertyMlsAgents($property, $fullData);
+                    $this->log('info', "[SYNC AGENTS] Completado para: {$mlsId}");
+                } catch (\Throwable $e) {
+                    $this->log('warning', "[SYNC AGENTS SKIP] {$mlsId}: " . $e->getMessage());
+                }
 
                 $this->log('info', "[SYNC END] ============================================");
             });
@@ -1145,6 +1154,97 @@ class MLSSyncService
     }
 
     /**
+     * Sincroniza los agentes MLS de una propiedad.
+     * 
+     * El API MLS devuelve agentes como un array de IDs enteros via:
+     * GET /api/v1/property/{id}/agents → { "id": 1200, "agents": [27, 45] }
+     * 
+     * Este método:
+     * 1. Obtiene los IDs de agentes de la propiedad del API
+     * 2. Busca o crea los agentes en la tabla mls_agents
+     * 3. Vincula los agentes a la propiedad via la tabla pivot
+     */
+    protected function syncPropertyMlsAgents(Property $property, array $data): void
+    {
+        // Obtener IDs de agentes del API
+        $agentIds = $data['agents'] ?? [];
+        
+        // LOG: Verificar qué viene en los datos del API para diagnóstico
+        $hasAgentsField = array_key_exists('agents', $data);
+        $hasIdField = array_key_exists('id', $data);
+        $internalId = $data['id'] ?? null;
+        
+        $this->log('debug', "[AGENTS SYNC] Propiedad: {$property->mls_public_id} | " .
+            "Campo 'agents' presente: " . ($hasAgentsField ? 'SÍ (count: ' . count($agentIds) . ')' : 'NO') . " | " .
+            "Campo 'id' presente: " . ($hasIdField ? "SÍ ({$internalId})" : 'NO'));
+        
+        // Si no hay agentes en los datos, intentar obtenerlos del endpoint dedicado
+        if (empty($agentIds) && $internalId) {
+            $this->log('info', "[AGENTS SYNC] Obteniendo agentes del endpoint dedicado /property/{$internalId}/agents");
+            $agentResponse = $this->fetchPropertyAgentIds((int) $internalId);
+            
+            if ($agentResponse === null) {
+                $this->log('warning', "[AGENTS SYNC] El endpoint /property/{$internalId}/agents devolvió null (error de API)");
+            } elseif (isset($agentResponse['agents'])) {
+                $agentIds = $agentResponse['agents'];
+                $this->log('info', "[AGENTS SYNC] Obtenidos " . count($agentIds) . " agentes del endpoint dedicado: [" . implode(', ', $agentIds) . "]");
+            } else {
+                $this->log('warning', "[AGENTS SYNC] Respuesta del endpoint no contiene campo 'agents'. Keys: " . implode(', ', array_keys($agentResponse)));
+            }
+        } elseif (empty($agentIds) && !$internalId) {
+            $this->log('warning', "[AGENTS SYNC] No se puede obtener agentes: no hay campo 'id' ni campo 'agents' en los datos. Keys disponibles: " . implode(', ', array_keys($data)));
+        }
+
+        if (empty($agentIds)) {
+            $this->log('debug', "[AGENTS SYNC] No hay agentes para propiedad: {$property->mls_public_id}");
+            return;
+        }
+
+        $this->log('info', "[AGENTS SYNC] Propiedad: {$property->mls_public_id} | Agentes a sincronizar: " . count($agentIds) . " → [" . implode(', ', $agentIds) . "]");
+
+        $localAgentIds = [];
+        
+        foreach ($agentIds as $index => $mlsAgentId) {
+            if (!is_numeric($mlsAgentId)) {
+                $this->log('warning', "[AGENTS SYNC] Agente ID no numérico omitido: " . var_export($mlsAgentId, true));
+                continue;
+            }
+            
+            $mlsAgentId = (int) $mlsAgentId;
+            
+            // Buscar o crear el agente en la tabla local
+            $agent = MLSAgent::where('mls_agent_id', $mlsAgentId)->first();
+            
+            if (!$agent) {
+                // Crear un agente placeholder - se completará cuando se sincronicen los agentes
+                $agent = MLSAgent::create([
+                    'mls_agent_id' => $mlsAgentId,
+                    'name' => "Agente MLS #{$mlsAgentId}",
+                    'mls_office_id' => $data['office_id'] ?? null,
+                    'is_active' => true,
+                ]);
+                $this->log('info', "[AGENTS SYNC] Agente placeholder creado: MLS ID #{$mlsAgentId} → local ID #{$agent->id}");
+            } else {
+                $this->log('debug', "[AGENTS SYNC] Agente existente: MLS ID #{$mlsAgentId} → local ID #{$agent->id} ({$agent->name})");
+            }
+            
+            $localAgentIds[$agent->id] = ['is_primary' => $index === 0];
+        }
+
+        if (empty($localAgentIds)) {
+            $this->log('warning', "[AGENTS SYNC] No se pudo vincular ningún agente a propiedad: {$property->mls_public_id}");
+            return;
+        }
+
+        // Sincronizar la relación pivot
+        $beforeCount = $property->mlsAgents()->count();
+        $property->mlsAgents()->sync($localAgentIds);
+        $afterCount = $property->mlsAgents()->count();
+        
+        $this->log('info', "[AGENTS SYNC END] Propiedad: {$property->mls_public_id} | Antes: {$beforeCount} | Después: {$afterCount} | Agentes vinculados: " . implode(', ', array_keys($localAgentIds)));
+    }
+
+    /**
      * Sincroniza los medios (imágenes/videos) de la propiedad.
      * Crea las relaciones directamente y dispatcha jobs solo para descarga de imágenes nuevas.
      *
@@ -1577,11 +1677,318 @@ class MLSSyncService
     }
 
     /**
-     * Obtiene los agentes disponibles del MLS.
+     * Obtiene los agentes disponibles del MLS con paginación.
+     * 
+     * @param int $page Página a obtener
+     * @param int $perPage Agentes por página (max 100)
+     * @return array|null Respuesta paginada del API
      */
-    public function fetchAgents(): ?array
+    public function fetchAgents(int $page = 1, int $perPage = 100): ?array
     {
-        return $this->makeRequest('GET', '/agents');
+        return $this->makeRequest('GET', '/agents', [
+            'page' => $page,
+            'per_page' => min($perPage, 100),
+        ]);
+    }
+
+    /**
+     * Obtiene el detalle de un agente específico del MLS.
+     *
+     * @param int $agentId ID del agente en el MLS
+     * @return array|null Datos del agente
+     */
+    public function fetchAgentDetail(int $agentId): ?array
+    {
+        return $this->makeRequest('GET', "/agent/{$agentId}");
+    }
+
+    /**
+     * Extrae la URL de la foto de perfil de un agente desde los datos del API.
+     *
+     * Busca en múltiples campos posibles porque la API MLS AMPI
+     * puede usar diferentes nombres de campo para la foto del agente.
+     *
+     * @param array $agentData Datos del agente desde el API
+     * @return string|null URL de la foto o null si no se encontró
+     */
+    protected function extractAgentPhotoUrl(array $agentData): ?string
+    {
+        // Lista de campos posibles para la foto del agente
+        // Ordenados por probabilidad según APIs de MLS inmobiliario
+        $photoFields = [
+            'photo',
+            'photo_url',
+            'profile_photo',
+            'profile_photo_url',
+            'avatar',
+            'avatar_url',
+            'image',
+            'image_url',
+            'profile_image',
+            'profile_image_url',
+            'picture',
+            'picture_url',
+            'headshot',
+            'headshot_url',
+            'thumbnail',
+            'thumb',
+            'photo_path',
+            'agent_photo',
+            'agent_image',
+        ];
+
+        foreach ($photoFields as $field) {
+            $value = $agentData[$field] ?? null;
+            if (!empty($value) && is_string($value)) {
+                // Validar que parece una URL válida
+                if (filter_var($value, FILTER_VALIDATE_URL) || str_starts_with($value, '/')) {
+                    return $value;
+                }
+            }
+        }
+
+        // Buscar recursivamente en sub-objetos comunes
+        $nestedPhotoPaths = [
+            ['user', 'photo'],
+            ['user', 'avatar'],
+            ['user', 'profile_photo'],
+            ['user', 'image'],
+            ['profile', 'photo'],
+            ['profile', 'image'],
+            ['profile', 'avatar'],
+            ['media', 'photo'],
+            ['media', 'url'],
+        ];
+
+        foreach ($nestedPhotoPaths as $path) {
+            $current = $agentData;
+            $found = true;
+            foreach ($path as $key) {
+                if (isset($current[$key])) {
+                    $current = $current[$key];
+                } else {
+                    $found = false;
+                    break;
+                }
+            }
+            if ($found && is_string($current) && !empty($current)) {
+                if (filter_var($current, FILTER_VALIDATE_URL) || str_starts_with($current, '/')) {
+                    return $current;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Sincroniza agentes del MLS en modo progresivo (por lotes).
+     * Procesa una página de agentes y retorna el offset para continuar.
+     * 
+     * @param int $batchSize Agentes por lote (default: 20)
+     * @param int|null $startOffset Offset inicial (null = desde 0)
+     * @return array Resultado con estadísticas y next_offset
+     */
+    public function syncAgentsProgressive(int $batchSize = 20, ?int $startOffset = null): array
+    {
+        $this->log('info', '[AGENTS SYNC PROGRESSIVE START] ===================================');
+        $this->log('info', "[AGENTS SYNC PROGRESSIVE] Batch: {$batchSize} | Offset: " . ($startOffset ?? 'AUTO'));
+
+        if (!$this->isConfigured()) {
+            return [
+                'success' => false,
+                'message' => 'MLS no está configurado',
+            ];
+        }
+
+        $currentOffset = $startOffset ?? 0;
+        $perPage = min($batchSize, 100);
+        $currentPage = (int) floor($currentOffset / $perPage) + 1;
+
+        $this->log('info', "[AGENTS SYNC PROGRESSIVE] Obteniendo página {$currentPage} ({$perPage} agentes)...");
+
+        // Obtener una página de agentes
+        $response = $this->fetchAgents($currentPage, $perPage);
+
+        if ($response === null) {
+            return [
+                'success' => false,
+                'message' => 'Error al obtener agentes del MLS',
+            ];
+        }
+
+        // Extraer datos de paginación
+        $agents = $response['data'] ?? $response;
+        $totalAgents = $response['total'] ?? null;
+        $lastPage = $response['last_page'] ?? null;
+        $currentPageFromResponse = $response['current_page'] ?? $currentPage;
+
+        if (!is_array($agents)) {
+            return [
+                'success' => false,
+                'message' => 'Respuesta inesperada del MLS',
+            ];
+        }
+
+        $this->log('info', "[AGENTS SYNC PROGRESSIVE] Agentes en esta página: " . count($agents) . " | Total: " . ($totalAgents ?? '?') . " | Página: {$currentPageFromResponse}/" . ($lastPage ?? '?'));
+
+        if (empty($agents)) {
+            return [
+                'success' => true,
+                'message' => 'No hay más agentes que procesar',
+                'total_in_mls' => $totalAgents ?? 0,
+                'processed' => 0,
+                'created' => 0,
+                'updated' => 0,
+                'errors' => 0,
+                'next_offset' => 0,
+                'completed' => true,
+                'progress_percentage' => 100,
+            ];
+        }
+
+        $created = 0;
+        $updated = 0;
+        $errors = 0;
+
+        foreach ($agents as $agentData) {
+            try {
+                $mlsAgentId = $agentData['id'] ?? null;
+                if (!$mlsAgentId) {
+                    $errors++;
+                    continue;
+                }
+
+                // LOG: Mostrar las claves recibidas del API para diagnóstico
+                $this->log('debug', "[AGENTS SYNC] Agent ID #{$mlsAgentId} keys: " . implode(', ', array_keys($agentData)));
+
+                // Extraer foto de perfil: buscar en múltiples campos posibles
+                // La API MLS AMPI puede usar diferentes nombres según la versión/endpoint
+                $photoUrl = $this->extractAgentPhotoUrl($agentData);
+
+                $attributes = [
+                    'name' => $agentData['name'] ?? $agentData['full_name'] ?? null,
+                    'first_name' => $agentData['first_name'] ?? null,
+                    'last_name' => $agentData['last_name'] ?? null,
+                    'email' => $agentData['email'] ?? null,
+                    'phone' => $agentData['phone'] ?? $agentData['phone_number'] ?? null,
+                    'mobile' => $agentData['mobile'] ?? $agentData['cell_phone'] ?? null,
+                    'mls_office_id' => $agentData['office_id'] ?? null,
+                    'office_name' => $agentData['office_name'] ?? $agentData['office'] ?? null,
+                    'photo_url' => $photoUrl,
+                    'license_number' => $agentData['license_number'] ?? $agentData['license'] ?? null,
+                    'bio' => $agentData['bio'] ?? $agentData['biography'] ?? $agentData['description'] ?? null,
+                    'website' => $agentData['website'] ?? $agentData['web'] ?? null,
+                    'is_active' => $agentData['is_active'] ?? $agentData['active'] ?? true,
+                    'last_synced_at' => now(),
+                    'raw_payload' => $agentData,
+                ];
+
+                // Si no hay foto en el listado, intentar obtener del detalle individual del agente
+                if (empty($photoUrl)) {
+                    $this->log('debug', "[AGENTS SYNC] No hay foto en listado para #{$mlsAgentId}, intentando detalle individual...");
+                    $agentDetail = $this->fetchAgentDetail((int) $mlsAgentId);
+                    if ($agentDetail) {
+                        $this->log('debug', "[AGENTS SYNC] Detalle de agente #{$mlsAgentId} keys: " . implode(', ', array_keys($agentDetail)));
+                        $detailPhotoUrl = $this->extractAgentPhotoUrl($agentDetail);
+                        if ($detailPhotoUrl) {
+                            $photoUrl = $detailPhotoUrl;
+                            $attributes['photo_url'] = $photoUrl;
+                            $this->log('info', "[AGENTS SYNC] Foto encontrada en detalle para #{$mlsAgentId}: " . substr($photoUrl, 0, 80));
+                        }
+
+                        // También actualizar campos que podrían venir solo en el detalle
+                        if (empty($attributes['bio']) && !empty($agentDetail['bio'] ?? $agentDetail['biography'] ?? $agentDetail['description'] ?? null)) {
+                            $attributes['bio'] = $agentDetail['bio'] ?? $agentDetail['biography'] ?? $agentDetail['description'] ?? null;
+                        }
+                        if (empty($attributes['website']) && !empty($agentDetail['website'] ?? $agentDetail['web'] ?? null)) {
+                            $attributes['website'] = $agentDetail['website'] ?? $agentDetail['web'] ?? null;
+                        }
+                        if (empty($attributes['license_number']) && !empty($agentDetail['license_number'] ?? $agentDetail['license'] ?? null)) {
+                            $attributes['license_number'] = $agentDetail['license_number'] ?? $agentDetail['license'] ?? null;
+                        }
+                        
+                        // Guardar el payload combinado
+                        $attributes['raw_payload'] = array_merge($agentData, $agentDetail);
+                    } else {
+                        $this->log('debug', "[AGENTS SYNC] No se pudo obtener detalle individual para #{$mlsAgentId}");
+                    }
+                    
+                    // Rate limiting después de la petición adicional
+                    usleep((int) (1000000 / $this->rateLimit));
+                }
+
+                // Si hay foto URL, crear o reutilizar un MediaAsset con la URL externa
+                if ($photoUrl) {
+                    $this->log('info', "[AGENTS SYNC] Foto URL encontrada para #{$mlsAgentId}: " . substr($photoUrl, 0, 80));
+                    $mediaAsset = MediaAsset::where('url', $photoUrl)->first();
+                    if (!$mediaAsset) {
+                        $agentName = $attributes['name'] ?? "Agent #{$mlsAgentId}";
+                        $mediaAsset = MediaAsset::create([
+                            'type' => 'image',
+                            'provider' => 'mls',
+                            'url' => $photoUrl,
+                            'name' => "Foto de {$agentName}",
+                            'alt' => $agentName,
+                            'created_at' => now(),
+                        ]);
+                    }
+                    $attributes['photo_media_asset_id'] = $mediaAsset->id;
+                } else {
+                    $this->log('info', "[AGENTS SYNC] Sin foto para agente #{$mlsAgentId}");
+                }
+
+                $existing = MLSAgent::where('mls_agent_id', $mlsAgentId)->first();
+
+                if ($existing) {
+                    $existing->update($attributes);
+                    $updated++;
+                } else {
+                    $attributes['mls_agent_id'] = $mlsAgentId;
+                    MLSAgent::create($attributes);
+                    $created++;
+                }
+            } catch (\Throwable $e) {
+                $agentIdForLog = $agentData['id'] ?? '?';
+                $this->log('error', "[AGENTS SYNC ERROR] Agent ID {$agentIdForLog}: " . $e->getMessage());
+                $errors++;
+            }
+        }
+
+        // Calcular progreso
+        $processedCount = count($agents);
+        $newOffset = $currentOffset + $processedCount;
+        $completed = false;
+
+        if ($lastPage !== null) {
+            $completed = $currentPageFromResponse >= $lastPage;
+        } else {
+            $completed = $processedCount < $perPage;
+        }
+
+        $progressPercentage = 0;
+        if ($totalAgents && $totalAgents > 0) {
+            $progressPercentage = round(($newOffset / $totalAgents) * 100, 2);
+        } elseif ($completed) {
+            $progressPercentage = 100;
+        }
+
+        $this->log('info', "[AGENTS SYNC PROGRESSIVE END] Procesados: {$processedCount} | Creados: {$created} | Actualizados: {$updated} | Errores: {$errors} | Progreso: {$progressPercentage}%");
+
+        return [
+            'success' => true,
+            'message' => $completed
+                ? "Sincronización de agentes completada"
+                : "Lote procesado. Continúa con offset {$newOffset}",
+            'total_in_mls' => $totalAgents ?? ($completed ? $newOffset : null),
+            'processed' => $processedCount,
+            'created' => $created,
+            'updated' => $updated,
+            'errors' => $errors,
+            'next_offset' => $completed ? 0 : $newOffset,
+            'completed' => $completed,
+            'progress_percentage' => $progressPercentage,
+        ];
     }
 
     /**

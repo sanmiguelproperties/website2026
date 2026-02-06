@@ -20,6 +20,7 @@ use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\FrontendColorController;
 use App\Http\Controllers\EasyBrokerSyncController;
 use App\Http\Controllers\MLSSyncController;
+use App\Http\Controllers\MLSAgentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +45,7 @@ Route::apiResource('media', MediaAssetController::class);
 
 // Rutas públicas para el portal inmobiliario (sin autenticación)
 Route::prefix('public')->group(function () {
+    Route::get('properties/filter-options', [PropertyController::class, 'filterOptions']);
     Route::get('properties', [PropertyController::class, 'indexPublic']);
     Route::get('properties/{property}', [PropertyController::class, 'showPublic']);
 });
@@ -225,4 +227,24 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('mls')->group(function () {
     
     // Forzar liberación del lock (para desbloqueo de emergencia)
     Route::post('sync/unlock', [MLSSyncController::class, 'forceUnlock']);
+});
+
+// MLS Agents routes (protegidas con autenticación Passport)
+Route::middleware(['auth.api', 'admin.api'])->group(function () {
+    // CRUD de agentes MLS
+    Route::apiResource('mls-agents', MLSAgentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    
+    // Sincronizar agentes desde el MLS API
+    Route::post('mls-agents/sync', [MLSAgentController::class, 'syncAgents']);
+    
+    // Re-sincronizar relaciones agente-propiedad (para propiedades existentes)
+    Route::post('mls-agents/sync-property-agents', [MLSAgentController::class, 'syncPropertyAgentsRelations']);
+    
+    // Asociar/desasociar propiedades a un agente
+    Route::post('mls-agents/{mlsAgent}/properties', [MLSAgentController::class, 'attachProperties']);
+    Route::delete('mls-agents/{mlsAgent}/properties', [MLSAgentController::class, 'detachProperties']);
+    
+    // Agentes MLS de una propiedad
+    Route::get('properties/{property}/mls-agents', [MLSAgentController::class, 'propertyAgents']);
+    Route::post('properties/{property}/mls-agents', [MLSAgentController::class, 'syncPropertyAgents']);
 });

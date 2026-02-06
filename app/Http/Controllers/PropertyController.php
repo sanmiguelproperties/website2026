@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Property;
+use App\Models\PropertyLocation;
+use App\Models\PropertyOperation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -164,7 +166,10 @@ class PropertyController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                     ->orWhere('easybroker_public_id', 'like', "%{$search}%")
-                    ->orWhere('property_type_name', 'like', "%{$search}%");
+                    ->orWhere('mls_public_id', 'like', "%{$search}%")
+                    ->orWhere('property_type_name', 'like', "%{$search}%")
+                    ->orWhere('status', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
             });
         }
 
@@ -176,6 +181,10 @@ class PropertyController extends Controller
             $query->where('published', (bool) $request->boolean('published'));
         }
 
+        if ($request->filled('source')) {
+            $query->where('source', (string) $request->input('source'));
+        }
+
         if ($request->filled('property_type_name')) {
             $query->where('property_type_name', (string) $request->input('property_type_name'));
         }
@@ -185,8 +194,9 @@ class PropertyController extends Controller
         $validOrders = [
             'created_at', 'updated_at',
             'easybroker_updated_at',
+            'mls_updated_at', 'last_synced_at',
             'title', 'published',
-            'property_type_name',
+            'property_type_name', 'source',
         ];
         if (!in_array($order, $validOrders, true)) {
             $order = 'updated_at';
@@ -207,37 +217,84 @@ class PropertyController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'agency_id' => 'required|exists:agencies,id',
+            'source' => 'nullable|string|in:manual,easybroker,mls',
             'agent_user_id' => 'nullable|exists:users,id',
-            'easybroker_public_id' => 'required|string|max:50',
+            
+            // EasyBroker (opcionales - el centro de datos es el LMS)
+            'easybroker_public_id' => 'nullable|string|max:50',
             'easybroker_agent_id' => 'nullable|string|max:50',
+            
+            // MLS fields
+            'mls_id' => 'nullable|integer',
+            'mls_public_id' => 'nullable|string|max:50',
+            'mls_folder_name' => 'nullable|string|max:255',
+            'mls_neighborhood' => 'nullable|string|max:100',
+            'mls_office_id' => 'nullable|integer',
 
+            // Estado y publicación
             'published' => 'boolean',
+            'status' => 'nullable|string|max:50',
+            'category' => 'nullable|string|max:50',
+            'is_approved' => 'nullable|boolean',
+            'allow_integration' => 'nullable|boolean',
+            'for_rent' => 'nullable|boolean',
+            
+            // Fechas
             'easybroker_created_at' => 'nullable|date',
             'easybroker_updated_at' => 'nullable|date',
+            'mls_created_at' => 'nullable|date',
+            'mls_updated_at' => 'nullable|date',
             'last_synced_at' => 'nullable|date',
 
+            // Contenido
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
+            'description_short_en' => 'nullable|string',
+            'description_full_en' => 'nullable|string',
+            'description_short_es' => 'nullable|string',
+            'description_full_es' => 'nullable|string',
             'url' => 'nullable|string',
             'ad_type' => 'nullable|string|max:50',
             'property_type_name' => 'nullable|string|max:100',
 
+            // Características numéricas
             'bedrooms' => 'nullable|integer|min:0',
-            'bathrooms' => 'nullable|integer|min:0',
+            'bathrooms' => 'nullable|numeric|min:0',
             'half_bathrooms' => 'nullable|integer|min:0',
             'parking_spaces' => 'nullable|integer|min:0',
+            'parking_number' => 'nullable|integer|min:0',
+            'parking_type' => 'nullable|string|max:50',
 
+            // Tamaños
             'lot_size' => 'nullable|numeric|min:0',
+            'lot_feet' => 'nullable|numeric|min:0',
             'construction_size' => 'nullable|numeric|min:0',
+            'construction_feet' => 'nullable|numeric|min:0',
             'expenses' => 'nullable|numeric|min:0',
+            'old_price' => 'nullable|numeric|min:0',
             'lot_length' => 'nullable|numeric|min:0',
             'lot_width' => 'nullable|numeric|min:0',
 
             'floors' => 'nullable|integer|min:0',
             'floor' => 'nullable|string|max:20',
             'age' => 'nullable|string|max:20',
+            'year_built' => 'nullable|integer|min:1800|max:2100',
+            
+            // Características MLS
+            'furnished' => 'nullable|string|max:20',
+            'with_yard' => 'nullable|boolean',
+            'with_view' => 'nullable|string|max:100',
+            'gated_comm' => 'nullable|boolean',
+            'pool' => 'nullable|boolean',
+            'casita' => 'nullable|boolean',
+            'casita_bedrooms' => 'nullable|string|max:10',
+            'casita_bathrooms' => 'nullable|string|max:10',
+            'payment' => 'nullable|string|max:50',
+            'selling_office_commission' => 'nullable|string|max:20',
+            'showing_terms' => 'nullable|string|max:50',
 
             'virtual_tour_url' => 'nullable|string',
+            'video_url' => 'nullable|string',
             'cover_media_asset_id' => 'nullable|exists:media_assets,id',
 
             'raw_payload' => 'nullable|array',
@@ -284,12 +341,30 @@ class PropertyController extends Controller
         }
 
         $data = $validator->validated();
+        
+        // Asignar source por defecto si no se especifica
+        if (!isset($data['source'])) {
+            $data['source'] = 'manual';
+        }
 
-        $uniqueExists = Property::where('agency_id', $data['agency_id'])
-            ->where('easybroker_public_id', $data['easybroker_public_id'])
-            ->exists();
-        if ($uniqueExists) {
-            return $this->apiError('La propiedad ya existe para esa agencia', 'PROPERTY_ALREADY_EXISTS', null, null, 409);
+        // Verificar unicidad solo si hay easybroker_public_id
+        if (!empty($data['easybroker_public_id'])) {
+            $uniqueExists = Property::where('agency_id', $data['agency_id'])
+                ->where('easybroker_public_id', $data['easybroker_public_id'])
+                ->exists();
+            if ($uniqueExists) {
+                return $this->apiError('La propiedad ya existe para esa agencia (EasyBroker ID)', 'PROPERTY_ALREADY_EXISTS', null, null, 409);
+            }
+        }
+        
+        // Verificar unicidad de MLS public ID si se proporciona
+        if (!empty($data['mls_public_id'])) {
+            $uniqueExists = Property::where('agency_id', $data['agency_id'])
+                ->where('mls_public_id', $data['mls_public_id'])
+                ->exists();
+            if ($uniqueExists) {
+                return $this->apiError('La propiedad ya existe para esa agencia (MLS ID)', 'PROPERTY_ALREADY_EXISTS', null, null, 409);
+            }
         }
 
         try {
@@ -369,37 +444,84 @@ class PropertyController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'agency_id' => 'sometimes|required|exists:agencies,id',
+            'source' => 'sometimes|nullable|string|in:manual,easybroker,mls',
             'agent_user_id' => 'sometimes|nullable|exists:users,id',
-            'easybroker_public_id' => 'sometimes|required|string|max:50',
+            
+            // EasyBroker (opcionales)
+            'easybroker_public_id' => 'sometimes|nullable|string|max:50',
             'easybroker_agent_id' => 'sometimes|nullable|string|max:50',
+            
+            // MLS fields
+            'mls_id' => 'sometimes|nullable|integer',
+            'mls_public_id' => 'sometimes|nullable|string|max:50',
+            'mls_folder_name' => 'sometimes|nullable|string|max:255',
+            'mls_neighborhood' => 'sometimes|nullable|string|max:100',
+            'mls_office_id' => 'sometimes|nullable|integer',
 
+            // Estado y publicación
             'published' => 'sometimes|boolean',
+            'status' => 'sometimes|nullable|string|max:50',
+            'category' => 'sometimes|nullable|string|max:50',
+            'is_approved' => 'sometimes|nullable|boolean',
+            'allow_integration' => 'sometimes|nullable|boolean',
+            'for_rent' => 'sometimes|nullable|boolean',
+            
+            // Fechas
             'easybroker_created_at' => 'sometimes|nullable|date',
             'easybroker_updated_at' => 'sometimes|nullable|date',
+            'mls_created_at' => 'sometimes|nullable|date',
+            'mls_updated_at' => 'sometimes|nullable|date',
             'last_synced_at' => 'sometimes|nullable|date',
 
+            // Contenido
             'title' => 'sometimes|nullable|string|max:255',
             'description' => 'sometimes|nullable|string',
+            'description_short_en' => 'sometimes|nullable|string',
+            'description_full_en' => 'sometimes|nullable|string',
+            'description_short_es' => 'sometimes|nullable|string',
+            'description_full_es' => 'sometimes|nullable|string',
             'url' => 'sometimes|nullable|string',
             'ad_type' => 'sometimes|nullable|string|max:50',
             'property_type_name' => 'sometimes|nullable|string|max:100',
 
+            // Características numéricas
             'bedrooms' => 'sometimes|nullable|integer|min:0',
-            'bathrooms' => 'sometimes|nullable|integer|min:0',
+            'bathrooms' => 'sometimes|nullable|numeric|min:0',
             'half_bathrooms' => 'sometimes|nullable|integer|min:0',
             'parking_spaces' => 'sometimes|nullable|integer|min:0',
+            'parking_number' => 'sometimes|nullable|integer|min:0',
+            'parking_type' => 'sometimes|nullable|string|max:50',
 
+            // Tamaños
             'lot_size' => 'sometimes|nullable|numeric|min:0',
+            'lot_feet' => 'sometimes|nullable|numeric|min:0',
             'construction_size' => 'sometimes|nullable|numeric|min:0',
+            'construction_feet' => 'sometimes|nullable|numeric|min:0',
             'expenses' => 'sometimes|nullable|numeric|min:0',
+            'old_price' => 'sometimes|nullable|numeric|min:0',
             'lot_length' => 'sometimes|nullable|numeric|min:0',
             'lot_width' => 'sometimes|nullable|numeric|min:0',
 
             'floors' => 'sometimes|nullable|integer|min:0',
             'floor' => 'sometimes|nullable|string|max:20',
             'age' => 'sometimes|nullable|string|max:20',
+            'year_built' => 'sometimes|nullable|integer|min:1800|max:2100',
+            
+            // Características MLS
+            'furnished' => 'sometimes|nullable|string|max:20',
+            'with_yard' => 'sometimes|nullable|boolean',
+            'with_view' => 'sometimes|nullable|string|max:100',
+            'gated_comm' => 'sometimes|nullable|boolean',
+            'pool' => 'sometimes|nullable|boolean',
+            'casita' => 'sometimes|nullable|boolean',
+            'casita_bedrooms' => 'sometimes|nullable|string|max:10',
+            'casita_bathrooms' => 'sometimes|nullable|string|max:10',
+            'payment' => 'sometimes|nullable|string|max:50',
+            'selling_office_commission' => 'sometimes|nullable|string|max:20',
+            'showing_terms' => 'sometimes|nullable|string|max:50',
 
             'virtual_tour_url' => 'sometimes|nullable|string',
+            'video_url' => 'sometimes|nullable|string',
             'cover_media_asset_id' => 'sometimes|nullable|exists:media_assets,id',
 
             'raw_payload' => 'sometimes|nullable|array',
@@ -447,15 +569,17 @@ class PropertyController extends Controller
 
         $data = $validator->validated();
 
-        // Validación de unique(agency_id, easybroker_public_id) si cambian.
+        // Validación de unique solo si hay easybroker_public_id
         $agencyId = $data['agency_id'] ?? $property->agency_id;
         $publicId = $data['easybroker_public_id'] ?? $property->easybroker_public_id;
-        $uniqueExists = Property::where('agency_id', $agencyId)
-            ->where('easybroker_public_id', $publicId)
-            ->where('id', '!=', $property->id)
-            ->exists();
-        if ($uniqueExists) {
-            return $this->apiError('La propiedad ya existe para esa agencia', 'PROPERTY_ALREADY_EXISTS', null, null, 409);
+        if (!empty($publicId)) {
+            $uniqueExists = Property::where('agency_id', $agencyId)
+                ->where('easybroker_public_id', $publicId)
+                ->where('id', '!=', $property->id)
+                ->exists();
+            if ($uniqueExists) {
+                return $this->apiError('La propiedad ya existe para esa agencia (EasyBroker ID)', 'PROPERTY_ALREADY_EXISTS', null, null, 409);
+            }
         }
 
         try {
@@ -524,6 +648,138 @@ class PropertyController extends Controller
     {
         $property->delete();
         return $this->apiSuccess('Propiedad eliminada', 'PROPERTY_DELETED', null);
+    }
+
+    /**
+     * GET /api/public/properties/filter-options
+     * Returns dynamic filter options based on existing published property data.
+     */
+    public function filterOptions(Request $request): JsonResponse
+    {
+        $publishedScope = fn ($q) => $q->where('published', true);
+
+        // Tipos de propiedad distintos
+        $propertyTypes = Property::where('published', true)
+            ->whereNotNull('property_type_name')
+            ->where('property_type_name', '!=', '')
+            ->distinct()
+            ->pluck('property_type_name')
+            ->sort()
+            ->values();
+
+        // Tipos de operación distintos
+        $operationTypes = PropertyOperation::whereHas('property', $publishedScope)
+            ->whereNotNull('operation_type')
+            ->where('operation_type', '!=', '')
+            ->distinct()
+            ->pluck('operation_type')
+            ->sort()
+            ->values();
+
+        // Ciudades distintas
+        $cities = PropertyLocation::whereHas('property', $publishedScope)
+            ->whereNotNull('city')
+            ->where('city', '!=', '')
+            ->distinct()
+            ->pluck('city')
+            ->sort()
+            ->values();
+
+        // Regiones/estados distintos
+        $regions = PropertyLocation::whereHas('property', $publishedScope)
+            ->whereNotNull('region')
+            ->where('region', '!=', '')
+            ->distinct()
+            ->pluck('region')
+            ->sort()
+            ->values();
+
+        // Zonas/colonias distintas
+        $cityAreas = PropertyLocation::whereHas('property', $publishedScope)
+            ->whereNotNull('city_area')
+            ->where('city_area', '!=', '')
+            ->distinct()
+            ->pluck('city_area')
+            ->sort()
+            ->values();
+
+        // Valores distintos de recámaras (ordenados)
+        $bedroomValues = Property::where('published', true)
+            ->whereNotNull('bedrooms')
+            ->where('bedrooms', '>', 0)
+            ->distinct()
+            ->pluck('bedrooms')
+            ->sort()
+            ->values()
+            ->map(fn ($v) => (int) $v);
+
+        // Valores distintos de baños (ordenados)
+        $bathroomValues = Property::where('published', true)
+            ->whereNotNull('bathrooms')
+            ->where('bathrooms', '>', 0)
+            ->distinct()
+            ->pluck('bathrooms')
+            ->sort()
+            ->values()
+            ->map(fn ($v) => (float) $v);
+
+        // Valores distintos de estacionamientos (ordenados)
+        $parkingValues = Property::where('published', true)
+            ->whereNotNull('parking_spaces')
+            ->where('parking_spaces', '>', 0)
+            ->distinct()
+            ->pluck('parking_spaces')
+            ->sort()
+            ->values()
+            ->map(fn ($v) => (int) $v);
+
+        // Rango de precios
+        $priceRange = PropertyOperation::whereHas('property', $publishedScope)
+            ->whereNotNull('amount')
+            ->where('amount', '>', 0)
+            ->selectRaw('MIN(amount) as min_price, MAX(amount) as max_price')
+            ->first();
+
+        // Rango de tamaño de construcción
+        $constructionRange = Property::where('published', true)
+            ->whereNotNull('construction_size')
+            ->where('construction_size', '>', 0)
+            ->selectRaw('MIN(construction_size) as min_size, MAX(construction_size) as max_size')
+            ->first();
+
+        // Rango de tamaño de terreno
+        $lotRange = Property::where('published', true)
+            ->whereNotNull('lot_size')
+            ->where('lot_size', '>', 0)
+            ->selectRaw('MIN(lot_size) as min_size, MAX(lot_size) as max_size')
+            ->first();
+
+        // Total de propiedades publicadas
+        $totalCount = Property::where('published', true)->count();
+
+        return $this->apiSuccess('Opciones de filtro', 'FILTER_OPTIONS', [
+            'property_types'   => $propertyTypes,
+            'operation_types'  => $operationTypes,
+            'cities'           => $cities,
+            'regions'          => $regions,
+            'city_areas'       => $cityAreas,
+            'bedrooms'         => $bedroomValues,
+            'bathrooms'        => $bathroomValues,
+            'parking_spaces'   => $parkingValues,
+            'price_range'      => [
+                'min' => (float) ($priceRange->min_price ?? 0),
+                'max' => (float) ($priceRange->max_price ?? 0),
+            ],
+            'construction_size_range' => [
+                'min' => (float) ($constructionRange->min_size ?? 0),
+                'max' => (float) ($constructionRange->max_size ?? 0),
+            ],
+            'lot_size_range' => [
+                'min' => (float) ($lotRange->min_size ?? 0),
+                'max' => (float) ($lotRange->max_size ?? 0),
+            ],
+            'total_properties' => $totalCount,
+        ]);
     }
 }
 

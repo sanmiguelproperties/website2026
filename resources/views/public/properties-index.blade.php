@@ -93,7 +93,7 @@
             </template>
             <template x-if="filters.operation_type">
               <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                <span x-text="'Operación: ' + (filters.operation_type === 'sale' ? 'Venta' : 'Renta')"></span>
+                <span x-text="'Operación: ' + getOperationLabel(filters.operation_type)"></span>
                 <button @click="filters.operation_type = ''; applyFilters()" class="ml-1 hover:text-emerald-900">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -214,25 +214,22 @@
                   </div>
                 </div>
 
-                {{-- Tipo de Operación --}}
-                <div>
+                {{-- Tipo de Operación (dinámico) --}}
+                <div x-show="operationTypes.length > 0">
                   <label class="block text-sm font-semibold text-slate-700 mb-3">Tipo de Operación</label>
-                  <div class="grid grid-cols-3 gap-2">
+                  <div class="flex flex-wrap gap-2">
                     <button @click="filters.operation_type = ''; applyFiltersInModal()"
                             :class="filters.operation_type === '' ? 'ring-2 ring-emerald-500 bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
                             class="px-4 py-3 rounded-xl text-sm font-medium transition-all">
                       Todos
                     </button>
-                    <button @click="filters.operation_type = 'sale'; applyFiltersInModal()"
-                            :class="filters.operation_type === 'sale' ? 'ring-2 ring-emerald-500 bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                            class="px-4 py-3 rounded-xl text-sm font-medium transition-all">
-                      🏷️ Venta
-                    </button>
-                    <button @click="filters.operation_type = 'rental'; applyFiltersInModal()"
-                            :class="filters.operation_type === 'rental' ? 'ring-2 ring-emerald-500 bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                            class="px-4 py-3 rounded-xl text-sm font-medium transition-all">
-                      🔑 Renta
-                    </button>
+                    <template x-for="opType in operationTypes" :key="opType">
+                      <button @click="filters.operation_type = opType; applyFiltersInModal()"
+                              :class="filters.operation_type === opType ? 'ring-2 ring-emerald-500 bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                              class="px-4 py-3 rounded-xl text-sm font-medium transition-all"
+                              x-text="getOperationEmoji(opType) + ' ' + getOperationLabel(opType)">
+                      </button>
+                    </template>
                   </div>
                 </div>
 
@@ -267,15 +264,15 @@
                   </div>
                 </div>
 
-                {{-- Características --}}
-                <div>
+                {{-- Características (dinámicas) --}}
+                <div x-show="availableBedrooms.length > 0 || availableBathrooms.length > 0 || availableParking.length > 0">
                   <label class="block text-sm font-semibold text-slate-700 mb-3">Características</label>
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {{-- Recámaras --}}
-                    <div>
+                    <div x-show="availableBedrooms.length > 0">
                       <label class="block text-xs text-slate-500 mb-2">🛏️ Recámaras</label>
-                      <div class="flex items-center gap-1">
-                        <template x-for="n in [1, 2, 3, 4]" :key="'bed-' + n">
+                      <div class="flex items-center gap-1 flex-wrap">
+                        <template x-for="n in availableBedrooms" :key="'bed-' + n">
                           <button @click="filters.bedrooms = filters.bedrooms == n ? '' : n; applyFiltersInModal()"
                                   :class="filters.bedrooms == n ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
                                   class="w-9 h-9 rounded-lg text-sm font-medium transition-all"
@@ -285,10 +282,10 @@
                       </div>
                     </div>
                     {{-- Baños --}}
-                    <div>
+                    <div x-show="availableBathrooms.length > 0">
                       <label class="block text-xs text-slate-500 mb-2">🚿 Baños</label>
-                      <div class="flex items-center gap-1">
-                        <template x-for="n in [1, 2, 3, 4]" :key="'bath-' + n">
+                      <div class="flex items-center gap-1 flex-wrap">
+                        <template x-for="n in availableBathrooms" :key="'bath-' + n">
                           <button @click="filters.bathrooms = filters.bathrooms == n ? '' : n; applyFiltersInModal()"
                                   :class="filters.bathrooms == n ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
                                   class="w-9 h-9 rounded-lg text-sm font-medium transition-all"
@@ -298,10 +295,10 @@
                       </div>
                     </div>
                     {{-- Estacionamientos --}}
-                    <div>
+                    <div x-show="availableParking.length > 0">
                       <label class="block text-xs text-slate-500 mb-2">🚗 Estacionamientos</label>
-                      <div class="flex items-center gap-1">
-                        <template x-for="n in [1, 2, 3, 4]" :key="'park-' + n">
+                      <div class="flex items-center gap-1 flex-wrap">
+                        <template x-for="n in availableParking" :key="'park-' + n">
                           <button @click="filters.parking_spaces = filters.parking_spaces == n ? '' : n; applyFiltersInModal()"
                                   :class="filters.parking_spaces == n ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
                                   class="w-9 h-9 rounded-lg text-sm font-medium transition-all"
@@ -338,36 +335,45 @@
                   </div>
                 </div>
 
-                {{-- Ubicación --}}
-                <div>
+                {{-- Ubicación (dinámica con selects) --}}
+                <div x-show="availableRegions.length > 0 || availableCities.length > 0 || availableCityAreas.length > 0">
                   <label class="block text-sm font-semibold text-slate-700 mb-3">Ubicación</label>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
+                    <div x-show="availableRegions.length > 0">
                       <label class="block text-xs text-slate-500 mb-1">Región/Estado</label>
-                      <input type="text" 
-                             x-model="filters.region"
-                             @input.debounce.500ms="applyFiltersInModal()"
-                             placeholder="Ej: Jalisco"
-                             class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
-                             style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                      <select x-model="filters.region"
+                              @change="applyFiltersInModal()"
+                              class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
+                              style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                        <option value="">Todas las regiones</option>
+                        <template x-for="r in availableRegions" :key="r">
+                          <option :value="r" x-text="r"></option>
+                        </template>
+                      </select>
                     </div>
-                    <div>
+                    <div x-show="availableCities.length > 0">
                       <label class="block text-xs text-slate-500 mb-1">Ciudad</label>
-                      <input type="text" 
-                             x-model="filters.city"
-                             @input.debounce.500ms="applyFiltersInModal()"
-                             placeholder="Ej: Guadalajara"
-                             class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
-                             style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                      <select x-model="filters.city"
+                              @change="applyFiltersInModal()"
+                              class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
+                              style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                        <option value="">Todas las ciudades</option>
+                        <template x-for="c in availableCities" :key="c">
+                          <option :value="c" x-text="c"></option>
+                        </template>
+                      </select>
                     </div>
-                    <div>
+                    <div x-show="availableCityAreas.length > 0">
                       <label class="block text-xs text-slate-500 mb-1">Zona/Colonia</label>
-                      <input type="text" 
-                             x-model="filters.city_area"
-                             @input.debounce.500ms="applyFiltersInModal()"
-                             placeholder="Ej: Providencia"
-                             class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
-                             style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                      <select x-model="filters.city_area"
+                              @change="applyFiltersInModal()"
+                              class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
+                              style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                        <option value="">Todas las zonas</option>
+                        <template x-for="a in availableCityAreas" :key="a">
+                          <option :value="a" x-text="a"></option>
+                        </template>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -444,8 +450,18 @@
         // Estado del modal
         showFiltersModal: false,
         
-        // Tipos de propiedad disponibles
-        propertyTypes: ['Casa', 'Departamento', 'Terreno', 'Local Comercial', 'Oficina'],
+        // Opciones dinámicas de filtro (se cargan desde la API)
+        propertyTypes: [],
+        operationTypes: [],
+        availableCities: [],
+        availableRegions: [],
+        availableCityAreas: [],
+        availableBedrooms: [],
+        availableBathrooms: [],
+        availableParking: [],
+        priceRange: { min: 0, max: 0 },
+        totalAvailable: 0,
+        filterOptionsLoaded: false,
         
         // Filtros - incluye todos los filtros avanzados de la API
         filters: {
@@ -471,6 +487,8 @@
         pagination: null,
 
         init() {
+          // Cargar opciones de filtro dinámicas desde la API
+          this.loadFilterOptions();
           // Leer filtros desde la URL al inicializar
           this.loadFiltersFromUrl();
           this.loadProperties();
@@ -485,6 +503,42 @@
             this.loadFiltersFromUrl();
             this.loadProperties();
           });
+        },
+
+        async loadFilterOptions() {
+          try {
+            const res = await fetch('/api/public/properties/filter-options');
+            const data = await res.json();
+            if (data.success && data.data) {
+              const opts = data.data;
+              this.propertyTypes = opts.property_types || [];
+              this.operationTypes = opts.operation_types || [];
+              this.availableCities = opts.cities || [];
+              this.availableRegions = opts.regions || [];
+              this.availableCityAreas = opts.city_areas || [];
+              this.availableBedrooms = opts.bedrooms || [];
+              this.availableBathrooms = opts.bathrooms || [];
+              this.availableParking = opts.parking_spaces || [];
+              this.priceRange = opts.price_range || { min: 0, max: 0 };
+              this.totalAvailable = opts.total_properties || 0;
+              this.filterOptionsLoaded = true;
+            }
+          } catch (e) {
+            console.error('Error loading filter options:', e);
+            // Fallback: dejar arrays vacíos, la UI mostrará solo "Todos"
+          }
+        },
+
+        // Helper para obtener label de operación
+        getOperationLabel(type) {
+          const labels = { sale: 'Venta', rental: 'Renta', lease: 'Arrendamiento' };
+          return labels[type] || type;
+        },
+
+        // Helper para obtener emoji de operación
+        getOperationEmoji(type) {
+          const emojis = { sale: '🏷️', rental: '🔑', lease: '📋' };
+          return emojis[type] || '📌';
         },
 
         // Cargar filtros desde los parámetros de la URL

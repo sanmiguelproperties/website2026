@@ -32,15 +32,25 @@
   <div class="bg-[var(--c-surface)] rounded-2xl border border-[var(--c-border)] overflow-hidden">
     <div class="p-5 border-b border-[var(--c-border)]">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-        <div class="lg:col-span-5">
+        <div class="lg:col-span-4">
           <label class="block text-xs text-[var(--c-muted)] mb-1">Buscar</label>
           <div class="flex items-center gap-2 rounded-xl bg-[var(--c-elev)] px-3 py-2 ring-1 ring-[var(--c-border)] focus-within:ring-[var(--c-primary)]">
             <svg class="size-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input id="filter-search" type="search" placeholder="Título, EasyBroker ID, tipo…" class="bg-transparent outline-none w-full text-sm placeholder:text-[var(--c-muted)]" />
+            <input id="filter-search" type="search" placeholder="Título, EB ID, MLS ID, tipo…" class="bg-transparent outline-none w-full text-sm placeholder:text-[var(--c-muted)]" />
           </div>
         </div>
 
-        <div class="lg:col-span-3">
+        <div class="lg:col-span-2">
+          <label class="block text-xs text-[var(--c-muted)] mb-1">Origen</label>
+          <select id="filter-source" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm">
+            <option value="">Todos</option>
+            <option value="manual">Manual</option>
+            <option value="easybroker">EasyBroker</option>
+            <option value="mls">MLS</option>
+          </select>
+        </div>
+
+        <div class="lg:col-span-2">
           <label class="block text-xs text-[var(--c-muted)] mb-1">Agencia</label>
           <select id="filter-agency" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm">
             <option value="">Todas</option>
@@ -92,6 +102,7 @@
             <tr class="text-left text-xs text-[var(--c-muted)]">
               <th class="py-2 pr-3">Propiedad</th>
               <th class="py-2 pr-3">Agencia</th>
+              <th class="py-2 pr-3">Origen</th>
               <th class="py-2 pr-3">Tipo</th>
               <th class="py-2 pr-3">Estado</th>
               <th class="py-2 pr-3">Actualización</th>
@@ -162,8 +173,19 @@
 
         <!-- Tab: General -->
         <section class="prop-tab-panel p-6 space-y-5" data-panel="general">
+
+          <!-- Sección: Identificadores y Origen -->
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div class="md:col-span-5">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-1">Origen <span class="text-red-400">*</span></label>
+              <select id="field-source" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]">
+                <option value="manual">Manual</option>
+                <option value="easybroker">EasyBroker</option>
+                <option value="mls">MLS</option>
+              </select>
+            </div>
+
+            <div class="md:col-span-4">
               <label class="block text-sm font-medium mb-1">Agencia <span class="text-red-400">*</span></label>
               <select id="field-agency-id" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" required>
                 <option value="">Selecciona una agencia…</option>
@@ -180,7 +202,7 @@
               <p id="agent-preview" class="mt-1 text-xs text-[var(--c-muted)]">—</p>
             </div>
 
-            <div class="md:col-span-3">
+            <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1">Publicado</label>
               <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
                 <input id="field-published" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
@@ -189,10 +211,11 @@
             </div>
           </div>
 
+          <!-- IDs EasyBroker + Tipo -->
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div class="md:col-span-4">
-              <label class="block text-sm font-medium mb-1">EasyBroker Public ID <span class="text-red-400">*</span></label>
-              <input id="field-easybroker-public-id" type="text" maxlength="50" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Ej: EB-123" required />
+              <label class="block text-sm font-medium mb-1">EasyBroker Public ID</label>
+              <input id="field-easybroker-public-id" type="text" maxlength="50" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Ej: EB-123" />
             </div>
 
             <div class="md:col-span-4">
@@ -206,22 +229,104 @@
             </div>
           </div>
 
+          <!-- IDs MLS -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">MLS Public ID</label>
+              <input id="field-mls-public-id" type="text" maxlength="100" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Ej: MLS-456" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">MLS ID</label>
+              <input id="field-mls-id" type="text" maxlength="100" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">MLS Office ID</label>
+              <input id="field-mls-office-id" type="text" maxlength="100" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">MLS Neighborhood</label>
+              <input id="field-mls-neighborhood" type="text" maxlength="255" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+          </div>
+
+          <!-- MLS Folder + Status + Category + For Rent -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">MLS Folder Name</label>
+              <input id="field-mls-folder-name" type="text" maxlength="255" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">Status</label>
+              <select id="field-status" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]">
+                <option value="">—</option>
+                <option value="For Sale">For Sale</option>
+                <option value="For Rent">For Rent</option>
+                <option value="Price Reduction">Price Reduction</option>
+                <option value="Contract Pending">Contract Pending</option>
+                <option value="Under Contract">Under Contract</option>
+              </select>
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">Category</label>
+              <select id="field-category" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]">
+                <option value="">—</option>
+                <option value="Residential">Residential</option>
+                <option value="Land and Lots">Land and Lots</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Pre Sales">Pre Sales</option>
+              </select>
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">For Rent</label>
+              <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
+                <input id="field-for-rent" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
+                <span class="text-sm">Sí</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Título -->
           <div>
             <label class="block text-sm font-medium mb-1">Título</label>
             <input id="field-title" type="text" maxlength="255" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Título comercial" />
           </div>
 
+          <!-- Descripción general -->
           <div>
             <label class="block text-sm font-medium mb-1">Descripción</label>
             <textarea id="field-description" rows="5" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Descripción (texto largo)"></textarea>
           </div>
 
+          <!-- Descripciones bilingües -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Descripción corta (EN)</label>
+              <textarea id="field-description-short-en" rows="3" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Short description (English)"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Descripción corta (ES)</label>
+              <textarea id="field-description-short-es" rows="3" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Descripción corta (Español)"></textarea>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Descripción completa (EN)</label>
+              <textarea id="field-description-full-en" rows="5" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Full description (English)"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Descripción completa (ES)</label>
+              <textarea id="field-description-full-es" rows="5" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Descripción completa (Español)"></textarea>
+            </div>
+          </div>
+
+          <!-- URLs -->
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div class="md:col-span-6">
+            <div class="md:col-span-4">
               <label class="block text-sm font-medium mb-1">URL</label>
               <input id="field-url" type="url" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="https://..." />
             </div>
-            <div class="md:col-span-3">
+            <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1">Ad Type</label>
               <input id="field-ad-type" type="text" maxlength="50" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="sale / rental" />
             </div>
@@ -229,8 +334,13 @@
               <label class="block text-sm font-medium mb-1">Virtual Tour URL</label>
               <input id="field-virtual-tour-url" type="url" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="https://..." />
             </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">Video URL</label>
+              <input id="field-video-url" type="url" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="https://..." />
+            </div>
           </div>
 
+          <!-- Numéricos: dormitorios, baños, etc. -->
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1">Dormitorios</label>
@@ -238,7 +348,7 @@
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1">Baños</label>
-              <input id="field-bathrooms" type="number" min="0" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+              <input id="field-bathrooms" type="number" min="0" step="0.5" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1">Medios baños</label>
@@ -258,18 +368,28 @@
             </div>
           </div>
 
+          <!-- Parking number/type + Year built -->
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div class="md:col-span-3">
-              <label class="block text-sm font-medium mb-1">Lote (m²)</label>
-              <input id="field-lot-size" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-1">Parking #</label>
+              <input id="field-parking-number" type="number" min="0" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-1">Parking Type</label>
+              <select id="field-parking-type" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]">
+                <option value="">—</option>
+                <option value="Any">Any</option>
+                <option value="off_street">off_street</option>
+                <option value="on_street">on_street</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-1">Año constr.</label>
+              <input id="field-year-built" type="number" min="1800" max="2100" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
             </div>
             <div class="md:col-span-3">
-              <label class="block text-sm font-medium mb-1">Construcción (m²)</label>
-              <input id="field-construction-size" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
-            </div>
-            <div class="md:col-span-3">
-              <label class="block text-sm font-medium mb-1">Gastos</label>
-              <input id="field-expenses" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+              <label class="block text-sm font-medium mb-1">Old Price</label>
+              <input id="field-old-price" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
             </div>
             <div class="md:col-span-3">
               <label class="block text-sm font-medium mb-1">Edad</label>
@@ -277,7 +397,31 @@
             </div>
           </div>
 
+          <!-- Tamaños m² y pies² -->
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">Lote (m²)</label>
+              <input id="field-lot-size" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">Lote (ft²)</label>
+              <input id="field-lot-feet" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">Construcción (m²)</label>
+              <input id="field-construction-size" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">Construcción (ft²)</label>
+              <input id="field-construction-feet" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">Gastos</label>
+              <input id="field-expenses" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
             <div class="md:col-span-3">
               <label class="block text-sm font-medium mb-1">Largo lote</label>
               <input id="field-lot-length" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
@@ -286,13 +430,137 @@
               <label class="block text-sm font-medium mb-1">Ancho lote</label>
               <input id="field-lot-width" type="number" min="0" step="0.01" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
             </div>
+          </div>
+
+          <!-- Sección: Características MLS -->
+          <div class="pt-4 border-t border-[var(--c-border)]">
+            <h4 class="text-sm font-semibold text-[var(--c-text)] mb-4">Características MLS</h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <div class="md:col-span-3">
+                <label class="block text-sm font-medium mb-1">Furnished</label>
+                <select id="field-furnished" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]">
+                  <option value="">—</option>
+                  <option value="Any">Any</option>
+                  <option value="yes">yes</option>
+                  <option value="no">no</option>
+                  <option value="partially">partially</option>
+                  <option value="Optional Pkg">Optional Pkg</option>
+                </select>
+              </div>
+              <div class="md:col-span-3">
+                <label class="block text-sm font-medium mb-1">With View</label>
+                <select id="field-with-view" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]">
+                  <option value="">—</option>
+                  <option value="Any">Any</option>
+                  <option value="Lake">Lake</option>
+                  <option value="Mountain">Mountain</option>
+                  <option value="Lake and Mountain">Lake and Mountain</option>
+                  <option value="Ocean">Ocean</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                  <option value="Partial">Partial</option>
+                </select>
+              </div>
+              <div class="md:col-span-3">
+                <label class="block text-sm font-medium mb-1">Payment</label>
+                <select id="field-payment" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]">
+                  <option value="">—</option>
+                  <option value="Any">Any</option>
+                  <option value="ALL CASH">ALL CASH</option>
+                  <option value="FINANCING">FINANCING</option>
+                </select>
+              </div>
+              <div class="md:col-span-3">
+                <label class="block text-sm font-medium mb-1">Showing Terms</label>
+                <select id="field-showing-terms" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]">
+                  <option value="">—</option>
+                  <option value="Any">Any</option>
+                  <option value="Appointment">Appointment</option>
+                  <option value="Pick Up Keys">Pick Up Keys</option>
+                  <option value="Open">Open</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
+              <div class="md:col-span-4">
+                <label class="block text-sm font-medium mb-1">Selling Office Commission</label>
+                <input id="field-selling-office-commission" type="text" maxlength="20" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Ej: 3%" />
+              </div>
+              <div class="md:col-span-4">
+                <label class="block text-sm font-medium mb-1">Casita Bedrooms</label>
+                <input id="field-casita-bedrooms" type="text" maxlength="20" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+              </div>
+              <div class="md:col-span-4">
+                <label class="block text-sm font-medium mb-1">Casita Bathrooms</label>
+                <input id="field-casita-bathrooms" type="text" maxlength="20" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mt-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">With Yard</label>
+                <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
+                  <input id="field-with-yard" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
+                  <span class="text-sm">Sí</span>
+                </label>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Gated Comm</label>
+                <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
+                  <input id="field-gated-comm" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
+                  <span class="text-sm">Sí</span>
+                </label>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Pool</label>
+                <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
+                  <input id="field-pool" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
+                  <span class="text-sm">Sí</span>
+                </label>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Casita</label>
+                <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
+                  <input id="field-casita" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
+                  <span class="text-sm">Sí</span>
+                </label>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Approved</label>
+                <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
+                  <input id="field-is-approved" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
+                  <span class="text-sm">Sí</span>
+                </label>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Allow Integ.</label>
+                <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
+                  <input id="field-allow-integration" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
+                  <span class="text-sm">Sí</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fechas -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div class="md:col-span-3">
-              <label class="block text-sm font-medium mb-1">EasyBroker created_at</label>
+              <label class="block text-sm font-medium mb-1">EB created_at</label>
               <input id="field-easybroker-created-at" type="datetime-local" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
             </div>
             <div class="md:col-span-3">
-              <label class="block text-sm font-medium mb-1">EasyBroker updated_at</label>
+              <label class="block text-sm font-medium mb-1">EB updated_at</label>
               <input id="field-easybroker-updated-at" type="datetime-local" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">MLS created_at</label>
+              <input id="field-mls-created-at" type="datetime-local" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium mb-1">MLS updated_at</label>
+              <input id="field-mls-updated-at" type="datetime-local" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" />
             </div>
           </div>
 
@@ -643,6 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ----------------------
   const filterEls = {
     search: $('#filter-search'),
+    source: $('#filter-source'),
     agency: $('#filter-agency'),
     published: $('#filter-published'),
     order: $('#filter-order'),
@@ -660,10 +929,12 @@ document.addEventListener('DOMContentLoaded', () => {
     p.set('per_page', String(state.list.perPage));
 
     const search = filterEls.search.value.trim();
+    const source = filterEls.source.value;
     const agencyId = filterEls.agency.value;
     const published = filterEls.published.value;
 
     if (search) p.set('search', search);
+    if (source) p.set('source', source);
     if (agencyId) p.set('agency_id', agencyId);
     if (published !== '') p.set('published', published);
 
@@ -690,10 +961,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function escapeHtml(s) {
     return String(s ?? '')
-      .replaceAll('&', '&')
-      .replaceAll('<', '<')
-      .replaceAll('>', '>')
-      .replaceAll('"', '"')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
       .replaceAll("'", '&#039;');
   }
 
@@ -705,6 +976,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     return `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-[var(--c-elev)] text-[var(--c-muted)] border border-[var(--c-border)]">
       <span class="size-1.5 rounded-full bg-[var(--c-border)]"></span> Borrador
+    </span>`;
+  }
+
+  function badgeSource(source) {
+    const map = {
+      'manual': { bg: 'bg-gray-100 dark:bg-gray-800/40', text: 'text-gray-700 dark:text-gray-300', dot: 'bg-gray-500', label: 'Manual' },
+      'easybroker': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-800 dark:text-blue-100', dot: 'bg-blue-500', label: 'EasyBroker' },
+      'mls': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-800 dark:text-purple-100', dot: 'bg-purple-500', label: 'MLS' },
+    };
+    const cfg = map[source] || map['manual'];
+    return `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${cfg.bg} ${cfg.text}">
+      <span class="size-1.5 rounded-full ${cfg.dot}"></span> ${cfg.label}
     </span>`;
   }
 
@@ -724,7 +1007,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     items.forEach((p) => {
       const title = p.title || '(Sin título)';
-      const publicId = p.easybroker_public_id || '—';
+      const sourceVal = p.source || 'manual';
+      const relevantId = sourceVal === 'mls'
+        ? (p.mls_id || p.mls_public_id || '—')
+        : (p.easybroker_public_id || '—');
       const agencyName = p.agency?.name || `Agencia #${p.agency_id}`;
       const typeName = p.property_type_name || '—';
       const updated = p.updated_at || p.easybroker_updated_at || null;
@@ -742,11 +1028,12 @@ document.addEventListener('DOMContentLoaded', () => {
             ${cover}
             <div class="min-w-0">
               <div class="font-medium text-[var(--c-text)] truncate">${escapeHtml(title)}</div>
-              <div class="text-xs text-[var(--c-muted)] truncate">ID: ${escapeHtml(publicId)} • #${escapeHtml(p.id)}</div>
+              <div class="text-xs text-[var(--c-muted)] truncate">ID: ${escapeHtml(relevantId)} • #${escapeHtml(p.id)}</div>
             </div>
           </div>
         </td>
         <td class="py-3 pr-3 text-[var(--c-text)]">${escapeHtml(agencyName)}</td>
+        <td class="py-3 pr-3">${badgeSource(sourceVal)}</td>
         <td class="py-3 pr-3 text-[var(--c-text)]">${escapeHtml(typeName)}</td>
         <td class="py-3 pr-3">${badgePublished(!!p.published)}</td>
         <td class="py-3 pr-3 text-[var(--c-muted)]">${escapeHtml(fmtDate(updated))}</td>
@@ -1092,37 +1379,86 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $('#btn-property-delete').classList.add('hidden');
 
-    // General fields
+    // Source + Agency + Agent + Published
+    $('#field-source').value = 'manual';
     $('#field-agency-id').value = '';
     $('#field-agent-user-id').value = '';
     $('#agent-preview').textContent = '—';
     $('#field-published').checked = false;
 
+    // EasyBroker IDs
     $('#field-easybroker-public-id').value = '';
     $('#field-easybroker-agent-id').value = '';
     $('#field-property-type-name').value = '';
+
+    // MLS IDs
+    $('#field-mls-public-id').value = '';
+    $('#field-mls-id').value = '';
+    $('#field-mls-office-id').value = '';
+    $('#field-mls-neighborhood').value = '';
+    $('#field-mls-folder-name').value = '';
+
+    // Status fields
+    $('#field-status').value = '';
+    $('#field-category').value = '';
+    $('#field-for-rent').checked = false;
+
+    // Content
     $('#field-title').value = '';
     $('#field-description').value = '';
+    $('#field-description-short-en').value = '';
+    $('#field-description-full-en').value = '';
+    $('#field-description-short-es').value = '';
+    $('#field-description-full-es').value = '';
+
+    // URLs
     $('#field-url').value = '';
     $('#field-ad-type').value = '';
     $('#field-virtual-tour-url').value = '';
+    $('#field-video-url').value = '';
 
+    // Numeric
     $('#field-bedrooms').value = '';
     $('#field-bathrooms').value = '';
     $('#field-half-bathrooms').value = '';
     $('#field-parking-spaces').value = '';
     $('#field-floors').value = '';
     $('#field-floor').value = '';
-
-    $('#field-lot-size').value = '';
-    $('#field-construction-size').value = '';
-    $('#field-expenses').value = '';
+    $('#field-parking-number').value = '';
+    $('#field-parking-type').value = '';
+    $('#field-year-built').value = '';
+    $('#field-old-price').value = '';
     $('#field-age').value = '';
+
+    // Sizes
+    $('#field-lot-size').value = '';
+    $('#field-lot-feet').value = '';
+    $('#field-construction-size').value = '';
+    $('#field-construction-feet').value = '';
+    $('#field-expenses').value = '';
     $('#field-lot-length').value = '';
     $('#field-lot-width').value = '';
 
+    // MLS Characteristics
+    $('#field-furnished').value = '';
+    $('#field-with-view').value = '';
+    $('#field-payment').value = '';
+    $('#field-showing-terms').value = '';
+    $('#field-selling-office-commission').value = '';
+    $('#field-casita-bedrooms').value = '';
+    $('#field-casita-bathrooms').value = '';
+    $('#field-with-yard').checked = false;
+    $('#field-gated-comm').checked = false;
+    $('#field-pool').checked = false;
+    $('#field-casita').checked = false;
+    $('#field-is-approved').checked = false;
+    $('#field-allow-integration').checked = false;
+
+    // Dates
     $('#field-easybroker-created-at').value = '';
     $('#field-easybroker-updated-at').value = '';
+    $('#field-mls-created-at').value = '';
+    $('#field-mls-updated-at').value = '';
     $('#field-last-synced-at').value = '';
 
     // Location
@@ -1181,10 +1517,15 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#property-id').value = p.id;
 
     $('#property-drawer-title').textContent = `Editar propiedad #${p.id}`;
-    $('#property-drawer-subtitle').textContent = `${p.easybroker_public_id || '—'} • ${p.title || '(Sin título)'}`;
+    const subtitleId = p.source === 'mls'
+      ? (p.mls_id || p.mls_public_id || '—')
+      : (p.easybroker_public_id || '—');
+    $('#property-drawer-subtitle').textContent = `${subtitleId} • ${p.title || '(Sin título)'}`;
 
     $('#btn-property-delete').classList.remove('hidden');
 
+    // Source + Agency + Agent + Published
+    $('#field-source').value = p.source || 'manual';
     $('#field-agency-id').value = p.agency_id ?? '';
     $('#field-agent-user-id').value = p.agent_user_id ?? '';
 
@@ -1196,33 +1537,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $('#field-published').checked = !!p.published;
 
+    // EasyBroker IDs
     $('#field-easybroker-public-id').value = p.easybroker_public_id ?? '';
     $('#field-easybroker-agent-id').value = p.easybroker_agent_id ?? '';
-
     $('#field-property-type-name').value = p.property_type_name ?? '';
+
+    // MLS IDs
+    $('#field-mls-public-id').value = p.mls_public_id ?? '';
+    $('#field-mls-id').value = p.mls_id ?? '';
+    $('#field-mls-office-id').value = p.mls_office_id ?? '';
+    $('#field-mls-neighborhood').value = p.mls_neighborhood ?? '';
+    $('#field-mls-folder-name').value = p.mls_folder_name ?? '';
+
+    // Status fields
+    $('#field-status').value = p.status ?? '';
+    $('#field-category').value = p.category ?? '';
+    $('#field-for-rent').checked = !!p.for_rent;
+
+    // Content
     $('#field-title').value = p.title ?? '';
     $('#field-description').value = p.description ?? '';
+    $('#field-description-short-en').value = p.description_short_en ?? '';
+    $('#field-description-full-en').value = p.description_full_en ?? '';
+    $('#field-description-short-es').value = p.description_short_es ?? '';
+    $('#field-description-full-es').value = p.description_full_es ?? '';
+
+    // URLs
     $('#field-url').value = p.url ?? '';
     $('#field-ad-type').value = p.ad_type ?? '';
     $('#field-virtual-tour-url').value = p.virtual_tour_url ?? '';
+    $('#field-video-url').value = p.video_url ?? '';
 
+    // Numeric
     $('#field-bedrooms').value = p.bedrooms ?? '';
     $('#field-bathrooms').value = p.bathrooms ?? '';
     $('#field-half-bathrooms').value = p.half_bathrooms ?? '';
     $('#field-parking-spaces').value = p.parking_spaces ?? '';
+    $('#field-floors').value = p.floors ?? '';
+    $('#field-floor').value = p.floor ?? '';
+    $('#field-parking-number').value = p.parking_number ?? '';
+    $('#field-parking-type').value = p.parking_type ?? '';
+    $('#field-year-built').value = p.year_built ?? '';
+    $('#field-old-price').value = p.old_price ?? '';
+    $('#field-age').value = p.age ?? '';
 
+    // Sizes
     $('#field-lot-size').value = p.lot_size ?? '';
+    $('#field-lot-feet').value = p.lot_feet ?? '';
     $('#field-construction-size').value = p.construction_size ?? '';
+    $('#field-construction-feet').value = p.construction_feet ?? '';
     $('#field-expenses').value = p.expenses ?? '';
     $('#field-lot-length').value = p.lot_length ?? '';
     $('#field-lot-width').value = p.lot_width ?? '';
 
-    $('#field-floors').value = p.floors ?? '';
-    $('#field-floor').value = p.floor ?? '';
-    $('#field-age').value = p.age ?? '';
+    // MLS Characteristics
+    $('#field-furnished').value = p.furnished ?? '';
+    $('#field-with-view').value = p.with_view ?? '';
+    $('#field-payment').value = p.payment ?? '';
+    $('#field-showing-terms').value = p.showing_terms ?? '';
+    $('#field-selling-office-commission').value = p.selling_office_commission ?? '';
+    $('#field-casita-bedrooms').value = p.casita_bedrooms ?? '';
+    $('#field-casita-bathrooms').value = p.casita_bathrooms ?? '';
+    $('#field-with-yard').checked = !!p.with_yard;
+    $('#field-gated-comm').checked = !!p.gated_comm;
+    $('#field-pool').checked = !!p.pool;
+    $('#field-casita').checked = !!p.casita;
+    $('#field-is-approved').checked = !!p.is_approved;
+    $('#field-allow-integration').checked = !!p.allow_integration;
 
+    // Dates
     $('#field-easybroker-created-at').value = dtLocalValue(p.easybroker_created_at);
     $('#field-easybroker-updated-at').value = dtLocalValue(p.easybroker_updated_at);
+    $('#field-mls-created-at').value = dtLocalValue(p.mls_created_at);
+    $('#field-mls-updated-at').value = dtLocalValue(p.mls_updated_at);
     $('#field-last-synced-at').value = dtLocalValue(p.last_synced_at);
 
     // Location
@@ -1312,40 +1699,90 @@ document.addEventListener('DOMContentLoaded', () => {
   // Save/Delete
   // ----------------------
   function buildPayloadFromForm() {
+    const dtToIso = (selector) => {
+      const v = toStrOrNull($(selector).value);
+      return v ? new Date(v).toISOString() : null;
+    };
+
     const payload = {
       agency_id: toInt($('#field-agency-id').value),
+      source: toStrOrNull($('#field-source').value) || 'manual',
       agent_user_id: toInt($('#field-agent-user-id').value),
       easybroker_public_id: toStrOrNull($('#field-easybroker-public-id').value),
       easybroker_agent_id: toStrOrNull($('#field-easybroker-agent-id').value),
 
+      // MLS IDs
+      mls_public_id: toStrOrNull($('#field-mls-public-id').value),
+      mls_id: toStrOrNull($('#field-mls-id').value),
+      mls_office_id: toStrOrNull($('#field-mls-office-id').value),
+      mls_neighborhood: toStrOrNull($('#field-mls-neighborhood').value),
+      mls_folder_name: toStrOrNull($('#field-mls-folder-name').value),
+
+      // Status
       published: $('#field-published').checked,
+      status: toStrOrNull($('#field-status').value),
+      category: toStrOrNull($('#field-category').value),
+      for_rent: $('#field-for-rent').checked,
 
-      easybroker_created_at: toStrOrNull($('#field-easybroker-created-at').value) ? new Date($('#field-easybroker-created-at').value).toISOString() : null,
-      easybroker_updated_at: toStrOrNull($('#field-easybroker-updated-at').value) ? new Date($('#field-easybroker-updated-at').value).toISOString() : null,
-      last_synced_at: toStrOrNull($('#field-last-synced-at').value) ? new Date($('#field-last-synced-at').value).toISOString() : null,
+      // Dates
+      easybroker_created_at: dtToIso('#field-easybroker-created-at'),
+      easybroker_updated_at: dtToIso('#field-easybroker-updated-at'),
+      mls_created_at: dtToIso('#field-mls-created-at'),
+      mls_updated_at: dtToIso('#field-mls-updated-at'),
+      last_synced_at: dtToIso('#field-last-synced-at'),
 
+      // Content
       title: toStrOrNull($('#field-title').value),
       description: toStrOrNull($('#field-description').value),
+      description_short_en: toStrOrNull($('#field-description-short-en').value),
+      description_full_en: toStrOrNull($('#field-description-full-en').value),
+      description_short_es: toStrOrNull($('#field-description-short-es').value),
+      description_full_es: toStrOrNull($('#field-description-full-es').value),
       url: toStrOrNull($('#field-url').value),
       ad_type: toStrOrNull($('#field-ad-type').value),
       property_type_name: toStrOrNull($('#field-property-type-name').value),
 
+      // Numeric
       bedrooms: toInt($('#field-bedrooms').value),
-      bathrooms: toInt($('#field-bathrooms').value),
+      bathrooms: toNum($('#field-bathrooms').value),
       half_bathrooms: toInt($('#field-half-bathrooms').value),
       parking_spaces: toInt($('#field-parking-spaces').value),
+      parking_number: toInt($('#field-parking-number').value),
+      parking_type: toStrOrNull($('#field-parking-type').value),
 
+      // Sizes
       lot_size: toNum($('#field-lot-size').value),
+      lot_feet: toNum($('#field-lot-feet').value),
       construction_size: toNum($('#field-construction-size').value),
+      construction_feet: toNum($('#field-construction-feet').value),
       expenses: toNum($('#field-expenses').value),
+      old_price: toNum($('#field-old-price').value),
       lot_length: toNum($('#field-lot-length').value),
       lot_width: toNum($('#field-lot-width').value),
 
       floors: toInt($('#field-floors').value),
       floor: toStrOrNull($('#field-floor').value),
       age: toStrOrNull($('#field-age').value),
+      year_built: toInt($('#field-year-built').value),
 
+      // MLS characteristics
+      furnished: toStrOrNull($('#field-furnished').value),
+      with_yard: $('#field-with-yard').checked,
+      with_view: toStrOrNull($('#field-with-view').value),
+      gated_comm: $('#field-gated-comm').checked,
+      pool: $('#field-pool').checked,
+      casita: $('#field-casita').checked,
+      casita_bedrooms: toStrOrNull($('#field-casita-bedrooms').value),
+      casita_bathrooms: toStrOrNull($('#field-casita-bathrooms').value),
+      payment: toStrOrNull($('#field-payment').value),
+      selling_office_commission: toStrOrNull($('#field-selling-office-commission').value),
+      showing_terms: toStrOrNull($('#field-showing-terms').value),
+      is_approved: $('#field-is-approved').checked,
+      allow_integration: $('#field-allow-integration').checked,
+
+      // URLs
       virtual_tour_url: toStrOrNull($('#field-virtual-tour-url').value),
+      video_url: toStrOrNull($('#field-video-url').value),
 
       cover_media_asset_id: toInt(document.querySelector('input[name="cover_media_asset_id"]')?.value),
 
@@ -1404,8 +1841,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }));
     }
 
-    // Limpieza de nulls para PATCH (evita tocar campos si no se necesita)
-    // Nota: En CREATE sí se requiere agency_id y easybroker_public_id.
     return payload;
   }
 
@@ -1421,20 +1856,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const isEdit = !!id;
 
-    // Reglas mínimas de cliente para evitar roundtrip innecesario
-    if (!payload.agency_id || !payload.easybroker_public_id) {
+    // Regla mínima de cliente: solo requerimos agency_id
+    if (!payload.agency_id) {
       window.dispatchEvent(new CustomEvent('api:response', {
         detail: {
           success: false,
-          message: 'Agencia y EasyBroker Public ID son obligatorios.',
+          message: 'Agencia es obligatoria.',
           code: 'CLIENT_VALIDATION',
-          errors: { agency_id: ['Requerido'], easybroker_public_id: ['Requerido'] }
+          errors: { agency_id: ['Requerido'] }
         }
       }));
       return;
     }
-
-    // Nota: en PATCH enviamos `null` para permitir que el usuario pueda limpiar campos opcionales.
 
     const url = isEdit ? `${API_BASE}/properties/${id}` : `${API_BASE}/properties`;
     const method = isEdit ? 'PATCH' : 'POST';
@@ -1537,6 +1970,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   filterEls.search.addEventListener('input', debounce(() => loadProperties(1), 300));
+  filterEls.source.addEventListener('change', () => loadProperties(1));
   filterEls.agency.addEventListener('change', () => loadProperties(1));
   filterEls.published.addEventListener('change', () => loadProperties(1));
   filterEls.order.addEventListener('change', () => loadProperties(1));

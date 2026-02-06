@@ -232,5 +232,15 @@ class Property extends Model
         return $this->belongsToMany(MediaAsset::class, 'property_media_assets', 'property_id', 'media_asset_id')
             ->withPivot(['role', 'title', 'position', 'checksum', 'source_url', 'raw_payload']);
     }
+
+    /**
+     * Agentes MLS asociados a esta propiedad.
+     */
+    public function mlsAgents(): BelongsToMany
+    {
+        return $this->belongsToMany(MLSAgent::class, 'property_mls_agent', 'property_id', 'mls_agent_id')
+            ->withPivot('is_primary')
+            ->withTimestamps();
+    }
 }
 
