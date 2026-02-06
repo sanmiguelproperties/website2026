@@ -610,14 +610,89 @@ class MLSSyncService
 
     /**
      * Obtiene el detalle de una propiedad específica del MLS.
+     *
+     * IMPORTANTE: El endpoint /property/mls/{mls_id} espera solo la parte numérica
+     * del MLS ID (ej: "1200"), NO el ID completo con prefijo (ej: "SMA-1200").
+     * Este método se encarga de limpiar el prefijo automáticamente.
      */
     public function fetchPropertyDetail(string $mlsId): ?array
     {
-        return $this->makeRequest('GET', "/property/mls/{$mlsId}");
+        // Limpiar el prefijo "SMA-" si existe, ya que el API espera solo la parte numérica
+        $numericMlsId = preg_replace('/^SMA-/i', '', $mlsId);
+        
+        $this->log('debug', "[FETCH DETAIL] MLS ID original: {$mlsId} | Numérico: {$numericMlsId}");
+        
+        return $this->makeRequest('GET', "/property/mls/{$numericMlsId}");
+    }
+
+    /**
+     * Obtiene las fotos de una propiedad específica del MLS.
+     *
+     * NOTA: Las fotos están en un endpoint separado: /api/v1/property/{id}/photos
+     * donde {id} es el ID interno de la propiedad (campo 'id' en el API),
+     * NO el mls_id (campo 'mls_id' como "SMA-1200").
+     *
+     * @param int $propertyInternalId ID interno de la propiedad en el MLS
+     * @return array|null Array con 'id' y 'photos' o null si falla
+     */
+    public function fetchPropertyPhotos(int $propertyInternalId): ?array
+    {
+        return $this->makeRequest('GET', "/property/{$propertyInternalId}/photos");
+    }
+
+    /**
+     * Obtiene los features de una propiedad específica del MLS.
+     *
+     * El endpoint /api/v1/property/{id}/features devuelve los IDs de features
+     * asociados a la propiedad.
+     *
+     * @param int $propertyInternalId ID interno de la propiedad en el MLS
+     * @return array|null Array con 'id' y 'features' (array de IDs) o null si falla
+     */
+    public function fetchPropertyFeatureIds(int $propertyInternalId): ?array
+    {
+        return $this->makeRequest('GET', "/property/{$propertyInternalId}/features");
+    }
+
+    /**
+     * Obtiene los agentes de una propiedad específica del MLS.
+     *
+     * @param int $propertyInternalId ID interno de la propiedad en el MLS
+     * @return array|null Array con 'id' y 'agents' (array de IDs) o null si falla
+     */
+    public function fetchPropertyAgentIds(int $propertyInternalId): ?array
+    {
+        return $this->makeRequest('GET', "/property/{$propertyInternalId}/agents");
     }
 
     /**
      * Mapea los datos del MLS al formato de la tabla properties.
+     *
+     * Campos del API MLS documentados:
+     * - id: ID interno de la propiedad
+     * - mls_id: ID público MLS (ej: "SMA-1200")
+     * - name: Nombre de la propiedad
+     * - price, old_price, currency: Precio y moneda
+     * - office_id: ID de la oficina
+     * - status: Estado (For Sale, For Rent, Price Reduction, Contract Pending, Under Contract)
+     * - category: Categoría (Residential, Land and Lots, Commercial, Pre Sales)
+     * - for_rent: Boolean si es de renta
+     * - bedrooms, bathrooms, half_bathrooms, floors: Características numéricas
+     * - lot_meters, construction_meters: Tamaños en metros
+     * - lot_feet, construction_feet: Tamaños en pies
+     * - furnished, with_yard, with_view, gated_comm, pool, casita: Características
+     * - casita_bedrooms, casita_bathrooms: Casita
+     * - parking_number, parking_type: Estacionamiento
+     * - year_built: Año de construcción
+     * - payment: Tipo de pago (Any, ALL CASH, FINANCING)
+     * - selling_office_commission: Comisión
+     * - showing_terms: Términos de visita (Any, Appointment, Pick Up Keys, Open)
+     * - address, city, state_province, country, zip_code, neighborhood: Ubicación
+     * - latitude, longitude: Coordenadas
+     * - description_short_en, description_full_en: Descripciones en inglés
+     * - description_short_es, description_full_es: Descripciones en español
+     * - video_url: URL de video
+     * - created_at, updated_at: Fechas
      */
     protected function mapPropertyData(array $data): array
     {
@@ -632,16 +707,32 @@ class MLSSyncService
         // Determinar si está publicado
         // IMPORTANTE: Para propiedades del MLS, siempre publicamos por defecto (true)
         // porque el LMS trae sus propios filtros de publicación y el campo 'published'
-        // en nuestra base de datos debe reflejar si la propiedad es visible en nuestro sitio,
-        // no si el LMS la tiene como publicada internamente.
+        // en nuestra base de datos debe reflejar si la propiedad es visible en nuestro sitio.
         $isPublished = true;
         if (isset($data['is_published'])) {
             $isPublished = (bool) $data['is_published'];
         } elseif (isset($data['allow_integration'])) {
             $isPublished = (bool) $data['allow_integration'];
         }
-        // Si no viene ningún campo de estado, $isPublished ya es true por defecto
-        // Nota: El valor del API del MLS no sobreescribe este true para propiedades del LMS
+
+        // Construir descripción general a partir de las descripciones bilingües
+        $description = $data['description'] ?? null;
+        if (!$description) {
+            // Priorizar descripción completa en inglés, luego español
+            $description = $data['description_full_en']
+                ?? $data['description_full_es']
+                ?? $data['description_short_en']
+                ?? $data['description_short_es']
+                ?? null;
+        }
+
+        // Determinar for_rent basado en el campo for_rent o el status
+        $forRent = null;
+        if (isset($data['for_rent'])) {
+            $forRent = (bool) $data['for_rent'];
+        } elseif (isset($data['status']) && stripos($data['status'], 'rent') !== false) {
+            $forRent = true;
+        }
 
         return [
             'agency_id' => $this->getDefaultAgencyId(),
@@ -660,6 +751,7 @@ class MLSSyncService
             'category' => $data['category'] ?? null,
             'is_approved' => $data['is_approved'] ?? false,
             'allow_integration' => $data['allow_integration'] ?? true,
+            'for_rent' => $forRent,
             
             // Fechas del MLS
             'mls_created_at' => isset($data['created_at'])
@@ -672,9 +764,13 @@ class MLSSyncService
             
             // Contenido básico
             'title' => $data['name'] ?? $data['title'] ?? null,
-            'description' => $data['description'] ?? null,
+            'description' => $description,
+            'description_short_en' => $data['description_short_en'] ?? null,
+            'description_full_en' => $data['description_full_en'] ?? null,
+            'description_short_es' => $data['description_short_es'] ?? null,
+            'description_full_es' => $data['description_full_es'] ?? null,
             'url' => $data['url'] ?? null,
-            'property_type_name' => $data['property_type'] ?? $data['category'] ?? null,
+            'property_type_name' => $data['category'] ?? $data['property_type'] ?? null,
             
             // Características numéricas
             'bedrooms' => $this->parseNumeric($data['bedrooms'] ?? null),
@@ -682,13 +778,21 @@ class MLSSyncService
             'half_bathrooms' => $this->parseNumeric($data['half_bathrooms'] ?? null),
             'parking_spaces' => $this->parseNumeric($data['parking_spaces'] ?? $data['parking_number'] ?? null),
             'parking_number' => $this->parseNumeric($data['parking_number'] ?? null),
+            'parking_type' => $data['parking_type'] ?? null,
             'lot_size' => $this->parseDecimal($data['lot_meters'] ?? $data['lot_size'] ?? null),
+            'lot_feet' => $this->parseDecimal($data['lot_feet'] ?? null),
             'construction_size' => $this->parseDecimal($data['construction_meters'] ?? $data['construction_size'] ?? null),
+            'construction_feet' => $this->parseDecimal($data['construction_feet'] ?? null),
             'floors' => $this->parseNumeric($data['floors'] ?? null),
+            'year_built' => $this->parseNumeric($data['year_built'] ?? null),
             
-            // Precios
-            'expenses' => $this->parseDecimal($data['price'] ?? null),
+            // Precios - El precio principal va a las operations,
+            // expenses es para gastos de mantenimiento (HOA/maintenance fees)
+            'expenses' => $this->parseDecimal($data['expenses'] ?? $data['maintenance_fee'] ?? null),
             'old_price' => $this->parseDecimal($data['old_price'] ?? null),
+            'payment' => $data['payment'] ?? null,
+            'selling_office_commission' => $data['selling_office_commission'] ?? null,
+            'showing_terms' => $data['showing_terms'] ?? null,
             
             // Características adicionales del MLS
             'furnished' => $data['furnished'] ?? null,
@@ -700,7 +804,10 @@ class MLSSyncService
             'casita_bedrooms' => $data['casita_bedrooms'] ?? null,
             'casita_bathrooms' => $data['casita_bathrooms'] ?? null,
             
+            // URLs de medios
             'virtual_tour_url' => $data['virtual_tour_url'] ?? $data['virtual_tour'] ?? null,
+            'video_url' => $data['video_url'] ?? null,
+            
             'raw_payload' => $data,
         ];
     }
@@ -800,19 +907,32 @@ class MLSSyncService
 
     /**
      * Sincroniza la ubicación de la propiedad.
+     *
+     * Campos del API MLS para ubicación:
+     * - address: Dirección (ej: "Calle Principal 123")
+     * - city: Ciudad (ej: "San Miguel de Allende")
+     * - state_province: Estado (ej: "Guanajuato")  ← NO es 'state'
+     * - country: País (ej: "Mexico")
+     * - zip_code: Código postal (ej: "37700")  ← NO es 'postal_code'
+     * - neighborhood: Vecindario (ej: "Centro")
+     * - latitude, longitude: Coordenadas geográficas
      */
     protected function syncPropertyLocation(Property $property, array $data): void
     {
         $location = $data['location'] ?? [];
 
-        // Si no hay objeto location, usar campos de nivel superior
+        // Si no hay objeto location, usar campos de nivel superior del API del MLS
         if (empty($location)) {
             $location = [
                 'city' => $data['city'] ?? null,
                 'neighborhood' => $data['neighborhood'] ?? null,
-                'state' => $data['state'] ?? $data['region'] ?? null,
-                'street' => $data['street'] ?? $data['address'] ?? null,
-                'postal_code' => $data['postal_code'] ?? $data['zip_code'] ?? null,
+                // El API MLS usa 'state_province', no 'state'
+                'state' => $data['state_province'] ?? $data['state'] ?? $data['region'] ?? null,
+                'country' => $data['country'] ?? null,
+                // El API MLS usa 'address', no 'street'
+                'street' => $data['address'] ?? $data['street'] ?? null,
+                // El API MLS usa 'zip_code', no 'postal_code'
+                'postal_code' => $data['zip_code'] ?? $data['postal_code'] ?? null,
                 'latitude' => $data['latitude'] ?? $data['lat'] ?? null,
                 'longitude' => $data['longitude'] ?? $data['lng'] ?? $data['lon'] ?? null,
             ];
@@ -831,7 +951,7 @@ class MLSSyncService
         $property->location()->updateOrCreate(
             ['property_id' => $property->id],
             [
-                'region' => $location['state'] ?? $location['region'] ?? null,
+                'region' => $location['state'] ?? $location['state_province'] ?? $location['region'] ?? null,
                 'city' => $location['city'] ?? null,
                 'city_area' => $location['neighborhood'] ?? $location['city_area'] ?? null,
                 'street' => $location['street'] ?? $location['address'] ?? null,
@@ -848,6 +968,13 @@ class MLSSyncService
 
     /**
      * Sincroniza las operaciones (venta/renta) de la propiedad.
+     *
+     * El API MLS proporciona:
+     * - price: Precio de la propiedad
+     * - currency: Moneda (USD, MXN, CAD, EUR)
+     * - status: Estado (For Sale, For Rent, Price Reduction, Contract Pending, Under Contract)
+     * - for_rent: Boolean que indica si es de renta
+     * - old_price: Precio anterior (para reducciones)
      */
     protected function syncPropertyOperations(Property $property, array $data): void
     {
@@ -858,15 +985,17 @@ class MLSSyncService
         $existingOperationsCount = $property->operations()->count();
         $this->log('debug', "[OPERATIONS SYNC START] Propiedad: {$property->mls_public_id} | Operaciones actuales: {$existingOperationsCount}");
 
-        // Si no hay operaciones explícitas, crear una basada en status y price
+        // Si no hay operaciones explícitas, crear una basada en status, for_rent y price
         if (empty($operations)) {
             $status = $data['status'] ?? null;
             $price = $data['price'] ?? null;
             $currency = $data['currency'] ?? 'USD';
+            $forRent = $data['for_rent'] ?? null;
 
-            if ($price && $status) {
+            if ($price) {
+                // Determinar tipo de operación: usar for_rent si está disponible, sino inferir del status
                 $operationType = 'sale';
-                if (stripos($status, 'rent') !== false) {
+                if ($forRent === true || (is_string($status) && stripos($status, 'rent') !== false)) {
                     $operationType = 'rental';
                 }
 
@@ -911,30 +1040,79 @@ class MLSSyncService
 
     /**
      * Sincroniza las características de la propiedad.
+     *
+     * IMPORTANTE: El API MLS devuelve features como un array de IDs enteros (ej: [1, 6, 21]).
+     * Estos IDs corresponden al catálogo de features del MLS obtenible via GET /api/v1/features.
+     * Si los features vienen como IDs enteros, se obtiene el nombre del catálogo.
+     * También soporta features como arrays de objetos {name, category} o strings.
      */
     protected function syncPropertyFeatures(Property $property, array $data): void
     {
         $features = $data['features'] ?? [];
+
+        // Si no hay features en los datos, intentar obtenerlos del endpoint dedicado
+        if (empty($features) && isset($data['id'])) {
+            $this->log('debug', "[FEATURES SYNC] No hay features en datos, intentando endpoint dedicado para ID: {$data['id']}");
+            $featureResponse = $this->fetchPropertyFeatureIds((int) $data['id']);
+            if ($featureResponse && isset($featureResponse['features'])) {
+                $features = $featureResponse['features'];
+                $this->log('info', "[FEATURES SYNC] Obtenidos " . count($features) . " features del endpoint dedicado");
+            }
+        }
 
         // LOG: Estado antes de sincronizar
         $existingFeaturesCount = $property->features()->count();
         $this->log('debug', "[FEATURES SYNC START] Propiedad: {$property->mls_public_id} | Features actuales: {$existingFeaturesCount}");
 
         if (empty($features)) {
-            $this->log('debug', "[FEATURES SYNC] No hay features en los datos, limpiando existentes");
-            $property->features()->sync([]);
+            $this->log('debug', "[FEATURES SYNC] No hay features en los datos");
+            // No limpiar features existentes si no hay datos - podrían haberse importado antes
             return;
         }
 
         $this->log('info', "[FEATURES SYNC] Propiedad: {$property->mls_public_id} | Features a sincronizar: " . count($features));
 
         $featureIds = [];
+        
+        // Obtener catálogo de features del MLS si hay IDs enteros (cachear por la duración del sync)
+        static $featureCatalog = null;
+        $hasIntegerIds = false;
+        foreach ($features as $f) {
+            if (is_int($f) || (is_string($f) && ctype_digit($f))) {
+                $hasIntegerIds = true;
+                break;
+            }
+        }
+        
+        if ($hasIntegerIds && $featureCatalog === null) {
+            $this->log('debug', "[FEATURES SYNC] Detectados IDs enteros, obteniendo catálogo de features del MLS...");
+            $catalogResponse = $this->fetchFeatures();
+            if ($catalogResponse && is_array($catalogResponse)) {
+                $featureCatalog = [];
+                // El catálogo puede venir como array directo o bajo 'data'
+                $catalogItems = $catalogResponse['data'] ?? $catalogResponse;
+                foreach ($catalogItems as $item) {
+                    if (isset($item['id']) && isset($item['name'])) {
+                        $featureCatalog[$item['id']] = $item['name'];
+                    }
+                }
+                $this->log('info', "[FEATURES SYNC] Catálogo cargado con " . count($featureCatalog) . " features");
+            } else {
+                $featureCatalog = [];
+                $this->log('warning', "[FEATURES SYNC] No se pudo obtener catálogo de features");
+            }
+        }
 
         foreach ($features as $index => $featureData) {
             $featureName = null;
             $featureCategory = null;
 
-            if (is_array($featureData)) {
+            if (is_int($featureData) || (is_string($featureData) && ctype_digit($featureData))) {
+                // El API MLS devuelve IDs enteros - resolver nombre del catálogo
+                $mlsFeatureId = (int) $featureData;
+                $featureName = $featureCatalog[$mlsFeatureId] ?? "MLS Feature #{$mlsFeatureId}";
+                $this->log('debug', "[FEATURES SYNC] ID #{$mlsFeatureId} → '{$featureName}'");
+            } elseif (is_array($featureData)) {
                 $featureName = $featureData['name'] ?? null;
                 $featureCategory = $featureData['category'] ?? null;
             } elseif (is_string($featureData)) {
@@ -969,6 +1147,10 @@ class MLSSyncService
     /**
      * Sincroniza los medios (imágenes/videos) de la propiedad.
      * Crea las relaciones directamente y dispatcha jobs solo para descarga de imágenes nuevas.
+     *
+     * IMPORTANTE: Las fotos están en un endpoint separado del API MLS:
+     * GET /api/v1/property/{id}/photos (donde {id} es el ID interno, no el mls_id)
+     * El endpoint de detalle (/property/mls/{mls_id}) NO incluye fotos.
      */
     protected function syncPropertyMedia(Property $property, array $data): void
     {
@@ -986,7 +1168,18 @@ class MLSSyncService
         $existingImageCount = $property->mediaAssets()->wherePivot('role', 'image')->count();
         $this->log('info', "[MEDIA SYNC START] Propiedad: {$property->mls_public_id} | Imágenes existentes: {$existingImageCount} | Videos existentes: " . ($existingMediaCount - $existingImageCount));
 
-        // Si no hay fotos en los datos nuevos, verificar en el raw_payload existente
+        // Si no hay fotos en los datos, intentar obtenerlas del endpoint dedicado de fotos
+        // El endpoint de detalle del MLS no incluye fotos - están en un endpoint separado
+        if (empty($photos) && isset($data['id'])) {
+            $this->log('debug', "[MEDIA SYNC] Obteniendo fotos del endpoint dedicado para ID interno: {$data['id']}");
+            $photosResponse = $this->fetchPropertyPhotos((int) $data['id']);
+            if ($photosResponse && isset($photosResponse['photos'])) {
+                $photos = $photosResponse['photos'];
+                $this->log('info', "[MEDIA SYNC] Obtenidas " . count($photos) . " fotos del endpoint dedicado");
+            }
+        }
+
+        // Fallback: verificar en el raw_payload existente
         if (empty($photos) && !empty($data['raw_payload']['photos'])) {
             $photos = $data['raw_payload']['photos'];
             $this->log('info', "[MEDIA FROM PAYLOAD] Usando fotos del raw_payload existente para: {$property->mls_public_id} | Fotos: " . count($photos));
@@ -996,9 +1189,15 @@ class MLSSyncService
             $videos = $data['raw_payload']['videos'];
             $this->log('info', "[MEDIA FROM PAYLOAD] Usando videos del raw_payload existente para: {$property->mls_public_id} | Videos: " . count($videos));
         }
+        
+        // Si hay video_url en los datos, agregarlo a videos
+        if (empty($videos) && !empty($data['video_url'])) {
+            $videos = [$data['video_url']];
+            $this->log('info', "[MEDIA VIDEO] Usando video_url de los datos: {$data['video_url']}");
+        }
 
         if (empty($photos) && empty($videos)) {
-            $this->log('warning', "[MEDIA SYNC SKIP] Propiedad: {$property->mls_public_id} | No tiene photos ni videos (ni en datos nuevos ni en raw_payload)");
+            $this->log('warning', "[MEDIA SYNC SKIP] Propiedad: {$property->mls_public_id} | No tiene photos ni videos");
             return;
         }
 
