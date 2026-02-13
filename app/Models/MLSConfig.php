@@ -18,6 +18,7 @@ class MLSConfig extends Model
         'name',
         'api_key',
         'base_url',
+        'images_base_url',
         'rate_limit',
         'timeout',
         'batch_size',

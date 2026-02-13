@@ -22,6 +22,50 @@ Route::get('/propiedades', function () {
     return view('public.properties-index');
 })->name('public.properties.index');
 
+// Listado público de agencias MLS
+Route::get('/agencias', function () {
+    return view('public.mls-offices-index');
+})->name('public.mls-offices.index');
+
+// Listado público de agentes MLS
+Route::get('/agentes', function () {
+    return view('public.mls-agents-index');
+})->name('public.mls-agents.index');
+
+// Compatibilidad: URLs antiguas /mls-offices -> /agencias
+Route::redirect('/mls-offices', '/agencias', 301)->name('public.mls-offices.legacy-index');
+
+// Detalle público de una agencia MLS (agentes + propiedades)
+Route::get('/agencias/{mlsOfficeId}', function (string $mlsOfficeId) {
+    return view('public.mls-office-detail', [
+        'mlsOfficeId' => (int) $mlsOfficeId,
+    ]);
+})
+    ->where('mlsOfficeId', '[0-9]+')
+    ->name('public.mls-offices.show');
+
+// Detalle público de un agente MLS (agencia + propiedades)
+Route::get('/agentes/{mlsAgentId}', function (string $mlsAgentId) {
+    return view('public.mls-agent-detail', [
+        'mlsAgentId' => (int) $mlsAgentId,
+    ]);
+})
+    ->where('mlsAgentId', '[0-9]+')
+    ->name('public.mls-agents.show');
+
+// Compatibilidad: URLs antiguas /mls-offices/{id} -> /agencias/{id}
+Route::redirect('/mls-offices/{mlsOfficeId}', '/agencias/{mlsOfficeId}', 301)
+    ->where('mlsOfficeId', '[0-9]+')
+    ->name('public.mls-offices.legacy-show');
+
+// Compatibilidad: URLs antiguas /mls-agents -> /agentes
+Route::redirect('/mls-agents', '/agentes', 301)->name('public.mls-agents.legacy-index');
+
+// Compatibilidad: URLs antiguas /mls-agents/{id} -> /agentes/{id}
+Route::redirect('/mls-agents/{mlsAgentId}', '/agentes/{mlsAgentId}', 301)
+    ->where('mlsAgentId', '[0-9]+')
+    ->name('public.mls-agents.legacy-show');
+
 // Vista pública (de prueba) para detalle de propiedad
 // Nota: por ahora NO hacemos binding con el modelo para permitir probar con cualquier ID.
 Route::get('/propiedades/{propertyId}', function (string $propertyId) {
@@ -72,6 +116,10 @@ Route::middleware('auth')->group(function () {
             return view('properties.manage');
         })->name('properties');
 
+        Route::get('/agencies', function () {
+            return view('agencies.manage');
+        })->name('agencies');
+
         Route::get('/color-themes', function () {
             return view('color-themes.manage');
         })->name('color-themes');
@@ -91,5 +139,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/mls-agents', function () {
             return view('mls-agents.manage');
         })->name('mls-agents');
+
+        Route::get('/mls-offices', function () {
+            return view('mls-offices.manage');
+        })->name('mls-offices');
     });
 });

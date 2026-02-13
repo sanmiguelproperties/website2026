@@ -170,6 +170,13 @@
                   Propiedades
                 </a>
 
+                <a href="{{ route('agencies') }}" data-route="agencies" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M7 21V8"/><path d="M17 21V8"/><path d="M7 8l5-5 5 5"/></svg>
+                  </span>
+                  Agencias
+                </a>
+
                 <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -259,6 +266,13 @@
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                   </span>
                   Agentes MLS
+                </a>
+
+                <a href="{{ route('mls-offices') }}" data-route="mls-offices" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9h1"/><path d="M9 13h1"/><path d="M9 17h1"/></svg>
+                  </span>
+                  Agencias MLS
                 </a>
               </div>
             </div>
@@ -354,6 +368,7 @@
         'dashboard': 1,
         'funnel': 1,
         'properties': 1,
+        'agencies': 1,
         'users': 2,
         'currencies': 2,
         'color-themes': 2,
@@ -362,6 +377,7 @@
         'easybroker': 2,
         'mls': 2,
         'mls-agents': 2,
+        'mls-offices': 2,
       };
 
       // --- Año del footer ---

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MLSAgent;
+use App\Models\MLSOffice;
 use App\Models\Property;
 use App\Services\MLSSyncService;
 use Illuminate\Http\JsonResponse;
@@ -68,6 +69,88 @@ class MLSAgentController extends Controller
         $perPage = max(1, min(100, $perPage));
 
         return $this->apiSuccess('Listado de agentes MLS', 'MLS_AGENTS_LIST', $query->paginate($perPage));
+    }
+
+    /**
+     * GET /api/public/mls-agents
+     * Listado público de agentes MLS (paginación + búsqueda + filtro por office).
+     */
+    public function indexPublic(Request $request): JsonResponse
+    {
+        $query = MLSAgent::query()
+            ->with(['photoMediaAsset', 'office'])
+            ->withCount('properties')
+            ->where('is_active', true);
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('office_name', 'like', "%{$search}%")
+                    ->orWhere('mls_agent_id', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('office_id')) {
+            $query->where('mls_office_id', (int) $request->input('office_id'));
+        }
+
+        // Por compatibilidad permitimos desactivar filtro de activos si se manda explícitamente.
+        if ($request->filled('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        $sort = $request->input('sort', 'asc');
+        $order = $request->input('order', 'name');
+        $validOrders = ['name', 'email', 'mls_agent_id', 'office_name', 'created_at', 'updated_at', 'last_synced_at'];
+        if (!in_array($order, $validOrders, true)) {
+            $order = 'name';
+        }
+        $sort = $sort === 'desc' ? 'desc' : 'asc';
+        $query->orderBy($order, $sort);
+
+        $perPage = (int) $request->input('per_page', 12);
+        $perPage = max(1, min(50, $perPage));
+
+        return $this->apiSuccess('Listado público de agentes MLS', 'PUBLIC_MLS_AGENTS_LIST', $query->paginate($perPage));
+    }
+
+    /**
+     * GET /api/public/mls-agents/{mlsAgentId}
+     * Detalle público de un agente MLS por su mls_agent_id (ID del MLS).
+     */
+    public function showPublicByMlsId(int $mlsAgentId): JsonResponse
+    {
+        $agent = MLSAgent::query()
+            ->where('mls_agent_id', $mlsAgentId)
+            ->with(['photoMediaAsset', 'office.imageMediaAsset'])
+            ->withCount('properties')
+            ->first();
+
+        if (!$agent) {
+            return $this->apiNotFound('Agente no encontrado', 'MLS_AGENT_NOT_FOUND');
+        }
+
+        // Conteos de la agencia (si existe) para mostrar badge rápido en el frontend.
+        $officeSummary = null;
+        if (!empty($agent->mls_office_id)) {
+            $office = MLSOffice::query()
+                ->where('mls_office_id', (int) $agent->mls_office_id)
+                ->withCount(['agents', 'properties'])
+                ->with(['imageMediaAsset'])
+                ->first();
+            if ($office) {
+                $officeSummary = $office;
+            }
+        }
+
+        return $this->apiSuccess('Agente MLS obtenido', 'PUBLIC_MLS_AGENT_SHOWN', [
+            'agent' => $agent,
+            'office' => $officeSummary,
+        ]);
     }
 
     /**
@@ -292,16 +375,55 @@ class MLSAgentController extends Controller
                 \Illuminate\Support\Facades\Log::debug("[AGENT-RELATIONS] Obteniendo agentes para property #{$property->id} (mls_id: {$propertyMlsId})");
                 
                 $agentResponse = $this->syncService->fetchPropertyAgentIds((int) $propertyMlsId);
-                
-                if ($agentResponse && isset($agentResponse['agents']) && !empty($agentResponse['agents'])) {
-                    $agentIds = $agentResponse['agents'];
+
+                // Normalizar respuesta del API: puede venir como
+                // { id: 123, agents: [27,45] } ó agents: [{id:27}, {id:45}] ó envuelto en data.
+                $agentIdsRaw = null;
+                if (is_array($agentResponse)) {
+                    if (array_key_exists('agents', $agentResponse)) {
+                        $agentIdsRaw = $agentResponse['agents'];
+                    } elseif (isset($agentResponse['data']) && is_array($agentResponse['data']) && array_key_exists('agents', $agentResponse['data'])) {
+                        $agentIdsRaw = $agentResponse['data']['agents'];
+                    }
+                }
+
+                if (!empty($agentIdsRaw) && is_array($agentIdsRaw)) {
+                    // Convertir a lista de IDs enteros
+                    $agentIds = [];
+                    foreach ($agentIdsRaw as $a) {
+                        if (is_numeric($a)) {
+                            $agentIds[] = (int) $a;
+                            continue;
+                        }
+
+                        if (is_array($a)) {
+                            $candidate = $a['id'] ?? $a['agent_id'] ?? $a['mls_agent_id'] ?? null;
+                            if (is_numeric($candidate)) {
+                                $agentIds[] = (int) $candidate;
+                                continue;
+                            }
+                        }
+
+                        // Evitar romper el lote por datos inesperados
+                        \Illuminate\Support\Facades\Log::warning(
+                            "[AGENT-RELATIONS] Item de agente inesperado en property #{$property->id} (mls_id: {$propertyMlsId})",
+                            ['item' => $a]
+                        );
+                    }
+
                     $localAgentIds = [];
 
-                    \Illuminate\Support\Facades\Log::debug("[AGENT-RELATIONS] Property #{$property->id}: API devolvió " . count($agentIds) . " agentes: " . implode(', ', $agentIds));
+                    // Usar json_encode para evitar 'Array to string conversion'
+                    \Illuminate\Support\Facades\Log::debug(
+                        "[AGENT-RELATIONS] Property #{$property->id}: API devolvió " . count($agentIds) . " agentes: " . json_encode($agentIds)
+                    );
 
                     foreach ($agentIds as $index => $mlsAgentId) {
-                        if (!is_numeric($mlsAgentId)) continue;
-                        
+                        // Ya normalizamos a int, pero validar por seguridad
+                        if (!is_numeric($mlsAgentId)) {
+                            continue;
+                        }
+
                         $mlsAgentIdInt = (int) $mlsAgentId;
                         $agent = MLSAgent::where('mls_agent_id', $mlsAgentIdInt)->first();
                         
@@ -326,7 +448,11 @@ class MLSAgentController extends Controller
                         \Illuminate\Support\Facades\Log::info("[AGENT-RELATIONS] Property #{$property->id}: vinculados " . count($localAgentIds) . " agentes");
                     }
                 } else {
-                    \Illuminate\Support\Facades\Log::debug("[AGENT-RELATIONS] Property #{$property->id} (mls_id: {$propertyMlsId}): API devolvió 0 agentes o respuesta nula");
+                    // Log diagnóstico adicional cuando la respuesta es nula o no trae campo agents
+                    $keys = is_array($agentResponse) ? implode(', ', array_keys($agentResponse)) : (is_null($agentResponse) ? 'NULL' : gettype($agentResponse));
+                    \Illuminate\Support\Facades\Log::debug(
+                        "[AGENT-RELATIONS] Property #{$property->id} (mls_id: {$propertyMlsId}): API devolvió 0 agentes o respuesta nula. Response keys/type: {$keys}"
+                    );
                 }
                 
                 $processed++;

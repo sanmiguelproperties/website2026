@@ -21,6 +21,7 @@ use App\Http\Controllers\FrontendColorController;
 use App\Http\Controllers\EasyBrokerSyncController;
 use App\Http\Controllers\MLSSyncController;
 use App\Http\Controllers\MLSAgentController;
+use App\Http\Controllers\MLSOfficeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,11 +45,22 @@ Route::post('/login', [AuthController::class, 'apiLogin']);
 Route::apiResource('media', MediaAssetController::class);
 
 // Rutas públicas para el portal inmobiliario (sin autenticación)
-Route::prefix('public')->group(function () {
+  Route::prefix('public')->group(function () {
+    // Oficinas / Agencias MLS (público)
+    Route::get('mls-offices', [MLSOfficeController::class, 'indexPublic']);
+    Route::get('mls-offices/{mlsOffice}', [MLSOfficeController::class, 'showPublic']);
+    Route::get('mls-offices/{mlsOffice}/agents', [MLSOfficeController::class, 'agentsPublic']);
+
+    // Agentes MLS (público)
+    Route::get('mls-agents', [MLSAgentController::class, 'indexPublic']);
+    // Nota: usamos mls_agent_id (ID del MLS) en la URL pública, no el PK local.
+    Route::get('mls-agents/{mlsAgentId}', [MLSAgentController::class, 'showPublicByMlsId'])
+        ->where('mlsAgentId', '[0-9]+');
+
     Route::get('properties/filter-options', [PropertyController::class, 'filterOptions']);
     Route::get('properties', [PropertyController::class, 'indexPublic']);
     Route::get('properties/{property}', [PropertyController::class, 'showPublic']);
-});
+  });
 
 // User Management routes protegidas con autenticación Passport
 Route::middleware(['auth.api', 'admin.api'])->group(function () {
@@ -66,14 +78,14 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
 });
 
 // EasyBroker / Inventario routes (protegidas con autenticación Passport)
-Route::middleware(['auth.api', 'admin.api'])->group(function () {
+  Route::middleware(['auth.api', 'admin.api'])->group(function () {
     Route::apiResource('agencies', AgencyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('properties', PropertyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('features', FeatureController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('tags', TagController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('locations-catalog', LocationCatalogController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('contact-requests', ContactRequestController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-});
+  });
 
 // RBAC routes protegidas con autenticación Passport
 Route::middleware(['auth.api', 'admin.api'])->prefix('rbac')->group(function () {
@@ -247,4 +259,20 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
     // Agentes MLS de una propiedad
     Route::get('properties/{property}/mls-agents', [MLSAgentController::class, 'propertyAgents']);
     Route::post('properties/{property}/mls-agents', [MLSAgentController::class, 'syncPropertyAgents']);
+});
+
+// MLS Offices routes (protegidas con autenticación Passport)
+Route::middleware(['auth.api', 'admin.api'])->group(function () {
+    // CRUD de offices MLS (tabla mls_offices)
+    Route::apiResource('mls-offices', MLSOfficeController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    // Campo manual (no editable por sync): marcar si la agencia MLS está a nuestro cargo.
+    Route::patch('mls-offices/{mlsOffice}/managed-by-us', [MLSOfficeController::class, 'updateManagedByUs']);
+
+    // Agentes y propiedades de una office
+    Route::get('mls-offices/{mls_office}/agents', [MLSOfficeController::class, 'agents']);
+    Route::get('mls-offices/{mls_office}/properties', [MLSOfficeController::class, 'officeProperties']);
+
+    // Sincronizar offices desde el MLS API (progresivo)
+    Route::post('mls-offices/sync', [MLSOfficeController::class, 'syncOffices']);
 });

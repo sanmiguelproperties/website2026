@@ -36,6 +36,7 @@ class MLSSyncService
     protected ?MLSConfig $config = null;
     protected string $apiKey = '';
     protected string $baseUrl = 'https://ampisanmigueldeallende.com/api/v1';
+    protected ?string $imagesBaseUrl = null;
     protected int $rateLimit = 10;
     protected int $timeout = 30;
     protected int $batchSize = 50;
@@ -89,6 +90,7 @@ class MLSSyncService
             $decryptedKey = $this->config->api_key_decrypted;
             $this->apiKey = is_string($decryptedKey) ? $decryptedKey : '';
             $this->baseUrl = $this->config->base_url ?? 'https://ampisanmigueldeallende.com/api/v1';
+            $this->imagesBaseUrl = $this->config->images_base_url ? (string) $this->config->images_base_url : null;
             $this->rateLimit = $this->config->rate_limit ?? 10;
             $this->timeout = $this->config->timeout ?? 30;
             $this->batchSize = $this->config->batch_size ?? 50;
@@ -98,6 +100,10 @@ class MLSSyncService
             $this->apiKey = is_string($envKey) ? $envKey : '';
             $envBaseUrl = config('services.mls.base_url');
             $this->baseUrl = is_string($envBaseUrl) ? $envBaseUrl : 'https://ampisanmigueldeallende.com/api/v1';
+            $envImagesBaseUrl = config('services.mls.images_base_url');
+            $this->imagesBaseUrl = is_string($envImagesBaseUrl) && trim($envImagesBaseUrl) !== ''
+                ? trim($envImagesBaseUrl)
+                : null;
             $this->rateLimit = (int) config('services.mls.rate_limit', 10);
             $this->timeout = (int) config('services.mls.timeout', 30);
             $this->batchSize = (int) config('services.mls.batch_size', 50);
@@ -1480,6 +1486,55 @@ class MLSSyncService
     protected array $retryDelays = [1, 3, 5];
 
     /**
+     * Indica si se deben registrar logs HTTP detallados hacia el MLS API.
+     * Se controla vía config('services.mls.http_log').
+     */
+    protected function isHttpLoggingEnabled(): bool
+    {
+        return (bool) config('services.mls.http_log', false);
+    }
+
+    /**
+     * Nivel de log a usar para logs HTTP detallados.
+     * Se controla vía config('services.mls.http_log_level').
+     */
+    protected function getHttpLogLevel(): string
+    {
+        $level = strtolower((string) config('services.mls.http_log_level', 'info'));
+        $allowed = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
+
+        return in_array($level, $allowed, true) ? $level : 'info';
+    }
+
+    /**
+     * Log especializado para trazas HTTP de MLS.
+     *
+     * - Si services.mls.http_log=true, se registra al nivel configurado.
+     * - Si está deshabilitado, cae a debug (para no ensuciar logs en producción).
+     */
+    protected function httpLog(string $message, array $context = []): void
+    {
+        $level = $this->isHttpLoggingEnabled() ? $this->getHttpLogLevel() : 'debug';
+        Log::log($level, "[MLSSync][HTTP] {$message}", $context);
+    }
+
+    /**
+     * Recorta strings largos para logs.
+     */
+    protected function truncateForLog(?string $value, int $max = 2000): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (mb_strlen($value) <= $max) {
+            return $value;
+        }
+
+        return mb_substr($value, 0, $max) . '…(truncated)';
+    }
+
+    /**
      * Realiza una petición HTTP a la API del MLS con reintentos automáticos.
      *
      * @param string $method Método HTTP (GET, POST, etc.)
@@ -1496,14 +1551,17 @@ class MLSSyncService
         $requestStartTime = microtime(true);
         $timeout = $customTimeout ?? $this->timeout;
 
+        // NOTA: nunca loguear la API key. Solo URL/endpoint/query.
+
         for ($attempt = 1; $attempt <= $this->maxRetries; $attempt++) {
             try {
                 $requestStartTime = microtime(true);
-                $this->log('debug', "[API REQUEST] ════════════════════════════════════════════");
-                $this->log('debug', "[API REQUEST] Intento {$attempt}/{$this->maxRetries} | {$method} {$endpoint}");
-                $this->log('debug', "[API REQUEST] URL: {$url}");
-                $this->log('debug', "[API REQUEST] Query: " . json_encode($query));
-                $this->log('debug', "[API REQUEST] Timeout: {$timeout}s");
+                // Logs HTTP (configurables) para diagnóstico
+                $this->httpLog('════════════════════════════════════════════');
+                $this->httpLog("REQUEST intento {$attempt}/{$this->maxRetries} | {$method} {$endpoint}");
+                $this->httpLog("REQUEST url={$url}");
+                $this->httpLog('REQUEST query=' . $this->truncateForLog(json_encode($query)));
+                $this->httpLog("REQUEST timeout={$timeout}s");
 
                 $response = Http::withHeaders([
                     'X-Api-Key' => $this->apiKey,
@@ -1515,31 +1573,29 @@ class MLSSyncService
 
                 $responseTime = round((microtime(true) - $requestStartTime) * 1000, 2);
 
-                // Log de respuesta detallada
-                $this->log('debug', "[API RESPONSE] ════════════════════════════════════════════");
-                $this->log('debug', "[API RESPONSE] Status: {$response->status()}");
-                $this->log('debug', "[API RESPONSE] Tiempo de respuesta: {$responseTime}ms");
+                // Log de respuesta (configurable)
+                $this->httpLog('════════════════════════════════════════════');
+                $this->httpLog("RESPONSE status={$response->status()} | time_ms={$responseTime}");
 
                 // Verificar si headers es un objeto o array
                 $headers = $response->headers();
                 if (is_object($headers) && method_exists($headers, 'all')) {
-                    $this->log('debug', "[API RESPONSE] Headers: " . json_encode($headers->all()));
+                    $this->httpLog('RESPONSE headers=' . $this->truncateForLog(json_encode($headers->all())));
                 } else {
-                    $this->log('debug', "[API RESPONSE] Headers: " . json_encode($headers));
+                    $this->httpLog('RESPONSE headers=' . $this->truncateForLog(json_encode($headers)));
                 }
 
                 if ($response->failed()) {
                     $statusCode = $response->status();
                     $responseBody = $response->body();
-                    $this->log('error', "[API ERROR] ════════════════════════════════════════════");
-                    $this->log('error', "[API ERROR] HTTP Status: {$statusCode}");
-                    $this->log('error', "[API ERROR] Response Body: {$responseBody}");
-                    $this->log('error', "[API ERROR] Intento {$attempt}/{$this->maxRetries}");
+
+                    $this->httpLog("ERROR http_status={$statusCode} | intento {$attempt}/{$this->maxRetries}");
+                    $this->httpLog('ERROR response_body=' . ($this->truncateForLog($responseBody) ?? 'NULL'));
 
                     // Si es error 5xx (error del servidor), reintentar
                     if ($statusCode >= 500 && $attempt < $this->maxRetries) {
                         $delay = $this->retryDelays[$attempt - 1] ?? 5;
-                        $this->log('warning', "[API RETRY] Error del servidor ({$statusCode}), reintentando en {$delay}s...");
+                        $this->httpLog("RETRY server_error status={$statusCode} delay_s={$delay}");
                         sleep($delay);
                         continue;
                     }
@@ -1552,11 +1608,13 @@ class MLSSyncService
                 $responseData = $response->json();
                 $lastResponseBody = $responseData;
 
-                $this->log('debug', "[API RESPONSE] Raw JSON: " . json_encode($responseData, JSON_PRETTY_PRINT));
+                // Log del payload (recortado)
+                $rawJson = json_encode($responseData, JSON_PRETTY_PRINT);
+                $this->httpLog('RESPONSE json=' . ($this->truncateForLog($rawJson) ?? 'NULL'));
 
                 // Validar estructura de respuesta
                 if (!$this->validateApiResponse($responseData)) {
-                    $this->log('error', "[API VALIDATION] Estructura de respuesta inválida");
+                    $this->httpLog('ERROR invalid_api_response_structure');
                     return null;
                 }
 
@@ -1566,28 +1624,24 @@ class MLSSyncService
                     $errorData = $responseData['data'] ?? null;
                     $errorErrors = $responseData['errors'] ?? null;
 
-                    $this->log('error', "[API ERROR JSON] ════════════════════════════════════════════");
-                    $this->log('error', "[API ERROR JSON] success: false");
-                    $this->log('error', "[API ERROR JSON] code: {$errorCode}");
-                    $this->log('error', "[API ERROR JSON] message: {$errorMessage}");
-                    $this->log('error', "[API ERROR JSON] data: " . json_encode($errorData));
-                    $this->log('error', "[API ERROR JSON] errors: " . json_encode($errorErrors));
-                    $this->log('error', "[API ERROR JSON] Intento {$attempt}/{$this->maxRetries}");
+                    $this->httpLog("ERROR json_success_false code={$errorCode} message=" . $this->truncateForLog((string) $errorMessage));
+                    $this->httpLog('ERROR json_data=' . $this->truncateForLog(json_encode($errorData)));
+                    $this->httpLog('ERROR json_errors=' . $this->truncateForLog(json_encode($errorErrors)));
 
                     // Errores de servidor (como SERVER_ERROR) requieren reintento
                     if (in_array($errorCode, ['SERVER_ERROR', 'TIMEOUT', 'CONNECTION_ERROR', 'SERVICE_UNAVAILABLE']) && $attempt < $this->maxRetries) {
                         $delay = $this->retryDelays[$attempt - 1] ?? 5;
-                        $this->log('warning', "[API RETRY] Error de API ({$errorCode}), reintentando en {$delay}s...");
+                        $this->httpLog("RETRY api_error code={$errorCode} delay_s={$delay}");
                         sleep($delay);
                         continue;
                     }
 
                     // Otros errores de API (auth, validation, etc.) no reintentar
-                    $this->log('warning', "[API SKIP] Error de API ({$errorCode}) no es reintentable, continuando...");
+                    $this->httpLog("SKIP non_retryable_api_error code={$errorCode}");
                     return null;
                 }
 
-                $this->log('debug', "[API SUCCESS] {$method} {$endpoint} | Status: {$response->status()} | Tiempo: {$responseTime}ms");
+                $this->httpLog("SUCCESS {$method} {$endpoint} status={$response->status()} time_ms={$responseTime}");
                 return $responseData;
 
             } catch (\Illuminate\Http\Client\ConnectionException $e) {
@@ -1596,15 +1650,12 @@ class MLSSyncService
                 $errorFile = $e->getFile();
                 $errorLine = $e->getLine();
 
-                $this->log('error', "[API EXCEPTION] ════════════════════════════════════════════");
-                $this->log('error', "[API EXCEPTION] Tipo: {$errorClass}");
-                $this->log('error', "[API EXCEPTION] Mensaje: " . $e->getMessage());
-                $this->log('error', "[API EXCEPTION] Archivo: {$errorFile}:{$errorLine}");
-                $this->log('error', "[API EXCEPTION] Intento {$attempt}/{$this->maxRetries}");
+                $this->httpLog("EXCEPTION connection type={$errorClass} file={$errorFile}:{$errorLine} message=" . $this->truncateForLog($e->getMessage()));
+                $this->httpLog("EXCEPTION attempt={$attempt}/{$this->maxRetries}");
 
                 if ($attempt < $this->maxRetries) {
                     $delay = $this->retryDelays[$attempt - 1] ?? 5;
-                    $this->log('warning', "[API RETRY] Error de conexión, reintentando en {$delay}s...");
+                    $this->httpLog("RETRY connection_error delay_s={$delay}");
                     sleep($delay);
                 }
             } catch (\Illuminate\Http\Client\TimeoutException $e) {
@@ -1613,15 +1664,12 @@ class MLSSyncService
                 $errorFile = $e->getFile();
                 $errorLine = $e->getLine();
 
-                $this->log('error', "[API TIMEOUT] ════════════════════════════════════════════");
-                $this->log('error', "[API TIMEOUT] Tipo: {$errorClass}");
-                $this->log('error', "[API TIMEOUT] Mensaje: " . $e->getMessage());
-                $this->log('error', "[API TIMEOUT] Archivo: {$errorFile}:{$errorLine}");
-                $this->log('error', "[API TIMEOUT] Intento {$attempt}/{$this->maxRetries}");
+                $this->httpLog("TIMEOUT type={$errorClass} file={$errorFile}:{$errorLine} message=" . $this->truncateForLog($e->getMessage()));
+                $this->httpLog("TIMEOUT attempt={$attempt}/{$this->maxRetries}");
 
                 if ($attempt < $this->maxRetries) {
                     $delay = $this->retryDelays[$attempt - 1] ?? 5;
-                    $this->log('warning', "[API RETRY] Timeout, reintentando en {$delay}s...");
+                    $this->httpLog("RETRY timeout delay_s={$delay}");
                     sleep($delay);
                 }
             } catch (\Throwable $e) {
@@ -1630,24 +1678,20 @@ class MLSSyncService
                 $errorFile = $e->getFile();
                 $errorLine = $e->getLine();
 
-                $this->log('error', "[API EXCEPTION] ════════════════════════════════════════════");
-                $this->log('error', "[API EXCEPTION] Tipo: {$errorClass}");
-                $this->log('error', "[API EXCEPTION] Mensaje: " . $e->getMessage());
-                $this->log('error', "[API EXCEPTION] Archivo: {$errorFile}:{$errorLine}");
-                $this->log('error', "[API EXCEPTION] Intento {$attempt}/{$this->maxRetries}");
+                $this->httpLog("EXCEPTION general type={$errorClass} file={$errorFile}:{$errorLine} message=" . $this->truncateForLog($e->getMessage()));
+                $this->httpLog("EXCEPTION attempt={$attempt}/{$this->maxRetries}");
 
                 if ($attempt < $this->maxRetries) {
                     $delay = $this->retryDelays[$attempt - 1] ?? 5;
-                    $this->log('warning', "[API RETRY] Error de conexión, reintentando en {$delay}s...");
+                    $this->httpLog("RETRY exception delay_s={$delay}");
                     sleep($delay);
                 }
             }
         }
 
         // Todos los reintentos fallaron
-        $this->log('error', "[API FAIL] ════════════════════════════════════════════");
-        $this->log('error', "[API FAIL] Todos los {$this->maxRetries} reintentos fallaron para {$method} {$endpoint}");
-        $this->log('error', "[API FAIL] Última respuesta: " . json_encode($lastResponseBody));
+        $this->httpLog("FAIL all_retries_failed method={$method} endpoint={$endpoint} retries={$this->maxRetries}");
+        $this->httpLog('FAIL last_response=' . $this->truncateForLog(json_encode($lastResponseBody)));
 
         Log::error('MLS API - Todos los reintentos fallaron', [
             'method' => $method,
@@ -1703,6 +1747,202 @@ class MLSSyncService
     }
 
     /**
+     * Obtiene offices del MLS con paginación.
+     */
+    public function fetchOffices(int $page = 1, int $perPage = 100): ?array
+    {
+        return $this->makeRequest('GET', '/offices', [
+            'page' => $page,
+            'per_page' => min($perPage, 100),
+        ]);
+    }
+
+    /**
+     * Obtiene el detalle de un office del MLS.
+     */
+    public function fetchOfficeDetail(int $officeId): ?array
+    {
+        return $this->makeRequest('GET', "/offices/{$officeId}");
+    }
+
+    /**
+     * Sincroniza offices del MLS en modo progresivo.
+     *
+     * @return array { success, processed, created, updated, errors, next_page, completed, total_in_mls? }
+     */
+    public function syncOfficesProgressive(int $page = 1, int $perPage = 25, bool $withDetail = false): array
+    {
+        if (!$this->isConfigured()) {
+            return [
+                'success' => false,
+                'message' => 'MLS no está configurado',
+            ];
+        }
+
+        $response = $this->fetchOffices($page, $perPage);
+        if ($response === null) {
+            return [
+                'success' => false,
+                'message' => 'Error al obtener offices del MLS',
+            ];
+        }
+
+        $items = $response['data'] ?? $response['offices'] ?? $response;
+        if (!is_array($items)) {
+            return [
+                'success' => false,
+                'message' => 'Respuesta inesperada del MLS al listar offices',
+            ];
+        }
+
+        $created = 0;
+        $updated = 0;
+        $errors = 0;
+
+        foreach ($items as $officeData) {
+            try {
+                $officeId = $officeData['id'] ?? null;
+                if (!$officeId) {
+                    $errors++;
+                    continue;
+                }
+
+                $payload = $officeData;
+                if ($withDetail) {
+                    $detail = $this->fetchOfficeDetail((int) $officeId);
+                    if (is_array($detail)) {
+                        $payload = array_merge($officeData, $detail);
+                        // Rate limiting por request adicional
+                        usleep((int) (1000000 / $this->rateLimit));
+                    }
+                }
+
+                $imagePath = $payload['image'] ?? null;
+                $imageUrl = $this->normalizeMlsUrl(is_string($imagePath) ? $imagePath : null);
+
+                $attrs = [
+                    'name' => $payload['name'] ?? null,
+                    'business_hours' => $payload['business_hours'] ?? null,
+                    'state_province' => $payload['state_province'] ?? null,
+                    'city' => $payload['city'] ?? null,
+                    'address' => $payload['address'] ?? null,
+                    'zip_code' => $payload['zip_code'] ?? null,
+                    'latitude' => isset($payload['latitude']) ? (float) $payload['latitude'] : null,
+                    'longitude' => isset($payload['longitude']) ? (float) $payload['longitude'] : null,
+                    'image_path' => is_string($imagePath) ? $imagePath : null,
+                    'image_url' => $imageUrl,
+                    'description' => $payload['description'] ?? null,
+                    'description_es' => $payload['description_es'] ?? null,
+                    'phone_1' => $payload['phone_1'] ?? null,
+                    'phone_2' => $payload['phone_2'] ?? null,
+                    'phone_3' => $payload['phone_3'] ?? null,
+                    'fax' => $payload['fax'] ?? null,
+                    'email' => $payload['email'] ?? null,
+                    'website' => $payload['website'] ?? null,
+                    'facebook' => $payload['facebook'] ?? null,
+                    'youtube' => $payload['youtube'] ?? null,
+                    'x_twitter' => $payload['x_twitter'] ?? null,
+                    'tiktok' => $payload['tiktok'] ?? null,
+                    'instagram' => $payload['instagram'] ?? null,
+                    'paid' => (bool) ($payload['paid'] ?? false),
+                    'mls_created_at' => !empty($payload['created_at']) ? \Carbon\Carbon::parse($payload['created_at']) : null,
+                    'mls_updated_at' => !empty($payload['updated_at']) ? \Carbon\Carbon::parse($payload['updated_at']) : null,
+                    'last_synced_at' => now(),
+                    'raw_payload' => $payload,
+                ];
+
+                $existing = \App\Models\MLSOffice::where('mls_office_id', (int) $officeId)->first();
+                if ($existing) {
+                    $existing->update($attrs);
+                    $updated++;
+                } else {
+                    $attrs['mls_office_id'] = (int) $officeId;
+                    \App\Models\MLSOffice::create($attrs);
+                    $created++;
+                }
+
+                // Rate limiting
+                usleep((int) (1000000 / $this->rateLimit));
+            } catch (\Throwable $e) {
+                $errors++;
+                $this->log('error', '[OFFICES SYNC ERROR] ' . $e->getMessage());
+            }
+        }
+
+        $lastPage = $response['last_page'] ?? null;
+        $total = $response['total'] ?? null;
+        $completed = $lastPage !== null ? ((int) $page >= (int) $lastPage) : (count($items) < $perPage);
+
+        return [
+            'success' => true,
+            'processed' => count($items),
+            'created' => $created,
+            'updated' => $updated,
+            'errors' => $errors,
+            'total_in_mls' => $total,
+            'next_page' => $completed ? 0 : ($page + 1),
+            'completed' => $completed,
+        ];
+    }
+
+    /**
+     * Normaliza una URL (absoluta o relativa) usando el host del baseUrl configurado.
+     *
+     * Algunos endpoints del MLS devuelven rutas relativas (ej: "/storage/agents/1.jpg").
+     * Esto puede causar que el frontend no pueda resolver la imagen si se guarda tal cual.
+     */
+    protected function normalizeMlsUrl(?string $url): ?string
+    {
+        if (!$url) {
+            return null;
+        }
+
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+
+        // Ya es absoluta
+        if (filter_var($url, FILTER_VALIDATE_URL)) {
+            return $url;
+        }
+
+        // Protocol-relative (//cdn...)
+        if (str_starts_with($url, '//')) {
+            return 'https:' . $url;
+        }
+
+        // 1) Si se configuró explícitamente, usar imagesBaseUrl
+        if ($this->imagesBaseUrl && filter_var($this->imagesBaseUrl, FILTER_VALIDATE_URL)) {
+            $base = rtrim($this->imagesBaseUrl, '/');
+            return str_starts_with($url, '/')
+                ? $base . $url
+                : $base . '/' . $url;
+        }
+
+        // 2) Fallback: construir origen (scheme + host + port) desde baseUrl
+        $parsed = parse_url($this->baseUrl);
+        $scheme = $parsed['scheme'] ?? 'https';
+        $host = $parsed['host'] ?? null;
+        $port = $parsed['port'] ?? null;
+
+        if (!$host) {
+            // Fallback: si no se puede parsear, devolver original
+            return $url;
+        }
+
+        $origin = $scheme . '://' . $host . ($port ? ':' . $port : '');
+
+        // Si es ruta absoluta (/path)
+        if (str_starts_with($url, '/')) {
+            return $origin . $url;
+        }
+
+        // Si es ruta relativa (path)
+        return $origin . '/' . $url;
+    }
+
+    /**
      * Extrae la URL de la foto de perfil de un agente desde los datos del API.
      *
      * Busca en múltiples campos posibles porque la API MLS AMPI
@@ -1713,6 +1953,35 @@ class MLSSyncService
      */
     protected function extractAgentPhotoUrl(array $agentData): ?string
     {
+        $isProbablyRelativePath = function (mixed $value): bool {
+            if (!is_string($value)) {
+                return false;
+            }
+
+            $v = trim($value);
+            if ($v === '') {
+                return false;
+            }
+
+            // Evitar data URIs u otros formatos no deseados
+            if (str_starts_with(strtolower($v), 'data:')) {
+                return false;
+            }
+
+            // Si ya es URL absoluta, no es relativa (pero se valida aparte)
+            if (preg_match('~^[a-zA-Z][a-zA-Z0-9+.-]*://~', $v)) {
+                return false;
+            }
+
+            // Aceptar rutas tipo "agents/abc.jpg" o "images/xyz.png" o "/storage/..."
+            // Condiciones: sin espacios, contiene al menos un "/" o empieza con "/"
+            if (preg_match('/\s/', $v)) {
+                return false;
+            }
+
+            return str_starts_with($v, '/') || str_contains($v, '/');
+        };
+
         // Lista de campos posibles para la foto del agente
         // Ordenados por probabilidad según APIs de MLS inmobiliario
         $photoFields = [
@@ -1741,7 +2010,7 @@ class MLSSyncService
             $value = $agentData[$field] ?? null;
             if (!empty($value) && is_string($value)) {
                 // Validar que parece una URL válida
-                if (filter_var($value, FILTER_VALIDATE_URL) || str_starts_with($value, '/')) {
+                if (filter_var($value, FILTER_VALIDATE_URL) || $isProbablyRelativePath($value)) {
                     return $value;
                 }
             }
@@ -1772,7 +2041,7 @@ class MLSSyncService
                 }
             }
             if ($found && is_string($current) && !empty($current)) {
-                if (filter_var($current, FILTER_VALIDATE_URL) || str_starts_with($current, '/')) {
+                if (filter_var($current, FILTER_VALIDATE_URL) || $isProbablyRelativePath($current)) {
                     return $current;
                 }
             }
@@ -1817,8 +2086,11 @@ class MLSSyncService
             ];
         }
 
-        // Extraer datos de paginación
-        $agents = $response['data'] ?? $response;
+        // LOG (info): estructura recibida del API para depuración
+        $this->log('info', '[AGENTS API] Respuesta /agents keys: ' . (is_array($response) ? implode(', ', array_keys($response)) : gettype($response)));
+
+        // Extraer datos de paginación (algunos APIs anidan en data)
+        $agents = $response['data'] ?? $response['agents'] ?? $response;
         $totalAgents = $response['total'] ?? null;
         $lastPage = $response['last_page'] ?? null;
         $currentPageFromResponse = $response['current_page'] ?? $currentPage;
@@ -1864,7 +2136,12 @@ class MLSSyncService
 
                 // Extraer foto de perfil: buscar en múltiples campos posibles
                 // La API MLS AMPI puede usar diferentes nombres según la versión/endpoint
-                $photoUrl = $this->extractAgentPhotoUrl($agentData);
+                $rawPhotoUrl = $this->extractAgentPhotoUrl($agentData);
+                $photoUrl = $this->normalizeMlsUrl($rawPhotoUrl);
+
+                // LOG (info): resultado de extracción/normalización
+                $this->log('info', "[AGENTS PHOTO] Agent #{$mlsAgentId} | raw_photo_url: " . ($rawPhotoUrl ? substr((string) $rawPhotoUrl, 0, 140) : 'NULL') .
+                    " | normalized: " . ($photoUrl ? substr((string) $photoUrl, 0, 140) : 'NULL'));
 
                 $attributes = [
                     'name' => $agentData['name'] ?? $agentData['full_name'] ?? null,
@@ -1887,14 +2164,28 @@ class MLSSyncService
                 // Si no hay foto en el listado, intentar obtener del detalle individual del agente
                 if (empty($photoUrl)) {
                     $this->log('debug', "[AGENTS SYNC] No hay foto en listado para #{$mlsAgentId}, intentando detalle individual...");
-                    $agentDetail = $this->fetchAgentDetail((int) $mlsAgentId);
-                    if ($agentDetail) {
-                        $this->log('debug', "[AGENTS SYNC] Detalle de agente #{$mlsAgentId} keys: " . implode(', ', array_keys($agentDetail)));
-                        $detailPhotoUrl = $this->extractAgentPhotoUrl($agentDetail);
+                    $agentDetailResponse = $this->fetchAgentDetail((int) $mlsAgentId);
+                    if ($agentDetailResponse) {
+                        $this->log('info', "[AGENTS API] Respuesta /agent/{$mlsAgentId} keys: " . implode(', ', array_keys($agentDetailResponse)));
+
+                        // Muchos APIs envuelven el payload real en data/agent
+                        $agentDetail = $agentDetailResponse['data']
+                            ?? $agentDetailResponse['agent']
+                            ?? $agentDetailResponse;
+
+                        if ($agentDetail !== $agentDetailResponse && is_array($agentDetail)) {
+                            $this->log('info', "[AGENTS API] /agent/{$mlsAgentId} payload anidado detectado. Keys payload: " . implode(', ', array_keys($agentDetail)));
+                        }
+
+                        $this->log('debug', "[AGENTS SYNC] Detalle de agente #{$mlsAgentId} keys(payload): " . (is_array($agentDetail) ? implode(', ', array_keys($agentDetail)) : gettype($agentDetail)));
+
+                        $detailRawPhotoUrl = is_array($agentDetail) ? $this->extractAgentPhotoUrl($agentDetail) : null;
+                        $detailPhotoUrl = $this->normalizeMlsUrl($detailRawPhotoUrl);
                         if ($detailPhotoUrl) {
                             $photoUrl = $detailPhotoUrl;
                             $attributes['photo_url'] = $photoUrl;
-                            $this->log('info', "[AGENTS SYNC] Foto encontrada en detalle para #{$mlsAgentId}: " . substr($photoUrl, 0, 80));
+                            $this->log('info', "[AGENTS PHOTO] Foto encontrada en detalle para #{$mlsAgentId} | raw: " . ($detailRawPhotoUrl ? substr((string) $detailRawPhotoUrl, 0, 140) : 'NULL') .
+                                " | normalized: " . substr((string) $photoUrl, 0, 140));
                         }
 
                         // También actualizar campos que podrían venir solo en el detalle
@@ -1909,7 +2200,9 @@ class MLSSyncService
                         }
                         
                         // Guardar el payload combinado
-                        $attributes['raw_payload'] = array_merge($agentData, $agentDetail);
+                        if (is_array($agentDetail)) {
+                            $attributes['raw_payload'] = array_merge($agentData, $agentDetail);
+                        }
                     } else {
                         $this->log('debug', "[AGENTS SYNC] No se pudo obtener detalle individual para #{$mlsAgentId}");
                     }
@@ -1920,7 +2213,8 @@ class MLSSyncService
 
                 // Si hay foto URL, crear o reutilizar un MediaAsset con la URL externa
                 if ($photoUrl) {
-                    $this->log('info', "[AGENTS SYNC] Foto URL encontrada para #{$mlsAgentId}: " . substr($photoUrl, 0, 80));
+                    $this->log('info', "[AGENTS SYNC] Foto URL FINAL para #{$mlsAgentId}: " . substr($photoUrl, 0, 140));
+                    $this->log('info', "[AGENTS SYNC] Nota: la foto del agente se registra como URL remota (MediaAsset.url). No se descarga automáticamente en este proceso.");
                     $mediaAsset = MediaAsset::where('url', $photoUrl)->first();
                     if (!$mediaAsset) {
                         $agentName = $attributes['name'] ?? "Agent #{$mlsAgentId}";
@@ -1932,6 +2226,9 @@ class MLSSyncService
                             'alt' => $agentName,
                             'created_at' => now(),
                         ]);
+                        $this->log('info', "[AGENTS SYNC] MediaAsset creado para foto de agente #{$mlsAgentId} | media_asset_id: {$mediaAsset->id} | url: " . substr($photoUrl, 0, 140));
+                    } else {
+                        $this->log('info', "[AGENTS SYNC] MediaAsset existente reutilizado para agente #{$mlsAgentId} | media_asset_id: {$mediaAsset->id}");
                     }
                     $attributes['photo_media_asset_id'] = $mediaAsset->id;
                 } else {
@@ -3254,6 +3551,7 @@ class MLSSyncService
             'config_source' => $this->config ? 'database' : 'env',
             'api_key' => $this->getObfuscatedApiKey(),
             'base_url' => $this->baseUrl,
+            'images_base_url' => $this->imagesBaseUrl,
             'rate_limit' => $this->rateLimit,
             'timeout' => $this->timeout,
             'batch_size' => $this->batchSize,

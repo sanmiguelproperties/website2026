@@ -71,6 +71,7 @@ class MLSSyncController extends Controller
             'name' => 'sometimes|string|max:255',
             'api_key' => 'sometimes|nullable|string|max:500',
             'base_url' => 'sometimes|string|url|max:500',
+            'images_base_url' => 'sometimes|nullable|string|url|max:500',
             'rate_limit' => 'sometimes|integer|min:1|max:100',
             'timeout' => 'sometimes|integer|min:5|max:120',
             'batch_size' => 'sometimes|integer|min:10|max:200',

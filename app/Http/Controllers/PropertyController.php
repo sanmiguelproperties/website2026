@@ -24,10 +24,31 @@ class PropertyController extends Controller
             ->with([
                 'agency',
                 'agentUser.profileImage',
+                'mlsAgents.photoMediaAsset',
                 'coverMediaAsset',
                 'location',
                 'operations.currency',
             ]);
+
+        // Filtrar por office/agencia del MLS (para páginas de agencia)
+        if ($request->filled('mls_office_id')) {
+            $query->where('mls_office_id', (int) $request->input('mls_office_id'));
+        }
+
+        // Filtrar por agente MLS (por su ID del MLS: mls_agents.mls_agent_id)
+        // Útil para la vista pública de detalle de agente.
+        if ($request->filled('mls_agent_id')) {
+            $mlsAgentId = (int) $request->input('mls_agent_id');
+            $query->whereHas('mlsAgents', function ($q) use ($mlsAgentId) {
+                // IMPORTANTE:
+                // En el whereHas() se hace JOIN entre la tabla pivot `property_mls_agent`
+                // (que también tiene una columna llamada `mls_agent_id`) y la tabla
+                // `mls_agents` (que tiene el campo externo `mls_agent_id`).
+                // Si no calificamos el nombre de columna, MySQL puede marcarlo como
+                // ambiguo y el endpoint termina fallando / devolviendo vacío en frontend.
+                $q->where('mls_agents.mls_agent_id', $mlsAgentId);
+            });
+        }
 
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
@@ -139,6 +160,7 @@ class PropertyController extends Controller
         $property->load([
             'agency',
             'agentUser.profileImage',
+            'mlsAgents.photoMediaAsset',
             'coverMediaAsset',
             'location',
             'operations.currency',
@@ -158,6 +180,7 @@ class PropertyController extends Controller
         $query = Property::query()->with([
             'agency',
             'agentUser.profileImage',
+            'mlsAgents.photoMediaAsset',
             'coverMediaAsset',
         ]);
 
@@ -423,7 +446,7 @@ class PropertyController extends Controller
             return $this->apiServerError($e, 'PROPERTY_CREATE_FAILED');
         }
 
-        $property->load(['agency', 'agentUser.profileImage', 'coverMediaAsset', 'location', 'operations', 'features', 'tags', 'mediaAssets']);
+        $property->load(['agency', 'agentUser.profileImage', 'mlsAgents.photoMediaAsset', 'coverMediaAsset', 'location', 'operations', 'features', 'tags', 'mediaAssets']);
 
         return $this->apiCreated('Propiedad creada', 'PROPERTY_CREATED', $property);
     }
@@ -433,7 +456,7 @@ class PropertyController extends Controller
      */
     public function show(Request $request, Property $property): JsonResponse
     {
-        $property->load(['agency', 'agentUser.profileImage', 'coverMediaAsset', 'location', 'operations', 'features', 'tags', 'mediaAssets']);
+        $property->load(['agency', 'agentUser.profileImage', 'mlsAgents.photoMediaAsset', 'coverMediaAsset', 'location', 'operations', 'features', 'tags', 'mediaAssets']);
         return $this->apiSuccess('Propiedad obtenida', 'PROPERTY_SHOWN', $property);
     }
 
@@ -637,7 +660,7 @@ class PropertyController extends Controller
             return $this->apiServerError($e, 'PROPERTY_UPDATE_FAILED');
         }
 
-        $property->load(['agency', 'agentUser.profileImage', 'coverMediaAsset', 'location', 'operations', 'features', 'tags', 'mediaAssets']);
+        $property->load(['agency', 'agentUser.profileImage', 'mlsAgents.photoMediaAsset', 'coverMediaAsset', 'location', 'operations', 'features', 'tags', 'mediaAssets']);
         return $this->apiSuccess('Propiedad actualizada', 'PROPERTY_UPDATED', $property);
     }
 

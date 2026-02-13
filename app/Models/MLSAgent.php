@@ -24,13 +24,25 @@ class MLSAgent extends Model
         'email',
         'phone',
         'mobile',
+        'fax',
+        'address',
+        'state_province',
+        'city',
         'mls_office_id',
         'office_name',
         'photo_url',
         'photo_media_asset_id',
         'license_number',
         'bio',
+        'bio_es',
         'website',
+        'facebook',
+        'instagram',
+        'x_twitter',
+        'tiktok',
+        'youtube',
+        'pinterest',
+        'linkedin',
         'is_active',
         'user_id',
         'last_synced_at',
@@ -44,6 +56,14 @@ class MLSAgent extends Model
         'last_synced_at' => 'datetime',
         'raw_payload' => 'array',
     ];
+
+    /**
+     * Oficina MLS a la que pertenece el agente.
+     */
+    public function office(): BelongsTo
+    {
+        return $this->belongsTo(MLSOffice::class, 'mls_office_id', 'mls_office_id');
+    }
 
     /**
      * Atributos que se añaden automáticamente a la serialización JSON.

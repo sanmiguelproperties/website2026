@@ -1,0 +1,134 @@
+﻿{
+    "current_page":  1,
+    "data":  [
+                 {
+                     "id":  1,
+                     "name":  "Alborada Real Estate",
+                     "business_hours":  "10 am to 6 pm",
+                     "state_province":  "Guanajuato",
+                     "city":  "San Miguel de Allende",
+                     "address":  "Relox #44 Centro, San Miguel de Allende, Guanajuato, 37700",
+                     "zip_code":  "37700",
+                     "latitude":  "20.9162430",
+                     "longitude":  "-100.7431809",
+                     "image":  "offices/giDzg5zKm4D8oBRBAA7P3JzHiPBCAGehdRCOs3q9.jpg",
+                     "description":  "“Siempre tuve la mira en San Miguel de Allende. Me atrajo su arquitectura colmada de historia; su energía; sus atardeceres; su encanto pueblerino y sofisticado a la vez; y, sobre todo, el entusiasmo y espíritu festivo de su gente”.  Adriana Méndez  El equipo de profesionales de Vive en San Miguel tendrá el",
+                     "description_es":  null,
+                     "phone_1":  "+524156881125",
+                     "phone_2":  "+525510517736",
+                     "phone_3":  "+525541818300",
+                     "fax":  "+525569654064",
+                     "email":  "agencia@alboradarealestate.com",
+                     "website":  "https://alboradarealestate.com/",
+                     "facebook":  null,
+                     "youtube":  null,
+                     "x_twitter":  null,
+                     "tiktok":  null,
+                     "instagram":  null,
+                     "paid":  true,
+                     "created_at":  null,
+                     "updated_at":  "2026-02-09T16:45:09.000000Z"
+                 }
+             ],
+    "first_page_url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=1",
+    "from":  1,
+    "last_page":  63,
+    "last_page_url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=63",
+    "links":  [
+                  {
+                      "url":  null,
+                      "label":  "\u0026laquo; Previous",
+                      "page":  null,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=1",
+                      "label":  "1",
+                      "page":  1,
+                      "active":  true
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=2",
+                      "label":  "2",
+                      "page":  2,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=3",
+                      "label":  "3",
+                      "page":  3,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=4",
+                      "label":  "4",
+                      "page":  4,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=5",
+                      "label":  "5",
+                      "page":  5,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=6",
+                      "label":  "6",
+                      "page":  6,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=7",
+                      "label":  "7",
+                      "page":  7,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=8",
+                      "label":  "8",
+                      "page":  8,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=9",
+                      "label":  "9",
+                      "page":  9,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=10",
+                      "label":  "10",
+                      "page":  10,
+                      "active":  false
+                  },
+                  {
+                      "url":  null,
+                      "label":  "...",
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=62",
+                      "label":  "62",
+                      "page":  62,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=63",
+                      "label":  "63",
+                      "page":  63,
+                      "active":  false
+                  },
+                  {
+                      "url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=2",
+                      "label":  "Next \u0026raquo;",
+                      "page":  2,
+                      "active":  false
+                  }
+              ],
+    "next_page_url":  "https://ampisanmigueldeallende.com/api/v1/offices?page=2",
+    "path":  "https://ampisanmigueldeallende.com/api/v1/offices",
+    "per_page":  1,
+    "prev_page_url":  null,
+    "to":  1,
+    "total":  63
+}

@@ -20,6 +20,8 @@
           'currencies' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Monedas', '#']],
           'color-themes' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Temas de Color', '#']],
           'frontend-colors' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Colores Frontend', '#']],
+          'mls-agents' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Agentes MLS', '#']],
+          'mls-offices' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Agencias MLS', '#']],
         ];
         $crumbs = $breadcrumbs[$currentRoute] ?? [['Inicio', '/'], ['Página', '#']];
       @endphp

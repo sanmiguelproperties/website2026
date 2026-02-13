@@ -1,0 +1,3236 @@
+﻿{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "MLS AMPI San Miguel de Allende API",
+        "description": "API documentation for MLS by AMPI San Miguel de Allende Real Estate Platform",
+        "contact": {
+            "email": "mlsanjmb@gmail.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://mls-allende.test",
+            "description": "API Server"
+        }
+    ],
+    "paths": {
+        "/api/v1/office/property/{id}": {
+            "get": {
+                "tags": [
+                    "Office Properties"
+                ],
+                "summary": "Get property by ID",
+                "description": "Returns detailed information about a specific property",
+                "operationId": "1378752b9d559a62e1033418246ad965",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Property ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1200
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1200
+                                        },
+                                        "mls_id": {
+                                            "type": "string",
+                                            "example": "SMA-1200"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "example": "Beautiful House in San Miguel"
+                                        },
+                                        "price": {
+                                            "type": "number",
+                                            "example": 250000
+                                        },
+                                        "currency": {
+                                            "type": "string",
+                                            "example": "USD"
+                                        },
+                                        "office_id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Active"
+                                        },
+                                        "category": {
+                                            "type": "string",
+                                            "example": "House"
+                                        },
+                                        "for_rent": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "bedrooms": {
+                                            "type": "integer",
+                                            "example": 3
+                                        },
+                                        "bathrooms": {
+                                            "type": "integer",
+                                            "example": 2
+                                        },
+                                        "half_bathrooms": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "lot_meters": {
+                                            "type": "number",
+                                            "example": 500
+                                        },
+                                        "construction_meters": {
+                                            "type": "number",
+                                            "example": 250
+                                        },
+                                        "lot_feet": {
+                                            "type": "number",
+                                            "example": 5382
+                                        },
+                                        "construction_feet": {
+                                            "type": "number",
+                                            "example": 2691
+                                        },
+                                        "address": {
+                                            "type": "string",
+                                            "example": "Calle Principal 123"
+                                        },
+                                        "city": {
+                                            "type": "string",
+                                            "example": "San Miguel de Allende"
+                                        },
+                                        "state_province": {
+                                            "type": "string",
+                                            "example": "Guanajuato"
+                                        },
+                                        "country": {
+                                            "type": "string",
+                                            "example": "Mexico"
+                                        },
+                                        "latitude": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 20.9144
+                                        },
+                                        "longitude": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": -100.7436
+                                        },
+                                        "description_short_en": {
+                                            "type": "string"
+                                        },
+                                        "description_full_en": {
+                                            "type": "string"
+                                        },
+                                        "description_short_es": {
+                                            "type": "string"
+                                        },
+                                        "description_full_es": {
+                                            "type": "string"
+                                        },
+                                        "video_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Property not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Office Properties"
+                ],
+                "summary": "Update an existing property",
+                "description": "Updates a property if it belongs to the same office as the API key and is not sold or expired. Requires both id and mls_id for confirmation. Allowed values - Currency: MXN, USD, CAD, EUR | Status: For Sale, For Rent, Price Reduction, Contract Pending, Under Contract | Category: Residential, Land and Lots, Commercial, Pre Sales | Furnished: Any, yes, no, partially, Optional Pkg | Pool/Casita/Yard/Gated: yes, no | Parking: Any, off_street, on_street | Payment: Any, ALL CASH, FINANCING | Showing: Any, Appointment, Pick Up Keys, Open",
+                "operationId": "4f1f0e67f4af388111b9fee8559c4df2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Property ID (this will also be required in the request body for confirmation)",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2958
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "mls_id",
+                                    "office_id",
+                                    "name",
+                                    "price",
+                                    "agents",
+                                    "lot_meters",
+                                    "lot_feet",
+                                    "neighborhood",
+                                    "address"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "description": "Property ID",
+                                        "type": "integer",
+                                        "example": 2958
+                                    },
+                                    "mls_id": {
+                                        "description": "MLS ID for confirmation",
+                                        "type": "integer",
+                                        "example": 10270
+                                    },
+                                    "office_id": {
+                                        "description": "Office ID (must match API key office)",
+                                        "type": "integer",
+                                        "example": 43
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Beautiful Colonial House"
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "example": 450000
+                                    },
+                                    "old_price": {
+                                        "type": "number",
+                                        "example": 500000
+                                    },
+                                    "currency": {
+                                        "description": "Currency code. Allowed values: MXN, USD, CAD, EUR",
+                                        "type": "string",
+                                        "enum": [
+                                            "MXN",
+                                            "USD",
+                                            "CAD",
+                                            "EUR"
+                                        ],
+                                        "example": "USD"
+                                    },
+                                    "agents": {
+                                        "description": "Array of agent IDs (must exist in database and belong to the same office)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            184,
+                                            179
+                                        ]
+                                    },
+                                    "status": {
+                                        "description": "Property status. Allowed values: For Sale, For Rent, Price Reduction, Contract Pending, Under Contract",
+                                        "type": "string",
+                                        "enum": [
+                                            "For Sale",
+                                            "For Rent",
+                                            "Price Reduction",
+                                            "Contract Pending",
+                                            "Under Contract"
+                                        ],
+                                        "example": "For Sale"
+                                    },
+                                    "category": {
+                                        "description": "Property category. Allowed values: Residential, Land and Lots, Commercial, Pre Sales",
+                                        "type": "string",
+                                        "enum": [
+                                            "Residential",
+                                            "Land and Lots",
+                                            "Commercial",
+                                            "Pre Sales"
+                                        ],
+                                        "example": "Residential"
+                                    },
+                                    "lot_meters": {
+                                        "type": "number",
+                                        "example": 500.5
+                                    },
+                                    "construction_meters": {
+                                        "type": "number",
+                                        "example": 250.75
+                                    },
+                                    "lot_feet": {
+                                        "type": "number",
+                                        "example": 5387.45
+                                    },
+                                    "construction_feet": {
+                                        "type": "number",
+                                        "example": 2700.15
+                                    },
+                                    "bedrooms": {
+                                        "type": "integer",
+                                        "example": 3
+                                    },
+                                    "bathrooms": {
+                                        "type": "number",
+                                        "example": 2.5
+                                    },
+                                    "half_bathrooms": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "floors": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "furnished": {
+                                        "description": "Furnished status. Allowed values: Any, yes, no, partially, Optional Pkg",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "yes",
+                                            "no",
+                                            "partially",
+                                            "Optional Pkg"
+                                        ],
+                                        "example": "yes"
+                                    },
+                                    "with_yard": {
+                                        "description": "Has yard. Allowed values: Any, yes, no",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "yes",
+                                            "no"
+                                        ],
+                                        "example": "yes"
+                                    },
+                                    "with_view": {
+                                        "description": "View type. Allowed values: Any, Lake, Mountain, Lake and Mountain, Ocean, Yes, No, Partial",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "Lake",
+                                            "Mountain",
+                                            "Lake and Mountain",
+                                            "Ocean",
+                                            "Yes",
+                                            "No",
+                                            "Partial"
+                                        ],
+                                        "example": "Mountain"
+                                    },
+                                    "gated_comm": {
+                                        "description": "Gated community. Allowed values: Any, yes, no",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "yes",
+                                            "no"
+                                        ],
+                                        "example": "yes"
+                                    },
+                                    "pool": {
+                                        "description": "Has pool. Allowed values: yes, no",
+                                        "type": "string",
+                                        "enum": [
+                                            "yes",
+                                            "no"
+                                        ],
+                                        "example": "yes"
+                                    },
+                                    "casita": {
+                                        "description": "Has casita. Allowed values: yes, no",
+                                        "type": "string",
+                                        "enum": [
+                                            "yes",
+                                            "no"
+                                        ],
+                                        "example": "yes"
+                                    },
+                                    "casita_bedrooms": {
+                                        "type": "string",
+                                        "example": "2"
+                                    },
+                                    "casita_bathrooms": {
+                                        "type": "string",
+                                        "example": "1"
+                                    },
+                                    "parking_number": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "parking_type": {
+                                        "description": "Parking type. Allowed values: Any, off_street, on_street",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "off_street",
+                                            "on_street"
+                                        ],
+                                        "example": "off_street"
+                                    },
+                                    "year_built": {
+                                        "type": "integer",
+                                        "example": 2020
+                                    },
+                                    "payment": {
+                                        "description": "Payment type. Allowed values: Any, ALL CASH, FINANCING",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "ALL CASH",
+                                            "FINANCING"
+                                        ],
+                                        "example": "ANY"
+                                    },
+                                    "selling_office_commission": {
+                                        "type": "string",
+                                        "example": "3.0%"
+                                    },
+                                    "showing_terms": {
+                                        "description": "Showing terms. Allowed values: Any, Appointment, Pick Up Keys, Open",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "Appointment",
+                                            "Pick Up Keys",
+                                            "Open"
+                                        ],
+                                        "example": "Appointment"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "Calle Principal 123"
+                                    },
+                                    "zip_code": {
+                                        "type": "string",
+                                        "example": "37700"
+                                    },
+                                    "neighborhood": {
+                                        "description": "Must be an official neighborhood from the database",
+                                        "type": "string",
+                                        "example": "Centro"
+                                    },
+                                    "latitude": {
+                                        "type": "number",
+                                        "example": 20.914586
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "example": -100.744334
+                                    },
+                                    "description_short_es": {
+                                        "type": "string",
+                                        "example": "Hermosa casa colonial en el centro"
+                                    },
+                                    "description_short_en": {
+                                        "type": "string",
+                                        "example": "Beautiful colonial house in downtown"
+                                    },
+                                    "description_full_es": {
+                                        "type": "string",
+                                        "example": "DescripciÃ³n completa en espaÃ±ol..."
+                                    },
+                                    "description_full_en": {
+                                        "type": "string",
+                                        "example": "Full description in English..."
+                                    },
+                                    "features": {
+                                        "description": "Array of feature IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            6,
+                                            21
+                                        ]
+                                    },
+                                    "video_url": {
+                                        "type": "string",
+                                        "example": "https://youtube.com/watch?v=..."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Property updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Property updated successfully."
+                                        },
+                                        "property": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 2958
+                                                },
+                                                "mls_id": {
+                                                    "type": "integer",
+                                                    "example": 10270
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Beautiful Colonial House"
+                                                },
+                                                "folder_name": {
+                                                    "type": "string",
+                                                    "example": "bbd4abc8-78cd-4c71-881a-94a4685cea8a"
+                                                },
+                                                "price": {
+                                                    "type": "number",
+                                                    "example": 450000
+                                                },
+                                                "currency": {
+                                                    "type": "string",
+                                                    "example": "USD"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "For Sale"
+                                                },
+                                                "category": {
+                                                    "type": "string",
+                                                    "example": "Residential"
+                                                },
+                                                "office_id": {
+                                                    "type": "integer",
+                                                    "example": 43
+                                                },
+                                                "neighborhood": {
+                                                    "type": "string",
+                                                    "example": "Centro"
+                                                },
+                                                "is_approved": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "is_published": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "allow_integration": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-11-16T19:45:23.000000Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Property not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Office not found for this API key"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Office ID mismatch"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Property does not belong to your office"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Cannot update a sold property"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Cannot update an expired property"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Property ID mismatch"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "MLS ID mismatch"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Invalid neighborhood"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Invalid agent(s)"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Agent not in office"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Failed to update property"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Office Properties"
+                ],
+                "summary": "Delete a property",
+                "description": "Deletes a property if it belongs to the same office as the API key and is not approved, not sold, and not expired. Both id and mls_id must be provided for confirmation.",
+                "operationId": "31e315302e4c8ff9f7d812cc7918aefe",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Property ID (this will also be required in the request body for confirmation)",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2958
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "id",
+                                    "mls_id"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "description": "Property ID",
+                                        "type": "integer",
+                                        "example": 2958
+                                    },
+                                    "mls_id": {
+                                        "description": "MLS ID for confirmation",
+                                        "type": "integer",
+                                        "example": 10270
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Property deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Property deleted"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Property not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Property cannot be deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Property is approved"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Property is sold"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Property is expired"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error - Missing or invalid fields",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The id field is required. The mls_id field is required."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/office/properties": {
+            "get": {
+                "tags": [
+                    "Office Properties"
+                ],
+                "summary": "Get all properties",
+                "description": "Returns a paginated list of approved, published, and non-expired properties",
+                "operationId": "13a7fe795a9d1d4eb93951ed806aca37",
+                "parameters": [
+                    {
+                        "name": "paginate",
+                        "in": "query",
+                        "description": "Number of items per page (max 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response with paginated properties",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "first_page_url": {
+                                            "type": "string"
+                                        },
+                                        "from": {
+                                            "type": "integer"
+                                        },
+                                        "last_page": {
+                                            "type": "integer"
+                                        },
+                                        "last_page_url": {
+                                            "type": "string"
+                                        },
+                                        "next_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 100
+                                        },
+                                        "prev_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "to": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/office/property/{id}/photos": {
+            "get": {
+                "tags": [
+                    "Office Properties"
+                ],
+                "summary": "Get property photos by property ID",
+                "description": "Returns all photo URLs for a specific property",
+                "operationId": "7c11c6a16e4a8e977a1cf3d4d4e9053f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Property ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1200
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1200
+                                        },
+                                        "photos": {
+                                            "description": "Array of photo URLs",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "example": "https://example.com/storage/properties/1200/photo1.jpg"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found"
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/office/property/{id}/agents": {
+            "get": {
+                "tags": [
+                    "Office Properties"
+                ],
+                "summary": "Get agents by property ID",
+                "description": "Returns all agent IDs associated with a specific property",
+                "operationId": "f1bade3ee81bd3bdb73e9656476e9a89",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Property ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1200
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1200
+                                        },
+                                        "agents": {
+                                            "description": "Array of agent IDs",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "integer",
+                                                "example": 27
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Property not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Office Properties"
+                ],
+                "summary": "Update property agents",
+                "description": "Updates only the agent IDs associated with a property. Property must belong to the same office and not be approved, sold, or expired.",
+                "operationId": "7467fa85f2b141e73fb7c65bcc1e5fb5",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Property ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2958
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "agents"
+                                ],
+                                "properties": {
+                                    "agents": {
+                                        "description": "Array of agent IDs (must exist in database and belong to the same office)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            184,
+                                            179
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Agents updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Property agents updated successfully"
+                                        },
+                                        "agent_ids": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "integer"
+                                            },
+                                            "example": [
+                                                184,
+                                                179
+                                            ]
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Property not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Property does not belong to your office"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Cannot update an approved property"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Cannot update a sold property"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Cannot update an expired property"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Invalid agent(s)"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "Agent not in office"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The agents field is required."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/office/property/{id}/features": {
+            "get": {
+                "tags": [
+                    "Office Properties"
+                ],
+                "summary": "Get features by property ID",
+                "description": "Returns all feature IDs associated with a specific property",
+                "operationId": "a83e7227c50e609102114803fbd4d75a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Property ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1200
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1200
+                                        },
+                                        "features": {
+                                            "description": "Array of feature IDs",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "integer",
+                                                "example": 5
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Property not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/office/property": {
+            "post": {
+                "tags": [
+                    "Office Properties"
+                ],
+                "summary": "Create a new property",
+                "description": "Creates a new property without images. Office ID is automatically set from API key. Only official neighborhoods and registered agents are allowed. Allowed values - Currency: MXN, USD, CAD, EUR | Status: For Sale, For Rent, Price Reduction, Contract Pending, Under Contract | Category: Residential, Land and Lots, Commercial, Pre Sales | Furnished: Any, yes, no, partially, Optional Pkg | Pool/Casita/Yard/Gated: yes, no | Parking: Any, off_street, on_street | Payment: Any, ALL CASH, FINANCING | Showing: Any, Appointment, Pick Up Keys, Open",
+                "operationId": "b7981491be9cc757eb176f5b0b360097",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "price",
+                                    "agents",
+                                    "lot_meters",
+                                    "lot_feet",
+                                    "neighborhood",
+                                    "address"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Beautiful Colonial House"
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "example": 450000
+                                    },
+                                    "old_price": {
+                                        "type": "number",
+                                        "example": 500000
+                                    },
+                                    "currency": {
+                                        "description": "Currency code. Allowed values: MXN, USD, CAD, EUR",
+                                        "type": "string",
+                                        "enum": [
+                                            "MXN",
+                                            "USD",
+                                            "CAD",
+                                            "EUR"
+                                        ],
+                                        "example": "USD"
+                                    },
+                                    "agents": {
+                                        "description": "Array of agent IDs (must exist in database)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            184,
+                                            179
+                                        ]
+                                    },
+                                    "status": {
+                                        "description": "Property status. Allowed values: For Sale, For Rent, Price Reduction, Contract Pending, Under Contract",
+                                        "type": "string",
+                                        "enum": [
+                                            "For Sale",
+                                            "For Rent",
+                                            "Price Reduction",
+                                            "Contract Pending",
+                                            "Under Contract"
+                                        ],
+                                        "example": "For Sale"
+                                    },
+                                    "category": {
+                                        "description": "Property category. Allowed values: Residential, Land and Lots, Commercial, Pre Sales",
+                                        "type": "string",
+                                        "enum": [
+                                            "Residential",
+                                            "Land and Lots",
+                                            "Commercial",
+                                            "Pre Sales"
+                                        ],
+                                        "example": "Residential"
+                                    },
+                                    "lot_meters": {
+                                        "type": "number",
+                                        "example": 500.5
+                                    },
+                                    "construction_meters": {
+                                        "type": "number",
+                                        "example": 250.75
+                                    },
+                                    "lot_feet": {
+                                        "type": "number",
+                                        "example": 5387.45
+                                    },
+                                    "construction_feet": {
+                                        "type": "number",
+                                        "example": 2700.15
+                                    },
+                                    "bedrooms": {
+                                        "type": "integer",
+                                        "example": 3
+                                    },
+                                    "bathrooms": {
+                                        "type": "number",
+                                        "example": 2.5
+                                    },
+                                    "half_bathrooms": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "floors": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "furnished": {
+                                        "description": "Furnished status. Allowed values: Any, yes, no, partially, Optional Pkg",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "yes",
+                                            "no",
+                                            "partially",
+                                            "Optional Pkg"
+                                        ],
+                                        "example": "yes"
+                                    },
+                                    "with_yard": {
+                                        "description": "Has yard. Allowed values: Any, yes, no",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "yes",
+                                            "no"
+                                        ],
+                                        "example": "yes"
+                                    },
+                                    "with_view": {
+                                        "description": "View type. Allowed values: Any, Lake, Mountain, Lake and Mountain, Ocean, Yes, No, Partial",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "Lake",
+                                            "Mountain",
+                                            "Lake and Mountain",
+                                            "Ocean",
+                                            "Yes",
+                                            "No",
+                                            "Partial"
+                                        ],
+                                        "example": "Mountain"
+                                    },
+                                    "gated_comm": {
+                                        "description": "Gated community. Allowed values: Any, yes, no",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "yes",
+                                            "no"
+                                        ],
+                                        "example": "yes"
+                                    },
+                                    "pool": {
+                                        "description": "Has pool. Allowed values: yes, no",
+                                        "type": "string",
+                                        "enum": [
+                                            "yes",
+                                            "no"
+                                        ],
+                                        "example": "yes"
+                                    },
+                                    "casita": {
+                                        "description": "Has casita. Allowed values: yes, no",
+                                        "type": "string",
+                                        "enum": [
+                                            "yes",
+                                            "no"
+                                        ],
+                                        "example": "yes"
+                                    },
+                                    "casita_bedrooms": {
+                                        "type": "string",
+                                        "example": "2"
+                                    },
+                                    "casita_bathrooms": {
+                                        "type": "string",
+                                        "example": "1"
+                                    },
+                                    "parking_number": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "parking_type": {
+                                        "description": "Parking type. Allowed values: Any, off_street, on_street",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "off_street",
+                                            "on_street"
+                                        ],
+                                        "example": "off_street"
+                                    },
+                                    "year_built": {
+                                        "type": "integer",
+                                        "example": 2020
+                                    },
+                                    "payment": {
+                                        "description": "Payment type. Allowed values: Any, ALL CASH, FINANCING",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "ALL CASH",
+                                            "FINANCING"
+                                        ],
+                                        "example": "ANY"
+                                    },
+                                    "selling_office_commission": {
+                                        "type": "string",
+                                        "example": "3.0%"
+                                    },
+                                    "showing_terms": {
+                                        "description": "Showing terms. Allowed values: Any, Appointment, Pick Up Keys, Open",
+                                        "type": "string",
+                                        "enum": [
+                                            "Any",
+                                            "Appointment",
+                                            "Pick Up Keys",
+                                            "Open"
+                                        ],
+                                        "example": "Appointment"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "Calle Principal 123"
+                                    },
+                                    "zip_code": {
+                                        "type": "string",
+                                        "example": "37700"
+                                    },
+                                    "neighborhood": {
+                                        "description": "Must be an official neighborhood from the database",
+                                        "type": "string",
+                                        "example": "Centro"
+                                    },
+                                    "latitude": {
+                                        "type": "number",
+                                        "example": 20.914586
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "example": -100.744334
+                                    },
+                                    "description_short_es": {
+                                        "type": "string",
+                                        "example": "Hermosa casa colonial en el centro"
+                                    },
+                                    "description_short_en": {
+                                        "type": "string",
+                                        "example": "Beautiful colonial house in downtown"
+                                    },
+                                    "description_full_es": {
+                                        "type": "string",
+                                        "example": "DescripciÃ³n completa en espaÃ±ol..."
+                                    },
+                                    "description_full_en": {
+                                        "type": "string",
+                                        "example": "Full description in English..."
+                                    },
+                                    "features": {
+                                        "description": "Array of feature IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            6,
+                                            21
+                                        ]
+                                    },
+                                    "video_url": {
+                                        "type": "string",
+                                        "example": "https://youtube.com/watch?v=..."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Property created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Property created successfully. Note: Property will need approval before being published."
+                                        },
+                                        "property": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 2958
+                                                },
+                                                "mls_id": {
+                                                    "type": "integer",
+                                                    "example": 10270
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Beautiful Colonial House"
+                                                },
+                                                "folder_name": {
+                                                    "type": "string",
+                                                    "example": "bbd4abc8-78cd-4c71-881a-94a4685cea8a"
+                                                },
+                                                "price": {
+                                                    "type": "number",
+                                                    "example": 450000
+                                                },
+                                                "currency": {
+                                                    "type": "string",
+                                                    "example": "USD"
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "For Sale"
+                                                },
+                                                "category": {
+                                                    "type": "string",
+                                                    "example": "Residential"
+                                                },
+                                                "office_id": {
+                                                    "type": "integer",
+                                                    "example": 43
+                                                },
+                                                "neighborhood": {
+                                                    "type": "string",
+                                                    "example": "Centro"
+                                                },
+                                                "is_approved": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "is_published": {
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "allow_integration": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2024-11-16T19:45:23.000000Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Validation failed"
+                                        },
+                                        "details": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - Invalid neighborhood or agent",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid neighborhood or agent not in database"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/user": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get authenticated user information",
+                "operationId": "4b78ca3afb4a5f26d891aa8b0a9ee7a8",
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "example": "John Doe"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "example": "john@example.com"
+                                        },
+                                        "role": {
+                                            "type": "string",
+                                            "example": "agent"
+                                        },
+                                        "offices": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "agents": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/features": {
+            "get": {
+                "tags": [
+                    "Features"
+                ],
+                "summary": "Get all property features",
+                "operationId": "7c76c53ca33f02a22218b37849248f94",
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Pool"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/property/{id}/features": {
+            "get": {
+                "tags": [
+                    "Properties"
+                ],
+                "summary": "Get features by property ID",
+                "description": "Returns all feature IDs associated with a specific property",
+                "operationId": "caa305388849b46bd234a85de87b4cc4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Property ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1200
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1200
+                                        },
+                                        "features": {
+                                            "description": "Array of feature IDs",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "integer",
+                                                "example": 5
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Property not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/property/{id}/agents": {
+            "get": {
+                "tags": [
+                    "Properties"
+                ],
+                "summary": "Get agents by property ID",
+                "description": "Returns all agent IDs associated with a specific property",
+                "operationId": "063bad88c759b0508ba8eefdf1d676ee",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Property ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1200
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1200
+                                        },
+                                        "agents": {
+                                            "description": "Array of agent IDs",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "integer",
+                                                "example": 27
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Property not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/property/{id}/photos": {
+            "get": {
+                "tags": [
+                    "Properties"
+                ],
+                "summary": "Get property photos by property ID",
+                "description": "Returns all photo URLs for a specific property",
+                "operationId": "e7e5f9bb72e50331a300c3564578f9c7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Property ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1200
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1200
+                                        },
+                                        "photos": {
+                                            "description": "Array of photo URLs",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "example": "https://example.com/storage/properties/1200/photo1.jpg"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found"
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/neighborhoods": {
+            "get": {
+                "tags": [
+                    "Neighborhoods"
+                ],
+                "summary": "Get all neighborhoods",
+                "operationId": "55b7611df2d8df041a06e3bc21c1f96f",
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Centro"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/agents": {
+            "get": {
+                "tags": [
+                    "Agents"
+                ],
+                "summary": "Get all agents",
+                "operationId": "154b35d91c37c1ff49a927c74c1a8850",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response with paginated agents",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "first_page_url": {
+                                            "type": "string"
+                                        },
+                                        "from": {
+                                            "type": "integer"
+                                        },
+                                        "last_page": {
+                                            "type": "integer"
+                                        },
+                                        "last_page_url": {
+                                            "type": "string"
+                                        },
+                                        "next_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 100
+                                        },
+                                        "prev_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "to": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/offices": {
+            "get": {
+                "tags": [
+                    "Offices"
+                ],
+                "summary": "Get all offices",
+                "operationId": "12fc6fdcb3cda6865b699183f5b3e75c",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response with paginated offices",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "first_page_url": {
+                                            "type": "string"
+                                        },
+                                        "from": {
+                                            "type": "integer"
+                                        },
+                                        "last_page": {
+                                            "type": "integer"
+                                        },
+                                        "last_page_url": {
+                                            "type": "string"
+                                        },
+                                        "next_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 100
+                                        },
+                                        "prev_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "to": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/offices/{id}": {
+            "get": {
+                "tags": [
+                    "Offices"
+                ],
+                "summary": "Get office by ID",
+                "operationId": "111c4a7559c0f3e8536a87e54f56223e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Office ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    },
+                    "404": {
+                        "description": "Office not found"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/agent/{id}": {
+            "get": {
+                "tags": [
+                    "Agents"
+                ],
+                "summary": "Get agent by ID",
+                "operationId": "25f7fe815cb49aa85cc66cf6a3d620bb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Agent ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response"
+                    },
+                    "404": {
+                        "description": "Agent not found"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/agent/{id}/properties": {
+            "get": {
+                "tags": [
+                    "Agents"
+                ],
+                "summary": "Get properties by agent ID",
+                "description": "Returns all properties associated with a specific agent with pagination",
+                "operationId": "63b11aa51446c6c6f3a89710924d336f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Agent ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 27
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page (max 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response with paginated properties",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "first_page_url": {
+                                            "type": "string"
+                                        },
+                                        "from": {
+                                            "type": "integer"
+                                        },
+                                        "last_page": {
+                                            "type": "integer"
+                                        },
+                                        "last_page_url": {
+                                            "type": "string"
+                                        },
+                                        "next_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 100
+                                        },
+                                        "prev_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "to": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Agent not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Agent not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/offices/{id}/properties": {
+            "get": {
+                "tags": [
+                    "Offices"
+                ],
+                "summary": "Get properties by office ID",
+                "description": "Returns all properties associated with a specific office with pagination",
+                "operationId": "46bb826ba364f9db3587e2050f7b2da0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Office ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 43
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page (max 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response with paginated properties",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "first_page_url": {
+                                            "type": "string"
+                                        },
+                                        "from": {
+                                            "type": "integer"
+                                        },
+                                        "last_page": {
+                                            "type": "integer"
+                                        },
+                                        "last_page_url": {
+                                            "type": "string"
+                                        },
+                                        "next_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 100
+                                        },
+                                        "prev_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "to": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Office not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Office not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/offices/{id}/agents": {
+            "get": {
+                "tags": [
+                    "Offices"
+                ],
+                "summary": "Get agents by office ID",
+                "description": "Returns all agents associated with a specific office with pagination",
+                "operationId": "60a6716c52478105a95ada0cd929fe29",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Office ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 43
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page (max 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response with paginated agents",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "first_page_url": {
+                                            "type": "string"
+                                        },
+                                        "from": {
+                                            "type": "integer"
+                                        },
+                                        "last_page": {
+                                            "type": "integer"
+                                        },
+                                        "last_page_url": {
+                                            "type": "string"
+                                        },
+                                        "next_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "path": {
+                                            "type": "string"
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 100
+                                        },
+                                        "prev_page_url": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "to": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Office not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Office not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/properties/search": {
+            "get": {
+                "tags": [
+                    "Properties"
+                ],
+                "summary": "Advanced property search",
+                "description": "Search properties with multiple filters based on the advanced search form",
+                "operationId": "60286d1c49bd808fcaf54590114c54bc",
+                "parameters": [
+                    {
+                        "name": "office_id",
+                        "in": "query",
+                        "description": "Office IDs (comma-separated)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "1,2,3"
+                        }
+                    },
+                    {
+                        "name": "neighborhood",
+                        "in": "query",
+                        "description": "Neighborhoods (comma-separated)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "Centro,Guadalupe"
+                        }
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "Property types (comma-separated)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Residential",
+                                "Land and Lots",
+                                "Commercial",
+                                "Pre Sales"
+                            ],
+                            "example": "Residential,Commercial"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Property status (comma-separated)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "For Sale",
+                                "Price Reduction",
+                                "For Rent",
+                                "Contract Pending",
+                                "Under Contract"
+                            ],
+                            "example": "For Sale,Price Reduction"
+                        }
+                    },
+                    {
+                        "name": "currency",
+                        "in": "query",
+                        "description": "Currency",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "USD",
+                                "MXN",
+                                "CAD",
+                                "EUR"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "price_min",
+                        "in": "query",
+                        "description": "Minimum price",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "example": 100000
+                        }
+                    },
+                    {
+                        "name": "price_max",
+                        "in": "query",
+                        "description": "Maximum price",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "example": 500000
+                        }
+                    },
+                    {
+                        "name": "bedrooms",
+                        "in": "query",
+                        "description": "Minimum number of bedrooms",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 5,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "bathrooms",
+                        "in": "query",
+                        "description": "Minimum number of bathrooms",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 5,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "floors",
+                        "in": "query",
+                        "description": "Minimum number of floors",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 5,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "construction_meters_min",
+                        "in": "query",
+                        "description": "Minimum construction area in mÂ²",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "construction_meters_max",
+                        "in": "query",
+                        "description": "Maximum construction area in mÂ²",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "lot_meters_min",
+                        "in": "query",
+                        "description": "Minimum lot size in mÂ²",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "lot_meters_max",
+                        "in": "query",
+                        "description": "Maximum lot size in mÂ²",
+                        "required": false,
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "furnished",
+                        "in": "query",
+                        "description": "Furnished status",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Yes",
+                                "No",
+                                "Partially",
+                                "Optional Pkg"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "parking_type",
+                        "in": "query",
+                        "description": "Parking type",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Off Street",
+                                "On Street"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "with_yard",
+                        "in": "query",
+                        "description": "Has yard",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Yes",
+                                "No"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "pool",
+                        "in": "query",
+                        "description": "Has pool",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Yes",
+                                "No"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "casita",
+                        "in": "query",
+                        "description": "Has casita",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Yes",
+                                "No"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "gated_comm",
+                        "in": "query",
+                        "description": "Is in gated community",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Yes",
+                                "No"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page (max 100)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 25,
+                            "maximum": 100
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response with filtered properties",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "per_page": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/property/mls/{mls_id}": {
+            "get": {
+                "tags": [
+                    "Properties"
+                ],
+                "summary": "Search property by MLS ID",
+                "description": "Returns property information by MLS ID (e.g., 1200 for SMA-1200)",
+                "operationId": "287897176e84ffc7cbf02a6f1d14b25a",
+                "parameters": [
+                    {
+                        "name": "mls_id",
+                        "in": "path",
+                        "description": "MLS ID (numeric part only, without SMA- prefix)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "1200"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "example": 1200
+                                        },
+                                        "mls_id": {
+                                            "type": "string",
+                                            "example": "SMA-1200"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "example": "Beautiful House in San Miguel"
+                                        },
+                                        "price": {
+                                            "type": "number",
+                                            "example": 250000
+                                        },
+                                        "currency": {
+                                            "type": "string",
+                                            "example": "USD"
+                                        },
+                                        "office_id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Active"
+                                        },
+                                        "category": {
+                                            "type": "string",
+                                            "example": "House"
+                                        },
+                                        "bedrooms": {
+                                            "type": "integer",
+                                            "example": 3
+                                        },
+                                        "bathrooms": {
+                                            "type": "integer",
+                                            "example": 2
+                                        },
+                                        "address": {
+                                            "type": "string",
+                                            "example": "Calle Principal 123"
+                                        },
+                                        "neighborhood": {
+                                            "type": "string",
+                                            "example": "Centro"
+                                        },
+                                        "created_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        },
+                                        "updated_at": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Property not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Property not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - Invalid or missing API key"
+                    }
+                },
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "ApiKeyAuth": {
+                "type": "apiKey",
+                "description": "API Key for authentication",
+                "name": "x-api-key",
+                "in": "header"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Properties",
+            "description": "Public properties management endpoints. Only will appear if the property is published and allow_integration is true."
+        },
+        {
+            "name": "Agents",
+            "description": "Agent management endpoints"
+        },
+        {
+            "name": "Offices",
+            "description": "Office management endpoints"
+        },
+        {
+            "name": "Features",
+            "description": "Property features endpoints"
+        },
+        {
+            "name": "Neighborhoods",
+            "description": "Neighborhood endpoints"
+        },
+        {
+            "name": "User",
+            "description": "User information endpoints"
+        },
+        {
+            "name": "Office Properties",
+            "description": "Office Properties"
+        }
+    ]
+}

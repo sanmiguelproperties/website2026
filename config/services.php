@@ -64,6 +64,17 @@ return [
     'mls' => [
         'api_key' => env('MLS_API_KEY'),
         'base_url' => env('MLS_BASE_URL', 'https://ampisanmigueldeallende.com/api/v1'),
+        // Habilita logs detallados (request/response) hacia el MLS API.
+        // Útil para depurar la sincronización de relaciones propiedad ↔ agente.
+        // Recomendado activar solo temporalmente.
+        'http_log' => env('MLS_HTTP_LOG', false),
+        // Nivel de log a usar cuando http_log=true (debug|info|notice|warning|error).
+        // Por defecto: info, para que sea visible en producción cuando debug está deshabilitado.
+        'http_log_level' => env('MLS_HTTP_LOG_LEVEL', 'info'),
+        // URL base para construir URLs absolutas de imágenes de agentes cuando el API devuelve rutas relativas
+        // Ej: si el API devuelve "/storage/agents/1.jpg" y MLS_IMAGES_BASE_URL="https://ampisanmigueldeallende.com",
+        // el sistema construirá "https://ampisanmigueldeallende.com/storage/agents/1.jpg".
+        'images_base_url' => env('MLS_IMAGES_BASE_URL'),
         'rate_limit' => env('MLS_RATE_LIMIT', 10), // requests per second
         'timeout' => env('MLS_TIMEOUT', 30), // seconds
         'batch_size' => env('MLS_BATCH_SIZE', 50), // properties per batch

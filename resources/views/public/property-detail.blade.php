@@ -249,6 +249,9 @@
                 </div>
               </div>
 
+              {{-- MLS Agents (when property comes from MLS relationships) --}}
+              <div id="mlsAgentsWrap" class="hidden mt-5 space-y-3"></div>
+
               <div class="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <p class="text-xs font-semibold text-slate-600">Nota</p>
                 <p class="mt-1 text-sm text-slate-700">Agenda una visita y recibe información completa (disponibilidad, gastos y documentos).</p>
@@ -554,6 +557,78 @@
       const profileUrl = resolveMediaUrl(agent?.profile_image);
       if (profileUrl) {
         document.getElementById('agentAvatar').innerHTML = `<img src="${escapeHtml(profileUrl)}" alt="${escapeHtml(agent?.name || 'Asesor')}" class="w-full h-full object-cover" />`;
+      }
+
+      // MLS Agents (list)
+      const mlsWrap = document.getElementById('mlsAgentsWrap');
+      const mlsAgents = Array.isArray(property.mls_agents) ? property.mls_agents : [];
+
+      if (mlsWrap) {
+        if (!mlsAgents.length) {
+          mlsWrap.classList.add('hidden');
+          mlsWrap.innerHTML = '';
+        } else {
+          // Prefer primary agents first
+          const sorted = [...mlsAgents].sort((a, b) => {
+            const ap = a?.pivot?.is_primary ? 1 : 0;
+            const bp = b?.pivot?.is_primary ? 1 : 0;
+            return bp - ap;
+          });
+
+          const rows = sorted.map((a) => {
+            const name = safeText(a?.full_name || a?.name, 'Agente');
+            const office = safeText(a?.office_name, '—');
+            const photo = a?.photo || a?.photo_url || null;
+
+            // Prefer mobile, fallback to phone
+            const phone = (a?.mobile || a?.phone || '').toString().trim();
+            const email = (a?.email || '').toString().trim();
+
+            const isPrimary = !!a?.pivot?.is_primary;
+            const badge = isPrimary
+              ? `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">Principal</span>`
+              : '';
+
+            const avatarHtml = photo
+              ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(name)}" class="w-full h-full object-cover" loading="lazy" onerror="this.onerror=null; this.style.display='none';" />`
+              : `
+                  <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                  </svg>
+                `;
+
+            const contactBits = [
+              phone ? `<a class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900" href="tel:${escapeHtml(phone)}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                        ${escapeHtml(phone)}
+                      </a>` : '',
+              email ? `<a class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900" href="mailto:${escapeHtml(email)}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V6a2 2 0 00-2-2H3a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        ${escapeHtml(email)}
+                      </a>` : '',
+            ].filter(Boolean).join('');
+
+            return `
+              <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div class="flex items-start gap-4">
+                  <div class="size-12 rounded-2xl overflow-hidden border border-slate-200 bg-white grid place-items-center shrink-0">${avatarHtml}</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                      <p class="font-bold text-slate-900 truncate">${escapeHtml(name)}</p>
+                      ${badge}
+                    </div>
+                    <p class="mt-0.5 text-xs text-slate-600 truncate">${escapeHtml(office)}</p>
+                    ${contactBits ? `<div class="mt-3 flex flex-col gap-2">${contactBits}</div>` : '<p class="mt-3 text-sm text-slate-600">Contacto no disponible</p>'}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          mlsWrap.innerHTML = rows;
+          mlsWrap.classList.remove('hidden');
+        }
       }
 
       // WhatsApp link (placeholder phone)

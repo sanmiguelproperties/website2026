@@ -53,6 +53,16 @@
                    class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
                     Propiedades
                 </a>
+                <a href="{{ route('public.mls-offices.index') }}" 
+                   :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
+                   class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
+                    Agencias
+                </a>
+                <a href="{{ route('public.mls-agents.index') }}" 
+                   :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
+                   class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
+                    Agentes
+                </a>
                 <a href="{{ route('about') }}" 
                    :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
                    class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
@@ -135,6 +145,22 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                     Propiedades
+                </a>
+                <a href="{{ route('public.mls-offices.index') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-header-mobile_menu_icon_active, #4f46e5);">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 21V7l8-4v18" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V11l-6-4" />
+                    </svg>
+                    Agencias
+                </a>
+                <a href="{{ route('public.mls-agents.index') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-header-mobile_menu_icon_active, #4f46e5);">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 14a4 4 0 10-8 0" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12a4 4 0 100-8 4 4 0 000 8z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 21a8 8 0 10-16 0" />
+                    </svg>
+                    Agentes
                 </a>
                 <a href="{{ route('about') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-header-mobile_menu_icon_active, #4f46e5);">

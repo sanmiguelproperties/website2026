@@ -207,6 +207,14 @@ class Property extends Model
         return $this->belongsTo(MediaAsset::class, 'cover_media_asset_id');
     }
 
+    /**
+     * Oficina MLS (si la propiedad proviene del MLS).
+     */
+    public function mlsOffice(): BelongsTo
+    {
+        return $this->belongsTo(MLSOffice::class, 'mls_office_id', 'mls_office_id');
+    }
+
     public function location(): HasOne
     {
         return $this->hasOne(PropertyLocation::class, 'property_id');

@@ -164,6 +164,14 @@
             <input id="config-base-url" type="url" maxlength="500" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] focus:border-[var(--c-primary)] focus:outline-none transition" placeholder="https://ampisanmigueldeallende.com/api" />
           </div>
 
+          <div>
+            <label class="block text-sm font-medium mb-1.5">URL base para imágenes (agentes)</label>
+            <input id="config-images-base-url" type="url" maxlength="500" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] focus:border-[var(--c-primary)] focus:outline-none transition" placeholder="https://ampisanmigueldeallende.com" />
+            <p class="mt-1 text-xs text-[var(--c-muted)]">
+              Opcional. Se usa para completar rutas relativas de imágenes que devuelve el MLS (ej: <code class="px-1 py-0.5 rounded bg-[var(--c-elev)]">/storage/agents/1.jpg</code>).
+            </p>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-sm font-medium mb-1.5">Rate Limit</label>
@@ -516,6 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ? 'Deja vacío para mantener la actual' 
           : 'Requerida para sincronizar';
         $('#config-base-url').value = currentConfig.base_url || 'https://ampisanmigueldeallende.com/api';
+        $('#config-images-base-url').value = currentConfig.images_base_url || '';
         $('#config-rate-limit').value = currentConfig.rate_limit || 10;
         $('#config-timeout').value = currentConfig.timeout || 30;
         $('#config-batch-size').value = currentConfig.batch_size || 50;
@@ -532,6 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = {
       name: $('#config-name').value || 'MLS Principal',
       base_url: $('#config-base-url').value || 'https://ampisanmigueldeallende.com/api',
+      images_base_url: $('#config-images-base-url').value?.trim() || null,
       rate_limit: parseInt($('#config-rate-limit').value) || 10,
       timeout: parseInt($('#config-timeout').value) || 30,
       batch_size: parseInt($('#config-batch-size').value) || 50,
