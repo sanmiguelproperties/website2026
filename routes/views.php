@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\Route;
 
 // Ruta principal - Página de inicio pública
 Route::get('/', function () {
-    return view('home');
+    $pageData = \App\Services\CmsService::getPageData('home', 'es');
+    $menu = \App\Services\CmsService::getMenu('main-header');
+    $settings = \App\Services\CmsService::settings(['contact', 'social', 'general'], 'es');
+    return view('home', compact('pageData', 'menu', 'settings'));
 })->name('home');
 
 // Listado público de propiedades (paginación + filtros, consumiendo API pública)
@@ -78,12 +81,16 @@ Route::get('/propiedades/{propertyId}', function (string $propertyId) {
 
 // Página de contacto pública
 Route::get('/contacto', function () {
-    return view('public.contact');
+    $pageData = \App\Services\CmsService::getPageData('contact', 'es');
+    $settings = \App\Services\CmsService::settings(['contact', 'social', 'general'], 'es');
+    return view('public.contact', compact('pageData', 'settings'));
 })->name('public.contact');
 
 // Página pública: Nosotros
 Route::get('/nosotros', function () {
-    return view('public.about');
+    $pageData = \App\Services\CmsService::getPageData('about', 'es');
+    $settings = \App\Services\CmsService::settings(['contact', 'social', 'general'], 'es');
+    return view('public.about', compact('pageData', 'settings'));
 })->name('about');
 
 // Rutas de autenticación (vistas)
@@ -143,5 +150,22 @@ Route::middleware('auth')->group(function () {
         Route::get('/mls-offices', function () {
             return view('mls-offices.manage');
         })->name('mls-offices');
+
+        // ── CMS (Sistema de Contenido Administrable) ──
+        Route::get('/cms/pages', function () {
+            return view('cms.pages.manage');
+        })->name('cms.pages');
+
+        Route::get('/cms/posts', function () {
+            return view('cms.posts.manage');
+        })->name('cms.posts');
+
+        Route::get('/cms/menus', function () {
+            return view('cms.menus.manage');
+        })->name('cms.menus');
+
+        Route::get('/cms/settings', function () {
+            return view('cms.settings.manage');
+        })->name('cms.settings');
     });
 });

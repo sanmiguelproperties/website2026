@@ -276,3 +276,74 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
     // Sincronizar offices desde el MLS API (progresivo)
     Route::post('mls-offices/sync', [MLSOfficeController::class, 'syncOffices']);
 });
+
+// ============================================================
+// CMS - Sistema de Contenido Administrable
+// ============================================================
+
+use App\Http\Controllers\CmsPageController;
+use App\Http\Controllers\CmsPostController;
+use App\Http\Controllers\CmsFieldGroupController;
+use App\Http\Controllers\CmsFieldValueController;
+use App\Http\Controllers\CmsMenuController;
+use App\Http\Controllers\CmsSiteSettingController;
+
+// Rutas públicas del CMS (sin autenticación)
+Route::prefix('public/cms')->group(function () {
+    // Páginas públicas
+    Route::get('pages/{slug}', [CmsPageController::class, 'showPublic']);
+
+    // Blog / Posts públicos
+    Route::get('posts', [CmsPostController::class, 'indexPublic']);
+    Route::get('posts/categories', [CmsPostController::class, 'categoriesPublic']);
+    Route::get('posts/tags', [CmsPostController::class, 'tagsPublic']);
+    Route::get('posts/{slug}', [CmsPostController::class, 'showPublic']);
+
+    // Menús públicos
+    Route::get('menus/{slug}', [CmsMenuController::class, 'showPublic']);
+
+    // Site Settings públicos
+    Route::get('settings', [CmsSiteSettingController::class, 'allPublic']);
+    Route::get('settings/{group}', [CmsSiteSettingController::class, 'groupPublic']);
+});
+
+// Rutas protegidas del CMS (admin)
+Route::middleware(['auth.api', 'admin.api'])->prefix('cms')->group(function () {
+    // -- Páginas --
+    Route::apiResource('pages', CmsPageController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    // -- Posts --
+    Route::apiResource('posts', CmsPostController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    // -- Field Groups --
+    Route::apiResource('field-groups', CmsFieldGroupController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    // -- Field Definitions (dentro del controlador de field groups) --
+    Route::post('field-definitions', [CmsFieldGroupController::class, 'storeField']);
+    Route::put('field-definitions/{id}', [CmsFieldGroupController::class, 'updateField']);
+    Route::delete('field-definitions/{id}', [CmsFieldGroupController::class, 'destroyField']);
+    Route::post('field-definitions/reorder', [CmsFieldGroupController::class, 'reorderFields']);
+
+    // -- Field Values --
+    Route::get('field-values/{entityType}/{entityId}', [CmsFieldValueController::class, 'index']);
+    Route::put('field-values/{entityType}/{entityId}', [CmsFieldValueController::class, 'update']);
+    Route::post('field-values/repeater-row', [CmsFieldValueController::class, 'addRepeaterRow']);
+    Route::delete('field-values/repeater-row/{id}', [CmsFieldValueController::class, 'deleteRepeaterRow']);
+
+    // -- Menús --
+    Route::apiResource('menus', CmsMenuController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    // -- Menu Items --
+    Route::post('menu-items', [CmsMenuController::class, 'storeItem']);
+    Route::put('menu-items/{id}', [CmsMenuController::class, 'updateItem']);
+    Route::delete('menu-items/{id}', [CmsMenuController::class, 'destroyItem']);
+    Route::post('menu-items/reorder', [CmsMenuController::class, 'reorderItems']);
+
+    // -- Site Settings --
+    Route::get('settings', [CmsSiteSettingController::class, 'index']);
+    Route::get('settings/group/{group}', [CmsSiteSettingController::class, 'byGroup']);
+    Route::post('settings', [CmsSiteSettingController::class, 'store']);
+    Route::put('settings/bulk', [CmsSiteSettingController::class, 'bulkUpdate']);
+    Route::put('settings/{key}', [CmsSiteSettingController::class, 'updateByKey']);
+    Route::delete('settings/{id}', [CmsSiteSettingController::class, 'destroy'])->where('id', '[0-9]+');
+});

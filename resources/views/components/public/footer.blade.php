@@ -51,22 +51,28 @@
                 {{-- Brand Column - Usa variables CSS dinámicas --}}
                 <div class="lg:col-span-1">
                     <a href="{{ url('/') }}" class="flex items-center gap-3 mb-6 group">
-                        <div class="grid h-12 w-12 place-items-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105" style="background: linear-gradient(to bottom right, var(--fe-footer-accent_from, #4f46e5), var(--fe-footer-accent_to, #10b981));">
-                            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 21h18" />
-                                <path d="M6 21V7a2 2 0 0 1 2-2h3" />
-                                <path d="M11 21V11a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v10" />
-                                <path d="M9 9h2" />
-                                <path d="M9 13h2" />
-                                <path d="M9 17h2" />
-                                <path d="M15 13h2" />
-                                <path d="M15 17h2" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-lg font-bold tracking-tight">San Miguel</p>
-                            <p class="text-sm text-slate-400">Properties</p>
-                        </div>
+                        @if(!empty($siteLogoDarkUrl))
+                            <img src="{{ $siteLogoDarkUrl }}" alt="{{ $siteName ?? 'San Miguel Properties' }}" class="h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
+                        @elseif(!empty($siteLogoUrl))
+                            <img src="{{ $siteLogoUrl }}" alt="{{ $siteName ?? 'San Miguel Properties' }}" class="h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
+                        @else
+                            <div class="grid h-12 w-12 place-items-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105" style="background: linear-gradient(to bottom right, var(--fe-footer-accent_from, #4f46e5), var(--fe-footer-accent_to, #10b981));">
+                                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 21h18" />
+                                    <path d="M6 21V7a2 2 0 0 1 2-2h3" />
+                                    <path d="M11 21V11a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v10" />
+                                    <path d="M9 9h2" />
+                                    <path d="M9 13h2" />
+                                    <path d="M9 17h2" />
+                                    <path d="M15 13h2" />
+                                    <path d="M15 17h2" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold tracking-tight">San Miguel</p>
+                                <p class="text-sm text-slate-400">Properties</p>
+                            </div>
+                        @endif
                     </a>
                     <p class="text-slate-400 text-sm leading-relaxed mb-6">
                         Tu socio de confianza en el mercado inmobiliario. Más de 15 años ayudando a familias a encontrar el hogar de sus sueños.

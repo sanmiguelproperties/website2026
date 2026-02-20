@@ -44,21 +44,20 @@
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: var(--fe-hero-badge_dot, #10b981);"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2" style="background-color: var(--fe-hero-badge_dot, #10b981);"></span>
                 </span>
-                +500 propiedades disponibles
+                {{ $pageData?->field('hero_badge_text') ?? '+500 propiedades disponibles' }}
             </div>
 
             {{-- Main Title - Usa variables CSS dinámicas --}}
             <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 animate-slide-up">
-                Encuentra tu
+                {{ $pageData?->field('hero_title_line1') ?? 'Encuentra tu' }}
                 <span class="block text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-hero-title_gradient_from, #818cf8), var(--fe-hero-title_gradient_via, #c084fc), var(--fe-hero-title_gradient_to, #34d399));">
-                    hogar ideal
+                    {{ $pageData?->field('hero_title_highlight') ?? 'hogar ideal' }}
                 </span>
             </h1>
 
             {{-- Subtitle --}}
             <p class="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 animate-slide-up" style="animation-delay: 0.1s;">
-                Casas, departamentos y terrenos en las mejores ubicaciones. 
-                Tu próxima inversión inmobiliaria está a un clic de distancia.
+                {{ $pageData?->field('hero_subtitle') ?? 'Casas, departamentos y terrenos en las mejores ubicaciones. Tu próxima inversión inmobiliaria está a un clic de distancia.' }}
             </p>
 
             {{-- Search Bar - Usa variables CSS dinámicas --}}
@@ -107,22 +106,15 @@
 <section class="relative z-30 -mt-16">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-2xl shadow-xl border" style="background-color: var(--fe-stats-bg, #ffffff); border-color: var(--fe-stats-border, #f1f5f9);">
-            <div class="text-center p-4 border-r last:border-r-0" style="border-color: var(--fe-stats-border, #f1f5f9);">
-                <div class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-stats-properties_from, #4f46e5), var(--fe-stats-properties_to, #818cf8));">500+</div>
-                <div class="text-sm mt-1" style="color: var(--fe-stats-text, #475569);">Propiedades</div>
+            @php $statsItems = $pageData?->repeater('stats_items') ?? []; @endphp
+            @forelse($statsItems as $stat)
+            <div class="text-center p-4 {{ !$loop->last ? 'border-r' : '' }}" style="border-color: var(--fe-stats-border, #f1f5f9);">
+                <div class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-stats-properties_from, #4f46e5), var(--fe-stats-properties_to, #818cf8));">{{ $stat->field('stat_number') }}</div>
+                <div class="text-sm mt-1" style="color: var(--fe-stats-text, #475569);">{{ $stat->field('stat_label') }}</div>
             </div>
-            <div class="text-center p-4 border-r last:border-r-0" style="border-color: var(--fe-stats-border, #f1f5f9);">
-                <div class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-stats-experience_from, #059669), var(--fe-stats-experience_to, #34d399));">15+</div>
-                <div class="text-sm mt-1" style="color: var(--fe-stats-text, #475569);">Años de experiencia</div>
-            </div>
-            <div class="text-center p-4 border-r last:border-r-0" style="border-color: var(--fe-stats-border, #f1f5f9);">
-                <div class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-stats-clients_from, #9333ea), var(--fe-stats-clients_to, #c084fc));">1000+</div>
-                <div class="text-sm mt-1" style="color: var(--fe-stats-text, #475569);">Clientes felices</div>
-            </div>
-            <div class="text-center p-4">
-                <div class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-stats-zones_from, #d97706), var(--fe-stats-zones_to, #fbbf24));">50+</div>
-                <div class="text-sm mt-1" style="color: var(--fe-stats-text, #475569);">Zonas cubiertas</div>
-            </div>
+            @empty
+            <div class="text-center p-4"><div class="text-3xl font-bold">500+</div><div class="text-sm mt-1">Propiedades</div></div>
+            @endforelse
         </div>
     </div>
 </section>
@@ -138,13 +130,13 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                Nuestros Servicios
+                {{ $pageData?->field('services_badge') ?? 'Nuestros Servicios' }}
             </div>
             <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" style="color: var(--fe-services-title, #0f172a);">
-                ¿Por qué elegirnos?
+                {{ $pageData?->field('services_title') ?? '¿Por qué elegirnos?' }}
             </h2>
             <p class="text-lg" style="color: var(--fe-services-subtitle, #475569);">
-                Ofrecemos una experiencia inmobiliaria completa con tecnología de vanguardia y un equipo de expertos dedicados a ti.
+                {{ $pageData?->field('services_subtitle') ?? 'Ofrecemos una experiencia inmobiliaria completa con tecnología de vanguardia y un equipo de expertos dedicados a ti.' }}
             </p>
         </div>
 
@@ -246,13 +238,13 @@
             </div>
 
             <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
-                Tu próxima
-                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-cta_sale-highlight_from, #34d399), var(--fe-cta_sale-highlight_to, #22d3ee));">inversión</span>
-                te espera
+                {{ $pageData?->field('cta_sale_title_line1') ?? 'Tu próxima' }}
+                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-cta_sale-highlight_from, #34d399), var(--fe-cta_sale-highlight_to, #22d3ee));">{{ $pageData?->field('cta_sale_title_highlight') ?? 'inversión' }}</span>
+                {{ $pageData?->field('cta_sale_title_line2') ?? 'te espera' }}
             </h2>
 
             <p class="text-xl text-white/80 mb-8">
-                Descubre nuestra selección exclusiva de propiedades en venta. Desde acogedores departamentos hasta lujosas residencias, encontrarás opciones para todos los presupuestos.
+                {{ $pageData?->field('cta_sale_description') ?? 'Descubre nuestra selección exclusiva de propiedades en venta. Desde acogedores departamentos hasta lujosas residencias, encontrarás opciones para todos los presupuestos.' }}
             </p>
 
             {{-- Stats --}}
@@ -317,12 +309,12 @@
             </div>
 
             <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
-                Renta sin
-                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-cta_rent-highlight_from, #fbbf24), var(--fe-cta_rent-highlight_to, #fb923c));">complicaciones</span>
+                {{ $pageData?->field('cta_rent_title_line1') ?? 'Renta sin' }}
+                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-cta_rent-highlight_from, #fbbf24), var(--fe-cta_rent-highlight_to, #fb923c));">{{ $pageData?->field('cta_rent_title_highlight') ?? 'complicaciones' }}</span>
             </h2>
 
             <p class="text-xl text-white/80 mb-8">
-                Encuentra el espacio perfecto para tu próxima aventura. Contratos flexibles, propiedades verificadas y mudanza express disponible.
+                {{ $pageData?->field('cta_rent_description') ?? 'Encuentra el espacio perfecto para tu próxima aventura. Contratos flexibles, propiedades verificadas y mudanza express disponible.' }}
             </p>
 
             {{-- Features List --}}
@@ -531,14 +523,14 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
-                Proceso Simplificado
+                {{ $pageData?->field('process_badge') ?? 'Proceso Simplificado' }}
             </div>
             <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-                Tu nuevo hogar en
-                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-process-highlight_from, #818cf8), var(--fe-process-highlight_to, #34d399));">4 simples pasos</span>
+                {{ $pageData?->field('process_title') ?? 'Tu nuevo hogar en' }}
+                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-process-highlight_from, #818cf8), var(--fe-process-highlight_to, #34d399));">{{ $pageData?->field('process_title_highlight') ?? '4 simples pasos' }}</span>
             </h2>
             <p class="text-lg" style="color: var(--fe-process-subtitle, #94a3b8);">
-                Hemos simplificado el proceso inmobiliario para que puedas enfocarte en lo que realmente importa.
+                {{ $pageData?->field('process_subtitle') ?? 'Hemos simplificado el proceso inmobiliario para que puedas enfocarte en lo que realmente importa.' }}
             </p>
         </div>
 
@@ -622,13 +614,13 @@
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
-                Lo que dicen nuestros clientes
+                {{ $pageData?->field('testimonials_badge') ?? 'Lo que dicen nuestros clientes' }}
             </div>
             <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" style="color: var(--fe-testimonials-title, #0f172a);">
-                Historias de éxito
+                {{ $pageData?->field('testimonials_title') ?? 'Historias de éxito' }}
             </h2>
             <p class="text-lg" style="color: var(--fe-testimonials-subtitle, #475569);">
-                Cientos de familias han encontrado su hogar ideal con nosotros.
+                {{ $pageData?->field('testimonials_subtitle') ?? 'Cientos de familias han encontrado su hogar ideal con nosotros.' }}
             </p>
         </div>
 
@@ -751,12 +743,12 @@
                 </div>
 
                 <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6" style="color: var(--fe-about-title, #0f172a);">
-                    Más que una inmobiliaria, somos tu
-                    <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">aliado</span>
+                    {{ $pageData?->field('home_about_title') ?? 'Más que una inmobiliaria, somos tu' }}
+                    <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">{{ $pageData?->field('home_about_title_highlight') ?? 'aliado' }}</span>
                 </h2>
 
                 <p class="text-lg mb-8" style="color: var(--fe-about-text, #475569);">
-                    Desde 2009, San Miguel Properties ha sido el puente entre familias y sus hogares soñados. Con un enfoque centrado en el cliente y tecnología de vanguardia, hemos transformado la experiencia inmobiliaria en México.
+                    {{ $pageData?->field('home_about_text') ?? 'Desde 2009, San Miguel Properties ha sido el puente entre familias y sus hogares soñados. Con un enfoque centrado en el cliente y tecnología de vanguardia, hemos transformado la experiencia inmobiliaria en México.' }}
                 </p>
 
                 {{-- Values --}}
@@ -823,12 +815,12 @@
                 </div>
 
                 <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6" style="color: var(--fe-contact-title, #0f172a);">
-                    ¿Listo para encontrar tu
-                    <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">hogar ideal</span>?
+                    {{ $pageData?->field('home_contact_title') ?? '¿Listo para encontrar tu' }}
+                    <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">{{ $pageData?->field('home_contact_title_highlight') ?? 'hogar ideal' }}</span>?
                 </h2>
 
                 <p class="text-lg mb-10" style="color: var(--fe-contact-text, #475569);">
-                    Déjanos tus datos y uno de nuestros asesores se pondrá en contacto contigo en menos de 24 horas.
+                    {{ $pageData?->field('home_contact_text') ?? 'Déjanos tus datos y uno de nuestros asesores se pondrá en contacto contigo en menos de 24 horas.' }}
                 </p>
 
                 {{-- Contact Methods --}}
@@ -997,16 +989,8 @@ async function loadHomeFilterOptions() {
                 ).join('');
             }
 
-            // Actualizar badge con total de propiedades real
-            if (opts.total_properties > 0) {
-                const badge = document.querySelector('#hero .animate-fade-in');
-                if (badge) {
-                    const textNode = badge.childNodes[badge.childNodes.length - 1];
-                    if (textNode) {
-                        textNode.textContent = `${opts.total_properties}+ propiedades disponibles`;
-                    }
-                }
-            }
+            // Badge de propiedades: ya no se sobrescribe porque el texto viene del CMS
+            // El admin puede personalizar el badge desde /admin/cms/pages → Home → hero_badge_text
         }
     } catch (e) {
         console.error('Error loading home filter options:', e);

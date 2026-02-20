@@ -20,24 +20,28 @@
         class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
     <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-20 items-center justify-between">
-            {{-- Logo - Usa variables CSS dinámicas --}}
+            {{-- Logo - Usa imagen del CMS si existe, sino fallback al SVG --}}
             <a href="{{ url('/') }}" class="flex items-center gap-3 group">
-                <div class="grid h-11 w-11 place-items-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105" style="background: linear-gradient(to bottom right, var(--fe-header-logo_gradient_from, #4f46e5), var(--fe-header-logo_gradient_to, #10b981));">
-                    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 21h18" />
-                        <path d="M6 21V7a2 2 0 0 1 2-2h3" />
-                        <path d="M11 21V11a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v10" />
-                        <path d="M9 9h2" />
-                        <path d="M9 13h2" />
-                        <path d="M9 17h2" />
-                        <path d="M15 13h2" />
-                        <path d="M15 17h2" />
-                    </svg>
-                </div>
-                <div :class="{ 'text-slate-900': scrolled, 'text-white': !scrolled }" class="transition-colors duration-300">
-                    <p class="text-base font-bold tracking-tight">San Miguel</p>
-                    <p class="text-xs font-medium opacity-80">Properties</p>
-                </div>
+                @if(!empty($siteLogoUrl))
+                    <img src="{{ $siteLogoUrl }}" alt="{{ $siteName ?? 'San Miguel Properties' }}" class="h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
+                @else
+                    <div class="grid h-11 w-11 place-items-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105" style="background: linear-gradient(to bottom right, var(--fe-header-logo_gradient_from, #4f46e5), var(--fe-header-logo_gradient_to, #10b981));">
+                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 21h18" />
+                            <path d="M6 21V7a2 2 0 0 1 2-2h3" />
+                            <path d="M11 21V11a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v10" />
+                            <path d="M9 9h2" />
+                            <path d="M9 13h2" />
+                            <path d="M9 17h2" />
+                            <path d="M15 13h2" />
+                            <path d="M15 17h2" />
+                        </svg>
+                    </div>
+                    <div :class="{ 'text-slate-900': scrolled, 'text-white': !scrolled }" class="transition-colors duration-300">
+                        <p class="text-base font-bold tracking-tight">San Miguel</p>
+                        <p class="text-xs font-medium opacity-80">Properties</p>
+                    </div>
+                @endif
             </a>
 
             {{-- Navigation Links (Desktop) - Usa variables CSS dinámicas --}}
