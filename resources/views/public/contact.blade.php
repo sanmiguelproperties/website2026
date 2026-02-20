@@ -9,7 +9,7 @@
 <section class="relative pt-32 pb-20 lg:pt-40 lg:pb-28 overflow-hidden">
     {{-- Background con gradiente --}}
     <div class="absolute inset-0 z-0">
-        <div class="absolute inset-0" style="background: linear-gradient(135deg, var(--fe-contact-hero_from, #312e81) 0%, var(--fe-contact-hero_via, #4f46e5) 50%, var(--fe-contact-hero_to, #059669) 100%);"></div>
+        <div class="absolute inset-0" style="background: linear-gradient(135deg, var(--fe-contact-hero_from, #1C1C1C) 0%, var(--fe-contact-hero_via, #D1A054) 50%, var(--fe-contact-hero_to, #768D59) 100%);"></div>
         {{-- Patrón decorativo --}}
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.1)_1px,transparent_0)] [background-size:40px_40px]"></div>
         {{-- Elementos decorativos flotantes --}}
@@ -30,7 +30,7 @@
             {{-- Título principal --}}
             <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 animate-slide-up">
                 Ponte en
-                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-contact-title_from, #34d399), var(--fe-contact-title_to, #22d3ee));">
+                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-contact-title_from, #768D59), var(--fe-contact-title_to, #979790));">
                     contacto
                 </span>
             </h1>
@@ -61,7 +61,7 @@
             <div class="lg:col-span-2 space-y-8">
                 {{-- Título de sección --}}
                 <div>
-                    <h2 class="text-2xl sm:text-3xl font-bold mb-4" style="color: var(--fe-contact-section_title, #0f172a);">
+                    <h2 class="text-2xl sm:text-3xl font-bold mb-4" style="color: var(--fe-contact-section_title, #1C1C1C);">
                         Información de contacto
                     </h2>
                     <p class="text-lg" style="color: var(--fe-contact-section_text, #475569);">
@@ -73,14 +73,14 @@
                 <div class="space-y-4">
                     {{-- Teléfono --}}
                     <a href="tel:+525512345678" class="group flex items-start gap-4 p-5 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:border-transparent" style="background: linear-gradient(to bottom right, var(--fe-contact-card_bg_from, #f8fafc), var(--fe-contact-card_bg_to, #ffffff)); border-color: var(--fe-contact-card_border, #e2e8f0);">
-                        <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-contact-phone_icon_from, #10b981), var(--fe-contact-phone_icon_to, #059669));">
+                        <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-contact-phone_icon_from, #768D59), var(--fe-contact-phone_icon_to, #768D59));">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                             </svg>
                         </div>
                         <div>
-                            <h3 class="font-semibold text-lg mb-1" style="color: var(--fe-contact-card_title, #0f172a);">Teléfono</h3>
-                            <p class="text-lg font-medium" style="color: var(--fe-contact-card_value, #4f46e5);">+52 55 1234 5678</p>
+                            <h3 class="font-semibold text-lg mb-1" style="color: var(--fe-contact-card_title, #1C1C1C);">Teléfono</h3>
+                            <p class="text-lg font-medium" style="color: var(--fe-contact-card_value, #D1A054);">+52 55 1234 5678</p>
                             <p class="text-sm mt-1" style="color: var(--fe-contact-card_desc, #64748b);">Lun - Vie: 9:00 AM - 7:00 PM</p>
                         </div>
                     </a>
@@ -93,7 +93,7 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 class="font-semibold text-lg mb-1" style="color: var(--fe-contact-card_title, #0f172a);">WhatsApp</h3>
+                            <h3 class="font-semibold text-lg mb-1" style="color: var(--fe-contact-card_title, #1C1C1C);">WhatsApp</h3>
                             <p class="text-lg font-medium" style="color: var(--fe-contact-card_value, #22c55e);">Chatea con nosotros</p>
                             <p class="text-sm mt-1" style="color: var(--fe-contact-card_desc, #64748b);">Respuesta inmediata</p>
                         </div>
@@ -101,29 +101,29 @@
 
                     {{-- Email --}}
                     <a href="mailto:info@sanmiguelproperties.com" class="group flex items-start gap-4 p-5 rounded-2xl border transition-all duration-300 hover:shadow-lg hover:border-transparent" style="background: linear-gradient(to bottom right, var(--fe-contact-card_bg_from, #f8fafc), var(--fe-contact-card_bg_to, #ffffff)); border-color: var(--fe-contact-card_border, #e2e8f0);">
-                        <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-contact-email_icon_from, #6366f1), var(--fe-contact-email_icon_to, #4f46e5));">
+                        <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-contact-email_icon_from, #D1A054), var(--fe-contact-email_icon_to, #D1A054));">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                         </div>
                         <div>
-                            <h3 class="font-semibold text-lg mb-1" style="color: var(--fe-contact-card_title, #0f172a);">Email</h3>
-                            <p class="text-lg font-medium" style="color: var(--fe-contact-card_value, #6366f1);">info@sanmiguelproperties.com</p>
+                            <h3 class="font-semibold text-lg mb-1" style="color: var(--fe-contact-card_title, #1C1C1C);">Email</h3>
+                            <p class="text-lg font-medium" style="color: var(--fe-contact-card_value, #D1A054);">info@sanmiguelproperties.com</p>
                             <p class="text-sm mt-1" style="color: var(--fe-contact-card_desc, #64748b);">Respuesta en 24 horas</p>
                         </div>
                     </a>
 
                     {{-- Ubicación --}}
                     <div class="flex items-start gap-4 p-5 rounded-2xl border" style="background: linear-gradient(to bottom right, var(--fe-contact-card_bg_from, #f8fafc), var(--fe-contact-card_bg_to, #ffffff)); border-color: var(--fe-contact-card_border, #e2e8f0);">
-                        <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white flex-shrink-0" style="background: linear-gradient(to bottom right, var(--fe-contact-location_icon_from, #f59e0b), var(--fe-contact-location_icon_to, #d97706));">
+                        <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white flex-shrink-0" style="background: linear-gradient(to bottom right, var(--fe-contact-location_icon_from, #D1A054), var(--fe-contact-location_icon_to, #d97706));">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </div>
                         <div>
-                            <h3 class="font-semibold text-lg mb-1" style="color: var(--fe-contact-card_title, #0f172a);">Oficina Principal</h3>
-                            <p class="font-medium" style="color: var(--fe-contact-card_value, #0f172a);">Av. Principal #123</p>
+                            <h3 class="font-semibold text-lg mb-1" style="color: var(--fe-contact-card_title, #1C1C1C);">Oficina Principal</h3>
+                            <p class="font-medium" style="color: var(--fe-contact-card_value, #1C1C1C);">Av. Principal #123</p>
                             <p class="text-sm" style="color: var(--fe-contact-card_desc, #64748b);">Col. Centro, Ciudad de México, CP 06000</p>
                         </div>
                     </div>
@@ -131,7 +131,7 @@
 
                 {{-- Redes sociales --}}
                 <div>
-                    <h3 class="font-semibold mb-4" style="color: var(--fe-contact-social_title, #0f172a);">Síguenos en redes sociales</h3>
+                    <h3 class="font-semibold mb-4" style="color: var(--fe-contact-social_title, #1C1C1C);">Síguenos en redes sociales</h3>
                     <div class="flex items-center gap-3">
                         <a href="#" class="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110" style="background-color: var(--fe-contact-social_bg, #f1f5f9); color: var(--fe-contact-social_icon, #475569);" aria-label="Facebook">
                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -162,7 +162,7 @@
                 <div class="rounded-3xl p-8 lg:p-10 border shadow-xl" style="background: linear-gradient(to bottom right, var(--fe-contact-form_bg_from, #ffffff), var(--fe-contact-form_bg_to, #f8fafc)); border-color: var(--fe-contact-form_border, #e2e8f0);">
                     {{-- Encabezado del formulario --}}
                     <div class="mb-8">
-                        <h2 class="text-2xl sm:text-3xl font-bold mb-2" style="color: var(--fe-contact-form_title, #0f172a);">
+                        <h2 class="text-2xl sm:text-3xl font-bold mb-2" style="color: var(--fe-contact-form_title, #1C1C1C);">
                             Envíanos un mensaje
                         </h2>
                         <p style="color: var(--fe-contact-form_subtitle, #475569);">
@@ -204,7 +204,7 @@
                                 </label>
                                 <input type="text" id="name" name="name" x-model="form.name" required
                                        class="w-full px-4 py-3.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2"
-                                       style="background-color: var(--fe-contact-input_bg, #f8fafc); border: 1px solid var(--fe-contact-input_border, #e2e8f0); color: var(--fe-contact-input_text, #0f172a); --tw-ring-color: var(--fe-contact-input_focus, rgba(99,102,241,0.3));"
+                                       style="background-color: var(--fe-contact-input_bg, #f8fafc); border: 1px solid var(--fe-contact-input_border, #e2e8f0); color: var(--fe-contact-input_text, #1C1C1C); --tw-ring-color: var(--fe-contact-input_focus, rgba(99,102,241,0.3));"
                                        placeholder="Tu nombre completo">
                             </div>
 
@@ -215,7 +215,7 @@
                                 </label>
                                 <input type="tel" id="phone" name="phone" x-model="form.phone" required
                                        class="w-full px-4 py-3.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2"
-                                       style="background-color: var(--fe-contact-input_bg, #f8fafc); border: 1px solid var(--fe-contact-input_border, #e2e8f0); color: var(--fe-contact-input_text, #0f172a); --tw-ring-color: var(--fe-contact-input_focus, rgba(99,102,241,0.3));"
+                                       style="background-color: var(--fe-contact-input_bg, #f8fafc); border: 1px solid var(--fe-contact-input_border, #e2e8f0); color: var(--fe-contact-input_text, #1C1C1C); --tw-ring-color: var(--fe-contact-input_focus, rgba(99,102,241,0.3));"
                                        placeholder="+52 55 1234 5678">
                             </div>
                         </div>
@@ -227,7 +227,7 @@
                             </label>
                             <input type="email" id="email" name="email" x-model="form.email" required
                                    class="w-full px-4 py-3.5 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2"
-                                   style="background-color: var(--fe-contact-input_bg, #f8fafc); border: 1px solid var(--fe-contact-input_border, #e2e8f0); color: var(--fe-contact-input_text, #0f172a); --tw-ring-color: var(--fe-contact-input_focus, rgba(99,102,241,0.3));"
+                                   style="background-color: var(--fe-contact-input_bg, #f8fafc); border: 1px solid var(--fe-contact-input_border, #e2e8f0); color: var(--fe-contact-input_text, #1C1C1C); --tw-ring-color: var(--fe-contact-input_focus, rgba(99,102,241,0.3));"
                                    placeholder="tu@correo.com">
                         </div>
 
@@ -238,7 +238,7 @@
                             </label>
                             <select id="interest" name="interest" x-model="form.interest"
                                     class="w-full px-4 py-3.5 rounded-xl transition-all duration-200 appearance-none cursor-pointer focus:outline-none focus:ring-2"
-                                    style="background-color: var(--fe-contact-input_bg, #f8fafc); border: 1px solid var(--fe-contact-input_border, #e2e8f0); color: var(--fe-contact-input_text, #0f172a); --tw-ring-color: var(--fe-contact-input_focus, rgba(99,102,241,0.3));">
+                                    style="background-color: var(--fe-contact-input_bg, #f8fafc); border: 1px solid var(--fe-contact-input_border, #e2e8f0); color: var(--fe-contact-input_text, #1C1C1C); --tw-ring-color: var(--fe-contact-input_focus, rgba(99,102,241,0.3));">
                                 <option value="">Selecciona una opción</option>
                                 <option value="comprar">Comprar una propiedad</option>
                                 <option value="rentar">Rentar una propiedad</option>
@@ -256,7 +256,7 @@
                             </label>
                             <textarea id="message" name="message" x-model="form.message" rows="5" required
                                       class="w-full px-4 py-3.5 rounded-xl transition-all duration-200 resize-none focus:outline-none focus:ring-2"
-                                      style="background-color: var(--fe-contact-input_bg, #f8fafc); border: 1px solid var(--fe-contact-input_border, #e2e8f0); color: var(--fe-contact-input_text, #0f172a); --tw-ring-color: var(--fe-contact-input_focus, rgba(99,102,241,0.3));"
+                                      style="background-color: var(--fe-contact-input_bg, #f8fafc); border: 1px solid var(--fe-contact-input_border, #e2e8f0); color: var(--fe-contact-input_text, #1C1C1C); --tw-ring-color: var(--fe-contact-input_focus, rgba(99,102,241,0.3));"
                                       placeholder="Cuéntanos más sobre lo que buscas o necesitas..."></textarea>
                         </div>
 
@@ -264,9 +264,9 @@
                         <div class="flex items-start gap-3">
                             <input type="checkbox" id="privacy" name="privacy" x-model="form.privacy" required
                                    class="mt-1 h-5 w-5 rounded border-slate-300 focus:ring-2"
-                                   style="color: var(--fe-primary-from, #4f46e5);">
+                                   style="color: var(--fe-primary-from, #D1A054);">
                             <label for="privacy" class="text-sm" style="color: var(--fe-contact-privacy_text, #475569);">
-                                Acepto la <a href="#" style="color: var(--fe-contact-link, #4f46e5);" class="font-medium hover:underline">política de privacidad</a> y autorizo el tratamiento de mis datos personales.
+                                Acepto la <a href="#" style="color: var(--fe-contact-link, #D1A054);" class="font-medium hover:underline">política de privacidad</a> y autorizo el tratamiento de mis datos personales.
                             </label>
                         </div>
 
@@ -274,7 +274,7 @@
                         <button type="submit"
                                 :disabled="loading"
                                 class="w-full px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3"
-                                style="background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">
+                                style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                             <template x-if="!loading">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -309,7 +309,7 @@
                 </svg>
                 Nuestra ubicación
             </div>
-            <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--fe-contact-map_title, #0f172a);">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--fe-contact-map_title, #1C1C1C);">
                 Visítanos en nuestra oficina
             </h2>
             <p class="text-lg" style="color: var(--fe-contact-map_subtitle, #475569);">
@@ -334,20 +334,20 @@
                 <div class="absolute bottom-6 left-6 right-6 sm:right-auto sm:max-w-sm">
                     <div class="rounded-2xl p-6 shadow-xl backdrop-blur-sm" style="background: rgba(255,255,255,0.95);">
                         <div class="flex items-start gap-4">
-                            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0" style="background: linear-gradient(to bottom right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0" style="background: linear-gradient(to bottom right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="font-bold text-lg mb-1" style="color: var(--fe-contact-map_card_title, #0f172a);">San Miguel Properties</h3>
+                                <h3 class="font-bold text-lg mb-1" style="color: var(--fe-contact-map_card_title, #1C1C1C);">San Miguel Properties</h3>
                                 <p class="text-sm mb-3" style="color: var(--fe-contact-map_card_text, #475569);">
                                     Av. Principal #123, Col. Centro<br>
                                     Ciudad de México, CP 06000
                                 </p>
                                 <a href="https://maps.google.com" target="_blank" 
                                    class="inline-flex items-center gap-2 text-sm font-semibold transition-colors"
-                                   style="color: var(--fe-contact-link, #4f46e5);">
+                                   style="color: var(--fe-contact-link, #D1A054);">
                                     Cómo llegar
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -369,13 +369,13 @@
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Encabezado --}}
         <div class="text-center mb-12">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: var(--fe-contact-faq_badge_bg, #e0e7ff); color: var(--fe-contact-faq_badge_text, #4f46e5);">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: var(--fe-contact-faq_badge_bg, #e0e7ff); color: var(--fe-contact-faq_badge_text, #D1A054);">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Preguntas frecuentes
             </div>
-            <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--fe-contact-faq_title, #0f172a);">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--fe-contact-faq_title, #1C1C1C);">
                 ¿Tienes dudas?
             </h2>
             <p class="text-lg" style="color: var(--fe-contact-faq_subtitle, #475569);">
@@ -389,11 +389,11 @@
             <div class="rounded-2xl border overflow-hidden" style="border-color: var(--fe-contact-faq_border, #e2e8f0);">
                 <button @click="openFaq = openFaq === 1 ? null : 1"
                         class="w-full flex items-center justify-between p-6 text-left transition-colors"
-                        :style="openFaq === 1 ? 'background: linear-gradient(to right, rgba(79,70,229,0.05), rgba(16,185,129,0.05))' : 'background-color: var(--fe-contact-faq_bg, #ffffff)'">
-                    <span class="font-semibold text-lg pr-4" style="color: var(--fe-contact-faq_question, #0f172a);">
+                        :style="openFaq === 1 ? 'background: linear-gradient(to right, rgba(209,160,84,0.05), rgba(118,141,89,0.05))' : 'background-color: var(--fe-contact-faq_bg, #ffffff)'">
+                    <span class="font-semibold text-lg pr-4" style="color: var(--fe-contact-faq_question, #1C1C1C);">
                         ¿Cuánto tiempo tarda el proceso de compra?
                     </span>
-                    <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300" :class="{ 'rotate-180': openFaq === 1 }" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-contact-faq_icon, #4f46e5);">
+                    <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300" :class="{ 'rotate-180': openFaq === 1 }" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-contact-faq_icon, #D1A054);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
@@ -408,11 +408,11 @@
             <div class="rounded-2xl border overflow-hidden" style="border-color: var(--fe-contact-faq_border, #e2e8f0);">
                 <button @click="openFaq = openFaq === 2 ? null : 2"
                         class="w-full flex items-center justify-between p-6 text-left transition-colors"
-                        :style="openFaq === 2 ? 'background: linear-gradient(to right, rgba(79,70,229,0.05), rgba(16,185,129,0.05))' : 'background-color: var(--fe-contact-faq_bg, #ffffff)'">
-                    <span class="font-semibold text-lg pr-4" style="color: var(--fe-contact-faq_question, #0f172a);">
+                        :style="openFaq === 2 ? 'background: linear-gradient(to right, rgba(209,160,84,0.05), rgba(118,141,89,0.05))' : 'background-color: var(--fe-contact-faq_bg, #ffffff)'">
+                    <span class="font-semibold text-lg pr-4" style="color: var(--fe-contact-faq_question, #1C1C1C);">
                         ¿Ofrecen financiamiento?
                     </span>
-                    <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300" :class="{ 'rotate-180': openFaq === 2 }" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-contact-faq_icon, #4f46e5);">
+                    <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300" :class="{ 'rotate-180': openFaq === 2 }" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-contact-faq_icon, #D1A054);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
@@ -427,11 +427,11 @@
             <div class="rounded-2xl border overflow-hidden" style="border-color: var(--fe-contact-faq_border, #e2e8f0);">
                 <button @click="openFaq = openFaq === 3 ? null : 3"
                         class="w-full flex items-center justify-between p-6 text-left transition-colors"
-                        :style="openFaq === 3 ? 'background: linear-gradient(to right, rgba(79,70,229,0.05), rgba(16,185,129,0.05))' : 'background-color: var(--fe-contact-faq_bg, #ffffff)'">
-                    <span class="font-semibold text-lg pr-4" style="color: var(--fe-contact-faq_question, #0f172a);">
+                        :style="openFaq === 3 ? 'background: linear-gradient(to right, rgba(209,160,84,0.05), rgba(118,141,89,0.05))' : 'background-color: var(--fe-contact-faq_bg, #ffffff)'">
+                    <span class="font-semibold text-lg pr-4" style="color: var(--fe-contact-faq_question, #1C1C1C);">
                         ¿Puedo agendar una visita virtual?
                     </span>
-                    <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300" :class="{ 'rotate-180': openFaq === 3 }" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-contact-faq_icon, #4f46e5);">
+                    <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300" :class="{ 'rotate-180': openFaq === 3 }" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-contact-faq_icon, #D1A054);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
@@ -446,11 +446,11 @@
             <div class="rounded-2xl border overflow-hidden" style="border-color: var(--fe-contact-faq_border, #e2e8f0);">
                 <button @click="openFaq = openFaq === 4 ? null : 4"
                         class="w-full flex items-center justify-between p-6 text-left transition-colors"
-                        :style="openFaq === 4 ? 'background: linear-gradient(to right, rgba(79,70,229,0.05), rgba(16,185,129,0.05))' : 'background-color: var(--fe-contact-faq_bg, #ffffff)'">
-                    <span class="font-semibold text-lg pr-4" style="color: var(--fe-contact-faq_question, #0f172a);">
+                        :style="openFaq === 4 ? 'background: linear-gradient(to right, rgba(209,160,84,0.05), rgba(118,141,89,0.05))' : 'background-color: var(--fe-contact-faq_bg, #ffffff)'">
+                    <span class="font-semibold text-lg pr-4" style="color: var(--fe-contact-faq_question, #1C1C1C);">
                         ¿Qué documentos necesito para rentar?
                     </span>
-                    <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300" :class="{ 'rotate-180': openFaq === 4 }" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-contact-faq_icon, #4f46e5);">
+                    <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300" :class="{ 'rotate-180': openFaq === 4 }" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-contact-faq_icon, #D1A054);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
@@ -465,11 +465,11 @@
             <div class="rounded-2xl border overflow-hidden" style="border-color: var(--fe-contact-faq_border, #e2e8f0);">
                 <button @click="openFaq = openFaq === 5 ? null : 5"
                         class="w-full flex items-center justify-between p-6 text-left transition-colors"
-                        :style="openFaq === 5 ? 'background: linear-gradient(to right, rgba(79,70,229,0.05), rgba(16,185,129,0.05))' : 'background-color: var(--fe-contact-faq_bg, #ffffff)'">
-                    <span class="font-semibold text-lg pr-4" style="color: var(--fe-contact-faq_question, #0f172a);">
+                        :style="openFaq === 5 ? 'background: linear-gradient(to right, rgba(209,160,84,0.05), rgba(118,141,89,0.05))' : 'background-color: var(--fe-contact-faq_bg, #ffffff)'">
+                    <span class="font-semibold text-lg pr-4" style="color: var(--fe-contact-faq_question, #1C1C1C);">
                         ¿Cobran comisión por sus servicios?
                     </span>
-                    <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300" :class="{ 'rotate-180': openFaq === 5 }" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-contact-faq_icon, #4f46e5);">
+                    <svg class="w-6 h-6 flex-shrink-0 transition-transform duration-300" :class="{ 'rotate-180': openFaq === 5 }" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-contact-faq_icon, #D1A054);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
@@ -488,7 +488,7 @@
             </p>
             <a href="https://wa.me/525512345678" target="_blank"
                class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 hover:shadow-lg hover:scale-105"
-               style="background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">
+               style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>

@@ -7,13 +7,13 @@
     {{-- Hero / header --}}
     <section class="relative overflow-hidden">
       <div class="absolute inset-0 pointer-events-none">
-        <div class="absolute -top-24 -right-24 h-72 w-72 rounded-full blur-3xl opacity-35" style="background-color: var(--fe-primary-from, rgba(79,70,229,.35));"></div>
-        <div class="absolute -bottom-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-35" style="background-color: var(--fe-primary-to, rgba(16,185,129,.35));"></div>
+        <div class="absolute -top-24 -right-24 h-72 w-72 rounded-full blur-3xl opacity-35" style="background-color: var(--fe-primary-from, rgba(209,160,84,.35));"></div>
+        <div class="absolute -bottom-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-35" style="background-color: var(--fe-primary-to, rgba(118,141,89,.35));"></div>
       </div>
 
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div class="max-w-3xl">
-          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #4f46e5);">
+          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 21V7l8-4v18" />
@@ -23,7 +23,7 @@
           </div>
 
           <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
-            Explora nuestras <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">agencias</span>
+            Explora nuestras <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">agencias</span>
           </h1>
           <p class="mt-4 text-lg text-slate-600">
             Encuentra una agencia y revisa sus agentes y propiedades.
@@ -48,7 +48,7 @@
                        @input.debounce.300ms="applyFilters()"
                        placeholder="Nombre, ciudad, email, MLS ID…"
                        class="w-full pl-12 pr-4 py-3 rounded-xl transition-all focus:outline-none"
-                       style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #0f172a);">
+                       style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
               </div>
             </div>
 
@@ -56,7 +56,7 @@
               <label class="block text-xs font-semibold text-slate-600 mb-2">Orden</label>
               <select x-model="filters.order" @change="applyFilters()"
                       class="w-full px-4 py-3 rounded-xl transition-all appearance-none cursor-pointer focus:outline-none"
-                      style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #0f172a);">
+                      style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                 <option value="name">Nombre</option>
                 <option value="city">Ciudad</option>
                 <option value="updated_at">Actualizado</option>
@@ -68,7 +68,7 @@
               <label class="block text-xs font-semibold text-slate-600 mb-2">Dirección</label>
               <select x-model="filters.sort" @change="applyFilters()"
                       class="w-full px-4 py-3 rounded-xl transition-all appearance-none cursor-pointer focus:outline-none"
-                      style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #0f172a);">
+                      style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                 <option value="asc">Asc</option>
                 <option value="desc">Desc</option>
               </select>
@@ -265,13 +265,13 @@
                   <div class="relative h-44 overflow-hidden">
                     <img src="${esc(img || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80')}" alt="${esc(name)}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';" />
                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <span class="absolute top-4 left-4 px-3 py-1 backdrop-blur-sm text-xs font-semibold rounded-full" style="background-color: rgba(255,255,255,0.92); color: #0f172a;">
+                    <span class="absolute top-4 left-4 px-3 py-1 backdrop-blur-sm text-xs font-semibold rounded-full" style="background-color: rgba(255,255,255,0.92); color: #1C1C1C;">
                       MLS #${esc(o.mls_office_id)}
                     </span>
                   </div>
 
                   <div class="p-6">
-                    <h3 class="text-lg font-bold mb-2 line-clamp-2" style="color: var(--fe-properties-card_title, #0f172a);">${esc(name)}</h3>
+                    <h3 class="text-lg font-bold mb-2 line-clamp-2" style="color: var(--fe-properties-card_title, #1C1C1C);">${esc(name)}</h3>
                     <div class="flex items-center gap-2 text-sm mb-4" style="color: var(--fe-properties-card_location, #64748b);">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                       ${esc(location)}
@@ -280,7 +280,7 @@
                       <span class="inline-flex items-center gap-2"><span class="font-semibold text-slate-900">${esc(agentsCount)}</span> agentes</span>
                       <span class="inline-flex items-center gap-2"><span class="font-semibold text-slate-900">${esc(propsCount)}</span> propiedades</span>
                     </div>
-                    <a href="/agencias/${esc(o.mls_office_id)}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">
+                    <a href="/agencias/${esc(o.mls_office_id)}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                       Ver agencia
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </a>

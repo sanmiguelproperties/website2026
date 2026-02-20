@@ -405,6 +405,9 @@ class FrontendColorService
             
             // Página nosotros
             'about_page' => 'Página Nosotros',
+            
+            // Nota: Las vistas de mls-offices y mls-agents reutilizan los grupos
+            // property_cards, filters y properties para mantener consistencia
         ];
     }
 
@@ -458,10 +461,12 @@ class FrontendColorService
 
         return match($routeName) {
             'home', 'welcome' => 'home',
-            'properties', 'properties.index' => 'properties',
-            'properties.show', 'property.show' => 'property-detail',
-            'contact' => 'contact',
-            'about' => 'about',
+            'properties', 'properties.index', 'public.properties.index' => 'properties',
+            'properties.show', 'property.show', 'public.properties.show' => 'property-detail',
+            'contact', 'public.contact' => 'contact',
+            'about', 'public.about' => 'about',
+            'public.mls-offices.index', 'public.mls-offices.show' => 'mls-offices',
+            'public.mls-agents.index', 'public.mls-agents.show' => 'mls-agents',
             default => 'global',
         };
     }

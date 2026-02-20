@@ -46,36 +46,63 @@
                     },
                     colors: {
                         primary: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            200: '#c7d2fe',
-                            300: '#a5b4fc',
-                            400: '#818cf8',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            800: '#3730a3',
-                            900: '#312e81',
-                            950: '#1e1b4b',
+                            50: '#faf6ee',
+                            100: '#f5eddd',
+                            200: '#ebdabb',
+                            300: '#e0c899',
+                            400: '#d9b477',
+                            500: '#D1A054',
+                            600: '#b8883f',
+                            700: '#9a7035',
+                            800: '#7c5a2b',
+                            900: '#5e4420',
+                            950: '#3f2d15',
                         },
                         accent: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            200: '#a7f3d0',
-                            300: '#6ee7b7',
-                            400: '#34d399',
-                            500: '#10b981',
-                            600: '#059669',
-                            700: '#047857',
-                            800: '#065f46',
-                            900: '#064e3b',
-                            950: '#022c22',
+                            50: '#f3f6ef',
+                            100: '#e4eadb',
+                            200: '#c9d5b7',
+                            300: '#aec093',
+                            400: '#92a876',
+                            500: '#768D59',
+                            600: '#627748',
+                            700: '#4e5f3a',
+                            800: '#3a472b',
+                            900: '#262f1d',
+                            950: '#131810',
+                        },
+                        // Override built-in indigo/emerald to brand colors
+                        indigo: {
+                            50: '#faf6ee',
+                            100: '#f5eddd',
+                            200: '#ebdabb',
+                            300: '#e0c899',
+                            400: '#d9b477',
+                            500: '#D1A054',
+                            600: '#b8883f',
+                            700: '#9a7035',
+                            800: '#7c5a2b',
+                            900: '#5e4420',
+                            950: '#3f2d15',
+                        },
+                        emerald: {
+                            50: '#f3f6ef',
+                            100: '#e4eadb',
+                            200: '#c9d5b7',
+                            300: '#aec093',
+                            400: '#92a876',
+                            500: '#768D59',
+                            600: '#627748',
+                            700: '#4e5f3a',
+                            800: '#3a472b',
+                            900: '#262f1d',
+                            950: '#131810',
                         }
                     },
                     boxShadow: {
                         'soft': '0 1px 2px rgba(0,0,0,.05), 0 10px 30px rgba(0,0,0,.10)',
-                        'glow': '0 0 40px rgba(99, 102, 241, 0.15)',
-                        'glow-accent': '0 0 40px rgba(16, 185, 129, 0.15)',
+                        'glow': '0 0 40px rgba(209, 160, 84, 0.15)',
+                        'glow-accent': '0 0 40px rgba(118, 141, 89, 0.15)',
                     },
                     animation: {
                         'float': 'float 6s ease-in-out infinite',
@@ -121,16 +148,16 @@
             background: #f1f5f9;
         }
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, var(--fe-ui-scrollbar_from, #6366f1), var(--fe-ui-scrollbar_to, #10b981));
+            background: linear-gradient(180deg, var(--fe-ui-scrollbar_from, #D1A054), var(--fe-ui-scrollbar_to, #768D59));
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(180deg, var(--fe-ui-scrollbar_hover_from, #4f46e5), var(--fe-ui-scrollbar_hover_to, #059669));
+            background: linear-gradient(180deg, var(--fe-ui-scrollbar_hover_from, #A52A2A), var(--fe-ui-scrollbar_hover_to, #768D59));
         }
 
         /* Gradient text helper - Usa variables CSS dinámicas */
         .text-gradient {
-            background: linear-gradient(135deg, var(--fe-primary-from, #6366f1) 0%, var(--fe-primary-to, #10b981) 100%);
+            background: linear-gradient(135deg, var(--fe-primary-from, #D1A054) 0%, var(--fe-primary-to, #768D59) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -139,7 +166,7 @@
         /* Gradient border helper - Usa variables CSS dinámicas */
         .border-gradient {
             border: 2px solid transparent;
-            background: linear-gradient(white, white) padding-box, linear-gradient(135deg, var(--fe-primary-from, #6366f1), var(--fe-primary-to, #10b981)) border-box;
+            background: linear-gradient(white, white) padding-box, linear-gradient(135deg, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59)) border-box;
         }
 
         /* Glass effect */
@@ -157,7 +184,7 @@
             opacity: 1;
         }
         .swiper-pagination-bullet-active {
-            background: linear-gradient(135deg, var(--fe-primary-from, #6366f1), var(--fe-primary-to, #10b981));
+            background: linear-gradient(135deg, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));
         }
         .swiper-button-next,
         .swiper-button-prev {
@@ -169,7 +196,7 @@
         }
         .swiper-button-next:hover,
         .swiper-button-prev:hover {
-            background: linear-gradient(135deg, var(--fe-primary-from, #6366f1), var(--fe-primary-to, #10b981));
+            background: linear-gradient(135deg, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));
         }
         .swiper-button-next::after,
         .swiper-button-prev::after {
@@ -199,18 +226,18 @@
 
         /* Filter chip active state - Usa variables CSS dinámicas */
         .filter-chip.active {
-            background: linear-gradient(135deg, var(--fe-filters-active_from, #6366f1), var(--fe-filters-active_to, #10b981));
+            background: linear-gradient(135deg, var(--fe-filters-active_from, #D1A054), var(--fe-filters-active_to, #768D59));
             color: white;
         }
         
         /* Filter tag states for properties section */
         .filter-tag-active {
-            background: linear-gradient(to right, var(--fe-properties-tag_active_from, #4f46e5), var(--fe-properties-tag_active_to, #10b981));
+            background: linear-gradient(to right, var(--fe-properties-tag_active_from, #D1A054), var(--fe-properties-tag_active_to, #768D59));
             color: white;
         }
         .filter-tag-inactive {
             background-color: var(--fe-properties-tag_inactive_bg, #f1f5f9);
-            color: var(--fe-properties-tag_inactive_text, #475569);
+            color: var(--fe-properties-tag_inactive_text, #5B5B5B);
         }
         .filter-tag-inactive:hover {
             background-color: var(--fe-properties-tag_inactive_hover, #e2e8f0);
@@ -218,19 +245,19 @@
 
         /* Hero overlay gradient */
         .hero-overlay {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.85) 0%, rgba(16, 185, 129, 0.75) 100%);
+            background: linear-gradient(135deg, rgba(209, 160, 84, 0.85) 0%, rgba(118, 141, 89, 0.75) 100%);
         }
 
         /* Clases de utilidad para usar variables CSS dinámicas */
         
         /* Gradientes primarios */
         .bg-fe-gradient-primary {
-            background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));
+            background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));
         }
         
         /* Gradiente para títulos hero */
         .text-fe-hero-gradient {
-            background: linear-gradient(to right, var(--fe-hero-title_gradient_from, #818cf8), var(--fe-hero-title_gradient_via, #c084fc), var(--fe-hero-title_gradient_to, #34d399));
+            background: linear-gradient(to right, var(--fe-hero-title_gradient_from, #D1A054), var(--fe-hero-title_gradient_via, #FFFAF5), var(--fe-hero-title_gradient_to, #768D59));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -238,15 +265,15 @@
         
         /* Colores para badges de venta/renta */
         .bg-fe-sale-badge {
-            background-color: var(--fe-property_cards-sale_badge, #10b981);
+            background-color: var(--fe-property_cards-sale_badge, #768D59);
         }
         .bg-fe-rent-badge {
-            background-color: var(--fe-property_cards-rent_badge, #f59e0b);
+            background-color: var(--fe-property_cards-rent_badge, #D1A054);
         }
         
         /* Precio de propiedades */
         .text-fe-price-gradient {
-            background: linear-gradient(to right, var(--fe-property_cards-price_from, #4f46e5), var(--fe-property_cards-price_to, #10b981));
+            background: linear-gradient(to right, var(--fe-property_cards-price_from, #D1A054), var(--fe-property_cards-price_to, #768D59));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -254,8 +281,8 @@
         
         /* Focus en inputs */
         .focus-fe-primary:focus {
-            border-color: var(--fe-filters-focus_border, #6366f1);
-            box-shadow: 0 0 0 3px var(--fe-filters-focus_ring, rgba(99,102,241,0.2));
+            border-color: var(--fe-filters-focus_border, #D1A054);
+            box-shadow: 0 0 0 3px var(--fe-filters-focus_ring, rgba(209,160,84,0.2));
         }
 
         /* Line clamp (Tailwind CDN no incluye plugin por defecto) */
@@ -274,7 +301,7 @@
     <div id="preloader" class="fixed inset-0 z-[9999] flex items-center justify-center bg-white transition-opacity duration-500">
         <div class="relative">
             <div class="w-16 h-16 border-4 border-slate-200 rounded-full"></div>
-            <div class="absolute top-0 left-0 w-16 h-16 border-4 border-t-indigo-600 border-r-emerald-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+            <div class="absolute top-0 left-0 w-16 h-16 border-4 rounded-full animate-spin" style="border-color: transparent; border-top-color: var(--fe-ui-preloader_border_1, #D1A054); border-right-color: var(--fe-ui-preloader_border_2, #768D59);"></div>
         </div>
     </div>
 
@@ -290,7 +317,7 @@
     @include('components.public.footer')
 
     <!-- Back to Top Button -->
-    <button id="backToTop" class="fixed bottom-8 right-8 z-50 hidden w-12 h-12 rounded-full bg-gradient-to-r from-indigo-600 to-emerald-500 text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20" aria-label="Volver arriba">
+    <button id="backToTop" class="fixed bottom-8 right-8 z-50 hidden w-12 h-12 rounded-full text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl focus:outline-none focus:ring-4" style="background: linear-gradient(to right, var(--fe-ui-back_to_top_from, #D1A054), var(--fe-ui-back_to_top_to, #768D59)); --tw-ring-color: rgba(209,160,84,0.2);" aria-label="Volver arriba">
         <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
         </svg>

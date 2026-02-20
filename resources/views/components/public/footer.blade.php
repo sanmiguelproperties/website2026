@@ -1,10 +1,10 @@
 {{-- Footer Público - San Miguel Properties --}}
 {{-- Usa variables CSS dinámicas del frontend color system --}}
-<footer class="relative text-white overflow-hidden" style="background-color: var(--fe-footer-background, #0f172a);">
+<footer class="relative text-white overflow-hidden" style="background-color: var(--fe-footer-background, #1C1C1C);">
     {{-- Decorative Background Elements - Usa variables CSS dinámicas --}}
     <div class="absolute inset-0 pointer-events-none overflow-hidden">
-        <div class="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl" style="background-color: var(--fe-footer-accent_from, rgba(79, 70, 229, 0.2));"></div>
-        <div class="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl" style="background-color: var(--fe-footer-accent_to, rgba(16, 185, 129, 0.2));"></div>
+        <div class="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl" style="background-color: var(--fe-footer-accent_from, rgba(209, 160, 84, 0.2));"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl" style="background-color: var(--fe-footer-accent_to, rgba(118, 141, 89, 0.2));"></div>
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.03)_1px,transparent_0)] [background-size:32px_32px]"></div>
     </div>
 
@@ -13,7 +13,7 @@
         <div class="border-b border-white/10">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
                 <div class="max-w-3xl mx-auto text-center">
-                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6" style="background: linear-gradient(to right, var(--fe-footer-newsletter_badge_from, rgba(79,70,229,0.2)), var(--fe-footer-newsletter_badge_to, rgba(16,185,129,0.2))); color: var(--fe-footer-newsletter_badge_text, #34d399);">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6" style="background: linear-gradient(to right, var(--fe-footer-newsletter_badge_from, rgba(209,160,84,0.2)), var(--fe-footer-newsletter_badge_to, rgba(118,141,89,0.2))); color: var(--fe-footer-newsletter_badge_text, #768D59);">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
@@ -21,7 +21,7 @@
                     </div>
                     <h3 class="text-2xl sm:text-3xl font-bold mb-4">
                         Suscríbete a nuestro 
-                        <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-footer-newsletter_title_from, #818cf8), var(--fe-footer-newsletter_title_to, #34d399));">newsletter</span>
+                        <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-footer-newsletter_title_from, #D1A054), var(--fe-footer-newsletter_title_to, #768D59));">newsletter</span>
                     </h3>
                     <p class="text-slate-400 mb-8 max-w-xl mx-auto">
                         Recibe las últimas propiedades, ofertas exclusivas y consejos inmobiliarios directamente en tu correo.
@@ -30,14 +30,14 @@
                         <div class="relative flex-1">
                             <input type="email" 
                                    placeholder="tu@correo.com" 
-                                   class="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200">
+                                   class="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none transition-all duration-200" style="--tw-ring-color: rgba(209,160,84,0.2);" onfocus="this.style.borderColor='var(--fe-primary-from, #D1A054)'" onblur="this.style.borderColor=''">
                             <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-500">
                                 <svg class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
                             </div>
                         </div>
-                        <button type="submit" class="px-6 py-3.5 rounded-xl font-semibold text-white hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105" style="background: linear-gradient(to right, var(--fe-footer-newsletter_button_from, #4f46e5), var(--fe-footer-newsletter_button_to, #10b981));">
+                        <button type="submit" class="px-6 py-3.5 rounded-xl font-semibold text-white hover:shadow-lg transition-all duration-300 hover:scale-105" style="background: linear-gradient(to right, var(--fe-footer-newsletter_button_from, #D1A054), var(--fe-footer-newsletter_button_to, #768D59)); --tw-shadow-color: rgba(209,160,84,0.25);">
                             Suscribirse
                         </button>
                     </form>
@@ -56,7 +56,7 @@
                         @elseif(!empty($siteLogoUrl))
                             <img src="{{ $siteLogoUrl }}" alt="{{ $siteName ?? 'San Miguel Properties' }}" class="h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
                         @else
-                            <div class="grid h-12 w-12 place-items-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105" style="background: linear-gradient(to bottom right, var(--fe-footer-accent_from, #4f46e5), var(--fe-footer-accent_to, #10b981));">
+                            <div class="grid h-12 w-12 place-items-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105" style="background: linear-gradient(to bottom right, var(--fe-footer-accent_from, #D1A054), var(--fe-footer-accent_to, #768D59));">
                                 <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M3 21h18" />
                                     <path d="M6 21V7a2 2 0 0 1 2-2h3" />
@@ -110,13 +110,13 @@
                 {{-- Quick Links - Usa variables CSS dinámicas --}}
                 <div>
                     <h4 class="text-white font-semibold text-lg mb-6 flex items-center gap-2">
-                        <span class="w-8 h-0.5 rounded-full" style="background: linear-gradient(to right, var(--fe-footer-accent_from, #4f46e5), var(--fe-footer-accent_to, #10b981));"></span>
+                        <span class="w-8 h-0.5 rounded-full" style="background: linear-gradient(to right, var(--fe-footer-accent_from, #D1A054), var(--fe-footer-accent_to, #768D59));"></span>
                         Enlaces Rápidos
                     </h4>
                     <ul class="space-y-3">
                         <li>
                             <a href="#propiedades" class="text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group">
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_1, #6366f1);">
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_1, #D1A054);">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                                 Todas las Propiedades
@@ -124,7 +124,7 @@
                         </li>
                         <li>
                             <a href="#venta" class="text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group">
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_1, #6366f1);">
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_1, #D1A054);">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                                 Propiedades en Venta
@@ -132,7 +132,7 @@
                         </li>
                         <li>
                             <a href="#renta" class="text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group">
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_1, #6366f1);">
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_1, #D1A054);">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                                 Propiedades en Renta
@@ -140,7 +140,7 @@
                         </li>
                         <li>
                             <a href="#nosotros" class="text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group">
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_1, #6366f1);">
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_1, #D1A054);">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                                 Sobre Nosotros
@@ -148,7 +148,7 @@
                         </li>
                         <li>
                             <a href="#contacto" class="text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group">
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_1, #6366f1);">
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_1, #D1A054);">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                                 Contacto
@@ -160,13 +160,13 @@
                 {{-- Property Types - Usa variables CSS dinámicas --}}
                 <div>
                     <h4 class="text-white font-semibold text-lg mb-6 flex items-center gap-2">
-                        <span class="w-8 h-0.5 rounded-full" style="background: linear-gradient(to right, var(--fe-footer-accent_from, #4f46e5), var(--fe-footer-accent_to, #10b981));"></span>
+                        <span class="w-8 h-0.5 rounded-full" style="background: linear-gradient(to right, var(--fe-footer-accent_from, #D1A054), var(--fe-footer-accent_to, #768D59));"></span>
                         Tipos de Propiedad
                     </h4>
                     <ul class="space-y-3">
                         <li>
                             <a href="#" class="text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group">
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_2, #10b981);">
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_2, #768D59);">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                                 Casas
@@ -174,7 +174,7 @@
                         </li>
                         <li>
                             <a href="#" class="text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group">
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_2, #10b981);">
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_2, #768D59);">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                                 Departamentos
@@ -182,7 +182,7 @@
                         </li>
                         <li>
                             <a href="#" class="text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group">
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_2, #10b981);">
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_2, #768D59);">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                                 Terrenos
@@ -190,7 +190,7 @@
                         </li>
                         <li>
                             <a href="#" class="text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group">
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_2, #10b981);">
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_2, #768D59);">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                                 Locales Comerciales
@@ -198,7 +198,7 @@
                         </li>
                         <li>
                             <a href="#" class="text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-2 group">
-                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_2, #10b981);">
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-footer-link_arrow_2, #768D59);">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                                 Oficinas
@@ -210,13 +210,13 @@
                 {{-- Contact Info - Usa variables CSS dinámicas --}}
                 <div>
                     <h4 class="text-white font-semibold text-lg mb-6 flex items-center gap-2">
-                        <span class="w-8 h-0.5 rounded-full" style="background: linear-gradient(to right, var(--fe-footer-accent_from, #4f46e5), var(--fe-footer-accent_to, #10b981));"></span>
+                        <span class="w-8 h-0.5 rounded-full" style="background: linear-gradient(to right, var(--fe-footer-accent_from, #D1A054), var(--fe-footer-accent_to, #768D59));"></span>
                         Contáctanos
                     </h4>
                     <ul class="space-y-4">
                         <li>
                             <a href="tel:+525512345678" class="flex items-start gap-3 text-slate-400 hover:text-white transition-colors duration-200 group">
-                                <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center group-hover:text-white transition-all duration-300 flex-shrink-0 footer-contact-phone" style="color: var(--fe-footer-contact_phone_icon, #10b981);">
+                                <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center group-hover:text-white transition-all duration-300 flex-shrink-0 footer-contact-phone" style="color: var(--fe-footer-contact_phone_icon, #768D59);">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                     </svg>
@@ -229,7 +229,7 @@
                         </li>
                         <li>
                             <a href="mailto:info@sanmiguelproperties.com" class="flex items-start gap-3 text-slate-400 hover:text-white transition-colors duration-200 group">
-                                <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center group-hover:text-white transition-all duration-300 flex-shrink-0 footer-contact-email" style="color: var(--fe-footer-contact_email_icon, #6366f1);">
+                                <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center group-hover:text-white transition-all duration-300 flex-shrink-0 footer-contact-email" style="color: var(--fe-footer-contact_email_icon, #D1A054);">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                     </svg>
@@ -242,7 +242,7 @@
                         </li>
                         <li>
                             <div class="flex items-start gap-3 text-slate-400">
-                                <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0" style="color: var(--fe-footer-contact_location_icon, #6366f1);">
+                                <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0" style="color: var(--fe-footer-contact_location_icon, #D1A054);">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -256,7 +256,7 @@
                         </li>
                         <li>
                             <div class="flex items-start gap-3 text-slate-400">
-                                <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0" style="color: var(--fe-footer-contact_hours_icon, #10b981);">
+                                <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0" style="color: var(--fe-footer-contact_hours_icon, #768D59);">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
@@ -299,29 +299,29 @@
 {{-- CSS para efectos hover en redes sociales usando variables CSS dinámicas --}}
 <style>
     .footer-social-facebook:hover {
-        background-color: var(--fe-footer-social_facebook_hover, #4f46e5);
+        background-color: var(--fe-footer-social_facebook_hover, #D1A054);
         color: white;
     }
     .footer-social-instagram:hover {
-        background: linear-gradient(to bottom right, var(--fe-footer-social_instagram_from, #9333ea), var(--fe-footer-social_instagram_to, #ec4899));
+        background: linear-gradient(to bottom right, var(--fe-footer-social_instagram_from, #A52A2A), var(--fe-footer-social_instagram_to, #D1A054));
         color: white;
     }
     .footer-social-twitter:hover {
-        background-color: var(--fe-footer-social_twitter_hover, #0ea5e9);
+        background-color: var(--fe-footer-social_twitter_hover, #5B5B5B);
         color: white;
     }
     .footer-social-whatsapp:hover {
-        background-color: var(--fe-footer-social_whatsapp_hover, #22c55e);
+        background-color: var(--fe-footer-social_whatsapp_hover, #768D59);
         color: white;
     }
     .footer-social-linkedin:hover {
-        background-color: var(--fe-footer-social_linkedin_hover, #2563eb);
+        background-color: var(--fe-footer-social_linkedin_hover, #5B5B5B);
         color: white;
     }
     .footer-contact-phone:hover {
-        background-color: var(--fe-footer-contact_phone_icon, #10b981);
+        background-color: var(--fe-footer-contact_phone_icon, #768D59);
     }
     .footer-contact-email:hover {
-        background-color: var(--fe-footer-contact_email_icon, #6366f1);
+        background-color: var(--fe-footer-contact_email_icon, #D1A054);
     }
 </style>

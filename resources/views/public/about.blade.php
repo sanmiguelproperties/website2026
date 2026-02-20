@@ -9,7 +9,7 @@
 <section class="relative pt-32 pb-20 lg:pt-40 lg:pb-28 overflow-hidden">
     {{-- Background con gradiente (usa variables de about_page) --}}
     <div class="absolute inset-0 z-0">
-        <div class="absolute inset-0" style="background: linear-gradient(135deg, var(--fe-about_page-hero_bg_from, #312e81) 0%, rgba(79,70,229,0.95) 45%, var(--fe-about_page-hero_bg_to, #059669) 100%);"></div>
+        <div class="absolute inset-0" style="background: linear-gradient(135deg, var(--fe-about_page-hero_bg_from, #1C1C1C) 0%, rgba(209,160,84,0.95) 45%, var(--fe-about_page-hero_bg_to, #768D59) 100%);"></div>
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.10)_1px,transparent_0)] [background-size:40px_40px]"></div>
         <div class="absolute top-16 left-10 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-float"></div>
         <div class="absolute -bottom-10 right-10 w-[28rem] h-[28rem] bg-emerald-500/10 rounded-full blur-3xl animate-float" style="animation-delay: -3s;"></div>
@@ -39,7 +39,7 @@
             <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style="animation-delay: 0.2s;">
                 <a href="{{ route('public.properties.index') }}"
                    class="inline-flex items-center justify-center gap-2 px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105"
-                   style="background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">
+                   style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                     Ver propiedades
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -72,7 +72,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             <div class="lg:col-span-7">
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6" style="background-color: rgba(79,70,229,0.08); color: var(--fe-primary-from, #4f46e5);">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6" style="background-color: rgba(209,160,84,0.08); color: var(--fe-primary-from, #D1A054);">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -81,7 +81,7 @@
 
                 <h2 class="text-3xl sm:text-4xl font-bold mb-6" style="color: var(--fe-about_page-section_title, #1e293b);">
                     Experiencia inmobiliaria moderna,
-                    <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">
+                    <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                         sin fricciones
                     </span>
                 </h2>
@@ -123,7 +123,7 @@
                         <div class="absolute inset-0" style="background: linear-gradient(to top, rgba(15,23,42,0.75), rgba(15,23,42,0.05));"></div>
                         <div class="absolute bottom-0 left-0 right-0 p-8">
                             <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-white/90 backdrop-blur-sm" style="background: rgba(255,255,255,0.10);">
-                                <span class="inline-flex h-2 w-2 rounded-full" style="background: var(--fe-primary-to, #10b981);"></span>
+                                <span class="inline-flex h-2 w-2 rounded-full" style="background: var(--fe-primary-to, #768D59);"></span>
                                 Equipo multidisciplinario
                             </div>
                             <p class="mt-3 text-white text-lg font-semibold">Asesoría, marketing y tecnología</p>
@@ -142,7 +142,7 @@
 <section class="py-16 lg:py-24" style="background: linear-gradient(to bottom, rgba(248,250,252,1), rgba(255,255,255,1));">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center max-w-3xl mx-auto mb-12">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: rgba(16,185,129,0.10); color: rgba(5,150,105,1);">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: rgba(118,141,89,0.10); color: rgba(5,150,105,1);">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
@@ -158,7 +158,7 @@
 
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             <div class="rounded-3xl p-8 border transition-all duration-300 hover:shadow-xl" style="border-color: var(--fe-about_page-team_card_border, #e2e8f0); background: linear-gradient(to bottom right, rgba(255,255,255,1), rgba(248,250,252,1));">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6" style="background: linear-gradient(to bottom right, var(--fe-about_page-value_icon_1, #4f46e5), rgba(129,140,248,1));">
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6" style="background: linear-gradient(to bottom right, var(--fe-about_page-value_icon_1, #D1A054), rgba(129,140,248,1));">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4" />
                     </svg>
@@ -168,7 +168,7 @@
             </div>
 
             <div class="rounded-3xl p-8 border transition-all duration-300 hover:shadow-xl" style="border-color: var(--fe-about_page-team_card_border, #e2e8f0); background: linear-gradient(to bottom right, rgba(255,255,255,1), rgba(248,250,252,1));">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6" style="background: linear-gradient(to bottom right, var(--fe-about_page-value_icon_2, #10b981), rgba(34,211,238,1));">
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6" style="background: linear-gradient(to bottom right, var(--fe-about_page-value_icon_2, #768D59), rgba(34,211,238,1));">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2" />
                     </svg>
@@ -178,7 +178,7 @@
             </div>
 
             <div class="rounded-3xl p-8 border transition-all duration-300 hover:shadow-xl" style="border-color: var(--fe-about_page-team_card_border, #e2e8f0); background: linear-gradient(to bottom right, rgba(255,255,255,1), rgba(248,250,252,1));">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6" style="background: linear-gradient(to bottom right, var(--fe-about_page-value_icon_3, #f59e0b), rgba(251,146,60,1));">
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6" style="background: linear-gradient(to bottom right, var(--fe-about_page-value_icon_3, #D1A054), rgba(251,146,60,1));">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
@@ -206,7 +206,7 @@
 
                 <div class="mt-8 rounded-3xl border p-6" style="border-color: rgba(226,232,240,1); background: linear-gradient(to bottom right, rgba(248,250,252,1), rgba(255,255,255,1));">
                     <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1" />
                             </svg>
@@ -235,13 +235,13 @@
                     @foreach($timeline as $i => $item)
                         <div class="relative pb-10">
                             <div class="absolute -left-[2px] top-1">
-                                <div class="w-4 h-4 rounded-full" style="background-color: {{ $i === count($timeline) - 1 ? 'var(--fe-about_page-timeline_dot_active, #4f46e5)' : 'var(--fe-about_page-timeline_line, #e2e8f0)' }};"></div>
+                                <div class="w-4 h-4 rounded-full" style="background-color: {{ $i === count($timeline) - 1 ? 'var(--fe-about_page-timeline_dot_active, #D1A054)' : 'var(--fe-about_page-timeline_line, #e2e8f0)' }};"></div>
                             </div>
 
                             <div class="ml-6 rounded-3xl border p-6 transition-all duration-300 hover:shadow-lg" style="border-color: rgba(226,232,240,1); background: linear-gradient(to bottom right, rgba(255,255,255,1), rgba(248,250,252,1));">
                                 <div class="flex items-center justify-between gap-4">
-                                    <div class="text-sm font-semibold" style="color: var(--fe-primary-from, #4f46e5);">{{ $item['year'] }}</div>
-                                    <div class="text-xs font-medium px-3 py-1 rounded-full" style="background: rgba(16,185,129,0.10); color: rgba(5,150,105,1);">
+                                    <div class="text-sm font-semibold" style="color: var(--fe-primary-from, #D1A054);">{{ $item['year'] }}</div>
+                                    <div class="text-xs font-medium px-3 py-1 rounded-full" style="background: rgba(118,141,89,0.10); color: rgba(5,150,105,1);">
                                         Hito
                                     </div>
                                 </div>
@@ -297,7 +297,7 @@
                         <div class="text-sm" style="color: var(--fe-about_page-team_role, #64748b);">{{ $person['role'] }}</div>
 
                         <div class="mt-5 flex items-center gap-2">
-                            <a href="{{ route('public.contact') }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:shadow-lg" style="background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">
+                            <a href="{{ route('public.contact') }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:shadow-lg" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                                 Contactar
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -321,9 +321,9 @@
 {{-- ============================================== --}}
 <section class="py-16 lg:py-24 bg-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="relative overflow-hidden rounded-3xl border p-10 lg:p-14" style="border-color: rgba(226,232,240,1); background: linear-gradient(135deg, rgba(79,70,229,0.08), rgba(16,185,129,0.10));">
-            <div class="absolute -top-10 -right-10 w-56 h-56 rounded-full blur-3xl" style="background: rgba(79,70,229,0.20);"></div>
-            <div class="absolute -bottom-10 -left-10 w-64 h-64 rounded-full blur-3xl" style="background: rgba(16,185,129,0.20);"></div>
+        <div class="relative overflow-hidden rounded-3xl border p-10 lg:p-14" style="border-color: rgba(226,232,240,1); background: linear-gradient(135deg, rgba(209,160,84,0.08), rgba(118,141,89,0.10));">
+            <div class="absolute -top-10 -right-10 w-56 h-56 rounded-full blur-3xl" style="background: rgba(209,160,84,0.20);"></div>
+            <div class="absolute -bottom-10 -left-10 w-64 h-64 rounded-full blur-3xl" style="background: rgba(118,141,89,0.20);"></div>
 
             <div class="relative z-10 grid lg:grid-cols-12 gap-8 items-center">
                 <div class="lg:col-span-8">
@@ -335,7 +335,7 @@
                     </p>
                 </div>
                 <div class="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col gap-3 justify-end">
-                    <a href="{{ route('public.contact') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105" style="background: linear-gradient(to right, var(--fe-primary-from, #4f46e5), var(--fe-primary-to, #10b981));">
+                    <a href="{{ route('public.contact') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                         Ir a contacto
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
