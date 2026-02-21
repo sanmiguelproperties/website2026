@@ -1,0 +1,21 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirigir todo al directorio public/
+    # Necesario cuando el subdominio apunta a la raíz del proyecto Laravel
+    # y no directamente a la carpeta public/
+
+    # No reescribir si ya estamos dentro de public/
+    RewriteCond %{REQUEST_URI} !^/public/
+
+    # Si el archivo existe en public/, servir directamente
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # Si el directorio existe en public/, servir directamente
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # Para todo lo demás, enviar al front controller de Laravel
+    RewriteRule ^(.*)$ public/index.php [L]
+</IfModule>
