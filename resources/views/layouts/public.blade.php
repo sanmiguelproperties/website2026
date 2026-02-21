@@ -26,8 +26,8 @@
         $cmsSettings = \App\Models\CmsSiteSetting::getAllCached();
         $siteLogo = $cmsSettings->firstWhere('setting_key', 'site_logo');
         $siteLogoDark = $cmsSettings->firstWhere('setting_key', 'site_logo_dark');
-        $siteLogoUrl = $siteLogo?->mediaAsset?->url;
-        $siteLogoDarkUrl = $siteLogoDark?->mediaAsset?->url;
+        $siteLogoUrl = $siteLogo?->mediaAsset?->serving_url ?? $siteLogo?->mediaAsset?->url;
+        $siteLogoDarkUrl = $siteLogoDark?->mediaAsset?->serving_url ?? $siteLogoDark?->mediaAsset?->url;
         $siteName = $cmsSettings->firstWhere('setting_key', 'site_name')?->value_es ?? 'San Miguel Properties';
     @endphp
     <style id="frontend-color-variables">

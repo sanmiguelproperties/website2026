@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Profile image
       let profileImageHtml = '';
       if (user.profile_image) {
-        profileImageHtml = `<img src="${user.profile_image.url}" alt="${user.profile_image.alt || user.name}" class="w-10 h-10 rounded-full object-cover">`;
+        profileImageHtml = `<img src="${user.profile_image.serving_url || user.profile_image.url}" alt="${user.profile_image.alt || user.name}" class="w-10 h-10 rounded-full object-cover">`;
       } else {
         profileImageHtml = `<div class="w-10 h-10 rounded-full bg-[var(--c-primary)] flex items-center justify-center text-white font-bold text-lg">${user.name.charAt(0).toUpperCase()}</div>`;
       }

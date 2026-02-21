@@ -314,8 +314,8 @@
     function resolveMediaUrl(asset) {
       if (!asset) return null;
       if (typeof asset === 'string') return asset;
-      // Priorizar url del asset, luego pivot.source_url si existe
-      const url = asset.url || asset.public_url || asset.path || null;
+      // Priorizar serving_url (URL local si fue descargada), luego url, luego fallbacks
+      const url = asset.serving_url || asset.url || asset.public_url || asset.path || null;
       if (url) return url;
       // Fallback a source_url del pivot si existe
       if (asset.pivot && asset.pivot.source_url) return asset.pivot.source_url;

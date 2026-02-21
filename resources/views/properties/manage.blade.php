@@ -1015,7 +1015,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const typeName = p.property_type_name || '—';
       const updated = p.updated_at || p.easybroker_updated_at || null;
 
-      const cover = p.cover_media_asset?.url ? `<img src="${escapeHtml(p.cover_media_asset.url)}" class="size-10 rounded-xl object-cover border border-[var(--c-border)]" alt="">` :
+      const cover = (p.cover_media_asset?.serving_url || p.cover_media_asset?.url) ? `<img src="${escapeHtml(p.cover_media_asset?.serving_url || p.cover_media_asset?.url)}" class="size-10 rounded-xl object-cover border border-[var(--c-border)]" alt="">` :
         `<div class="size-10 rounded-xl grid place-items-center bg-[var(--c-elev)] border border-[var(--c-border)]">
           <svg class="size-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M6 21V9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12"/><path d="M9 21v-6h6v6"/></svg>
         </div>`;

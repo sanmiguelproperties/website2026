@@ -618,7 +618,7 @@
             const esc = (s) => String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'", '&#039;');
 
             grid.innerHTML = this.properties.map((p) => {
-              const imageUrl = p.cover_media_asset?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';
+              const imageUrl = p.cover_media_asset?.serving_url || p.cover_media_asset?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';
               const price = p.operations?.[0]?.formatted_amount || 'Consultar precio';
               const op = p.operations?.[0]?.operation_type || '';
               const location = [p.location?.city, p.location?.city_area].filter(Boolean).join(', ') || 'Ubicación disponible';

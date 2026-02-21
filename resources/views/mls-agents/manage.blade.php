@@ -521,8 +521,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const office = a.office_name || (a.mls_office_id ? `Oficina #${a.mls_office_id}` : '—');
       const propertiesCount = a.properties_count ?? a.properties?.length ?? '—';
 
-      // Photo: usar el accessor 'photo' del modelo que prioriza local > media asset > URL MLS
-      const photoUrl = a.photo || a.photo_media_asset?.url || a.photo_url || null;
+      // Photo: usar serving_url (local si fue descargada) > photo accessor > url > photo_url
+      const photoUrl = a.photo || a.photo_media_asset?.serving_url || a.photo_media_asset?.url || a.photo_url || null;
       const photo = photoUrl
         ? `<img src="${escapeHtml(photoUrl)}" class="size-10 rounded-xl object-cover border border-[var(--c-border)]" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" />
            <div class="size-10 rounded-xl place-items-center bg-[var(--c-elev)] border border-[var(--c-border)]" style="display:none;">
@@ -710,8 +710,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $('#btn-agent-delete').classList.remove('hidden');
 
-    // Photo: usar el accessor 'photo' del modelo
-    const photoUrl = a.photo || a.photo_media_asset?.url || a.photo_url || null;
+    // Photo: usar serving_url (local si fue descargada) > photo accessor > url > photo_url
+    const photoUrl = a.photo || a.photo_media_asset?.serving_url || a.photo_media_asset?.url || a.photo_url || null;
     $('#field-photo-url').value = a.photo_url ?? '';
     if (photoUrl) {
       $('#photo-preview').src = photoUrl;

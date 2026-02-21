@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Campo tipo IMAGE → usa media-input picker
     if (s.type === 'image') {
       const mediaId = s.media_asset_id || '';
-      const mediaUrl = s.media_asset?.url || '';
+      const mediaUrl = s.media_asset?.serving_url || s.media_asset?.url || '';
       const uniqueId = 'setting_img_' + s.setting_key;
 
       return `
