@@ -19,6 +19,8 @@ class PropertyController extends Controller
      */
     public function indexPublic(Request $request): JsonResponse
     {
+        $locale = $this->resolvePublicLocale($request);
+
         $query = Property::query()
             ->where('published', true)
             ->with([
@@ -30,22 +32,22 @@ class PropertyController extends Controller
                 'operations.currency',
             ]);
 
-        // Filtrar por office/agencia del MLS (para páginas de agencia)
+        // Filtrar por office/agencia del MLS (para pÃ¡ginas de agencia)
         if ($request->filled('mls_office_id')) {
             $query->where('mls_office_id', (int) $request->input('mls_office_id'));
         }
 
         // Filtrar por agente MLS (por su ID del MLS: mls_agents.mls_agent_id)
-        // Útil para la vista pública de detalle de agente.
+        // Ãštil para la vista pÃºblica de detalle de agente.
         if ($request->filled('mls_agent_id')) {
             $mlsAgentId = (int) $request->input('mls_agent_id');
             $query->whereHas('mlsAgents', function ($q) use ($mlsAgentId) {
                 // IMPORTANTE:
                 // En el whereHas() se hace JOIN entre la tabla pivot `property_mls_agent`
-                // (que también tiene una columna llamada `mls_agent_id`) y la tabla
+                // (que tambiÃ©n tiene una columna llamada `mls_agent_id`) y la tabla
                 // `mls_agents` (que tiene el campo externo `mls_agent_id`).
                 // Si no calificamos el nombre de columna, MySQL puede marcarlo como
-                // ambiguo y el endpoint termina fallando / devolviendo vacío en frontend.
+                // ambiguo y el endpoint termina fallando / devolviendo vacÃ­o en frontend.
                 $q->where('mls_agents.mls_agent_id', $mlsAgentId);
             });
         }
@@ -97,7 +99,7 @@ class PropertyController extends Controller
         }
 
         // ===== Filtros avanzados (opcionales) =====
-        // Nota: si el frontend envía estos parámetros, la API los soporta sin romper compatibilidad.
+        // Nota: si el frontend envÃ­a estos parÃ¡metros, la API los soporta sin romper compatibilidad.
         if ($request->filled('parking_spaces')) {
             $query->where('parking_spaces', '>=', (int) $request->input('parking_spaces'));
         }
@@ -144,7 +146,13 @@ class PropertyController extends Controller
         $perPage = (int) $request->input('per_page', 6);
         $perPage = max(1, min(50, $perPage));
 
-        return $this->apiSuccess('Listado de propiedades públicas', 'PUBLIC_PROPERTIES_LIST', $query->paginate($perPage));
+        $paginated = $query->paginate($perPage);
+
+        $paginated->getCollection()->transform(function (Property $property) use ($locale) {
+            return $this->transformPublicProperty($property, $locale);
+        });
+
+        return $this->apiSuccess('Listado de propiedades pÃºblicas', 'PUBLIC_PROPERTIES_LIST', $paginated);
     }
 
     /**
@@ -153,6 +161,8 @@ class PropertyController extends Controller
      */
     public function showPublic(Request $request, Property $property): JsonResponse
     {
+        $locale = $this->resolvePublicLocale($request);
+
         if (!$property->published) {
             return $this->apiError('Propiedad no disponible', 'PROPERTY_NOT_PUBLISHED', null, null, 404);
         }
@@ -168,6 +178,8 @@ class PropertyController extends Controller
             'tags',
             'mediaAssets'
         ]);
+
+        $property = $this->transformPublicProperty($property, $locale);
 
         return $this->apiSuccess('Propiedad obtenida', 'PUBLIC_PROPERTY_SHOWN', $property);
     }
@@ -254,7 +266,7 @@ class PropertyController extends Controller
             'mls_neighborhood' => 'nullable|string|max:100',
             'mls_office_id' => 'nullable|integer',
 
-            // Estado y publicación
+            // Estado y publicaciÃ³n
             'published' => 'boolean',
             'status' => 'nullable|string|max:50',
             'category' => 'nullable|string|max:50',
@@ -280,7 +292,7 @@ class PropertyController extends Controller
             'ad_type' => 'nullable|string|max:50',
             'property_type_name' => 'nullable|string|max:100',
 
-            // Características numéricas
+            // CaracterÃ­sticas numÃ©ricas
             'bedrooms' => 'nullable|integer|min:0',
             'bathrooms' => 'nullable|numeric|min:0',
             'half_bathrooms' => 'nullable|integer|min:0',
@@ -288,7 +300,7 @@ class PropertyController extends Controller
             'parking_number' => 'nullable|integer|min:0',
             'parking_type' => 'nullable|string|max:50',
 
-            // Tamaños
+            // TamaÃ±os
             'lot_size' => 'nullable|numeric|min:0',
             'lot_feet' => 'nullable|numeric|min:0',
             'construction_size' => 'nullable|numeric|min:0',
@@ -303,7 +315,7 @@ class PropertyController extends Controller
             'age' => 'nullable|string|max:20',
             'year_built' => 'nullable|integer|min:1800|max:2100',
             
-            // Características MLS
+            // CaracterÃ­sticas MLS
             'furnished' => 'nullable|string|max:20',
             'with_yard' => 'nullable|boolean',
             'with_view' => 'nullable|string|max:100',
@@ -481,7 +493,7 @@ class PropertyController extends Controller
             'mls_neighborhood' => 'sometimes|nullable|string|max:100',
             'mls_office_id' => 'sometimes|nullable|integer',
 
-            // Estado y publicación
+            // Estado y publicaciÃ³n
             'published' => 'sometimes|boolean',
             'status' => 'sometimes|nullable|string|max:50',
             'category' => 'sometimes|nullable|string|max:50',
@@ -507,7 +519,7 @@ class PropertyController extends Controller
             'ad_type' => 'sometimes|nullable|string|max:50',
             'property_type_name' => 'sometimes|nullable|string|max:100',
 
-            // Características numéricas
+            // CaracterÃ­sticas numÃ©ricas
             'bedrooms' => 'sometimes|nullable|integer|min:0',
             'bathrooms' => 'sometimes|nullable|numeric|min:0',
             'half_bathrooms' => 'sometimes|nullable|integer|min:0',
@@ -515,7 +527,7 @@ class PropertyController extends Controller
             'parking_number' => 'sometimes|nullable|integer|min:0',
             'parking_type' => 'sometimes|nullable|string|max:50',
 
-            // Tamaños
+            // TamaÃ±os
             'lot_size' => 'sometimes|nullable|numeric|min:0',
             'lot_feet' => 'sometimes|nullable|numeric|min:0',
             'construction_size' => 'sometimes|nullable|numeric|min:0',
@@ -530,7 +542,7 @@ class PropertyController extends Controller
             'age' => 'sometimes|nullable|string|max:20',
             'year_built' => 'sometimes|nullable|integer|min:1800|max:2100',
             
-            // Características MLS
+            // CaracterÃ­sticas MLS
             'furnished' => 'sometimes|nullable|string|max:20',
             'with_yard' => 'sometimes|nullable|boolean',
             'with_view' => 'sometimes|nullable|string|max:100',
@@ -592,7 +604,7 @@ class PropertyController extends Controller
 
         $data = $validator->validated();
 
-        // Validación de unique solo si hay easybroker_public_id
+        // ValidaciÃ³n de unique solo si hay easybroker_public_id
         $agencyId = $data['agency_id'] ?? $property->agency_id;
         $publicId = $data['easybroker_public_id'] ?? $property->easybroker_public_id;
         if (!empty($publicId)) {
@@ -617,7 +629,7 @@ class PropertyController extends Controller
 
                 $property->update($data);
 
-                // Nota: si el cliente envía `location: null`, no borramos la location existente.
+                // Nota: si el cliente envÃ­a `location: null`, no borramos la location existente.
                 if (is_array($location)) {
                     $property->location()->updateOrCreate(
                         ['property_id' => $property->id],
@@ -690,7 +702,7 @@ class PropertyController extends Controller
             ->sort()
             ->values();
 
-        // Tipos de operación distintos
+        // Tipos de operaciÃ³n distintos
         $operationTypes = PropertyOperation::whereHas('property', $publishedScope)
             ->whereNotNull('operation_type')
             ->where('operation_type', '!=', '')
@@ -726,7 +738,7 @@ class PropertyController extends Controller
             ->sort()
             ->values();
 
-        // Valores distintos de recámaras (ordenados)
+        // Valores distintos de recÃ¡maras (ordenados)
         $bedroomValues = Property::where('published', true)
             ->whereNotNull('bedrooms')
             ->where('bedrooms', '>', 0)
@@ -736,7 +748,7 @@ class PropertyController extends Controller
             ->values()
             ->map(fn ($v) => (int) $v);
 
-        // Valores distintos de baños (ordenados)
+        // Valores distintos de baÃ±os (ordenados)
         $bathroomValues = Property::where('published', true)
             ->whereNotNull('bathrooms')
             ->where('bathrooms', '>', 0)
@@ -763,14 +775,14 @@ class PropertyController extends Controller
             ->selectRaw('MIN(amount) as min_price, MAX(amount) as max_price')
             ->first();
 
-        // Rango de tamaño de construcción
+        // Rango de tamaÃ±o de construcciÃ³n
         $constructionRange = Property::where('published', true)
             ->whereNotNull('construction_size')
             ->where('construction_size', '>', 0)
             ->selectRaw('MIN(construction_size) as min_size, MAX(construction_size) as max_size')
             ->first();
 
-        // Rango de tamaño de terreno
+        // Rango de tamaÃ±o de terreno
         $lotRange = Property::where('published', true)
             ->whereNotNull('lot_size')
             ->where('lot_size', '>', 0)
@@ -804,5 +816,32 @@ class PropertyController extends Controller
             'total_properties' => $totalCount,
         ]);
     }
+    private function resolvePublicLocale(Request $request): string
+    {
+        $candidate = strtolower((string) (
+            $request->query('locale')
+            ?? $request->query('lang')
+            ?? $request->header('X-Locale')
+            ?? app()->getLocale()
+        ));
+
+        $locale = in_array($candidate, ['es', 'en'], true) ? $candidate : 'es';
+        app()->setLocale($locale);
+
+        return $locale;
+    }
+
+    private function transformPublicProperty(Property $property, string $locale): Property
+    {
+        $property->setAttribute('locale', $locale);
+        $property->setAttribute('title', $property->titleForLocale($locale));
+        $property->setAttribute('description', $property->descriptionForLocale($locale));
+        $property->setAttribute('description_short', $property->shortDescriptionForLocale($locale));
+
+        return $property;
+    }
 }
+
+
+
 

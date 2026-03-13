@@ -16,10 +16,10 @@ class CmsService
     const CACHE_PREFIX = 'cms_';
     const CACHE_TTL = 3600; // 1 hora
 
-    // ─── Páginas ────────────────────────────────────────
+    // â”€â”€â”€ PÃ¡ginas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
-     * Obtener datos completos de una página por su slug.
+     * Obtener datos completos de una pÃ¡gina por su slug.
      * Devuelve un CmsPageData con helpers para acceder a campos.
      */
     public static function getPageData(string $slug, ?string $locale = null): ?CmsPageData
@@ -32,14 +32,14 @@ class CmsService
                 return null;
             }
 
-            // Obtener todos los field groups para esta página
+            // Obtener todos los field groups para esta pÃ¡gina
             $fieldGroups = CmsFieldGroup::active()
                 ->forPage($slug)
                 ->with(['fieldDefinitions.children'])
                 ->orderBy('sort_order')
                 ->get();
 
-            // Obtener todos los valores asociados a esta página
+            // Obtener todos los valores asociados a esta pÃ¡gina
             $fieldValues = CmsFieldValue::forPage($page->id)
                 ->with(['fieldDefinition', 'mediaAsset', 'children.fieldDefinition', 'children.mediaAsset'])
                 ->get();
@@ -64,14 +64,14 @@ class CmsService
     }
 
     /**
-     * Limpiar cache de una página.
+     * Limpiar cache de una pÃ¡gina.
      */
     public static function clearPageCache(string $slug): void
     {
         Cache::forget(self::CACHE_PREFIX . "page_{$slug}");
     }
 
-    // ─── Posts ──────────────────────────────────────────
+    // â”€â”€â”€ Posts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Obtener datos de un post con sus campos.
@@ -126,10 +126,10 @@ class CmsService
         Cache::forget(self::CACHE_PREFIX . "post_{$slug}");
     }
 
-    // ─── Menús ──────────────────────────────────────────
+    // â”€â”€â”€ MenÃºs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
-     * Obtener un menú por slug con sus items jerárquicos.
+     * Obtener un menÃº por slug con sus items jerÃ¡rquicos.
      */
     public static function getMenu(string $slug): ?CmsMenu
     {
@@ -148,7 +148,7 @@ class CmsService
         Cache::forget(self::CACHE_PREFIX . "menu_{$slug}");
     }
 
-    // ─── Site Settings ──────────────────────────────────
+    // â”€â”€â”€ Site Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Obtener un setting individual.
@@ -174,14 +174,14 @@ class CmsService
         return $result;
     }
 
-    // ─── Cache Global ───────────────────────────────────
+    // â”€â”€â”€ Cache Global â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /**
      * Limpiar todo el cache del CMS.
      */
     public static function clearAllCache(): void
     {
-        // Limpiar páginas
+        // Limpiar pÃ¡ginas
         $pages = CmsPage::pluck('slug');
         foreach ($pages as $slug) {
             self::clearPageCache($slug);
@@ -193,7 +193,7 @@ class CmsService
             self::clearPostCache($slug);
         }
 
-        // Limpiar menús
+        // Limpiar menÃºs
         $menus = CmsMenu::pluck('slug');
         foreach ($menus as $slug) {
             self::clearMenuCache($slug);
@@ -204,10 +204,10 @@ class CmsService
     }
 }
 
-// ─────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Clase auxiliar: CmsPageData
 // Proporciona acceso fluido a campos desde Blade
-// ─────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class CmsPageData
 {
@@ -227,7 +227,7 @@ class CmsPageData
     }
 
     /**
-     * Construye un índice para acceso rápido por field_key.
+     * Construye un Ã­ndice para acceso rÃ¡pido por field_key.
      */
     protected function buildIndex(): void
     {
@@ -347,7 +347,26 @@ class CmsPageData
     }
 
     /**
-     * Obtener todos los valores de un field group específico.
+     * Obtener todos los campos simples indexados por field_key.
+     */
+    public function allFields(?string $locale = null): array
+    {
+        $selectedLocale = $locale ?? $this->locale;
+        $result = [];
+
+        foreach ($this->indexedValues as $fieldKey => $value) {
+            if ($value->fieldDefinition && $value->fieldDefinition->type === 'repeater') {
+                continue;
+            }
+
+            $result[$fieldKey] = $value?->value($selectedLocale);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Obtener todos los valores de un field group especÃ­fico.
      */
     public function group(string $groupSlug): array
     {
@@ -364,10 +383,10 @@ class CmsPageData
     }
 }
 
-// ─────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Clase auxiliar: CmsRepeaterRow
 // Representa una fila dentro de un campo repeater
-// ─────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class CmsRepeaterRow
 {

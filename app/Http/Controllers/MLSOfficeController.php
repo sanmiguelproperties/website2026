@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Validator;
  *
  * Endpoints:
  * - CRUD local de mls_offices
- * - Sincronización desde la API del MLS (progresiva por lotes)
+ * - SincronizaciÃ³n desde la API del MLS (progresiva por lotes)
  */
 class MLSOfficeController extends Controller
 {
@@ -25,7 +25,7 @@ class MLSOfficeController extends Controller
 
     /**
      * GET /api/mls-offices
-     * Lista offices locales con paginación.
+     * Lista offices locales con paginaciÃ³n.
      */
     public function index(Request $request): JsonResponse
     {
@@ -92,8 +92,8 @@ class MLSOfficeController extends Controller
     /**
      * PATCH /api/mls-offices/{mlsOffice}/managed-by-us
      *
-     * Campo MANUAL: no debe ser modificado por la sincronización del MLS.
-     * Tampoco debe ser parte del CRUD estándar (store/update).
+     * Campo MANUAL: no debe ser modificado por la sincronizaciÃ³n del MLS.
+     * Tampoco debe ser parte del CRUD estÃ¡ndar (store/update).
      */
     public function updateManagedByUs(Request $request, MLSOffice $mlsOffice): JsonResponse
     {
@@ -114,10 +114,12 @@ class MLSOfficeController extends Controller
 
     /**
      * GET /api/public/mls-offices
-     * Listado público de agencias/oficinas MLS (paginación + búsqueda).
+     * Listado pÃºblico de agencias/oficinas MLS (paginaciÃ³n + bÃºsqueda).
      */
     public function indexPublic(Request $request): JsonResponse
     {
+        $locale = $this->resolvePublicLocale($request);
+
         $query = MLSOffice::query()->withCount(['agents', 'properties']);
 
         if ($request->filled('search')) {
@@ -147,28 +149,40 @@ class MLSOfficeController extends Controller
         $perPage = (int) $request->input('per_page', 12);
         $perPage = max(1, min(50, $perPage));
 
-        return $this->apiSuccess('Listado público de agencias MLS', 'PUBLIC_MLS_OFFICES_LIST', $query->paginate($perPage));
+        $paginated = $query->paginate($perPage);
+
+        $paginated->getCollection()->transform(function (MLSOffice $office) use ($locale) {
+            return $this->transformPublicOffice($office, $locale);
+        });
+
+        return $this->apiSuccess('Listado pÃºblico de agencias MLS', 'PUBLIC_MLS_OFFICES_LIST', $paginated);
     }
 
     /**
      * GET /api/public/mls-offices/{mlsOffice}
-     * Detalle público de una agencia/oficina MLS.
+     * Detalle pÃºblico de una agencia/oficina MLS.
      */
-    public function showPublic(MLSOffice $mlsOffice): JsonResponse
+    public function showPublic(Request $request, MLSOffice $mlsOffice): JsonResponse
     {
+        $locale = $this->resolvePublicLocale($request);
+
         $mlsOffice->load(['imageMediaAsset']);
 
-        // Nota: no incluimos propiedades aquí para evitar payload gigante;
+        // Nota: no incluimos propiedades aquÃ­ para evitar payload gigante;
         // el frontend consulta /api/public/properties?mls_office_id=...
+        $mlsOffice = $this->transformPublicOffice($mlsOffice, $locale);
+
         return $this->apiSuccess('Agencia MLS obtenida', 'PUBLIC_MLS_OFFICE_SHOWN', $mlsOffice);
     }
 
     /**
      * GET /api/public/mls-offices/{mlsOffice}/agents
-     * Lista pública (paginada) de agentes de una agencia/oficina.
+     * Lista pÃºblica (paginada) de agentes de una agencia/oficina.
      */
     public function agentsPublic(Request $request, MLSOffice $mlsOffice): JsonResponse
     {
+        $locale = $this->resolvePublicLocale($request);
+
         $query = MLSAgent::query()
             ->where('mls_office_id', $mlsOffice->mls_office_id)
             ->with(['photoMediaAsset'])
@@ -201,7 +215,13 @@ class MLSOfficeController extends Controller
         $perPage = (int) $request->input('per_page', 12);
         $perPage = max(1, min(50, $perPage));
 
-        return $this->apiSuccess('Agentes públicos de la agencia', 'PUBLIC_MLS_OFFICE_AGENTS', $query->paginate($perPage));
+        $paginated = $query->paginate($perPage);
+
+        $paginated->getCollection()->transform(function (MLSAgent $agent) use ($locale) {
+            return $this->transformPublicAgent($agent, $locale);
+        });
+
+        return $this->apiSuccess('Agentes pÃºblicos de la agencia', 'PUBLIC_MLS_OFFICE_AGENTS', $paginated);
     }
 
     /**
@@ -377,7 +397,7 @@ class MLSOfficeController extends Controller
         $this->syncService->reloadConfiguration();
 
         if (!$this->syncService->isConfigured()) {
-            return $this->apiError('MLS no está configurado', 'MLS_NOT_CONFIGURED', null, null, 400);
+            return $this->apiError('MLS no estÃ¡ configurado', 'MLS_NOT_CONFIGURED', null, null, 400);
         }
 
         $opts = $validator->validated();
@@ -389,19 +409,48 @@ class MLSOfficeController extends Controller
 
         if ($result['success']) {
             return $this->apiSuccess(
-                $result['completed'] ? 'Sincronización de offices completada' : 'Lote de offices procesado',
+                $result['completed'] ? 'SincronizaciÃ³n de offices completada' : 'Lote de offices procesado',
                 'MLS_OFFICES_SYNCED',
                 $result
             );
         }
 
         return $this->apiError(
-            $result['message'] ?? 'Error en la sincronización de offices',
+            $result['message'] ?? 'Error en la sincronizaciÃ³n de offices',
             'MLS_OFFICES_SYNC_ERROR',
             $result,
             null,
             500
         );
     }
-}
+    private function resolvePublicLocale(Request $request): string
+    {
+        $candidate = strtolower((string) (
+            $request->query('locale')
+            ?? $request->query('lang')
+            ?? $request->header('X-Locale')
+            ?? app()->getLocale()
+        ));
 
+        $locale = in_array($candidate, ['es', 'en'], true) ? $candidate : 'es';
+        app()->setLocale($locale);
+
+        return $locale;
+    }
+
+    private function transformPublicOffice(MLSOffice $office, string $locale): MLSOffice
+    {
+        $office->setAttribute('locale', $locale);
+        $office->setAttribute('description', $office->descriptionForLocale($locale));
+
+        return $office;
+    }
+
+    private function transformPublicAgent(MLSAgent $agent, string $locale): MLSAgent
+    {
+        $agent->setAttribute('locale', $locale);
+        $agent->setAttribute('bio', $agent->bioForLocale($locale));
+
+        return $agent;
+    }
+}

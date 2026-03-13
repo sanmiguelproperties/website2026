@@ -98,4 +98,15 @@ class User extends Authenticatable
     {
         return $this->belongsTo(ColorTheme::class, 'color_theme_id');
     }
+
+    public function corporateEmailAccounts(): HasMany
+    {
+        return $this->hasMany(CorporateEmailAccount::class);
+    }
+
+    public function corporateEmailMessages(): HasMany
+    {
+        return $this->hasMany(CorporateEmailMessage::class);
+    }
 }
+

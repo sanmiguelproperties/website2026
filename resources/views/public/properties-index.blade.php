@@ -1,6 +1,12 @@
-@extends('layouts.public')
+﻿@extends('layouts.public')
 
-@section('title', 'Propiedades')
+@php
+  $isEn = ($locale ?? app()->getLocale()) === 'en';
+  $txt = fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($isEn ? $en : $es);
+  $pageTitle = $pageData?->entity?->title($locale ?? app()->getLocale()) ?? ($isEn ? 'Properties' : 'Propiedades');
+@endphp
+
+@section('title', $pageTitle)
 
 @section('content')
   <div class="pt-24">
@@ -16,14 +22,14 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
-            Catálogo
+            {{ $txt('page_badge', 'CatÃ¡logo', 'Catalog') }}
           </div>
 
           <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
-            Explora nuestras <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">propiedades</span>
+            {{ $txt('page_title_prefix', 'Explora nuestras', 'Explore our') }} <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('page_title_highlight', 'propiedades', 'properties') }}</span>
           </h1>
           <p class="mt-4 text-lg text-slate-600">
-            Filtra por tipo y encuentra la propiedad ideal. Diseño 100% responsive.
+            {{ $txt('page_subtitle', 'Filtra por tipo y encuentra la propiedad ideal.', 'Filter by type and find the right property for you.') }}
           </p>
         </div>
       </div>
@@ -37,7 +43,7 @@
           <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
             {{-- Search Input --}}
             <div class="flex-1">
-              <label class="block text-xs font-semibold text-slate-600 mb-2">Buscar</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-2">{{ $txt('search_label', 'Buscar', 'Search') }}</label>
               <div class="relative">
                 <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-properties-filter_icon, #94a3b8);">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -45,7 +51,7 @@
                 <input type="text"
                        x-model="filters.search"
                        @input.debounce.300ms="applyFilters()"
-                       placeholder="Buscar por ciudad, zona, tipo…"
+                       placeholder="{{ $txt('search_placeholder', 'Buscar por ciudad, zona, tipo...','Search by city, area, type...') }}"
                        class="w-full pl-12 pr-4 py-3 rounded-xl transition-all focus:outline-none"
                        style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
               </div>
@@ -58,7 +64,7 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
-              Filtros Avanzados
+              {{ $txt('advanced_filters', 'Filtros avanzados', 'Advanced Filters') }}
               <span x-show="countActiveFilters() > 0" 
                     x-text="countActiveFilters()"
                     class="ml-1 w-5 h-5 flex items-center justify-center text-xs font-bold rounded-full bg-white text-indigo-600"></span>
@@ -68,8 +74,8 @@
           {{-- Results count and clear --}}
           <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
             <div class="text-sm text-slate-600">
-              Mostrando <span x-text="pagination?.from || 0"></span> - <span x-text="pagination?.to || 0"></span>
-              de <span x-text="pagination?.total || 0"></span>
+              {{ $txt('showing_label', 'Mostrando', 'Showing') }} <span x-text="pagination?.from || 0"></span> - <span x-text="pagination?.to || 0"></span>
+              {{ $txt('of_label', 'de', 'of') }} <span x-text="pagination?.total || 0"></span>
             </div>
 
             <button @click="clearFilters()" x-show="hasFilters()"
@@ -77,7 +83,7 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
-              Limpiar filtros
+              {{ $txt('clear_filters', 'Limpiar filtros', 'Clear filters') }}
             </button>
           </div>
 
@@ -85,7 +91,7 @@
           <div x-show="hasFilters()" class="mt-4 flex flex-wrap gap-2">
             <template x-if="filters.property_type_name">
               <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
-                <span x-text="'Tipo: ' + filters.property_type_name"></span>
+                <span x-text="tPublic('properties.filterPrefixType', isEnLocale ? 'Type: ' : 'Tipo: ') + filters.property_type_name"></span>
                 <button @click="filters.property_type_name = ''; applyFilters()" class="ml-1 hover:text-indigo-900">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -93,7 +99,7 @@
             </template>
             <template x-if="filters.operation_type">
               <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                <span x-text="'Operación: ' + getOperationLabel(filters.operation_type)"></span>
+                <span x-text="tPublic('properties.filterPrefixOperation', isEnLocale ? 'Operation: ' : 'Operacion: ') + getOperationLabel(filters.operation_type)"></span>
                 <button @click="filters.operation_type = ''; applyFilters()" class="ml-1 hover:text-emerald-900">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -101,7 +107,7 @@
             </template>
             <template x-if="filters.bedrooms">
               <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                <span x-text="'Recámaras: ' + filters.bedrooms + '+'"></span>
+                <span x-text="tPublic('properties.filterPrefixBedrooms', isEnLocale ? 'Bedrooms: ' : 'Recamaras: ') + filters.bedrooms + '+'"></span>
                 <button @click="filters.bedrooms = ''; applyFilters()" class="ml-1 hover:text-blue-900">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -109,7 +115,7 @@
             </template>
             <template x-if="filters.bathrooms">
               <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-cyan-100 text-cyan-700">
-                <span x-text="'Baños: ' + filters.bathrooms + '+'"></span>
+                <span x-text="tPublic('properties.filterPrefixBathrooms', isEnLocale ? 'Bathrooms: ' : 'Banos: ') + filters.bathrooms + '+'"></span>
                 <button @click="filters.bathrooms = ''; applyFilters()" class="ml-1 hover:text-cyan-900">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -125,7 +131,7 @@
             </template>
             <template x-if="filters.city">
               <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                <span x-text="'Ciudad: ' + filters.city"></span>
+                <span x-text="tPublic('properties.filterPrefixCity', isEnLocale ? 'City: ' : 'Ciudad: ') + filters.city"></span>
                 <button @click="filters.city = ''; applyFilters()" class="ml-1 hover:text-purple-900">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -181,8 +187,8 @@
                     </svg>
                   </div>
                   <div>
-                    <h3 class="text-lg font-bold text-slate-900">Filtros Avanzados</h3>
-                    <p class="text-sm text-slate-500">Personaliza tu búsqueda</p>
+                    <h3 class="text-lg font-bold text-slate-900">{{ $txt('advanced_filters', 'Filtros avanzados', 'Advanced Filters') }}</h3>
+                    <p class="text-sm text-slate-500">{{ $txt('modal_subtitle', 'Personaliza tu busqueda', 'Customize your search') }}</p>
                   </div>
                 </div>
                 <button @click="showFiltersModal = false" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-100 transition">
@@ -195,14 +201,14 @@
               {{-- Modal Body (Scrollable) --}}
               <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
                 
-                {{-- Tipo de Propiedad --}}
+                {{-- {{ $txt('property_type_label', 'Tipo de propiedad', 'Property type') }} --}}
                 <div>
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">Tipo de Propiedad</label>
+                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('property_type_label', 'Tipo de propiedad', 'Property type') }}</label>
                   <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <button @click="filters.property_type_name = filters.property_type_name === '' ? '' : ''; applyFiltersInModal()"
                             :class="filters.property_type_name === '' ? 'ring-2 ring-indigo-500 bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
                             class="px-4 py-3 rounded-xl text-sm font-medium transition-all">
-                      Todos
+                      {{ $txt('all_option', 'Todos', 'All') }}
                     </button>
                     <template x-for="type in propertyTypes" :key="type">
                       <button @click="filters.property_type_name = type; applyFiltersInModal()"
@@ -214,14 +220,14 @@
                   </div>
                 </div>
 
-                {{-- Tipo de Operación (dinámico) --}}
+                {{-- {{ $txt('operation_type_label', 'Tipo de operacion', 'Operation type') }} (dinÃƒÂ¡mico) --}}
                 <div x-show="operationTypes.length > 0">
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">Tipo de Operación</label>
+                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('operation_type_label', 'Tipo de operacion', 'Operation type') }}</label>
                   <div class="flex flex-wrap gap-2">
                     <button @click="filters.operation_type = ''; applyFiltersInModal()"
                             :class="filters.operation_type === '' ? 'ring-2 ring-emerald-500 bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
                             class="px-4 py-3 rounded-xl text-sm font-medium transition-all">
-                      Todos
+                      {{ $txt('all_option', 'Todos', 'All') }}
                     </button>
                     <template x-for="opType in operationTypes" :key="opType">
                       <button @click="filters.operation_type = opType; applyFiltersInModal()"
@@ -233,12 +239,12 @@
                   </div>
                 </div>
 
-                {{-- Rango de Precio --}}
+                {{-- {{ $txt('price_range_label', 'Rango de precio', 'Price range') }} --}}
                 <div>
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">Rango de Precio</label>
+                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('price_range_label', 'Rango de precio', 'Price range') }}</label>
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-xs text-slate-500 mb-1">Mínimo</label>
+                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('minimum_label', 'Minimo', 'Minimum') }}</label>
                       <div class="relative">
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
                         <input type="number" 
@@ -250,13 +256,13 @@
                       </div>
                     </div>
                     <div>
-                      <label class="block text-xs text-slate-500 mb-1">Máximo</label>
+                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('maximum_label', 'Maximo', 'Maximum') }}</label>
                       <div class="relative">
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
                         <input type="number" 
                                x-model="filters.max_price"
                                @input.debounce.500ms="applyFiltersInModal()"
-                               placeholder="Sin límite"
+                               placeholder="{{ $txt('no_limit_label', 'Sin limite', 'No limit') }}"
                                class="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                                style="background-color: var(--fe-properties-input_bg, #f8fafc);">
                       </div>
@@ -264,13 +270,13 @@
                   </div>
                 </div>
 
-                {{-- Características (dinámicas) --}}
+                {{-- {{ $txt('features_label', 'Caracteristicas', 'Features') }} (dinÃƒÂ¡micas) --}}
                 <div x-show="availableBedrooms.length > 0 || availableBathrooms.length > 0 || availableParking.length > 0">
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">Características</label>
+                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('features_label', 'Caracteristicas', 'Features') }}</label>
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {{-- Recámaras --}}
+                    {{-- RecÃƒÂ¡maras --}}
                     <div x-show="availableBedrooms.length > 0">
-                      <label class="block text-xs text-slate-500 mb-2">🛏️ Recámaras</label>
+                      <label class="block text-xs text-slate-500 mb-2">{{ $txt('bedrooms_label', 'Recamaras', 'Bedrooms') }}</label>
                       <div class="flex items-center gap-1 flex-wrap">
                         <template x-for="n in availableBedrooms" :key="'bed-' + n">
                           <button @click="filters.bedrooms = filters.bedrooms == n ? '' : n; applyFiltersInModal()"
@@ -281,9 +287,9 @@
                         </template>
                       </div>
                     </div>
-                    {{-- Baños --}}
+                    {{-- BaÃƒÂ±os --}}
                     <div x-show="availableBathrooms.length > 0">
-                      <label class="block text-xs text-slate-500 mb-2">🚿 Baños</label>
+                      <label class="block text-xs text-slate-500 mb-2">{{ $txt('bathrooms_label', 'Banos', 'Bathrooms') }}</label>
                       <div class="flex items-center gap-1 flex-wrap">
                         <template x-for="n in availableBathrooms" :key="'bath-' + n">
                           <button @click="filters.bathrooms = filters.bathrooms == n ? '' : n; applyFiltersInModal()"
@@ -296,7 +302,7 @@
                     </div>
                     {{-- Estacionamientos --}}
                     <div x-show="availableParking.length > 0">
-                      <label class="block text-xs text-slate-500 mb-2">🚗 Estacionamientos</label>
+                      <label class="block text-xs text-slate-500 mb-2">{{ $txt('parking_label', 'Estacionamientos', 'Parking') }}</label>
                       <div class="flex items-center gap-1 flex-wrap">
                         <template x-for="n in availableParking" :key="'park-' + n">
                           <button @click="filters.parking_spaces = filters.parking_spaces == n ? '' : n; applyFiltersInModal()"
@@ -310,66 +316,66 @@
                   </div>
                 </div>
 
-                {{-- Tamaño --}}
+                {{-- TamaÃƒÂ±o --}}
                 <div>
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">Tamaño (m²)</label>
+                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('size_label', 'Tamano (m2)', 'Size (m2)') }}</label>
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-xs text-slate-500 mb-1">Construcción mínima</label>
+                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('minimum_construction_label', 'Construccion minima', 'Minimum construction') }}</label>
                       <input type="number" 
                              x-model="filters.min_construction_size"
                              @input.debounce.500ms="applyFiltersInModal()"
-                             placeholder="Ej: 100"
+                             placeholder="{{ $txt('minimum_construction_placeholder', 'Ej: 100', 'Ex: 100') }}"
                              class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                              style="background-color: var(--fe-properties-input_bg, #f8fafc);">
                     </div>
                     <div>
-                      <label class="block text-xs text-slate-500 mb-1">Terreno mínimo</label>
+                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('minimum_lot_label', 'Terreno minimo', 'Minimum lot') }}</label>
                       <input type="number" 
                              x-model="filters.min_lot_size"
                              @input.debounce.500ms="applyFiltersInModal()"
-                             placeholder="Ej: 200"
+                             placeholder="{{ $txt('minimum_lot_placeholder', 'Ej: 200', 'Ex: 200') }}"
                              class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                              style="background-color: var(--fe-properties-input_bg, #f8fafc);">
                     </div>
                   </div>
                 </div>
 
-                {{-- Ubicación (dinámica con selects) --}}
+                {{-- {{ $txt('location_label', 'Ubicacion', 'Location') }} (dinÃƒÂ¡mica con selects) --}}
                 <div x-show="availableRegions.length > 0 || availableCities.length > 0 || availableCityAreas.length > 0">
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">Ubicación</label>
+                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('location_label', 'Ubicacion', 'Location') }}</label>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div x-show="availableRegions.length > 0">
-                      <label class="block text-xs text-slate-500 mb-1">Región/Estado</label>
+                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('region_state_label', 'Region/Estado', 'Region/State') }}</label>
                       <select x-model="filters.region"
                               @change="applyFiltersInModal()"
                               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
                               style="background-color: var(--fe-properties-input_bg, #f8fafc);">
-                        <option value="">Todas las regiones</option>
+                        <option value="">{{ $txt('all_regions_option', 'Todas las regiones', 'All regions') }}</option>
                         <template x-for="r in availableRegions" :key="r">
                           <option :value="r" x-text="r"></option>
                         </template>
                       </select>
                     </div>
                     <div x-show="availableCities.length > 0">
-                      <label class="block text-xs text-slate-500 mb-1">Ciudad</label>
+                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('city_filter_label', 'Ciudad', 'City') }}</label>
                       <select x-model="filters.city"
                               @change="applyFiltersInModal()"
                               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
                               style="background-color: var(--fe-properties-input_bg, #f8fafc);">
-                        <option value="">Todas las ciudades</option>
+                        <option value="">{{ $txt('all_cities_option', 'Todas las ciudades', 'All cities') }}</option>
                         <template x-for="c in availableCities" :key="c">
                           <option :value="c" x-text="c"></option>
                         </template>
                       </select>
                     </div>
                     <div x-show="availableCityAreas.length > 0">
-                      <label class="block text-xs text-slate-500 mb-1">Zona/Colonia</label>
+                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('area_zone_label', 'Zona/Colonia', 'Area/Zone') }}</label>
                       <select x-model="filters.city_area"
                               @change="applyFiltersInModal()"
                               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
                               style="background-color: var(--fe-properties-input_bg, #f8fafc);">
-                        <option value="">Todas las zonas</option>
+                        <option value="">{{ $txt('all_zones_option', 'Todas las zonas', 'All zones') }}</option>
                         <template x-for="a in availableCityAreas" :key="a">
                           <option :value="a" x-text="a"></option>
                         </template>
@@ -378,15 +384,15 @@
                   </div>
                 </div>
 
-                {{-- Ordenar por --}}
+                {{-- {{ $txt('sort_label', 'Ordenar por', 'Sort by') }} --}}
                 <div>
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">Ordenar por</label>
+                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('sort_label', 'Ordenar por', 'Sort by') }}</label>
                   <select x-model="filters.order" @change="applyFiltersInModal()"
                           class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
                           style="background-color: var(--fe-properties-input_bg, #f8fafc);">
-                    <option value="updated_at">Más recientes</option>
-                    <option value="created_at">Más antiguas</option>
-                    <option value="title">A–Z</option>
+                    <option value="updated_at">{{ $txt('sort_recent', 'Mas recientes', 'Most recent') }}</option>
+                    <option value="created_at">{{ $txt('sort_oldest', 'Mas antiguas', 'Oldest') }}</option>
+                    <option value="title">{{ $txt('sort_alpha', 'Alfabetico', 'A-Z') }}</option>
                   </select>
                 </div>
 
@@ -396,12 +402,12 @@
               <div class="p-4 sm:p-6 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-3">
                 <button @click="clearFilters(); showFiltersModal = false"
                         class="flex-1 px-6 py-3 rounded-xl font-semibold border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all">
-                  Limpiar todo
+                  {{ $txt('clear_all', 'Limpiar todo', 'Clear all') }}
                 </button>
                 <button @click="showFiltersModal = false"
                         class="flex-1 px-6 py-3 rounded-xl font-semibold text-white transition-all hover:shadow-lg"
                         style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-                  Ver <span x-text="pagination?.total || 0"></span> resultados
+                  {{ $txt('view_results', 'Ver', 'View') }} <span x-text="pagination?.total || 0"></span> {{ $txt('results_label', 'resultados', 'results') }}
                 </button>
               </div>
             </div>
@@ -417,10 +423,10 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-slate-900 mb-2">No se encontraron propiedades</h3>
-          <p class="text-slate-600 mb-6">Intenta ajustar los filtros o buscar con otros términos.</p>
+          <h3 class="text-xl font-semibold text-slate-900 mb-2">{{ $txt('empty_title', 'No se encontraron propiedades', 'No properties found') }}</h3>
+          <p class="text-slate-600 mb-6">{{ $txt('empty_subtitle', 'Intenta ajustar los filtros o buscar con otros terminos.', 'Try adjusting filters or searching with other terms.') }}</p>
           <button @click="clearFilters()" class="px-6 py-3 rounded-xl text-white font-semibold" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-            Limpiar filtros
+            {{ $txt('clear_filters', 'Limpiar filtros', 'Clear filters') }}
           </button>
         </div>
 
@@ -428,14 +434,14 @@
         <div class="mt-10 pt-8 border-t border-slate-200 flex items-center justify-between gap-3">
           <button @click="goToPage((pagination?.current_page || 1) - 1)" :disabled="!(pagination?.current_page > 1)"
                   class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
-            Anterior
+            {{ $txt('pagination_previous', 'Anterior', 'Previous') }}
           </button>
           <div class="text-sm text-slate-600">
-            Página <span x-text="pagination?.current_page || 1"></span> de <span x-text="pagination?.last_page || 1"></span>
+            {{ $txt('pagination_page', 'Pagina', 'Page') }} <span x-text="pagination?.current_page || 1"></span> {{ $txt('of_label', 'de', 'of') }} <span x-text="pagination?.last_page || 1"></span>
           </div>
           <button @click="goToPage((pagination?.current_page || 1) + 1)" :disabled="!(pagination?.current_page < pagination?.last_page)"
                   class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
-            Siguiente
+            {{ $txt('pagination_next', 'Siguiente', 'Next') }}
           </button>
         </div>
       </div>
@@ -445,12 +451,14 @@
 
 @push('scripts')
   <script>
+    const tPublic = (key, fallback = '') => (window.publicT ? window.publicT(key, fallback) : fallback);
+    const isEnLocale = (window.__PUBLIC_LOCALE__ || 'es') === 'en';
     function propertiesFilter() {
       return {
         // Estado del modal
         showFiltersModal: false,
         
-        // Opciones dinámicas de filtro (se cargan desde la API)
+        // Opciones dinÃƒÂ¡micas de filtro (se cargan desde la API)
         propertyTypes: [],
         operationTypes: [],
         availableCities: [],
@@ -487,7 +495,7 @@
         pagination: null,
 
         init() {
-          // Cargar opciones de filtro dinámicas desde la API
+          // Cargar opciones de filtro dinÃƒÂ¡micas desde la API
           this.loadFilterOptions();
           // Leer filtros desde la URL al inicializar
           this.loadFiltersFromUrl();
@@ -498,7 +506,7 @@
               this.showFiltersModal = false;
             }
           });
-          // Escuchar cambios en el historial (navegación adelante/atrás)
+          // Escuchar cambios en el historial (navegaciÃƒÂ³n adelante/atrÃƒÂ¡s)
           window.addEventListener('popstate', () => {
             this.loadFiltersFromUrl();
             this.loadProperties();
@@ -525,23 +533,23 @@
             }
           } catch (e) {
             console.error('Error loading filter options:', e);
-            // Fallback: dejar arrays vacíos, la UI mostrará solo "Todos"
+            // Fallback: dejar arrays vacÃƒÂ­os, la UI mostrarÃƒÂ¡ solo "Todos"
           }
         },
 
-        // Helper para obtener label de operación
+        // Helper para obtener label de operaciÃƒÂ³n
         getOperationLabel(type) {
-          const labels = { sale: 'Venta', rental: 'Renta', lease: 'Arrendamiento' };
+          const labels = { sale: tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta'), rental: tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta'), lease: tPublic('properties.operationLease', isEnLocale ? 'Lease' : 'Arrendamiento'), rent: tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta'), venta: tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta'), renta: tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta') };
           return labels[type] || type;
         },
 
-        // Helper para obtener emoji de operación
+        // Helper para obtener emoji de operaciÃƒÂ³n
         getOperationEmoji(type) {
-          const emojis = { sale: '🏷️', rental: '🔑', lease: '📋' };
-          return emojis[type] || '📌';
+          const emojis = { sale: 'Ã°Å¸ÂÂ·Ã¯Â¸Â', rental: 'Ã°Å¸â€â€˜', lease: 'Ã°Å¸â€œâ€¹' };
+          return emojis[type] || 'Ã°Å¸â€œÅ’';
         },
 
-        // Cargar filtros desde los parámetros de la URL
+        // Cargar filtros desde los parÃƒÂ¡metros de la URL
         loadFiltersFromUrl() {
           const urlParams = new URLSearchParams(window.location.search);
           
@@ -555,7 +563,7 @@
           filterKeys.forEach(key => {
             if (urlParams.has(key)) {
               const value = urlParams.get(key);
-              // Convertir a número si es necesario
+              // Convertir a nÃƒÂºmero si es necesario
               if (['min_price', 'max_price', 'bedrooms', 'bathrooms', 'parking_spaces',
                    'min_construction_size', 'min_lot_size', 'per_page', 'page'].includes(key)) {
                 this.filters[key] = value ? parseInt(value, 10) || value : '';
@@ -573,7 +581,7 @@
           // Solo agregar filtros que tengan valor y no sean los valores por defecto
           Object.keys(this.filters).forEach(key => {
             const value = this.filters[key];
-            // Excluir valores vacíos y valores por defecto
+            // Excluir valores vacÃƒÂ­os y valores por defecto
             if (value !== null && value !== undefined && value !== '') {
               // Excluir valores por defecto
               if (key === 'order' && value === 'updated_at') return;
@@ -590,7 +598,7 @@
             ? `${window.location.pathname}?${params.toString()}`
             : window.location.pathname;
           
-          // Actualizar la URL sin recargar la página (usar null en lugar del objeto filters)
+          // Actualizar la URL sin recargar la pÃƒÂ¡gina (usar null en lugar del objeto filters)
           window.history.pushState(null, '', newUrl);
         },
 
@@ -621,11 +629,11 @@
           const min = this.filters.min_price;
           const max = this.filters.max_price;
           if (min && max) {
-            return `Precio: $${Number(min).toLocaleString()} - $${Number(max).toLocaleString()}`;
+            return `${tPublic('properties.priceRangeLabel', isEnLocale ? 'Price' : 'Precio')}: $${Number(min).toLocaleString()} - $${Number(max).toLocaleString()}`;
           } else if (min) {
-            return `Precio: desde $${Number(min).toLocaleString()}`;
+            return `${tPublic('properties.priceFromLabel', isEnLocale ? 'Price from' : 'Precio desde')} $${Number(min).toLocaleString()}`;
           } else if (max) {
-            return `Precio: hasta $${Number(max).toLocaleString()}`;
+            return `${tPublic('properties.priceUpToLabel', isEnLocale ? 'Price up to' : 'Precio hasta')} $${Number(max).toLocaleString()}`;
           }
           return '';
         },
@@ -724,14 +732,14 @@
 
             grid.innerHTML = this.properties.map((p) => {
               const imageUrl = p.cover_media_asset?.serving_url || p.cover_media_asset?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';
-              const price = p.operations?.[0]?.formatted_amount || 'Consultar precio';
+              const price = p.operations?.[0]?.formatted_amount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
               const op = p.operations?.[0]?.operation_type || '';
-              const location = [p.location?.city, p.location?.city_area].filter(Boolean).join(', ') || 'Ubicación disponible';
+              const location = [p.location?.city, p.location?.city_area].filter(Boolean).join(', ') || tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible');
 
               return `
                 <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
                   <div class="relative h-56 overflow-hidden">
-                    <img src="${imageUrl}" alt="${(p.title || 'Propiedad').replaceAll('"','&quot;')}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                    <img src="${imageUrl}" alt="${(p.title || tPublic('common.properties', isEnLocale ? 'Property' : 'Propiedad')).replaceAll('"','&quot;')}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                     ${p.property_type_name ? `
@@ -742,7 +750,7 @@
 
                     ${op ? `
                       <span class="absolute top-4 right-4 px-3 py-1 text-white text-xs font-semibold rounded-full" style="background-color: ${op === 'sale' ? 'var(--fe-properties-sale_badge, #768D59)' : 'var(--fe-properties-rent_badge, #D1A054)'};">
-                        ${op === 'sale' ? 'En Venta' : 'En Renta'}
+                        ${op === 'sale' ? tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta') : tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta')}
                       </span>
                     ` : ''}
                   </div>
@@ -757,7 +765,7 @@
                     </div>
 
                     <h3 class="text-lg font-bold mb-3 line-clamp-2" style="color: var(--fe-properties-card_title, #1C1C1C);">
-                      ${p.title || 'Propiedad disponible'}
+                      ${p.title || tPublic('common.available', isEnLocale ? 'Available property' : 'Propiedad disponible')}
                     </h3>
 
                     <div class="text-2xl font-extrabold text-transparent bg-clip-text mb-4" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
@@ -765,7 +773,8 @@
                     </div>
 
                     <a href="/propiedades/${p.id}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-                      Ver detalles
+                      
+                      ${tPublic('common.details', isEnLocale ? 'View details' : 'Ver detalles')}
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                       </svg>
@@ -784,4 +793,16 @@
     }
   </script>
 @endpush
+
+
+
+
+
+
+
+
+
+
+
+
 

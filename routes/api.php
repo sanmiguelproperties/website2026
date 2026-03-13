@@ -22,6 +22,7 @@ use App\Http\Controllers\EasyBrokerSyncController;
 use App\Http\Controllers\MLSSyncController;
 use App\Http\Controllers\MLSAgentController;
 use App\Http\Controllers\MLSOfficeController;
+use App\Http\Controllers\CorporateEmailController;
 
 /*
 |--------------------------------------------------------------------------
@@ -277,6 +278,27 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
     Route::post('mls-offices/sync', [MLSOfficeController::class, 'syncOffices']);
 });
 
+
+// Corporate Email routes (protegidas con autenticacion Passport)
+Route::middleware(['auth.api', 'admin.api'])->prefix('corporate-email')->group(function () {
+    // Cuentas de correo
+    Route::get('accounts', [CorporateEmailController::class, 'accountsIndex']);
+    Route::post('accounts', [CorporateEmailController::class, 'storeAccount']);
+    Route::put('accounts/{account}', [CorporateEmailController::class, 'updateAccount']);
+    Route::delete('accounts/{account}', [CorporateEmailController::class, 'destroyAccount']);
+
+    // Pruebas y sincronizacion
+    Route::post('accounts/{account}/test-connection', [CorporateEmailController::class, 'testConnection']);
+    Route::post('accounts/{account}/sync', [CorporateEmailController::class, 'syncInbox']);
+
+    // Mensajes
+    Route::get('messages', [CorporateEmailController::class, 'messagesIndex']);
+    Route::get('messages/{message}', [CorporateEmailController::class, 'showMessage']);
+    Route::post('messages/{message}/mark-read', [CorporateEmailController::class, 'markAsRead']);
+
+    // Envio
+    Route::post('send', [CorporateEmailController::class, 'sendMessage']);
+});
 // ============================================================
 // CMS - Sistema de Contenido Administrable
 // ============================================================

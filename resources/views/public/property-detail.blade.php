@@ -1,6 +1,12 @@
-@extends('layouts.public')
+﻿@extends('layouts.public')
 
-@section('title', 'Detalle de propiedad')
+@php
+  $isEn = ($locale ?? app()->getLocale()) === 'en';
+  $txt = fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($isEn ? $en : $es);
+  $pageTitle = $pageData?->entity?->title($locale ?? app()->getLocale()) ?? ($isEn ? 'Property Detail' : 'Detalle de propiedad');
+@endphp
+
+@section('title', $pageTitle)
 
 @section('content')
   <div class="relative overflow-hidden pt-24">
@@ -14,11 +20,11 @@
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {{-- Breadcrumbs --}}
       <nav class="flex items-center gap-2 text-sm" aria-label="Breadcrumb">
-        <a href="{{ url('/') }}" class="text-slate-600 hover:text-slate-900 transition">Inicio</a>
+        <a href="{{ url('/') }}" class="text-slate-600 hover:text-slate-900 transition">{{ $txt('i18n_breadcrumb_home', 'Inicio', 'Home') }}</a>
         <span class="text-slate-400">/</span>
-        <a href="{{ route('public.properties.index') }}" class="text-slate-600 hover:text-slate-900 transition">Propiedades</a>
+        <a href="{{ route('public.properties.index') }}" class="text-slate-600 hover:text-slate-900 transition">{{ $txt('i18n_breadcrumb_properties', 'Propiedades', 'Properties') }}</a>
         <span class="text-slate-400">/</span>
-        <span id="breadcrumbTitle" class="text-slate-900 font-medium truncate">Detalle</span>
+        <span id="breadcrumbTitle" class="text-slate-900 font-medium truncate">{{ $txt('i18n_breadcrumb_detail', 'Detalle', 'Detail') }}</span>
       </nav>
 
       {{-- Header --}}
@@ -27,15 +33,15 @@
           <div class="flex flex-wrap items-center gap-2">
             <span id="badgeOperation" class="hidden inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
               <span class="inline-block size-1.5 rounded-full bg-white/90"></span>
-              <span id="badgeOperationText">Disponible</span>
+              <span id="badgeOperationText">{{ $txt('i18n_label_available', 'Disponible', 'Available') }}</span>
             </span>
             <span id="badgeType" class="hidden inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" style="background-color: var(--fe-properties-type_badge_bg, rgba(255,255,255,0.85)); color: var(--fe-properties-type_badge_text, #1C1C1C);">
-              <span id="badgeTypeText">Propiedad</span>
+              <span id="badgeTypeText">{{ $txt('i18n_label_property', 'Propiedad', 'Property') }}</span>
             </span>
           </div>
 
           <h1 id="propertyTitle" class="mt-3 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900">
-            <span class="inline-block align-middle">Cargando…</span>
+            <span class="inline-block align-middle">{{ $txt('i18n_label_loading', 'Cargando...','Loading...') }}</span>
           </h1>
 
           <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -53,7 +59,7 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span id="propertyUpdated" class="truncate">Actualizado: —</span>
+              <span id="propertyUpdated" class="truncate">{{ $txt('i18n_label_updated', 'Actualizado', 'Updated') }}: —</span>
             </div>
           </div>
         </div>
@@ -63,13 +69,13 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 8a3 3 0 10-6 0v5H7l5 5 5-5h-2V8z" />
             </svg>
-            Compartir
+            {{ $txt('cta_share', 'Compartir', 'Share') }}
           </button>
           <a href="{{ route('public.properties.index') }}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
-            Volver
+            {{ $txt('cta_back', 'Volver', 'Back') }}
           </a>
         </div>
       </div>
@@ -81,7 +87,7 @@
           {{-- Gallery --}}
           <section class="rounded-3xl border border-slate-200 bg-white shadow-soft overflow-hidden">
             <div class="relative">
-              <div class="swiper property-gallery" aria-label="Galería de imágenes">
+              <div class="swiper property-gallery" aria-label="{{ $txt('gallery_aria_label', 'Galeria de imagenes', 'Image gallery') }}">
                 <div class="swiper-wrapper" id="galleryWrapper">
                   {{-- Skeleton slide --}}
                   <div class="swiper-slide">
@@ -96,7 +102,7 @@
               </div>
 
               <div class="absolute top-4 left-4 z-10 flex items-center gap-2">
-                <span id="galleryCount" class="hidden rounded-full px-3 py-1 text-xs font-semibold text-white/95 backdrop-blur" style="background: rgba(15,23,42,.55);">0 fotos</span>
+                <span id="galleryCount" class="hidden rounded-full px-3 py-1 text-xs font-semibold text-white/95 backdrop-blur" style="background: rgba(15,23,42,.55);">0 {{ $txt('i18n_label_photos', 'fotos', 'photos') }}</span>
               </div>
             </div>
 
@@ -119,7 +125,7 @@
 
           {{-- Highlights --}}
           <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
-            <h2 class="text-lg font-bold text-slate-900">Características principales</h2>
+            <h2 class="text-lg font-bold text-slate-900">{{ $txt('i18n_section_features', 'Caracteristicas principales', 'Key Features') }}</h2>
 
             <div id="highlightsGrid" class="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
               {{-- Skeleton cards --}}
@@ -135,7 +141,7 @@
           {{-- Description + Meta --}}
           <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
             <div class="flex items-center justify-between gap-3">
-              <h2 class="text-lg font-bold text-slate-900">Descripción</h2>
+              <h2 class="text-lg font-bold text-slate-900">{{ $txt('i18n_section_description', 'Descripcion', 'Description') }}</h2>
               <span id="propertyIdChip" class="hidden text-xs font-semibold text-slate-600 rounded-full px-3 py-1 bg-slate-100">#—</span>
             </div>
 
@@ -148,16 +154,16 @@
             </div>
 
             <div class="mt-6 border-t border-slate-100 pt-6">
-              <h3 class="text-sm font-semibold text-slate-900">Features</h3>
+              <h3 class="text-sm font-semibold text-slate-900">{{ $txt('i18n_section_featureList', 'Caracteristicas', 'Features') }}</h3>
               <div id="featuresWrap" class="mt-3 flex flex-wrap gap-2">
-                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">Cargando…</span>
+                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">{{ $txt('i18n_label_loading', 'Cargando...','Loading...') }}</span>
               </div>
             </div>
 
             <div class="mt-6 border-t border-slate-100 pt-6">
-              <h3 class="text-sm font-semibold text-slate-900">Tags</h3>
+              <h3 class="text-sm font-semibold text-slate-900">{{ $txt('i18n_section_tags', 'Etiquetas', 'Tags') }}</h3>
               <div id="tagsWrap" class="mt-3 flex flex-wrap gap-2">
-                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">Cargando…</span>
+                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">{{ $txt('i18n_label_loading', 'Cargando...','Loading...') }}</span>
               </div>
             </div>
           </section>
@@ -166,7 +172,7 @@
           <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
             <div class="flex items-start justify-between gap-4">
               <div>
-                <h2 class="text-lg font-bold text-slate-900">Ubicación</h2>
+                <h2 class="text-lg font-bold text-slate-900">{{ $txt('i18n_section_location', 'Ubicacion', 'Location') }}</h2>
                 <p id="addressLine" class="mt-2 text-slate-600">—</p>
               </div>
               <a id="mapsLink" href="#" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
@@ -174,14 +180,14 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Ver mapa
+                {{ $txt('i18n_cta_viewMap', 'Ver mapa', 'View Map') }}
               </a>
             </div>
 
             <div class="mt-5 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50" style="aspect-ratio: 16 / 7;">
               <iframe
                 id="mapFrame"
-                title="Mapa"
+                title="{{ $txt('i18n_label_map', 'Mapa', 'Map') }}"
                 class="w-full h-full"
                 loading="lazy"
                 referrerpolicy="no-referrer-when-downgrade"
@@ -197,12 +203,12 @@
             <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                  <p class="text-sm font-semibold text-slate-600">Precio</p>
+                  <p class="text-sm font-semibold text-slate-600">{{ $txt('i18n_label_price', 'Precio', 'Price') }}</p>
                   <p id="priceMain" class="mt-2 text-3xl font-extrabold text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">—</p>
-                  <p id="priceHint" class="mt-1 text-xs text-slate-500">* Puede variar según operación</p>
+                  <p id="priceHint" class="mt-1 text-xs text-slate-500">{{ $txt('price_hint', '* Puede variar segun operacion', '* May vary by operation type') }}</p>
                 </div>
 
-                <button id="btnFavorite" type="button" class="inline-flex items-center justify-center rounded-2xl w-12 h-12 border border-slate-200 bg-white hover:bg-slate-50 transition" aria-label="Favorito">
+                <button id="btnFavorite" type="button" class="inline-flex items-center justify-center rounded-2xl w-12 h-12 border border-slate-200 bg-white hover:bg-slate-50 transition" aria-label="{{ $txt('i18n_label_favorite', 'Favorito', 'Favorite') }}">
                   <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
@@ -227,14 +233,14 @@
                   <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
-                  Llamar
+                  {{ $txt('i18n_label_call', 'Llamar', 'Call') }}
                 </a>
               </div>
             </section>
 
             {{-- Agency / Agent --}}
             <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
-              <h3 class="text-sm font-semibold text-slate-900">Asesor / Agencia</h3>
+              <h3 class="text-sm font-semibold text-slate-900">{{ $txt('i18n_label_advisorAgency', 'Asesor / Agencia', 'Advisor / Agency') }}</h3>
 
               <div class="mt-4 flex items-center gap-4">
                 <div class="size-14 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 grid place-items-center" id="agentAvatar">
@@ -253,21 +259,21 @@
               <div id="mlsAgentsWrap" class="hidden mt-5 space-y-3"></div>
 
               <div class="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <p class="text-xs font-semibold text-slate-600">Nota</p>
-                <p class="mt-1 text-sm text-slate-700">Agenda una visita y recibe información completa (disponibilidad, gastos y documentos).</p>
+                <p class="text-xs font-semibold text-slate-600">{{ $txt('i18n_label_note', 'Nota', 'Note') }}</p>
+                <p class="mt-1 text-sm text-slate-700">{{ $txt('advisor_note', 'Agenda una visita y recibe informacion completa (disponibilidad, gastos y documentos).', 'Schedule a tour and receive complete information (availability, expenses and documentation).') }}</p>
               </div>
             </section>
 
             {{-- Error box --}}
             <section id="errorBox" class="hidden rounded-3xl border border-rose-200 bg-rose-50 p-6">
-              <h3 class="text-sm font-semibold text-rose-900">No se pudo cargar la propiedad</h3>
+              <h3 class="text-sm font-semibold text-rose-900">{{ $txt('i18n_error_title', 'No se pudo cargar la propiedad', 'Could not load property') }}</h3>
               <p id="errorText" class="mt-2 text-sm text-rose-800">—</p>
               <div class="mt-4 flex flex-wrap gap-2">
                 <button id="btnRetry" type="button" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-                  Reintentar
+                  {{ $txt('i18n_cta_retry', 'Reintentar', 'Retry') }}
                 </button>
                 <a href="{{ route('public.properties.index') }}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-rose-200 bg-white hover:bg-rose-50 transition">
-                  Volver al listado
+                  {{ $txt('i18n_cta_backToList', 'Volver al listado', 'Back to listing') }}
                 </a>
               </div>
             </section>
@@ -286,17 +292,29 @@
     // ======================================================
     window.__PROPERTY_ID__ = @json($propertyId ?? null);
 
+    const tPublic = (key, fallback = '') => (window.publicT ? window.publicT(key, fallback) : fallback);
+    const isEnLocale = (window.__PUBLIC_LOCALE__ || 'es') === 'en';
+    const publicContact = window.__PUBLIC_CONTACT__ || {};
+
+    const contactPhoneDisplay = (publicContact.phone || '+52 55 1234 5678').toString();
+    const contactPhone = contactPhoneDisplay.replace(/[^\d+]/g, '') || '+525512345678';
+    const contactWhatsapp = (publicContact.whatsapp || '525512345678').toString().replace(/\D/g, '') || '525512345678';
+
     function safeText(v, fallback = '—') {
       const s = (v ?? '').toString().trim();
       return s ? s : fallback;
     }
 
-    function formatIsoToEs(iso) {
+    function formatIso(iso) {
       if (!iso) return '—';
       try {
         const d = new Date(iso);
         if (Number.isNaN(d.getTime())) return String(iso);
-        return d.toLocaleString('es-CO', { year: 'numeric', month: 'short', day: '2-digit' });
+        return d.toLocaleDateString(isEnLocale ? 'en-US' : 'es-CO', {
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit',
+        });
       } catch (_e) {
         return String(iso);
       }
@@ -314,31 +332,31 @@
     function resolveMediaUrl(asset) {
       if (!asset) return null;
       if (typeof asset === 'string') return asset;
-      // Priorizar serving_url (URL local si fue descargada), luego url, luego fallbacks
       const url = asset.serving_url || asset.url || asset.public_url || asset.path || null;
       if (url) return url;
-      // Fallback a source_url del pivot si existe
       if (asset.pivot && asset.pivot.source_url) return asset.pivot.source_url;
       return asset.source_url || null;
     }
 
     function buildImageList(property) {
       const imgs = [];
+      const defaultAlt = tPublic('common.properties', isEnLocale ? 'Property' : 'Propiedad');
+
       const coverUrl = resolveMediaUrl(property.cover_media_asset);
-      if (coverUrl) imgs.push({ url: coverUrl, alt: property.title || 'Propiedad' });
+      if (coverUrl) imgs.push({ url: coverUrl, alt: property.title || defaultAlt });
 
       const gallery = Array.isArray(property.media_assets) ? property.media_assets : [];
       gallery.forEach((m) => {
         const url = resolveMediaUrl(m);
         if (!url) return;
-        if (imgs.some(i => i.url === url)) return;
-        imgs.push({ url, alt: property.title || 'Propiedad' });
+        if (imgs.some((i) => i.url === url)) return;
+        imgs.push({ url, alt: property.title || defaultAlt });
       });
 
       if (!imgs.length) {
         imgs.push({
           url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-          alt: 'Propiedad'
+          alt: defaultAlt,
         });
       }
 
@@ -350,53 +368,55 @@
       return `https://www.google.com/maps?q=${encodeURIComponent(q || '')}`;
     }
 
-    function buildOsmEmbed({ lat, lng, q }) {
-      // OSM embed works best with coords; fallback to blank if none.
+    function buildOsmEmbed({ lat, lng }) {
       if (!(lat && lng)) return 'about:blank';
-      // Convertir a número si vienen como string
+
       const latNum = parseFloat(lat);
       const lngNum = parseFloat(lng);
       if (Number.isNaN(latNum) || Number.isNaN(lngNum)) return 'about:blank';
-      // A small bbox around the point
+
       const d = 0.005;
       const left = (lngNum - d).toFixed(6);
       const right = (lngNum + d).toFixed(6);
       const top = (latNum + d).toFixed(6);
       const bottom = (latNum - d).toFixed(6);
+
       return `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik&marker=${encodeURIComponent(latNum + ',' + lngNum)}`;
     }
 
     function operationLabel(op) {
       const t = (op?.operation_type || '').toString().toLowerCase();
-      if (t === 'sale' || t === 'venta') return 'En venta';
-      if (t === 'rent' || t === 'rental' || t === 'arriendo' || t === 'renta') return 'En renta';
-      return safeText(op?.operation_type, 'Disponible');
+      if (['sale', 'venta'].includes(t)) return tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta');
+      if (['rent', 'rental', 'arriendo', 'renta'].includes(t)) return tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta');
+      return safeText(op?.operation_type, tPublic('property.available', isEnLocale ? 'Available' : 'Disponible'));
     }
 
     function operationBadgeColor(op) {
       const t = (op?.operation_type || '').toString().toLowerCase();
-      if (t === 'sale' || t === 'venta') return 'linear-gradient(to right, #768D59, #768D59)';
-      if (t === 'rent' || t === 'rental' || t === 'arriendo' || t === 'renta') return 'linear-gradient(to right, #D1A054, #D1A054)';
+      if (['sale', 'venta'].includes(t)) return 'linear-gradient(to right, #768D59, #768D59)';
+      if (['rent', 'rental', 'arriendo', 'renta'].includes(t)) return 'linear-gradient(to right, #D1A054, #D1A054)';
       return 'linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59))';
     }
 
     function getPrimaryPrice(property) {
       const ops = Array.isArray(property.operations) ? property.operations : [];
       const first = ops[0] || null;
-      if (!first) return 'Consultar precio';
-      return first.formatted_amount || first.amount || 'Consultar precio';
+      if (!first) return tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
+      return first.formatted_amount || first.amount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
     }
 
     function setError(message) {
       document.getElementById('errorBox').classList.remove('hidden');
-      document.getElementById('errorText').textContent = safeText(message, 'Error inesperado');
+      document.getElementById('errorText').textContent = safeText(
+        message,
+        tPublic('property.unknownError', isEnLocale ? 'Unexpected error' : 'Error inesperado')
+      );
     }
 
     let gallerySwiper = null;
     let thumbsSwiper = null;
 
     function initSwipers() {
-      // Destroy if already exists (retries)
       if (gallerySwiper) {
         try { gallerySwiper.destroy(true, true); } catch (_e) {}
         gallerySwiper = null;
@@ -425,7 +445,7 @@
     function renderProperty(property) {
       document.getElementById('errorBox').classList.add('hidden');
 
-      const title = safeText(property.title, 'Propiedad');
+      const title = safeText(property.title, tPublic('common.properties', isEnLocale ? 'Property' : 'Propiedad'));
       document.title = `${title} | San Miguel Properties`;
       document.getElementById('propertyTitle').textContent = title;
       document.getElementById('breadcrumbTitle').textContent = title;
@@ -436,16 +456,20 @@
       const cityArea = property.location?.city_area;
       const region = property.location?.region;
       const loc = [city, cityArea, region].filter(Boolean).join(', ');
-      document.getElementById('propertyLocation').textContent = safeText(loc, 'Ubicación disponible');
-      document.getElementById('propertyUpdated').textContent = `Actualizado: ${formatIsoToEs(property.updated_at || property.easybroker_updated_at)}`;
 
-      // Type badge
+      document.getElementById('propertyLocation').textContent = safeText(
+        loc,
+        tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible')
+      );
+
+      const updatedLabel = tPublic('common.updated', isEnLocale ? 'Updated' : 'Actualizado');
+      document.getElementById('propertyUpdated').textContent = `${updatedLabel}: ${formatIso(property.updated_at || property.easybroker_updated_at)}`;
+
       if (property.property_type_name) {
         document.getElementById('badgeTypeText').textContent = property.property_type_name;
         document.getElementById('badgeType').classList.remove('hidden');
       }
 
-      // Operation badge
       const ops = Array.isArray(property.operations) ? property.operations : [];
       if (ops.length) {
         document.getElementById('badgeOperationText').textContent = operationLabel(ops[0]);
@@ -453,23 +477,21 @@
         document.getElementById('badgeOperation').classList.remove('hidden');
       }
 
-      // Price
       const price = getPrimaryPrice(property);
       document.getElementById('priceMain').textContent = String(price);
 
-      // Operations list
       const operationsList = document.getElementById('operationsList');
       if (!ops.length) {
         operationsList.innerHTML = `
           <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <p class="text-xs font-semibold text-slate-600">Operación</p>
-            <p class="mt-1 text-base font-semibold text-slate-900">Consultar disponibilidad</p>
+            <p class="text-xs font-semibold text-slate-600">${tPublic('common.operation', isEnLocale ? 'Operation' : 'Operacion')}</p>
+            <p class="mt-1 text-base font-semibold text-slate-900">${tPublic('property.operationAsk', isEnLocale ? 'Check availability' : 'Consultar disponibilidad')}</p>
           </div>
         `;
       } else {
         operationsList.innerHTML = ops.map((op) => {
           const label = operationLabel(op);
-          const amount = op.formatted_amount || op.amount || 'Consultar';
+          const amount = op.formatted_amount || op.amount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar');
           const unit = op.unit ? ` / ${escapeHtml(op.unit)}` : '';
           const bg = operationBadgeColor(op);
           return `
@@ -484,26 +506,25 @@
         }).join('');
       }
 
-      // Highlights
       const highlights = [
-        { label: 'Recámaras', value: property.bedrooms },
-        { label: 'Baños', value: property.bathrooms },
-        { label: 'Parqueaderos', value: property.parking_spaces },
-        { label: 'Construcción', value: property.construction_size ? `${property.construction_size} m²` : null },
-        { label: 'Lote', value: property.lot_size ? `${property.lot_size} m²` : null },
-        { label: 'Pisos', value: property.floors ?? property.floor },
-        { label: 'Edad', value: property.age },
-      ].filter(x => x.value !== null && x.value !== undefined && String(x.value).trim() !== '');
+        { label: tPublic('property.bedrooms', isEnLocale ? 'Bedrooms' : 'Recamaras'), value: property.bedrooms },
+        { label: tPublic('property.bathrooms', isEnLocale ? 'Bathrooms' : 'Banos'), value: property.bathrooms },
+        { label: tPublic('property.parking', isEnLocale ? 'Parking' : 'Estacionamientos'), value: property.parking_spaces },
+        { label: tPublic('property.construction', isEnLocale ? 'Construction' : 'Construccion'), value: property.construction_size ? `${property.construction_size} m²` : null },
+        { label: tPublic('property.lot', isEnLocale ? 'Lot' : 'Lote'), value: property.lot_size ? `${property.lot_size} m²` : null },
+        { label: tPublic('property.floors', isEnLocale ? 'Floors' : 'Pisos'), value: property.floors ?? property.floor },
+        { label: tPublic('property.age', isEnLocale ? 'Age' : 'Edad'), value: property.age },
+      ].filter((x) => x.value !== null && x.value !== undefined && String(x.value).trim() !== '');
 
       const highlightsGrid = document.getElementById('highlightsGrid');
       if (!highlights.length) {
         highlightsGrid.innerHTML = `
           <div class="col-span-2 sm:col-span-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-700">
-            No hay información adicional registrada para esta propiedad.
+            ${tPublic('property.noExtraInfo', isEnLocale ? 'No additional information available for this property.' : 'No hay informacion adicional registrada para esta propiedad.')}
           </div>
         `;
       } else {
-        highlightsGrid.innerHTML = highlights.map(h => `
+        highlightsGrid.innerHTML = highlights.map((h) => `
           <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
             <p class="text-xs font-semibold text-slate-600">${escapeHtml(h.label)}</p>
             <p class="mt-1 text-lg font-extrabold text-slate-900">${escapeHtml(String(h.value))}</p>
@@ -511,44 +532,46 @@
         `).join('');
       }
 
-      // Description
-      document.getElementById('description').textContent = safeText(property.description, 'Sin descripción.');
+      document.getElementById('description').textContent = safeText(
+        property.description,
+        tPublic('property.noDescription', isEnLocale ? 'No description available.' : 'Sin descripcion.')
+      );
 
-      // Features / tags
       const featuresWrap = document.getElementById('featuresWrap');
       const features = Array.isArray(property.features) ? property.features : [];
       featuresWrap.innerHTML = features.length
-        ? features.map(f => `
+        ? features.map((f) => `
             <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" style="background-color: var(--fe-properties-tag_inactive_bg, #f1f5f9); color: var(--fe-properties-tag_inactive_text, #475569);">
               ${escapeHtml(f.name || f.slug || ('Feature #' + f.id))}
             </span>
           `).join('')
-        : '<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">Sin features</span>';
+        : `<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">${tPublic('property.noFeatures', isEnLocale ? 'No features' : 'Sin caracteristicas')}</span>`;
 
       const tagsWrap = document.getElementById('tagsWrap');
       const tags = Array.isArray(property.tags) ? property.tags : [];
       tagsWrap.innerHTML = tags.length
-        ? tags.map(t => `
+        ? tags.map((t) => `
             <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" style="background-color: var(--fe-properties-tag_inactive_bg, #f1f5f9); color: var(--fe-properties-tag_inactive_text, #475569);">
               ${escapeHtml(t.name || t.slug || ('Tag #' + t.id))}
             </span>
           `).join('')
-        : '<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">Sin tags</span>';
+        : `<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">${tPublic('property.noTags', isEnLocale ? 'No tags' : 'Sin etiquetas')}</span>`;
 
-      // Location + map
       const street = property.location?.street;
       const postal = property.location?.postal_code;
       const addr = [street, cityArea, city, region, postal].filter(Boolean).join(', ');
-      document.getElementById('addressLine').textContent = safeText(addr, 'Ubicación general disponible.');
+      document.getElementById('addressLine').textContent = safeText(
+        addr,
+        tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible')
+      );
 
       const lat = property.location?.latitude;
       const lng = property.location?.longitude;
       const q = addr || loc || title;
       const mapsUrl = buildMapsUrl({ lat, lng, q });
       document.getElementById('mapsLink').href = mapsUrl;
-      document.getElementById('mapFrame').src = buildOsmEmbed({ lat, lng, q });
+      document.getElementById('mapFrame').src = buildOsmEmbed({ lat, lng });
 
-      // Agent / agency
       const agent = property.agent_user;
       const agency = property.agency;
       if (agent?.name) document.getElementById('agentName').textContent = agent.name;
@@ -556,10 +579,9 @@
 
       const profileUrl = resolveMediaUrl(agent?.profile_image);
       if (profileUrl) {
-        document.getElementById('agentAvatar').innerHTML = `<img src="${escapeHtml(profileUrl)}" alt="${escapeHtml(agent?.name || 'Asesor')}" class="w-full h-full object-cover" />`;
+        document.getElementById('agentAvatar').innerHTML = `<img src="${escapeHtml(profileUrl)}" alt="${escapeHtml(agent?.name || tPublic('property.advisor', isEnLocale ? 'Advisor' : 'Asesor'))}" class="w-full h-full object-cover" />`;
       }
 
-      // MLS Agents (list)
       const mlsWrap = document.getElementById('mlsAgentsWrap');
       const mlsAgents = Array.isArray(property.mls_agents) ? property.mls_agents : [];
 
@@ -568,7 +590,6 @@
           mlsWrap.classList.add('hidden');
           mlsWrap.innerHTML = '';
         } else {
-          // Prefer primary agents first
           const sorted = [...mlsAgents].sort((a, b) => {
             const ap = a?.pivot?.is_primary ? 1 : 0;
             const bp = b?.pivot?.is_primary ? 1 : 0;
@@ -576,17 +597,15 @@
           });
 
           const rows = sorted.map((a) => {
-            const name = safeText(a?.full_name || a?.name, 'Agente');
+            const name = safeText(a?.full_name || a?.name, tPublic('property.agent', isEnLocale ? 'Agent' : 'Agente'));
             const office = safeText(a?.office_name, '—');
             const photo = a?.photo || a?.photo_url || null;
-
-            // Prefer mobile, fallback to phone
             const phone = (a?.mobile || a?.phone || '').toString().trim();
             const email = (a?.email || '').toString().trim();
 
             const isPrimary = !!a?.pivot?.is_primary;
             const badge = isPrimary
-              ? `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">Principal</span>`
+              ? `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">${tPublic('property.primary', isEnLocale ? 'Primary' : 'Principal')}</span>`
               : '';
 
             const avatarHtml = photo
@@ -619,7 +638,7 @@
                       ${badge}
                     </div>
                     <p class="mt-0.5 text-xs text-slate-600 truncate">${escapeHtml(office)}</p>
-                    ${contactBits ? `<div class="mt-3 flex flex-col gap-2">${contactBits}</div>` : '<p class="mt-3 text-sm text-slate-600">Contacto no disponible</p>'}
+                    ${contactBits ? `<div class="mt-3 flex flex-col gap-2">${contactBits}</div>` : `<p class="mt-3 text-sm text-slate-600">${tPublic('property.contactUnavailable', isEnLocale ? 'Contact not available' : 'Contacto no disponible')}</p>`}
                   </div>
                 </div>
               </div>
@@ -631,13 +650,24 @@
         }
       }
 
-      // WhatsApp link (placeholder phone)
-      const waText = `Hola, me interesa la propiedad #${property.id}: ${title}. ¿Me puedes dar más información?`;
-      document.getElementById('btnWhatsApp').href = `https://wa.me/525512345678?text=${encodeURIComponent(waText)}`;
+      const waTemplate = tPublic(
+        'property.whatsappMessage',
+        isEnLocale
+          ? 'Hi, I am interested in property #{id}: {title}. Can you share more information?'
+          : 'Hola, me interesa la propiedad #{id}: {title}. ¿Me puedes dar más información?'
+      );
+      const waText = waTemplate
+        .replaceAll('{id}', String(property.id || ''))
+        .replaceAll('{title}', title);
 
-      // Gallery
+      document.getElementById('btnWhatsApp').href = `https://wa.me/${contactWhatsapp}?text=${encodeURIComponent(waText)}`;
+      document.getElementById('btnCall').href = `tel:${contactPhone}`;
+
       const imgs = buildImageList(property);
-      document.getElementById('galleryCount').textContent = `${imgs.length} ${imgs.length === 1 ? 'foto' : 'fotos'}`;
+      const photoLabel = imgs.length === 1
+        ? tPublic('property.photoSingular', isEnLocale ? 'photo' : 'foto')
+        : tPublic('property.photoPlural', isEnLocale ? 'photos' : 'fotos');
+      document.getElementById('galleryCount').textContent = `${imgs.length} ${photoLabel}`;
       document.getElementById('galleryCount').classList.remove('hidden');
 
       const galleryWrapper = document.getElementById('galleryWrapper');
@@ -665,32 +695,32 @@
     async function loadProperty() {
       const id = window.__PROPERTY_ID__;
       if (!id) {
-        setError('No se recibió el ID de la propiedad.');
+        setError(tPublic('property.missingId', isEnLocale ? 'Property ID was not provided.' : 'No se recibio el ID de la propiedad.'));
         return;
       }
 
       try {
         const res = await fetch(`/api/public/properties/${id}`, {
-          headers: { 'Accept': 'application/json' }
+          headers: { Accept: 'application/json' },
         });
         const data = await res.json();
 
         if (!res.ok || !data?.success) {
-          setError(data?.message || `Error HTTP ${res.status}`);
+          const httpFallback = isEnLocale ? `HTTP error ${res.status}` : `Error HTTP ${res.status}`;
+          setError(data?.message || tPublic('property.httpError', httpFallback));
           return;
         }
 
         renderProperty(data.data);
       } catch (e) {
         console.error(e);
-        setError('Error de red al cargar la propiedad.');
+        setError(tPublic('property.networkError', isEnLocale ? 'Network error while loading the property.' : 'Error de red al cargar la propiedad.'));
       }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('btnRetry')?.addEventListener('click', loadProperty);
 
-      // Share
       document.getElementById('btnShare')?.addEventListener('click', async () => {
         try {
           const url = window.location.href;
@@ -700,14 +730,17 @@
           }
           await navigator.clipboard.writeText(url);
           window.dispatchEvent(new CustomEvent('api:response', {
-            detail: { success: true, message: 'Enlace copiado al portapapeles', code: 'COPIED' }
+            detail: {
+              success: true,
+              message: tPublic('property.copiedLink', isEnLocale ? 'Link copied to clipboard' : 'Enlace copiado al portapapeles'),
+              code: 'COPIED',
+            },
           }));
         } catch (_e) {
-          // fallback silent
+          // silent fallback
         }
       });
 
-      // Favorite (client-only toggle)
       document.getElementById('btnFavorite')?.addEventListener('click', (e) => {
         e.currentTarget.classList.toggle('ring-4');
         e.currentTarget.classList.toggle('ring-emerald-200');
@@ -717,4 +750,14 @@
     });
   </script>
 @endpush
+
+
+
+
+
+
+
+
+
+
 

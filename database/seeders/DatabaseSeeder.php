@@ -18,13 +18,20 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RbacSeeder::class,
             DefaultUserSeeder::class,
+            CorporateEmailAccountSeeder::class,
             CurrencySeeder::class,
             PassportKeysSeeder::class,
             CleanUploadsSeeder::class,
             UserSeeder::class,
             ColorThemeSeeder::class,
             FrontendColorSettingsSeeder::class,
+            CmsContentSeeder::class,
+            CmsPublicTextSeeder::class,
             PropertySeeder::class,
         ]);
     }
 }
+
+
+
+

@@ -1,10 +1,15 @@
-@extends('layouts.public')
+﻿@extends('layouts.public')
 
-@section('title', 'Agencias')
+@php
+  $isEn = ($locale ?? app()->getLocale()) === 'en';
+  $txt = fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($isEn ? $en : $es);
+  $pageTitle = $pageData?->entity?->title($locale ?? app()->getLocale()) ?? ($isEn ? 'Agencies' : 'Agencias');
+@endphp
+
+@section('title', $pageTitle)
 
 @section('content')
   <div class="pt-24">
-    {{-- Hero / header --}}
     <section class="relative overflow-hidden">
       <div class="absolute inset-0 pointer-events-none">
         <div class="absolute -top-24 -right-24 h-72 w-72 rounded-full blur-3xl opacity-35" style="background-color: var(--fe-primary-from, rgba(209,160,84,.35));"></div>
@@ -19,14 +24,15 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 21V7l8-4v18" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V11l-6-4" />
             </svg>
-            Agencias MLS
+            {{ $txt('page_badge', 'Agencias MLS', 'MLS Agencies') }}
           </div>
 
           <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
-            Explora nuestras <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">agencias</span>
+            {{ $txt('page_title_prefix', 'Explora nuestras', 'Explore our') }}
+            <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('page_title_highlight', 'agencias', 'agencies') }}</span>
           </h1>
           <p class="mt-4 text-lg text-slate-600">
-            Encuentra una agencia y revisa sus agentes y propiedades.
+            {{ $txt('page_subtitle', 'Encuentra una agencia y revisa sus agentes y propiedades.', 'Find an agency and review its agents and properties.') }}
           </p>
         </div>
       </div>
@@ -34,11 +40,10 @@
 
     <section class="py-12 lg:py-16" style="background: linear-gradient(to bottom, var(--fe-properties-bg_from, #f8fafc), var(--fe-properties-bg_to, #ffffff));">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" x-data="mlsOfficesIndex()" x-init="init()">
-        {{-- Search bar --}}
         <div class="rounded-2xl border p-4 sm:p-6 shadow-sm mb-8" style="background-color: var(--fe-properties-filter_bg, #ffffff); border-color: var(--fe-properties-filter_border, #e2e8f0);">
           <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
             <div class="flex-1">
-              <label class="block text-xs font-semibold text-slate-600 mb-2">Buscar agencia</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-2">{{ $txt('search_label', 'Buscar agencia', 'Search agency') }}</label>
               <div class="relative">
                 <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-properties-filter_icon, #94a3b8);">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -46,39 +51,39 @@
                 <input type="text"
                        x-model="filters.search"
                        @input.debounce.300ms="applyFilters()"
-                       placeholder="Nombre, ciudad, email, MLS ID…"
+                       placeholder="{{ $txt('search_placeholder', 'Nombre, ciudad, email, MLS ID...','Name, city, email, MLS ID...') }}"
                        class="w-full pl-12 pr-4 py-3 rounded-xl transition-all focus:outline-none"
                        style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
               </div>
             </div>
 
             <div class="min-w-[190px]">
-              <label class="block text-xs font-semibold text-slate-600 mb-2">Orden</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-2">{{ $txt('sort_label', 'Orden', 'Sort by') }}</label>
               <select x-model="filters.order" @change="applyFilters()"
                       class="w-full px-4 py-3 rounded-xl transition-all appearance-none cursor-pointer focus:outline-none"
                       style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
-                <option value="name">Nombre</option>
-                <option value="city">Ciudad</option>
-                <option value="updated_at">Actualizado</option>
-                <option value="mls_office_id">MLS ID</option>
+                <option value="name">{{ $txt('sort_option_name', 'Nombre', 'Name') }}</option>
+                <option value="city">{{ $txt('sort_option_city', 'Ciudad', 'City') }}</option>
+                <option value="updated_at">{{ $txt('sort_option_updated', 'Actualizado', 'Updated') }}</option>
+                <option value="mls_office_id">{{ $txt('sort_option_mlsId', 'ID MLS', 'MLS ID') }}</option>
               </select>
             </div>
 
             <div class="min-w-[160px]">
-              <label class="block text-xs font-semibold text-slate-600 mb-2">Dirección</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-2">{{ $txt('direction_label', 'Direccion', 'Direction') }}</label>
               <select x-model="filters.sort" @change="applyFilters()"
                       class="w-full px-4 py-3 rounded-xl transition-all appearance-none cursor-pointer focus:outline-none"
                       style="background-color: var(--fe-properties-input_bg, #f8fafc); border: 1px solid var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
-                <option value="asc">Asc</option>
-                <option value="desc">Desc</option>
+                <option value="asc">{{ $txt('direction_option_asc', 'Ascendente', 'Ascending') }}</option>
+                <option value="desc">{{ $txt('direction_option_desc', 'Descendente', 'Descending') }}</option>
               </select>
             </div>
           </div>
 
           <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
             <div class="text-sm text-slate-600">
-              Mostrando <span x-text="pagination?.from || 0"></span> - <span x-text="pagination?.to || 0"></span>
-              de <span x-text="pagination?.total || 0"></span>
+              {{ $txt('showing_label', 'Mostrando', 'Showing') }} <span x-text="pagination?.from || 0"></span> - <span x-text="pagination?.to || 0"></span>
+              {{ $txt('of_label', 'de', 'of') }} <span x-text="pagination?.total || 0"></span>
             </div>
 
             <button @click="clearFilters()" x-show="hasFilters()"
@@ -86,15 +91,13 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
-              Limpiar
+              {{ $txt('clear_filters', 'Limpiar', 'Clear') }}
             </button>
           </div>
         </div>
 
-        {{-- Grid --}}
         <div id="officesGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"></div>
 
-        {{-- Empty --}}
         <div id="officesEmpty" class="hidden text-center py-16">
           <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-100 flex items-center justify-center">
             <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,22 +106,21 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V11l-6-4" />
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-slate-900 mb-2">No se encontraron agencias</h3>
-          <p class="text-slate-600">Intenta ajustar la búsqueda.</p>
+          <h3 class="text-xl font-semibold text-slate-900 mb-2">{{ $txt('empty_title', 'No se encontraron agencias', 'No agencies found') }}</h3>
+          <p class="text-slate-600">{{ $txt('empty_subtitle', 'Intenta ajustar la busqueda.', 'Try adjusting your search.') }}</p>
         </div>
 
-        {{-- Pagination --}}
         <div class="mt-10 pt-8 border-t border-slate-200 flex items-center justify-between gap-3">
           <button @click="goToPage((pagination?.current_page || 1) - 1)" :disabled="!(pagination?.current_page > 1)"
                   class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
-            Anterior
+            {{ $txt('pagination_previous', 'Anterior', 'Previous') }}
           </button>
           <div class="text-sm text-slate-600">
-            Página <span x-text="pagination?.current_page || 1"></span> de <span x-text="pagination?.last_page || 1"></span>
+            {{ $txt('pagination_page', 'Pagina', 'Page') }} <span x-text="pagination?.current_page || 1"></span> {{ $txt('of_label', 'de', 'of') }} <span x-text="pagination?.last_page || 1"></span>
           </div>
           <button @click="goToPage((pagination?.current_page || 1) + 1)" :disabled="!(pagination?.current_page < pagination?.last_page)"
                   class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
-            Siguiente
+            {{ $txt('pagination_next', 'Siguiente', 'Next') }}
           </button>
         </div>
       </div>
@@ -128,6 +130,9 @@
 
 @push('scripts')
   <script>
+    const tPublic = (key, fallback = '') => (window.publicT ? window.publicT(key, fallback) : fallback);
+    const isEnLocale = (window.__PUBLIC_LOCALE__ || 'es') === 'en';
+
     function mlsOfficesIndex() {
       return {
         filters: {
@@ -175,7 +180,7 @@
         },
 
         hasFilters() {
-          return !!(this.filters.search);
+          return !!this.filters.search;
         },
 
         applyFilters() {
@@ -255,8 +260,8 @@
 
             grid.innerHTML = this.offices.map((o) => {
               const img = o.image || o.image_url || null;
-              const name = o.name || `Agencia #${o.mls_office_id}`;
-              const location = [o.city, o.state_province].filter(Boolean).join(', ') || 'Ubicación disponible';
+              const name = o.name || `${tPublic('mls.offices.fallbackName', isEnLocale ? 'Agency' : 'Agencia')} #${o.mls_office_id}`;
+              const location = [o.city, o.state_province].filter(Boolean).join(', ') || tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible');
               const agentsCount = o.agents_count ?? 0;
               const propsCount = o.properties_count ?? 0;
 
@@ -277,11 +282,11 @@
                       ${esc(location)}
                     </div>
                     <div class="flex items-center justify-between text-sm text-slate-600 mb-5">
-                      <span class="inline-flex items-center gap-2"><span class="font-semibold text-slate-900">${esc(agentsCount)}</span> agentes</span>
-                      <span class="inline-flex items-center gap-2"><span class="font-semibold text-slate-900">${esc(propsCount)}</span> propiedades</span>
+                      <span class="inline-flex items-center gap-2"><span class="font-semibold text-slate-900">${esc(agentsCount)}</span> ${tPublic('mls.offices.countAgents', isEnLocale ? 'agents' : 'agentes')}</span>
+                      <span class="inline-flex items-center gap-2"><span class="font-semibold text-slate-900">${esc(propsCount)}</span> ${tPublic('mls.offices.countProperties', isEnLocale ? 'properties' : 'propiedades')}</span>
                     </div>
                     <a href="/agencias/${esc(o.mls_office_id)}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-                      Ver agencia
+                      ${tPublic('common.details', isEnLocale ? 'View agency' : 'Ver agencia')}
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </a>
                   </div>
@@ -298,4 +303,7 @@
     }
   </script>
 @endpush
+
+
+
 

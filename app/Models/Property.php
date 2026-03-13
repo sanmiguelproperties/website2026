@@ -192,6 +192,63 @@ class Property extends Model
         };
     }
 
+
+    /**
+     * Returns the best title for the active locale.
+     */
+    public function titleForLocale(?string $locale = null): ?string
+    {
+        $locale = $locale ?? app()->getLocale();
+
+        if ($locale === 'en' && !empty($this->title)) {
+            return $this->title;
+        }
+
+        return $this->title;
+    }
+
+    /**
+     * Returns the best description for the active locale.
+     */
+    public function descriptionForLocale(?string $locale = null): ?string
+    {
+        $locale = $locale ?? app()->getLocale();
+
+        if ($locale === 'en') {
+            return $this->description_full_en
+                ?? $this->description_short_en
+                ?? $this->description
+                ?? $this->description_full_es
+                ?? $this->description_short_es;
+        }
+
+        return $this->description_full_es
+            ?? $this->description_short_es
+            ?? $this->description
+            ?? $this->description_full_en
+            ?? $this->description_short_en;
+    }
+
+    /**
+     * Returns a shorter text for listing cards.
+     */
+    public function shortDescriptionForLocale(?string $locale = null): ?string
+    {
+        $locale = $locale ?? app()->getLocale();
+
+        if ($locale === 'en') {
+            return $this->description_short_en
+                ?? $this->description_full_en
+                ?? $this->description
+                ?? $this->description_short_es;
+        }
+
+        return $this->description_short_es
+            ?? $this->description_full_es
+            ?? $this->description
+            ?? $this->description_short_en;
+    }
+
     public function agency(): BelongsTo
     {
         return $this->belongsTo(Agency::class, 'agency_id');
@@ -251,4 +308,5 @@ class Property extends Model
             ->withTimestamps();
     }
 }
+
 

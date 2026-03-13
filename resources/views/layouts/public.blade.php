@@ -1,11 +1,34 @@
 <!DOCTYPE html>
-<html lang="es" class="scroll-smooth">
+<html lang="{{ app()->getLocale() }}" class="scroll-smooth">
 <head>
+    @php
+        $pageData = $pageData ?? null;
+        $currentLocale = app()->getLocale() === 'en' ? 'en' : 'es';
+        $txt = static fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($currentLocale === 'en' ? $en : $es);
+        $pageEntity = $pageData?->entity;
+
+        $seoTitle = $pageEntity && method_exists($pageEntity, 'metaTitle')
+            ? ($pageEntity->metaTitle($currentLocale) ?: ($pageEntity->title($currentLocale) ?: 'San Miguel Properties'))
+            : 'San Miguel Properties';
+
+        $seoDescription = $pageEntity && method_exists($pageEntity, 'metaDescription')
+            ? ($pageEntity->metaDescription($currentLocale) ?: 'San Miguel Properties - Real estate portal in San Miguel de Allende.')
+            : ($currentLocale === 'en'
+                ? 'San Miguel Properties - Real estate portal in San Miguel de Allende.'
+                : 'San Miguel Properties - Portal inmobiliario en San Miguel de Allende.');
+
+        $seoKeywords = $currentLocale === 'en'
+            ? ($pageEntity->meta_keywords_en ?? null)
+            : ($pageEntity->meta_keywords_es ?? null);
+    @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="San Miguel Properties - Tu portal inmobiliario de confianza. Encuentra casas, departamentos y terrenos en venta y renta.">
+    <meta name="description" content="{{ $seoDescription }}">
+    @if(!empty($seoKeywords))
+        <meta name="keywords" content="{{ $seoKeywords }}">
+    @endif
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'San Miguel Properties - Portal Inmobiliario')</title>
+    <title>@yield('title', $seoTitle)</title>
 
     <!-- Favicon -->
     <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
@@ -16,10 +39,12 @@
 
     <!-- Frontend Color Variables (Dynamic from Database) -->
     @php
+        $pageData = $pageData ?? null;
+        $settings = $settings ?? [];
         $frontendColorService = app(\App\Services\FrontendColorService::class);
-        // Detectar la vista actual basándose en la ruta
+        // Detectar la vista actual basÃƒÆ’Ã‚Â¡ndose en la ruta
         $currentView = $frontendColorService->detectCurrentView();
-        // Generar CSS con colores combinados (global + vista específica)
+        // Generar CSS con colores combinados (global + vista especÃƒÆ’Ã‚Â­fica)
         $frontendCss = $frontendColorService->generateCssForView($currentView);
 
         // CMS Site Settings (logos, contacto, etc.) - disponibles en todo el layout
@@ -28,7 +53,76 @@
         $siteLogoDark = $cmsSettings->firstWhere('setting_key', 'site_logo_dark');
         $siteLogoUrl = $siteLogo?->mediaAsset?->serving_url ?? $siteLogo?->mediaAsset?->url;
         $siteLogoDarkUrl = $siteLogoDark?->mediaAsset?->serving_url ?? $siteLogoDark?->mediaAsset?->url;
-        $siteName = $cmsSettings->firstWhere('setting_key', 'site_name')?->value_es ?? 'San Miguel Properties';
+        $siteName = $cmsSettings->firstWhere('setting_key', 'site_name')?->value(app()->getLocale())
+            ?? $cmsSettings->firstWhere('setting_key', 'site_name')?->value_es
+            ?? 'San Miguel Properties';
+
+        $currentLocale = app()->getLocale() === 'en' ? 'en' : 'es';
+        $pageEntity = $pageData?->entity;
+        $pageTitle = $pageEntity && method_exists($pageEntity, 'title')
+            ? $pageEntity->title($currentLocale)
+            : null;
+        $seoTitle = $pageEntity && method_exists($pageEntity, 'metaTitle')
+            ? ($pageEntity->metaTitle($currentLocale) ?: $pageTitle ?: $siteName)
+            : ($pageTitle ?: $siteName);
+
+        $seoDefaultDescription = $currentLocale === 'en'
+            ? 'San Miguel Properties - Real estate portal in San Miguel de Allende.'
+            : 'San Miguel Properties - Portal inmobiliario en San Miguel de Allende.';
+
+        $seoDescription = $pageEntity && method_exists($pageEntity, 'metaDescription')
+            ? ($pageEntity->metaDescription($currentLocale) ?: $seoDefaultDescription)
+            : $seoDefaultDescription;
+
+        $seoKeywords = $currentLocale === 'en'
+            ? ($pageEntity->meta_keywords_en ?? null)
+            : ($pageEntity->meta_keywords_es ?? null);
+
+        $pageFields = method_exists($pageData, 'allFields')
+            ? $pageData->allFields($currentLocale)
+            : [];
+
+        $pageTranslations = [];
+        foreach ($pageFields as $fieldKey => $fieldValue) {
+            if (str_starts_with($fieldKey, 'i18n_') && filled($fieldValue)) {
+                $translationKey = str_replace('_', '.', substr($fieldKey, 5));
+                $pageTranslations[$translationKey] = $fieldValue;
+            }
+        }
+
+        $contactSettings = $settings ?? \App\Services\CmsService::settings('contact', $currentLocale);
+        $publicContact = [
+            'phone' => $contactSettings['contact_phone'] ?? '+52 55 1234 5678',
+            'email' => $contactSettings['contact_email'] ?? 'info@sanmiguelproperties.com',
+            'whatsapp' => $contactSettings['contact_whatsapp'] ?? '+525512345678',
+        ];
+
+        $globalTranslations = [
+            'common.details' => $currentLocale === 'en' ? 'View details' : 'Ver detalles',
+            'common.properties' => $currentLocale === 'en' ? 'Property' : 'Propiedad',
+            'common.available' => $currentLocale === 'en' ? 'Available property' : 'Propiedad disponible',
+            'common.sale' => $currentLocale === 'en' ? 'For sale' : 'En venta',
+            'common.rent' => $currentLocale === 'en' ? 'For rent' : 'En renta',
+            'common.locationAvailable' => $currentLocale === 'en' ? 'Location available' : 'UbicaciÃƒÆ’Ã‚Â³n disponible',
+            'common.consultPrice' => $currentLocale === 'en' ? 'Ask for price' : 'Consultar precio',
+            'common.operation' => $currentLocale === 'en' ? 'Operation' : 'OperaciÃƒÆ’Ã‚Â³n',
+            'common.updated' => $currentLocale === 'en' ? 'Updated' : 'Actualizado',
+            'property.unknownError' => $currentLocale === 'en' ? 'Unexpected error' : 'Error inesperado',
+            'property.networkError' => $currentLocale === 'en' ? 'Network error while loading the property.' : 'Error de red al cargar la propiedad.',
+            'property.noDescription' => $currentLocale === 'en' ? 'No description available.' : 'Sin descripciÃƒÆ’Ã‚Â³n.',
+            'property.noFeatures' => $currentLocale === 'en' ? 'No features' : 'Sin caracterÃƒÆ’Ã‚Â­sticas',
+            'property.noTags' => $currentLocale === 'en' ? 'No tags' : 'Sin etiquetas',
+            'property.noExtraInfo' => $currentLocale === 'en' ? 'No additional information available for this property.' : 'No hay informaciÃƒÆ’Ã‚Â³n adicional registrada para esta propiedad.',
+            'property.operationAsk' => $currentLocale === 'en' ? 'Check availability' : 'Consultar disponibilidad',
+            'property.contactUnavailable' => $currentLocale === 'en' ? 'Contact not available' : 'Contacto no disponible',
+            'property.copiedLink' => $currentLocale === 'en' ? 'Link copied to clipboard' : 'Enlace copiado al portapapeles',
+            'property.missingId' => $currentLocale === 'en' ? 'Property ID was not provided.' : 'No se recibiÃƒÆ’Ã‚Â³ el ID de la propiedad.',
+            'contact.requiredFields' => $currentLocale === 'en' ? 'Please complete all required fields.' : 'Por favor completa todos los campos requeridos.',
+            'contact.acceptPrivacy' => $currentLocale === 'en' ? 'You must accept the privacy policy.' : 'Debes aceptar la polÃƒÆ’Ã‚Â­tica de privacidad.',
+            'contact.submitSuccess' => $currentLocale === 'en' ? 'Message sent successfully! We will contact you soon.' : 'Ãƒâ€šÃ‚Â¡Mensaje enviado con ÃƒÆ’Ã‚Â©xito! Nos pondremos en contacto contigo pronto.',
+            'contact.submitError' => $currentLocale === 'en' ? 'There was an error sending your message. Please try again.' : 'Hubo un error al enviar el mensaje. Por favor intenta de nuevo.',
+            'contact.connectionError' => $currentLocale === 'en' ? 'Connection error. Please check your internet and try again.' : 'Error de conexiÃƒÆ’Ã‚Â³n. Por favor verifica tu conexiÃƒÆ’Ã‚Â³n a internet e intenta de nuevo.',
+        ];
     @endphp
     <style id="frontend-color-variables">
         /* Vista actual: {{ $currentView }} */
@@ -139,7 +233,7 @@
 
     <!-- Custom Styles (Using Dynamic Variables) -->
     <style>
-        /* Scrollbar personalizado - Usa variables CSS dinámicas */
+        /* Scrollbar personalizado - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -155,7 +249,7 @@
             background: linear-gradient(180deg, var(--fe-ui-scrollbar_hover_from, #A52A2A), var(--fe-ui-scrollbar_hover_to, #768D59));
         }
 
-        /* Gradient text helper - Usa variables CSS dinámicas */
+        /* Gradient text helper - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
         .text-gradient {
             background: linear-gradient(135deg, var(--fe-primary-from, #D1A054) 0%, var(--fe-primary-to, #768D59) 100%);
             -webkit-background-clip: text;
@@ -163,7 +257,7 @@
             background-clip: text;
         }
 
-        /* Gradient border helper - Usa variables CSS dinámicas */
+        /* Gradient border helper - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
         .border-gradient {
             border: 2px solid transparent;
             background: linear-gradient(white, white) padding-box, linear-gradient(135deg, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59)) border-box;
@@ -176,7 +270,7 @@
             -webkit-backdrop-filter: blur(12px);
         }
 
-        /* Swiper custom styles - Usa variables CSS dinámicas */
+        /* Swiper custom styles - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
         .swiper-pagination-bullet {
             width: 12px;
             height: 12px;
@@ -224,7 +318,7 @@
             100% { background-position: -200% 0; }
         }
 
-        /* Filter chip active state - Usa variables CSS dinámicas */
+        /* Filter chip active state - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
         .filter-chip.active {
             background: linear-gradient(135deg, var(--fe-filters-active_from, #D1A054), var(--fe-filters-active_to, #768D59));
             color: white;
@@ -248,14 +342,14 @@
             background: linear-gradient(135deg, rgba(209, 160, 84, 0.85) 0%, rgba(118, 141, 89, 0.75) 100%);
         }
 
-        /* Clases de utilidad para usar variables CSS dinámicas */
+        /* Clases de utilidad para usar variables CSS dinÃƒÆ’Ã‚Â¡micas */
         
         /* Gradientes primarios */
         .bg-fe-gradient-primary {
             background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));
         }
         
-        /* Gradiente para títulos hero */
+        /* Gradiente para tÃƒÆ’Ã‚Â­tulos hero */
         .text-fe-hero-gradient {
             background: linear-gradient(to right, var(--fe-hero-title_gradient_from, #D1A054), var(--fe-hero-title_gradient_via, #FFFAF5), var(--fe-hero-title_gradient_to, #768D59));
             -webkit-background-clip: text;
@@ -317,7 +411,7 @@
     @include('components.public.footer')
 
     <!-- Back to Top Button -->
-    <button id="backToTop" class="fixed bottom-8 right-8 z-50 hidden w-12 h-12 rounded-full text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl focus:outline-none focus:ring-4" style="background: linear-gradient(to right, var(--fe-ui-back_to_top_from, #D1A054), var(--fe-ui-back_to_top_to, #768D59)); --tw-ring-color: rgba(209,160,84,0.2);" aria-label="Volver arriba">
+    <button id="backToTop" class="fixed bottom-8 right-8 z-50 hidden w-12 h-12 rounded-full text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl focus:outline-none focus:ring-4" style="background: linear-gradient(to right, var(--fe-ui-back_to_top_from, #D1A054), var(--fe-ui-back_to_top_to, #768D59)); --tw-ring-color: rgba(209,160,84,0.2);" aria-label="{{ $txt('layout_back_to_top_aria', 'Volver arriba', 'Back to top') }}">
         <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
         </svg>
@@ -331,6 +425,59 @@
 
     <!-- Main Scripts -->
     <script>
+        window.__PUBLIC_LOCALE__ = @json($currentLocale);
+        window.__PUBLIC_CONTACT__ = @json($publicContact);
+        window.__PUBLIC_TRANSLATIONS__ = @json($globalTranslations);
+        window.__PUBLIC_PAGE_TRANSLATIONS__ = @json($pageTranslations);
+
+        window.publicT = function (key, fallback = '') {
+            if (window.__PUBLIC_PAGE_TRANSLATIONS__ && Object.prototype.hasOwnProperty.call(window.__PUBLIC_PAGE_TRANSLATIONS__, key)) {
+                return window.__PUBLIC_PAGE_TRANSLATIONS__[key];
+            }
+            if (window.__PUBLIC_TRANSLATIONS__ && Object.prototype.hasOwnProperty.call(window.__PUBLIC_TRANSLATIONS__, key)) {
+                return window.__PUBLIC_TRANSLATIONS__[key];
+            }
+            return fallback;
+        };
+
+        (function () {
+            const locale = window.__PUBLIC_LOCALE__ || 'es';
+            const nativeFetch = window.fetch.bind(window);
+
+            window.fetch = function (input, init = {}) {
+                let nextInput = input;
+                let nextInit = init || {};
+
+                try {
+                    const base = window.location.origin;
+                    const rawUrl = typeof input === 'string' ? input : (input instanceof Request ? input.url : null);
+                    if (rawUrl) {
+                        const parsed = new URL(rawUrl, base);
+                        if (parsed.origin === base && parsed.pathname.startsWith('/api/')) {
+                            if (!parsed.searchParams.has('locale') && !parsed.searchParams.has('lang')) {
+                                parsed.searchParams.set('locale', locale);
+                            }
+
+                            if (input instanceof Request) {
+                                nextInput = new Request(parsed.toString(), input);
+                            } else {
+                                nextInput = parsed.toString();
+                            }
+
+                            const headers = new Headers(nextInit.headers || (input instanceof Request ? input.headers : undefined));
+                            if (!headers.has('X-Locale')) {
+                                headers.set('X-Locale', locale);
+                            }
+                            nextInit.headers = headers;
+                        }
+                    }
+                } catch (_error) {
+                    // noop
+                }
+
+                return nativeFetch(nextInput, nextInit);
+            };
+        })();
         // Preloader
         window.addEventListener('load', function() {
             const preloader = document.getElementById('preloader');
@@ -368,7 +515,7 @@
 
         // Format currency helper
         function formatCurrency(amount, currency = 'MXN') {
-            return new Intl.NumberFormat('es-MX', {
+            return new Intl.NumberFormat((window.__PUBLIC_LOCALE__ === 'en') ? 'en-US' : 'es-MX', {
                 style: 'currency',
                 currency: currency,
                 minimumFractionDigits: 0,
@@ -406,3 +553,5 @@
     @stack('scripts')
 </body>
 </html>
+
+

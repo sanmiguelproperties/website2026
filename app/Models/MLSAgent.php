@@ -95,10 +95,20 @@ class MLSAgent extends Model
             ->withPivot('is_primary')
             ->withTimestamps();
     }
-
     /**
-     * Scope para agentes activos.
+     * Returns the best bio for the active locale.
      */
+    public function bioForLocale(?string $locale = null): ?string
+    {
+        $locale = $locale ?? app()->getLocale();
+
+        if ($locale === 'en') {
+            return $this->bio ?? $this->bio_es;
+        }
+
+        return $this->bio_es ?? $this->bio;
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -158,3 +168,7 @@ class MLSAgent extends Model
         return !empty($this->photo);
     }
 }
+
+
+
+

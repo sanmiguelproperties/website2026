@@ -72,9 +72,17 @@ QUEUE_CONNECTION=database
 chmod -R 775 storage
 chmod -R 775 bootstrap/cache
 
+# ⚠️ IMPORTANTE: Passport OAuth keys requieren permisos restrictivos (600 o 660)
+# Si no existen, generarlos primero:
+php artisan passport:keys --force
+
+# Ajustar permisos de las claves OAuth (OBLIGATORIO después de chmod -R 775):
+chmod 600 storage/oauth-private.key
+chmod 600 storage/oauth-public.key
+
 # Asegurar que el propietario sea correcto
 chown -R www-data:www-data storage bootstrap/cache
-# En algunos hostings puede ser:
+# En algunos hostings compartidos puede ser:
 # chown -R usuario:usuario storage bootstrap/cache
 ```
 

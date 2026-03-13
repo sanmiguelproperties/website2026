@@ -110,6 +110,20 @@ class MLSOffice extends Model
         return !empty($this->image);
     }
 
+    /**
+     * Returns the best office description for the active locale.
+     */
+    public function descriptionForLocale(?string $locale = null): ?string
+    {
+        $locale = $locale ?? app()->getLocale();
+
+        if ($locale === 'en') {
+            return $this->description ?? $this->description_es;
+        }
+
+        return $this->description_es ?? $this->description;
+    }
+
     public function agents(): HasMany
     {
         return $this->hasMany(MLSAgent::class, 'mls_office_id', 'mls_office_id');
@@ -120,4 +134,5 @@ class MLSOffice extends Model
         return $this->hasMany(Property::class, 'mls_office_id', 'mls_office_id');
     }
 }
+
 

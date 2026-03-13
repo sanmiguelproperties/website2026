@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Administrar Agentes MLS')
 
@@ -50,7 +50,7 @@
           <label class="block text-xs text-[var(--c-muted)] mb-1">Buscar</label>
           <div class="flex items-center gap-2 rounded-xl bg-[var(--c-elev)] px-3 py-2 ring-1 ring-[var(--c-border)] focus-within:ring-[var(--c-primary)]">
             <svg class="size-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input id="filter-search" type="search" placeholder="Nombre, email, oficina, MLS ID…" class="bg-transparent outline-none w-full text-sm placeholder:text-[var(--c-muted)]" />
+            <input id="filter-search" type="search" placeholder="Nombre, email, oficina, MLS IDâ€¦" class="bg-transparent outline-none w-full text-sm placeholder:text-[var(--c-muted)]" />
           </div>
         </div>
 
@@ -66,8 +66,8 @@
         <div class="lg:col-span-4">
           <label class="block text-xs text-[var(--c-muted)] mb-1">Orden</label>
           <select id="filter-order" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm">
-            <option value="name:asc" selected>Nombre (A–Z)</option>
-            <option value="name:desc">Nombre (Z–A)</option>
+            <option value="name:asc" selected>Nombre (Aâ€“Z)</option>
+            <option value="name:desc">Nombre (Zâ€“A)</option>
             <option value="updated_at:desc">Actualizado (desc)</option>
             <option value="updated_at:asc">Actualizado (asc)</option>
             <option value="created_at:desc">Creado (desc)</option>
@@ -80,9 +80,9 @@
 
       <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2 text-sm text-[var(--c-muted)]">
-          <span id="agents-count">—</span>
-          <span class="opacity-60">•</span>
-          <span id="agents-page">—</span>
+          <span id="agents-count">â€”</span>
+          <span class="opacity-60">â€¢</span>
+          <span id="agents-page">â€”</span>
         </div>
 
         <div class="flex items-center gap-2">
@@ -140,7 +140,7 @@
       <div class="px-6 py-4 border-b border-[var(--c-border)] flex items-center justify-between gap-3">
         <div class="min-w-0">
           <h3 id="agent-drawer-title" class="text-lg font-semibold truncate">Nuevo agente MLS</h3>
-          <p id="agent-drawer-subtitle" class="text-xs text-[var(--c-muted)]">Completa la información del agente</p>
+          <p id="agent-drawer-subtitle" class="text-xs text-[var(--c-muted)]">Completa la informaciÃ³n del agente</p>
         </div>
         <div class="flex items-center gap-2">
           <button id="btn-agent-save" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 transition">
@@ -209,7 +209,7 @@
               <label class="block text-sm font-medium mb-1">Activo</label>
               <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
                 <input id="field-is-active" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]" checked>
-                <span class="text-sm">Sí</span>
+                <span class="text-sm">SÃ­</span>
               </label>
             </div>
           </div>
@@ -237,7 +237,7 @@
               <input id="field-email" type="email" maxlength="255" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="email@ejemplo.com" />
             </div>
             <div class="md:col-span-4">
-              <label class="block text-sm font-medium mb-1">Teléfono</label>
+              <label class="block text-sm font-medium mb-1">TelÃ©fono</label>
               <input id="field-phone" type="text" maxlength="50" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="+52 415 123 4567" />
             </div>
             <div class="md:col-span-4">
@@ -249,7 +249,7 @@
           <!-- Licencia y website -->
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div class="md:col-span-4">
-              <label class="block text-sm font-medium mb-1">Número de licencia</label>
+              <label class="block text-sm font-medium mb-1">NÃºmero de licencia</label>
               <input id="field-license-number" type="text" maxlength="100" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Licencia" />
             </div>
             <div class="md:col-span-4">
@@ -262,14 +262,18 @@
                 <input id="field-user-id" type="number" min="1" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="ID de usuario" />
                 <button id="btn-find-user" type="button" class="px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] hover:bg-[var(--c-surface)] transition">Buscar</button>
               </div>
-              <p id="user-preview" class="mt-1 text-xs text-[var(--c-muted)]">—</p>
+              <p id="user-preview" class="mt-1 text-xs text-[var(--c-muted)]">â€”</p>
             </div>
-          </div>
-
-          <!-- Bio -->
-          <div>
-            <label class="block text-sm font-medium mb-1">Biografía</label>
-            <textarea id="field-bio" rows="4" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Biografía del agente…"></textarea>
+          </div>          <!-- Bio -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">BiografÃ­a (EN)</label>
+              <textarea id="field-bio" rows="4" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Bio del agente en inglÃ©sâ€¦"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">BiografÃ­a (ES)</label>
+              <textarea id="field-bio-es" rows="4" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Bio del agente en espaÃ±olâ€¦"></textarea>
+            </div>
           </div>
         </section>
 
@@ -286,7 +290,7 @@
           <div class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)] p-4">
             <h5 class="text-sm font-medium mb-2">Agregar propiedades</h5>
             <div class="flex items-center gap-2">
-              <input id="attach-property-ids" type="text" class="w-full px-3 py-2 rounded-xl bg-[var(--c-surface)] border border-[var(--c-border)] text-sm" placeholder="IDs separados por coma: 1, 5, 12…" />
+              <input id="attach-property-ids" type="text" class="w-full px-3 py-2 rounded-xl bg-[var(--c-surface)] border border-[var(--c-border)] text-sm" placeholder="IDs separados por coma: 1, 5, 12â€¦" />
               <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-surface)] border border-[var(--c-border)] px-3 py-2 text-sm whitespace-nowrap">
                 <input id="attach-is-primary" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
                 Principal
@@ -301,10 +305,10 @@
               <thead>
                 <tr class="text-left text-xs text-[var(--c-muted)] bg-[var(--c-elev)]">
                   <th class="py-2 px-3">ID</th>
-                  <th class="py-2 px-3">Título</th>
+                  <th class="py-2 px-3">TÃ­tulo</th>
                   <th class="py-2 px-3">MLS ID</th>
                   <th class="py-2 px-3">Principal</th>
-                  <th class="py-2 px-3 text-right">—</th>
+                  <th class="py-2 px-3 text-right">â€”</th>
                 </tr>
               </thead>
               <tbody id="agent-properties-tbody" class="divide-y divide-[var(--c-border)]">
@@ -335,7 +339,7 @@
   <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" data-js="sync-overlay"></div>
   <div class="absolute inset-0 flex items-center justify-center p-4">
     <div class="bg-[var(--c-surface)] rounded-2xl border border-[var(--c-border)] shadow-2xl max-w-md w-full p-6">
-      <h3 id="sync-modal-title" class="text-lg font-semibold text-[var(--c-text)]">Sincronizando…</h3>
+      <h3 id="sync-modal-title" class="text-lg font-semibold text-[var(--c-text)]">Sincronizandoâ€¦</h3>
       <p id="sync-modal-message" class="mt-2 text-sm text-[var(--c-muted)]">Espera mientras se obtienen los agentes del MLS.</p>
       <div id="sync-modal-spinner" class="mt-4 flex justify-center">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--c-primary)]"></div>
@@ -354,14 +358,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
   const API_TOKEN = document.querySelector('meta[name="api-token"]')?.getAttribute('content') || '';
 
-  // Permite que el botón global del header (layouts/app) ejecute esta acción.
+  // Permite que el botÃ³n global del header (layouts/app) ejecute esta acciÃ³n.
   window.dashNewAction = () => openDrawerForCreate();
 
   if (!API_TOKEN) {
     window.dispatchEvent(new CustomEvent('api:response', {
       detail: {
         success: false,
-        message: 'No se encontró un token de acceso válido. Por favor inicia sesión nuevamente.',
+        message: 'No se encontrÃ³ un token de acceso vÃ¡lido. Por favor inicia sesiÃ³n nuevamente.',
         code: 'TOKEN_MISSING',
         errors: { auth: ['Token requerido'] }
       }
@@ -398,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function fmtDate(iso) {
-    if (!iso) return '—';
+    if (!iso) return 'â€”';
     try {
       const d = new Date(iso);
       if (Number.isNaN(d.getTime())) return String(iso);
@@ -517,9 +521,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     items.forEach((a) => {
       const displayName = a.name || [a.first_name, a.last_name].filter(Boolean).join(' ') || `Agente #${a.mls_agent_id}`;
-      const email = a.email || '—';
-      const office = a.office_name || (a.mls_office_id ? `Oficina #${a.mls_office_id}` : '—');
-      const propertiesCount = a.properties_count ?? a.properties?.length ?? '—';
+      const email = a.email || 'â€”';
+      const office = a.office_name || (a.mls_office_id ? `Oficina #${a.mls_office_id}` : 'â€”');
+      const propertiesCount = a.properties_count ?? a.properties?.length ?? 'â€”';
 
       // Photo: usar serving_url (local si fue descargada) > photo accessor > url > photo_url
       const photoUrl = a.photo || a.photo_media_asset?.serving_url || a.photo_media_asset?.url || a.photo_url || null;
@@ -582,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const last = paginated?.last_page ?? 1;
 
     countEl.textContent = `${total} total`;
-    pageEl.textContent = `Página ${current} de ${last}`;
+    pageEl.textContent = `PÃ¡gina ${current} de ${last}`;
 
     prevBtn.disabled = !(paginated?.prev_page_url);
     nextBtn.disabled = !(paginated?.next_page_url);
@@ -653,7 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#agent-id').value = '';
 
     $('#agent-drawer-title').textContent = 'Nuevo agente MLS';
-    $('#agent-drawer-subtitle').textContent = 'Completa la información del agente';
+    $('#agent-drawer-subtitle').textContent = 'Completa la informaciÃ³n del agente';
 
     $('#btn-agent-delete').classList.add('hidden');
 
@@ -682,10 +686,11 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#field-license-number').value = '';
     $('#field-website').value = '';
     $('#field-user-id').value = '';
-    $('#user-preview').textContent = '—';
+    $('#user-preview').textContent = 'â€”';
 
     // Bio
     $('#field-bio').value = '';
+    $('#field-bio-es').value = '';
 
     // Media input
     const photoInput = document.querySelector('input[name="photo_media_asset_id"]');
@@ -706,7 +711,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const displayName = a.name || [a.first_name, a.last_name].filter(Boolean).join(' ') || `Agente #${a.mls_agent_id}`;
     $('#agent-drawer-title').textContent = `Editar agente #${a.id}`;
-    $('#agent-drawer-subtitle').textContent = `MLS ID: ${a.mls_agent_id} • ${displayName}`;
+    $('#agent-drawer-subtitle').textContent = `MLS ID: ${a.mls_agent_id} â€¢ ${displayName}`;
 
     $('#btn-agent-delete').classList.remove('hidden');
 
@@ -742,13 +747,14 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#field-website').value = a.website ?? '';
     $('#field-user-id').value = a.user_id ?? '';
     if (a.user) {
-      $('#user-preview').textContent = `${a.user.name || 'Usuario'} (${a.user.email || '—'})`;
+      $('#user-preview').textContent = `${a.user.name || 'Usuario'} (${a.user.email || 'â€”'})`;
     } else {
-      $('#user-preview').textContent = '—';
+      $('#user-preview').textContent = 'â€”';
     }
 
     // Bio
     $('#field-bio').value = a.bio ?? '';
+    $('#field-bio-es').value = a.bio_es ?? '';
 
     // Media input
     const photoInput = document.querySelector('input[name="photo_media_asset_id"]');
@@ -775,15 +781,15 @@ document.addEventListener('DOMContentLoaded', () => {
     empty.classList.add('hidden');
 
     properties.forEach(p => {
-      const isPrimary = p.pivot?.is_primary ? 'Sí' : 'No';
+      const isPrimary = p.pivot?.is_primary ? 'SÃ­' : 'No';
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="py-2 px-3 text-[var(--c-text)]">#${escapeHtml(p.id)}</td>
-        <td class="py-2 px-3 text-[var(--c-text)]">${escapeHtml(p.title || '(Sin título)')}</td>
-        <td class="py-2 px-3 text-[var(--c-muted)]">${escapeHtml(p.mls_id || p.mls_public_id || '—')}</td>
+        <td class="py-2 px-3 text-[var(--c-text)]">${escapeHtml(p.title || '(Sin tÃ­tulo)')}</td>
+        <td class="py-2 px-3 text-[var(--c-muted)]">${escapeHtml(p.mls_id || p.mls_public_id || 'â€”')}</td>
         <td class="py-2 px-3">
           ${p.pivot?.is_primary
-            ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-100">Sí</span>'
+            ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-100">SÃ­</span>'
             : '<span class="text-xs text-[var(--c-muted)]">No</span>'}
         </td>
         <td class="py-2 px-3 text-right">
@@ -841,7 +847,9 @@ document.addEventListener('DOMContentLoaded', () => {
       photo_url: toStrOrNull($('#field-photo-url').value),
       photo_media_asset_id: toInt(document.querySelector('input[name="photo_media_asset_id"]')?.value),
       license_number: toStrOrNull($('#field-license-number').value),
+      
       bio: toStrOrNull($('#field-bio').value),
+      bio_es: toStrOrNull($('#field-bio-es').value),
       website: toStrOrNull($('#field-website').value),
       is_active: $('#field-is-active').checked,
       user_id: toInt($('#field-user-id').value),
@@ -858,7 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const payload = buildPayloadFromForm();
 
-    // Validación mínima de cliente
+    // ValidaciÃ³n mÃ­nima de cliente
     if (!payload.mls_agent_id) {
       window.dispatchEvent(new CustomEvent('api:response', {
         detail: {
@@ -895,7 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function deleteAgent(id) {
-    if (!confirm('¿Eliminar este agente MLS? Esta acción no se puede deshacer.')) return;
+    if (!confirm('Â¿Eliminar este agente MLS? Esta acciÃ³n no se puede deshacer.')) return;
 
     try {
       const res = await apiFetch(`${API_BASE}/mls-agents/${id}`, { method: 'DELETE' });
@@ -956,7 +964,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function detachProperty(propertyId) {
     const agentId = $('#agent-id').value;
     if (!agentId) return;
-    if (!confirm('¿Desasociar esta propiedad del agente?')) return;
+    if (!confirm('Â¿Desasociar esta propiedad del agente?')) return;
 
     try {
       const res = await apiFetch(`${API_BASE}/mls-agents/${agentId}/properties`, {
@@ -987,7 +995,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Show modal
     modal.classList.remove('hidden');
-    title.textContent = 'Sincronizando agentes…';
+    title.textContent = 'Sincronizando agentesâ€¦';
     message.textContent = 'Procesando agentes del MLS por lotes. No cierres esta ventana.';
     spinner.classList.remove('hidden');
     result.classList.remove('hidden');
@@ -995,7 +1003,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="w-full bg-[var(--c-elev)] rounded-full h-3 border border-[var(--c-border)]">
         <div id="sync-progress-bar" class="bg-purple-600 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
       </div>
-      <p id="sync-progress-text" class="text-xs text-[var(--c-muted)] text-center mt-1">Iniciando…</p>
+      <p id="sync-progress-text" class="text-xs text-[var(--c-muted)] text-center mt-1">Iniciandoâ€¦</p>
     `;
     closeBtn.classList.add('hidden');
 
@@ -1017,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (!res?.success) {
-          throw { message: res?.data?.message || res?.message || 'Error en la sincronización' };
+          throw { message: res?.data?.message || res?.message || 'Error en la sincronizaciÃ³n' };
         }
 
         const d = res.data || {};
@@ -1035,11 +1043,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = $('#sync-progress-text');
         if (bar) bar.style.width = `${Math.min(pct, 100)}%`;
         if (text) text.textContent = `${totalProcessed}${totalInMls ? '/' + totalInMls : ''} agentes procesados (${pct}%)`;
-        message.textContent = completed ? 'Sincronización completada.' : `Procesando lote… offset ${offset}`;
+        message.textContent = completed ? 'SincronizaciÃ³n completada.' : `Procesando loteâ€¦ offset ${offset}`;
       }
 
       spinner.classList.add('hidden');
-      title.textContent = '✅ Sincronización completada';
+      title.textContent = 'âœ… SincronizaciÃ³n completada';
       message.textContent = '';
       result.innerHTML = `
         <div class="grid grid-cols-2 gap-2">
@@ -1067,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadAgents(1);
     } catch (e) {
       spinner.classList.add('hidden');
-      title.textContent = '❌ Error de sincronización';
+      title.textContent = 'âŒ Error de sincronizaciÃ³n';
       message.textContent = e?.message || 'No se pudieron sincronizar los agentes.';
       if (totalProcessed > 0) {
         result.innerHTML += `<p class="text-xs text-[var(--c-muted)] mt-2">Se procesaron ${totalProcessed} agentes antes del error (${totalCreated} creados, ${totalUpdated} actualizados).</p>`;
@@ -1090,7 +1098,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = $('#sync-modal-close');
 
     modal.classList.remove('hidden');
-    title.textContent = 'Vinculando agentes a propiedades…';
+    title.textContent = 'Vinculando agentes a propiedadesâ€¦';
     message.textContent = 'Consultando el API del MLS para obtener los agentes de cada propiedad.';
     spinner.classList.remove('hidden');
     result.classList.remove('hidden');
@@ -1098,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="w-full bg-[var(--c-elev)] rounded-full h-3 border border-[var(--c-border)]">
         <div id="rel-progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
       </div>
-      <p id="rel-progress-text" class="text-xs text-[var(--c-muted)] text-center mt-1">Iniciando…</p>
+      <p id="rel-progress-text" class="text-xs text-[var(--c-muted)] text-center mt-1">Iniciandoâ€¦</p>
     `;
     closeBtn.classList.add('hidden');
 
@@ -1134,12 +1142,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const bar = $('#rel-progress-bar');
         const text = $('#rel-progress-text');
         if (bar) bar.style.width = `${Math.min(pct, 100)}%`;
-        if (text) text.textContent = `${totalProcessed}${totalProperties ? '/' + totalProperties : ''} propiedades (${pct}%) — ${totalLinked} vínculos creados`;
-        message.textContent = completed ? 'Vinculación completada.' : `Procesando lote… offset ${offset}`;
+        if (text) text.textContent = `${totalProcessed}${totalProperties ? '/' + totalProperties : ''} propiedades (${pct}%) â€” ${totalLinked} vÃ­nculos creados`;
+        message.textContent = completed ? 'VinculaciÃ³n completada.' : `Procesando loteâ€¦ offset ${offset}`;
       }
 
       spinner.classList.add('hidden');
-      title.textContent = '✅ Vinculación completada';
+      title.textContent = 'âœ… VinculaciÃ³n completada';
       message.textContent = '';
       result.innerHTML = `
         <div class="grid grid-cols-3 gap-2">
@@ -1149,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 text-center">
             <div class="text-lg font-bold text-blue-700 dark:text-blue-300">${totalLinked}</div>
-            <div class="text-xs text-blue-600 dark:text-blue-400">Vínculos</div>
+            <div class="text-xs text-blue-600 dark:text-blue-400">VÃ­nculos</div>
           </div>
           <div class="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-center">
             <div class="text-lg font-bold text-red-700 dark:text-red-300">${totalErrors}</div>
@@ -1161,7 +1169,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadAgents(1);
     } catch (e) {
       spinner.classList.add('hidden');
-      title.textContent = '❌ Error';
+      title.textContent = 'âŒ Error';
       message.textContent = e?.message || 'Error al vincular agentes.';
       closeBtn.classList.remove('hidden');
       await loadAgents(1);
@@ -1174,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function findUserById() {
     const id = toInt($('#field-user-id').value);
     if (!id) {
-      $('#user-preview').textContent = '—';
+      $('#user-preview').textContent = 'â€”';
       return;
     }
 
@@ -1182,7 +1190,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = await apiFetch(`${API_BASE}/users/${id}`);
       if (payload?.success) {
         const u = payload.data;
-        $('#user-preview').textContent = `${u.name || 'Usuario'} (${u.email || '—'})`;
+        $('#user-preview').textContent = `${u.name || 'Usuario'} (${u.email || 'â€”'})`;
       }
     } catch (e) {
       $('#user-preview').textContent = 'No encontrado';
@@ -1284,3 +1292,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 @endsection
+
+
+
+
+
+

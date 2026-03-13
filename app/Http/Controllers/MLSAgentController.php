@@ -30,7 +30,7 @@ class MLSAgentController extends Controller
 
     /**
      * GET /api/mls-agents
-     * Lista todos los agentes MLS locales con paginación.
+     * Lista todos los agentes MLS locales con paginaciÃ³n.
      */
     public function index(Request $request): JsonResponse
     {
@@ -73,10 +73,12 @@ class MLSAgentController extends Controller
 
     /**
      * GET /api/public/mls-agents
-     * Listado público de agentes MLS (paginación + búsqueda + filtro por office).
+     * Listado pÃºblico de agentes MLS (paginaciÃ³n + bÃºsqueda + filtro por office).
      */
     public function indexPublic(Request $request): JsonResponse
     {
+        $locale = $this->resolvePublicLocale($request);
+
         $query = MLSAgent::query()
             ->with(['photoMediaAsset', 'office'])
             ->withCount('properties')
@@ -98,7 +100,7 @@ class MLSAgentController extends Controller
             $query->where('mls_office_id', (int) $request->input('office_id'));
         }
 
-        // Por compatibilidad permitimos desactivar filtro de activos si se manda explícitamente.
+        // Por compatibilidad permitimos desactivar filtro de activos si se manda explÃ­citamente.
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
         }
@@ -115,15 +117,23 @@ class MLSAgentController extends Controller
         $perPage = (int) $request->input('per_page', 12);
         $perPage = max(1, min(50, $perPage));
 
-        return $this->apiSuccess('Listado público de agentes MLS', 'PUBLIC_MLS_AGENTS_LIST', $query->paginate($perPage));
+        $paginated = $query->paginate($perPage);
+
+        $paginated->getCollection()->transform(function (MLSAgent $agent) use ($locale) {
+            return $this->transformPublicAgent($agent, $locale);
+        });
+
+        return $this->apiSuccess('Listado pÃºblico de agentes MLS', 'PUBLIC_MLS_AGENTS_LIST', $paginated);
     }
 
     /**
      * GET /api/public/mls-agents/{mlsAgentId}
-     * Detalle público de un agente MLS por su mls_agent_id (ID del MLS).
+     * Detalle pÃºblico de un agente MLS por su mls_agent_id (ID del MLS).
      */
-    public function showPublicByMlsId(int $mlsAgentId): JsonResponse
+    public function showPublicByMlsId(Request $request, int $mlsAgentId): JsonResponse
     {
+        $locale = $this->resolvePublicLocale($request);
+
         $agent = MLSAgent::query()
             ->where('mls_agent_id', $mlsAgentId)
             ->with(['photoMediaAsset', 'office.imageMediaAsset'])
@@ -134,7 +144,7 @@ class MLSAgentController extends Controller
             return $this->apiNotFound('Agente no encontrado', 'MLS_AGENT_NOT_FOUND');
         }
 
-        // Conteos de la agencia (si existe) para mostrar badge rápido en el frontend.
+        // Conteos de la agencia (si existe) para mostrar badge rÃ¡pido en el frontend.
         $officeSummary = null;
         if (!empty($agent->mls_office_id)) {
             $office = MLSOffice::query()
@@ -145,6 +155,13 @@ class MLSAgentController extends Controller
             if ($office) {
                 $officeSummary = $office;
             }
+        }
+
+        $agent = $this->transformPublicAgent($agent, $locale);
+
+        if ($officeSummary) {
+            $officeSummary->setAttribute('description', $officeSummary->descriptionForLocale($locale));
+            $officeSummary->setAttribute('locale', $locale);
         }
 
         return $this->apiSuccess('Agente MLS obtenido', 'PUBLIC_MLS_AGENT_SHOWN', [
@@ -184,6 +201,7 @@ class MLSAgentController extends Controller
             'photo_media_asset_id' => 'nullable|exists:media_assets,id',
             'license_number' => 'nullable|string|max:100',
             'bio' => 'nullable|string',
+            'bio_es' => 'nullable|string',
             'website' => 'nullable|string|max:255',
             'is_active' => 'nullable|boolean',
             'user_id' => 'nullable|exists:users,id',
@@ -219,6 +237,7 @@ class MLSAgentController extends Controller
             'photo_media_asset_id' => 'sometimes|nullable|exists:media_assets,id',
             'license_number' => 'sometimes|nullable|string|max:100',
             'bio' => 'sometimes|nullable|string',
+            'bio_es' => 'sometimes|nullable|string',
             'website' => 'sometimes|nullable|string|max:255',
             'is_active' => 'sometimes|nullable|boolean',
             'user_id' => 'sometimes|nullable|exists:users,id',
@@ -249,7 +268,7 @@ class MLSAgentController extends Controller
     /**
      * POST /api/mls-agents/sync
      * Sincroniza agentes desde el MLS API en modo progresivo (por lotes).
-     * Soporta parámetros batch_size y offset para procesar en múltiples llamadas.
+     * Soporta parÃ¡metros batch_size y offset para procesar en mÃºltiples llamadas.
      */
     public function syncAgents(Request $request): JsonResponse
     {
@@ -266,7 +285,7 @@ class MLSAgentController extends Controller
 
         if (!$this->syncService->isConfigured()) {
             return $this->apiError(
-                'MLS no está configurado',
+                'MLS no estÃ¡ configurado',
                 'MLS_NOT_CONFIGURED',
                 null,
                 null,
@@ -282,7 +301,7 @@ class MLSAgentController extends Controller
 
         if ($result['success']) {
             return $this->apiSuccess(
-                $result['completed'] ? 'Sincronización de agentes completada' : 'Lote de agentes procesado',
+                $result['completed'] ? 'SincronizaciÃ³n de agentes completada' : 'Lote de agentes procesado',
                 'MLS_AGENTS_SYNC_COMPLETED',
                 [
                     'total_in_mls' => $result['total_in_mls'] ?? null,
@@ -294,14 +313,14 @@ class MLSAgentController extends Controller
                     'completed' => $result['completed'] ?? false,
                     'progress_percentage' => $result['progress_percentage'] ?? 0,
                     'hint' => $result['completed']
-                        ? 'La sincronización está completa.'
+                        ? 'La sincronizaciÃ³n estÃ¡ completa.'
                         : "Para continuar, llama nuevamente con offset={$result['next_offset']}. Progreso: {$result['progress_percentage']}%",
                 ]
             );
         }
 
         return $this->apiError(
-            $result['message'] ?? 'Error en la sincronización de agentes',
+            $result['message'] ?? 'Error en la sincronizaciÃ³n de agentes',
             'MLS_AGENTS_SYNC_ERROR',
             $result,
             null,
@@ -312,7 +331,7 @@ class MLSAgentController extends Controller
     /**
      * POST /api/mls-agents/sync-property-agents
      * Re-sincroniza las relaciones agente-propiedad para todas las propiedades MLS existentes.
-     * Útil cuando las propiedades se sincronizaron antes de que existiera la tabla de agentes.
+     * Ãštil cuando las propiedades se sincronizaron antes de que existiera la tabla de agentes.
      */
     public function syncPropertyAgentsRelations(Request $request): JsonResponse
     {
@@ -328,7 +347,7 @@ class MLSAgentController extends Controller
         $this->syncService->reloadConfiguration();
 
         if (!$this->syncService->isConfigured()) {
-            return $this->apiError('MLS no está configurado', 'MLS_NOT_CONFIGURED', null, null, 400);
+            return $this->apiError('MLS no estÃ¡ configurado', 'MLS_NOT_CONFIGURED', null, null, 400);
         }
 
         $batchSize = (int) ($validator->validated()['batch_size'] ?? 10);
@@ -347,7 +366,7 @@ class MLSAgentController extends Controller
             ->get();
 
         if ($properties->isEmpty()) {
-            return $this->apiSuccess('No hay más propiedades que procesar', 'MLS_AGENT_RELATIONS_COMPLETE', [
+            return $this->apiSuccess('No hay mÃ¡s propiedades que procesar', 'MLS_AGENT_RELATIONS_COMPLETE', [
                 'total_properties' => $totalProperties,
                 'processed' => 0,
                 'next_offset' => 0,
@@ -377,7 +396,7 @@ class MLSAgentController extends Controller
                 $agentResponse = $this->syncService->fetchPropertyAgentIds((int) $propertyMlsId);
 
                 // Normalizar respuesta del API: puede venir como
-                // { id: 123, agents: [27,45] } ó agents: [{id:27}, {id:45}] ó envuelto en data.
+                // { id: 123, agents: [27,45] } Ã³ agents: [{id:27}, {id:45}] Ã³ envuelto en data.
                 $agentIdsRaw = null;
                 if (is_array($agentResponse)) {
                     if (array_key_exists('agents', $agentResponse)) {
@@ -415,7 +434,7 @@ class MLSAgentController extends Controller
 
                     // Usar json_encode para evitar 'Array to string conversion'
                     \Illuminate\Support\Facades\Log::debug(
-                        "[AGENT-RELATIONS] Property #{$property->id}: API devolvió " . count($agentIds) . " agentes: " . json_encode($agentIds)
+                        "[AGENT-RELATIONS] Property #{$property->id}: API devolviÃ³ " . count($agentIds) . " agentes: " . json_encode($agentIds)
                     );
 
                     foreach ($agentIds as $index => $mlsAgentId) {
@@ -448,10 +467,10 @@ class MLSAgentController extends Controller
                         \Illuminate\Support\Facades\Log::info("[AGENT-RELATIONS] Property #{$property->id}: vinculados " . count($localAgentIds) . " agentes");
                     }
                 } else {
-                    // Log diagnóstico adicional cuando la respuesta es nula o no trae campo agents
+                    // Log diagnÃ³stico adicional cuando la respuesta es nula o no trae campo agents
                     $keys = is_array($agentResponse) ? implode(', ', array_keys($agentResponse)) : (is_null($agentResponse) ? 'NULL' : gettype($agentResponse));
                     \Illuminate\Support\Facades\Log::debug(
-                        "[AGENT-RELATIONS] Property #{$property->id} (mls_id: {$propertyMlsId}): API devolvió 0 agentes o respuesta nula. Response keys/type: {$keys}"
+                        "[AGENT-RELATIONS] Property #{$property->id} (mls_id: {$propertyMlsId}): API devolviÃ³ 0 agentes o respuesta nula. Response keys/type: {$keys}"
                     );
                 }
                 
@@ -562,7 +581,7 @@ class MLSAgentController extends Controller
 
     /**
      * POST /api/properties/{property}/mls-agents
-     * Sincroniza los agentes MLS de una propiedad específica.
+     * Sincroniza los agentes MLS de una propiedad especÃ­fica.
      */
     public function syncPropertyAgents(Request $request, Property $property): JsonResponse
     {
@@ -592,4 +611,28 @@ class MLSAgentController extends Controller
             $property->mlsAgents
         );
     }
+    private function resolvePublicLocale(Request $request): string
+    {
+        $candidate = strtolower((string) (
+            $request->query('locale')
+            ?? $request->query('lang')
+            ?? $request->header('X-Locale')
+            ?? app()->getLocale()
+        ));
+
+        $locale = in_array($candidate, ['es', 'en'], true) ? $candidate : 'es';
+        app()->setLocale($locale);
+
+        return $locale;
+    }
+
+    private function transformPublicAgent(MLSAgent $agent, string $locale): MLSAgent
+    {
+        $agent->setAttribute('locale', $locale);
+        $agent->setAttribute('bio', $agent->bioForLocale($locale));
+
+        return $agent;
+    }
 }
+
+

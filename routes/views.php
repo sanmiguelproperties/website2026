@@ -1,5 +1,7 @@
 <?php
 
+use App\Services\CmsService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -7,96 +9,109 @@ use Illuminate\Support\Facades\Route;
 | View Routes
 |--------------------------------------------------------------------------
 |
-| Aquí se definen todas las rutas relacionadas con las vistas web.
-| Estas rutas están separadas de las rutas API para mantener el orden.
+| Web view routes.
 |
 */
 
-// Ruta principal - Página de inicio pública
-Route::get('/', function () {
-    $pageData = \App\Services\CmsService::getPageData('home', 'es');
-    $menu = \App\Services\CmsService::getMenu('main-header');
-    $settings = \App\Services\CmsService::settings(['contact', 'social', 'general'], 'es');
-    return view('home', compact('pageData', 'menu', 'settings'));
+$locale = static fn (): string => app()->getLocale();
+
+$publicContext = static function (string $pageSlug, array $extra = []) use ($locale): array {
+    $currentLocale = $locale();
+
+    $base = [
+        'locale' => $currentLocale,
+        'pageData' => CmsService::getPageData($pageSlug, $currentLocale),
+        'menu' => CmsService::getMenu('main-header'),
+        'settings' => CmsService::settings(['contact', 'social', 'general'], $currentLocale),
+    ];
+
+    return array_merge($base, $extra);
+};
+
+// Public locale switcher (ES/EN)
+Route::get('/idioma/{locale}', function (Request $request, string $locale) {
+    $normalized = strtolower($locale);
+
+    if (!in_array($normalized, ['es', 'en'], true)) {
+        $normalized = 'es';
+    }
+
+    $request->session()->put('app_locale', $normalized);
+
+    return redirect()->back();
+})->name('public.locale.switch');
+
+// Home
+Route::get('/', function () use ($publicContext) {
+    $context = $publicContext('home');
+    return view('home', $context);
 })->name('home');
 
-// Listado público de propiedades (paginación + filtros, consumiendo API pública)
-Route::get('/propiedades', function () {
-    return view('public.properties-index');
+// Public listings
+Route::get('/propiedades', function () use ($publicContext) {
+    return view('public.properties-index', $publicContext('properties'));
 })->name('public.properties.index');
 
-// Listado público de agencias MLS
-Route::get('/agencias', function () {
-    return view('public.mls-offices-index');
+Route::get('/agencias', function () use ($publicContext) {
+    return view('public.mls-offices-index', $publicContext('mls-offices'));
 })->name('public.mls-offices.index');
 
-// Listado público de agentes MLS
-Route::get('/agentes', function () {
-    return view('public.mls-agents-index');
+Route::get('/agentes', function () use ($publicContext) {
+    return view('public.mls-agents-index', $publicContext('mls-agents'));
 })->name('public.mls-agents.index');
 
-// Compatibilidad: URLs antiguas /mls-offices -> /agencias
+// Legacy compatibility
 Route::redirect('/mls-offices', '/agencias', 301)->name('public.mls-offices.legacy-index');
 
-// Detalle público de una agencia MLS (agentes + propiedades)
-Route::get('/agencias/{mlsOfficeId}', function (string $mlsOfficeId) {
-    return view('public.mls-office-detail', [
+Route::get('/agencias/{mlsOfficeId}', function (string $mlsOfficeId) use ($publicContext) {
+    return view('public.mls-office-detail', $publicContext('mls-office-detail', [
         'mlsOfficeId' => (int) $mlsOfficeId,
-    ]);
+    ]));
 })
     ->where('mlsOfficeId', '[0-9]+')
     ->name('public.mls-offices.show');
 
-// Detalle público de un agente MLS (agencia + propiedades)
-Route::get('/agentes/{mlsAgentId}', function (string $mlsAgentId) {
-    return view('public.mls-agent-detail', [
+Route::get('/agentes/{mlsAgentId}', function (string $mlsAgentId) use ($publicContext) {
+    return view('public.mls-agent-detail', $publicContext('mls-agent-detail', [
         'mlsAgentId' => (int) $mlsAgentId,
-    ]);
+    ]));
 })
     ->where('mlsAgentId', '[0-9]+')
     ->name('public.mls-agents.show');
 
-// Compatibilidad: URLs antiguas /mls-offices/{id} -> /agencias/{id}
 Route::redirect('/mls-offices/{mlsOfficeId}', '/agencias/{mlsOfficeId}', 301)
     ->where('mlsOfficeId', '[0-9]+')
     ->name('public.mls-offices.legacy-show');
 
-// Compatibilidad: URLs antiguas /mls-agents -> /agentes
 Route::redirect('/mls-agents', '/agentes', 301)->name('public.mls-agents.legacy-index');
 
-// Compatibilidad: URLs antiguas /mls-agents/{id} -> /agentes/{id}
 Route::redirect('/mls-agents/{mlsAgentId}', '/agentes/{mlsAgentId}', 301)
     ->where('mlsAgentId', '[0-9]+')
     ->name('public.mls-agents.legacy-show');
 
-// Vista pública (de prueba) para detalle de propiedad
-// Nota: por ahora NO hacemos binding con el modelo para permitir probar con cualquier ID.
-Route::get('/propiedades/{propertyId}', function (string $propertyId) {
-    return view('public.property-detail', [
+Route::get('/propiedades/{propertyId}', function (string $propertyId) use ($publicContext) {
+    return view('public.property-detail', $publicContext('property-detail', [
         'propertyId' => (int) $propertyId,
-    ]);
+    ]));
 })
     ->where('propertyId', '[0-9]+')
     ->name('public.properties.show');
 
-// Página de contacto pública
-Route::get('/contacto', function () {
-    $pageData = \App\Services\CmsService::getPageData('contact', 'es');
-    $settings = \App\Services\CmsService::settings(['contact', 'social', 'general'], 'es');
-    return view('public.contact', compact('pageData', 'settings'));
+// Contact and About pages
+Route::get('/contacto', function () use ($publicContext) {
+    $context = $publicContext('contact');
+    return view('public.contact', $context);
 })->name('public.contact');
 
-// Página pública: Nosotros
-Route::get('/nosotros', function () {
-    $pageData = \App\Services\CmsService::getPageData('about', 'es');
-    $settings = \App\Services\CmsService::settings(['contact', 'social', 'general'], 'es');
-    return view('public.about', compact('pageData', 'settings'));
+Route::get('/nosotros', function () use ($publicContext) {
+    $context = $publicContext('about');
+    return view('public.about', $context);
 })->name('about');
 
-// Rutas de autenticación (vistas)
+// Auth view routes
 Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 
-// Rutas protegidas por autenticación (vistas)
+// Protected view routes
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
@@ -151,7 +166,11 @@ Route::middleware('auth')->group(function () {
             return view('mls-offices.manage');
         })->name('mls-offices');
 
-        // ── CMS (Sistema de Contenido Administrable) ──
+        Route::get('/corporate-email', function () {
+            return view('emails.manage');
+        })->name('corporate-email');
+
+        // CMS
         Route::get('/cms/pages', function () {
             return view('cms.pages.manage');
         })->name('cms.pages');
