@@ -86,14 +86,12 @@
         <div class="lg:col-span-8 space-y-6">
           {{-- Gallery --}}
           <section class="rounded-3xl border border-slate-200 bg-white shadow-soft overflow-hidden">
-            <div class="relative">
-              <div class="swiper property-gallery" aria-label="{{ $txt('gallery_aria_label', 'Galeria de imagenes', 'Image gallery') }}">
-                <div class="swiper-wrapper" id="galleryWrapper">
+            <div class="relative property-gallery-shell">
+              <div class="swiper property-gallery h-full" aria-label="{{ $txt('gallery_aria_label', 'Galeria de imagenes', 'Image gallery') }}">
+                <div class="swiper-wrapper h-full" id="galleryWrapper">
                   {{-- Skeleton slide --}}
-                  <div class="swiper-slide">
-                    <div class="w-full" style="aspect-ratio: 16 / 10;">
-                      <div class="h-full w-full skeleton"></div>
-                    </div>
+                  <div class="swiper-slide h-full">
+                    <div class="h-full w-full skeleton"></div>
                   </div>
                 </div>
                 <div class="swiper-pagination !bottom-4"></div>
@@ -284,6 +282,33 @@
   </div>
 @endsection
 
+@push('styles')
+  <style>
+    .property-gallery-shell {
+      aspect-ratio: 16 / 10;
+      max-height: min(72vh, 760px);
+      background: #f1f5f9;
+      overflow: hidden;
+    }
+
+    .property-gallery,
+    .property-gallery .swiper-wrapper,
+    .property-gallery .swiper-slide {
+      height: 100%;
+    }
+
+    .property-thumbs .swiper-wrapper {
+      height: auto;
+    }
+
+    @media (min-width: 1024px) {
+      .property-thumbs .swiper-wrapper {
+        height: 80px;
+      }
+    }
+  </style>
+@endpush
+
 @push('scripts')
   <script>
     // ======================================================
@@ -435,6 +460,7 @@
 
       gallerySwiper = new Swiper('.property-gallery', {
         loop: true,
+        autoHeight: false,
         speed: 650,
         pagination: { el: '.swiper-pagination', clickable: true },
         navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
@@ -674,10 +700,8 @@
       const thumbsWrapper = document.getElementById('thumbsWrapper');
 
       galleryWrapper.innerHTML = imgs.map((img) => `
-        <div class="swiper-slide">
-          <div class="w-full bg-slate-100" style="aspect-ratio: 16 / 10;">
-            <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt)}" class="w-full h-full object-cover" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80';" />
-          </div>
+        <div class="swiper-slide h-full">
+          <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt)}" class="block w-full h-full object-cover" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80';" />
         </div>
       `).join('');
 
@@ -750,14 +774,5 @@
     });
   </script>
 @endpush
-
-
-
-
-
-
-
-
-
 
 
