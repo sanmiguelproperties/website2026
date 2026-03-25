@@ -1,5 +1,6 @@
 @php
     use App\Services\CmsService;
+    use App\Services\PublicLocationMenuService;
     use Illuminate\Support\Str;
 
     $isHome = request()->routeIs('home');
@@ -10,6 +11,65 @@
 
     $menu = CmsService::getMenu('main-header');
     $menuItems = $menu?->rootItems ?? collect();
+    $mlsLocationMenu = $mlsLocationMenu ?? PublicLocationMenuService::stateCityTree();
+    $locationMenuItems = collect($mlsLocationMenu)
+        ->map(function (array $entry) {
+            $state = trim((string) ($entry['state'] ?? ''));
+            if ($state === '') {
+                return null;
+            }
+
+            $cities = collect($entry['cities'] ?? [])
+                ->map(function ($cityEntry) use ($state) {
+                    if (is_string($cityEntry)) {
+                        $cityName = trim($cityEntry);
+                        $zones = [];
+                    } else {
+                        $cityName = trim((string) ($cityEntry['city'] ?? $cityEntry['name'] ?? ''));
+                        $zones = collect($cityEntry['zones'] ?? [])
+                            ->map(fn ($zone) => trim((string) $zone))
+                            ->filter()
+                            ->unique(fn ($zone) => Str::lower($zone))
+                            ->values()
+                            ->map(fn ($zone) => [
+                                'name' => $zone,
+                                'url' => route('public.properties.index', [
+                                    'region' => $state,
+                                    'city' => $cityName,
+                                    'city_area' => $zone,
+                                ]),
+                            ])
+                            ->all();
+                    }
+
+                    if ($cityName === '') {
+                        return null;
+                    }
+
+                    return [
+                        'name' => $cityName,
+                        'url' => route('public.properties.index', [
+                            'region' => $state,
+                            'city' => $cityName,
+                        ]),
+                        'zones' => $zones,
+                    ];
+                })
+                ->filter()
+                ->unique(fn ($city) => Str::lower($city['name']))
+                ->values()
+                ->sortBy(fn ($city) => Str::lower($city['name']))
+                ->values()
+                ->all();
+
+            return [
+                'name' => $state,
+                'url' => route('public.properties.index', ['region' => $state]),
+                'cities' => $cities,
+            ];
+        })
+        ->filter()
+        ->values();
 
     $contactSettings = CmsService::settings('contact', $currentLocale);
     $phoneDisplay = trim((string) ($contactSettings['contact_phone'] ?? '+52 55 1234 5678'));
@@ -20,6 +80,10 @@
         'properties' => $txt('header_nav_properties', 'Propiedades', 'Properties'),
         'offices' => $txt('header_nav_offices', 'Agencias', 'Agencies'),
         'agents' => $txt('header_nav_agents', 'Agentes', 'Agents'),
+        'locations' => $txt('header_nav_locations', 'Ubicaciones', 'Locations'),
+        'view_all_state' => $txt('header_nav_view_all_state', 'Ver todo en', 'View all in'),
+        'view_city' => $txt('header_nav_view_city', 'Ver ciudad', 'View city'),
+        'locations_empty' => $txt('header_nav_locations_empty', 'No hay ubicaciones disponibles', 'No locations available'),
         'about' => $txt('header_nav_about', 'Nosotros', 'About'),
         'contact' => $txt('header_nav_contact', 'Contacto', 'Contact'),
         'dashboard' => $txt('header_cta_dashboard', 'Panel', 'Dashboard'),
@@ -32,7 +96,8 @@
 @endphp
 
 <header
-    x-data="{ mobileMenuOpen: false, scrolled: {{ $isHome ? 'false' : 'true' }}, isHome: {{ $isHome ? 'true' : 'false' }} }"
+    x-data="{ mobileMenuOpen: false, mobileLocationsOpen: false, desktopLocationsOpen: false, scrolled: {{ $isHome ? 'false' : 'true' }}, isHome: {{ $isHome ? 'true' : 'false' }} }"
+    @keydown.escape.window="desktopLocationsOpen = false; mobileLocationsOpen = false"
     x-init="
         if (isHome) {
             scrolled = window.pageYOffset > 50;
@@ -91,6 +156,89 @@
                     <a href="{{ route('about') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['about'] }}</a>
                     <a href="{{ route('public.contact') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['contact'] }}</a>
                 @endif
+
+                <div class="relative"
+                     @mouseenter="desktopLocationsOpen = true"
+                     @mouseleave="desktopLocationsOpen = false"
+                     @click.outside="desktopLocationsOpen = false">
+                    <button type="button"
+                            @click.prevent="desktopLocationsOpen = !desktopLocationsOpen"
+                            :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
+                            class="relative inline-flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
+                        {{ $labels['locations'] }}
+                        <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': desktopLocationsOpen }" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+
+                    <div x-show="desktopLocationsOpen"
+                         x-cloak
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 -translate-y-2"
+                         class="absolute left-0 top-full z-40 mt-2 w-[24rem] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
+                        <div class="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+                            @if($locationMenuItems->isNotEmpty())
+                                @foreach($locationMenuItems as $stateItem)
+                                    <div class="rounded-xl border border-slate-100 p-3">
+                                        <a href="{{ $stateItem['url'] }}" class="text-sm font-semibold text-slate-900 transition-colors nav-link-hover">
+                                            {{ $stateItem['name'] }}
+                                        </a>
+                                        @if(!empty($stateItem['cities']))
+                                            <div class="mt-2 grid grid-cols-1 gap-1">
+                                                @foreach($stateItem['cities'] as $cityItem)
+                                                    @if(!empty($cityItem['zones']))
+                                                        <div x-data="{ cityOpen: false }" class="rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-50">
+                                                            <div class="flex items-center justify-between gap-2">
+                                                                <a href="{{ $cityItem['url'] }}" class="text-sm text-slate-700 hover:text-slate-900">
+                                                                    {{ $cityItem['name'] }}
+                                                                </a>
+                                                                <button type="button"
+                                                                        @click.prevent="cityOpen = !cityOpen"
+                                                                        class="inline-flex items-center rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+                                                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': cityOpen }" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                            <div x-show="cityOpen"
+                                                                 x-transition:enter="transition ease-out duration-120"
+                                                                 x-transition:enter-start="opacity-0 -translate-y-1"
+                                                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                                                 x-transition:leave="transition ease-in duration-100"
+                                                                 x-transition:leave-start="opacity-100 translate-y-0"
+                                                                 x-transition:leave-end="opacity-0 -translate-y-1"
+                                                                 class="mt-1 flex flex-wrap gap-1">
+                                                                @foreach($cityItem['zones'] as $zoneItem)
+                                                                    <a href="{{ $zoneItem['url'] }}" class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-600 hover:border-slate-300 hover:text-slate-900">
+                                                                        {{ $zoneItem['name'] }}
+                                                                    </a>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    @else
+                                                        <div class="rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-50">
+                                                            <a href="{{ $cityItem['url'] }}" class="text-sm text-slate-700 hover:text-slate-900">
+                                                                {{ $cityItem['name'] }}
+                                                            </a>
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="rounded-xl border border-slate-100 px-3 py-2 text-sm text-slate-500">
+                                    {{ $labels['locations_empty'] }}
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="flex items-center gap-3">
@@ -126,7 +274,7 @@
                     </a>
                 @endauth
 
-                <button @click="mobileMenuOpen = !mobileMenuOpen"
+                <button @click="mobileMenuOpen = !mobileMenuOpen; if (!mobileMenuOpen) { mobileLocationsOpen = false; }"
                         :class="{ 'text-slate-900': scrolled, 'text-white': !scrolled }"
                         class="lg:hidden inline-flex items-center justify-center p-2 rounded-lg transition-colors duration-200 hover:bg-slate-900/10 focus:outline-none"
                         aria-label="{{ $labels['menu'] }}">
@@ -170,6 +318,103 @@
                     <a href="{{ route('about') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['about'] }}</a>
                     <a href="{{ route('public.contact') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['contact'] }}</a>
                 @endif
+
+                <div class="mt-1 rounded-xl border border-slate-100 bg-slate-50/60">
+                    <button type="button"
+                            @click="mobileLocationsOpen = !mobileLocationsOpen"
+                            class="flex w-full items-center justify-between px-4 py-3 text-left text-slate-700 font-medium rounded-xl transition-colors hover:bg-slate-100/70">
+                        <span>{{ $labels['locations'] }}</span>
+                        <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': mobileLocationsOpen }" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+
+                    <div x-show="mobileLocationsOpen"
+                         x-cloak
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 -translate-y-2"
+                         class="space-y-2 px-3 pb-3">
+                        @if($locationMenuItems->isNotEmpty())
+                            @foreach($locationMenuItems as $stateItem)
+                                <div x-data="{ stateOpen: false }" class="rounded-xl border border-slate-200 bg-white">
+                                    <button type="button"
+                                            @click="stateOpen = !stateOpen"
+                                            class="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-semibold text-slate-800">
+                                        <span>{{ $stateItem['name'] }}</span>
+                                        <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': stateOpen }" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+
+                                    <div x-show="stateOpen"
+                                         x-transition:enter="transition ease-out duration-150"
+                                         x-transition:enter-start="opacity-0 -translate-y-1"
+                                         x-transition:enter-end="opacity-100 translate-y-0"
+                                         x-transition:leave="transition ease-in duration-100"
+                                         x-transition:leave-start="opacity-100 translate-y-0"
+                                         x-transition:leave-end="opacity-0 -translate-y-1"
+                                         class="space-y-1 px-2 pb-2">
+                                        <a href="{{ $stateItem['url'] }}"
+                                           @click="mobileMenuOpen = false; mobileLocationsOpen = false"
+                                           class="block rounded-lg px-2.5 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:bg-slate-50">
+                                            {{ $labels['view_all_state'] }} {{ $stateItem['name'] }}
+                                        </a>
+                                        @foreach($stateItem['cities'] as $cityItem)
+                                            @if(!empty($cityItem['zones']))
+                                                <div x-data="{ cityOpen: false }" class="rounded-lg border border-slate-100 bg-slate-50/60">
+                                                    <button type="button"
+                                                            @click="cityOpen = !cityOpen"
+                                                            class="flex w-full items-center justify-between px-2.5 py-2 text-left text-sm text-slate-700">
+                                                        <span>{{ $cityItem['name'] }}</span>
+                                                        <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': cityOpen }" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                                        </svg>
+                                                    </button>
+
+                                                    <div x-show="cityOpen"
+                                                         x-transition:enter="transition ease-out duration-150"
+                                                         x-transition:enter-start="opacity-0 -translate-y-1"
+                                                         x-transition:enter-end="opacity-100 translate-y-0"
+                                                         x-transition:leave="transition ease-in duration-100"
+                                                         x-transition:leave-start="opacity-100 translate-y-0"
+                                                         x-transition:leave-end="opacity-0 -translate-y-1"
+                                                         class="space-y-1 px-2 pb-2">
+                                                        <a href="{{ $cityItem['url'] }}"
+                                                           @click="mobileMenuOpen = false; mobileLocationsOpen = false"
+                                                           class="block rounded-lg px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:bg-white">
+                                                            {{ $labels['view_city'] }}: {{ $cityItem['name'] }}
+                                                        </a>
+                                                        @foreach($cityItem['zones'] as $zoneItem)
+                                                            <a href="{{ $zoneItem['url'] }}"
+                                                               @click="mobileMenuOpen = false; mobileLocationsOpen = false"
+                                                               class="block rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-white">
+                                                                {{ $zoneItem['name'] }}
+                                                            </a>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <a href="{{ $cityItem['url'] }}"
+                                                   @click="mobileMenuOpen = false; mobileLocationsOpen = false"
+                                                   class="block rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                                    {{ $cityItem['name'] }}
+                                                </a>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <div class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
+                                {{ $labels['locations_empty'] }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
 
                 <div class="my-4 border-t border-slate-100"></div>
 

@@ -19,6 +19,7 @@ use App\Http\Controllers\LocationCatalogController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\FrontendColorController;
 use App\Http\Controllers\EasyBrokerSyncController;
+use App\Http\Controllers\EasyBrokerMlsExportController;
 use App\Http\Controllers\MLSSyncController;
 use App\Http\Controllers\MLSAgentController;
 use App\Http\Controllers\MLSOfficeController;
@@ -171,6 +172,14 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('easybroker')->group(functi
     
     // Ejecutar sincronización
     Route::post('sync', [EasyBrokerSyncController::class, 'sync']);
+
+    // Exportación de propiedades MLS locales hacia EasyBroker
+    Route::prefix('mls-export')->group(function () {
+        Route::get('offices', [EasyBrokerMlsExportController::class, 'offices']);
+        Route::get('property-types', [EasyBrokerMlsExportController::class, 'propertyTypes']);
+        Route::get('properties', [EasyBrokerMlsExportController::class, 'properties']);
+        Route::post('send', [EasyBrokerMlsExportController::class, 'send']);
+    });
 });
 
 // MLS AMPI San Miguel de Allende Sync routes (protegidas con autenticación Passport)

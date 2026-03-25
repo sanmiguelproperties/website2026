@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\PublicLocationMenuService;
 use App\Services\CmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,7 @@ $publicContext = static function (string $pageSlug, array $extra = []) use ($loc
         'locale' => $currentLocale,
         'pageData' => CmsService::getPageData($pageSlug, $currentLocale),
         'menu' => CmsService::getMenu('main-header'),
+        'mlsLocationMenu' => PublicLocationMenuService::stateCityTree(),
         'settings' => CmsService::settings(['contact', 'social', 'general'], $currentLocale),
     ];
 
@@ -153,6 +155,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/easybroker', function () {
             return view('easybroker.sync');
         })->name('easybroker');
+
+        Route::get('/easybroker/mls-export', function () {
+            return view('easybroker.mls-export');
+        })->name('easybroker.mls-export');
 
         Route::get('/mls', function () {
             return view('mls.sync');
