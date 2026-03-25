@@ -242,7 +242,7 @@
             if (!res.ok || !data?.success) return;
             this.office = data.data;
             this.coverUrl = this.office?.image || this.office?.image_url || this.fallbackCover;
-            document.title = `${this.office?.name || this.labels.agency} | San Miguel Properties`;
+            document.title = `${this.office?.name || this.labels.agency} | ${tPublic('common.siteName', 'San Miguel Properties')}`;
           } catch (_e) {
             // noop
           }

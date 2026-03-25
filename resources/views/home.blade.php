@@ -264,15 +264,15 @@
             {{-- Stats --}}
             <div class="flex flex-wrap gap-8 mb-10">
                 <div>
-                    <div class="text-4xl font-bold text-white">200+</div>
+                    <div class="text-4xl font-bold text-white">{{ $txt('cta_sale_stat_houses_value', '200+', '200+') }}</div>
                     <div class="text-white/60 text-sm">{{ $txt('cta_sale_stat_houses', 'Casas disponibles', 'Available houses') }}</div>
                 </div>
                 <div>
-                    <div class="text-4xl font-bold text-white">150+</div>
+                    <div class="text-4xl font-bold text-white">{{ $txt('cta_sale_stat_apartments_value', '150+', '150+') }}</div>
                     <div class="text-white/60 text-sm">{{ $txt('cta_sale_stat_apartments', 'Departamentos', 'Apartments') }}</div>
                 </div>
                 <div>
-                    <div class="text-4xl font-bold text-white">50+</div>
+                    <div class="text-4xl font-bold text-white">{{ $txt('cta_sale_stat_land_value', '50+', '50+') }}</div>
                     <div class="text-white/60 text-sm">{{ $txt('cta_sale_stat_land', 'Terrenos', 'Land') }}</div>
                 </div>
             </div>
@@ -740,7 +740,7 @@
                             </svg>
                         </div>
                         <div>
-                            <div class="text-2xl font-bold" style="color: var(--fe-about-card_title, #1C1C1C);">98%</div>
+                            <div class="text-2xl font-bold" style="color: var(--fe-about-card_title, #1C1C1C);">{{ $txt('about_card_metric_value', '98%', '98%') }}</div>
                             <div class="text-sm" style="color: var(--fe-about-card_text, #5B5B5B);">{{ $txt('about_card_metric_label', 'Satisfacción de clientes', 'Client satisfaction') }}</div>
                         </div>
                     </div>
@@ -858,7 +858,7 @@
                             </svg>
                         </div>
                         <div>
-                            <p class="font-semibold" style="color: var(--fe-contact-method_title, #1C1C1C);">WhatsApp</p>
+                            <p class="font-semibold" style="color: var(--fe-contact-method_title, #1C1C1C);">{{ $txt('home_contact_whatsapp_label', 'WhatsApp', 'WhatsApp') }}</p>
                             <p style="color: var(--fe-contact-method_text, #5B5B5B);">{{ $txt('home_contact_whatsapp_text', 'Chatea con nosotros', 'Chat with us') }}</p>
                         </div>
                     </a>
@@ -870,7 +870,7 @@
                             </svg>
                         </div>
                         <div>
-                            <p class="font-semibold" style="color: var(--fe-contact-method_title, #1C1C1C);">Email</p>
+                            <p class="font-semibold" style="color: var(--fe-contact-method_title, #1C1C1C);">{{ $txt('home_contact_email_label', 'Email', 'Email') }}</p>
                             <p style="color: var(--fe-contact-method_text, #5B5B5B);">{{ $contactEmail }}</p>
                         </div>
                     </a>

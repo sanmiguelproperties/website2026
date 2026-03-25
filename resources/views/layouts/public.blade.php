@@ -8,14 +8,12 @@
         $pageEntity = $pageData?->entity;
 
         $seoTitle = $pageEntity && method_exists($pageEntity, 'metaTitle')
-            ? ($pageEntity->metaTitle($currentLocale) ?: ($pageEntity->title($currentLocale) ?: 'San Miguel Properties'))
-            : 'San Miguel Properties';
+            ? ($pageEntity->metaTitle($currentLocale) ?: ($pageEntity->title($currentLocale) ?: $txt('i18n_common_siteName', 'San Miguel Properties', 'San Miguel Properties')))
+            : $txt('i18n_common_siteName', 'San Miguel Properties', 'San Miguel Properties');
 
         $seoDescription = $pageEntity && method_exists($pageEntity, 'metaDescription')
-            ? ($pageEntity->metaDescription($currentLocale) ?: 'San Miguel Properties - Real estate portal in San Miguel de Allende.')
-            : ($currentLocale === 'en'
-                ? 'San Miguel Properties - Real estate portal in San Miguel de Allende.'
-                : 'San Miguel Properties - Portal inmobiliario en San Miguel de Allende.');
+            ? ($pageEntity->metaDescription($currentLocale) ?: $txt('i18n_seo_defaultDescription', 'San Miguel Properties - Portal inmobiliario en San Miguel de Allende.', 'San Miguel Properties - Real estate portal in San Miguel de Allende.'))
+            : $txt('i18n_seo_defaultDescription', 'San Miguel Properties - Portal inmobiliario en San Miguel de Allende.', 'San Miguel Properties - Real estate portal in San Miguel de Allende.');
 
         $seoKeywords = $currentLocale === 'en'
             ? ($pageEntity->meta_keywords_en ?? null)
@@ -55,7 +53,7 @@
         $siteLogoDarkUrl = $siteLogoDark?->mediaAsset?->serving_url ?? $siteLogoDark?->mediaAsset?->url;
         $siteName = $cmsSettings->firstWhere('setting_key', 'site_name')?->value(app()->getLocale())
             ?? $cmsSettings->firstWhere('setting_key', 'site_name')?->value_es
-            ?? 'San Miguel Properties';
+            ?? $txt('i18n_common_siteName', 'San Miguel Properties', 'San Miguel Properties');
 
         $currentLocale = app()->getLocale() === 'en' ? 'en' : 'es';
         $pageEntity = $pageData?->entity;
@@ -66,9 +64,7 @@
             ? ($pageEntity->metaTitle($currentLocale) ?: $pageTitle ?: $siteName)
             : ($pageTitle ?: $siteName);
 
-        $seoDefaultDescription = $currentLocale === 'en'
-            ? 'San Miguel Properties - Real estate portal in San Miguel de Allende.'
-            : 'San Miguel Properties - Portal inmobiliario en San Miguel de Allende.';
+        $seoDefaultDescription = $txt('i18n_seo_defaultDescription', 'San Miguel Properties - Portal inmobiliario en San Miguel de Allende.', 'San Miguel Properties - Real estate portal in San Miguel de Allende.');
 
         $seoDescription = $pageEntity && method_exists($pageEntity, 'metaDescription')
             ? ($pageEntity->metaDescription($currentLocale) ?: $seoDefaultDescription)
@@ -98,30 +94,31 @@
         ];
 
         $globalTranslations = [
-            'common.details' => $currentLocale === 'en' ? 'View details' : 'Ver detalles',
-            'common.properties' => $currentLocale === 'en' ? 'Property' : 'Propiedad',
-            'common.available' => $currentLocale === 'en' ? 'Available property' : 'Propiedad disponible',
-            'common.sale' => $currentLocale === 'en' ? 'For sale' : 'En venta',
-            'common.rent' => $currentLocale === 'en' ? 'For rent' : 'En renta',
-            'common.locationAvailable' => $currentLocale === 'en' ? 'Location available' : 'UbicaciÃƒÆ’Ã‚Â³n disponible',
-            'common.consultPrice' => $currentLocale === 'en' ? 'Ask for price' : 'Consultar precio',
-            'common.operation' => $currentLocale === 'en' ? 'Operation' : 'OperaciÃƒÆ’Ã‚Â³n',
-            'common.updated' => $currentLocale === 'en' ? 'Updated' : 'Actualizado',
-            'property.unknownError' => $currentLocale === 'en' ? 'Unexpected error' : 'Error inesperado',
-            'property.networkError' => $currentLocale === 'en' ? 'Network error while loading the property.' : 'Error de red al cargar la propiedad.',
-            'property.noDescription' => $currentLocale === 'en' ? 'No description available.' : 'Sin descripciÃƒÆ’Ã‚Â³n.',
-            'property.noFeatures' => $currentLocale === 'en' ? 'No features' : 'Sin caracterÃƒÆ’Ã‚Â­sticas',
-            'property.noTags' => $currentLocale === 'en' ? 'No tags' : 'Sin etiquetas',
-            'property.noExtraInfo' => $currentLocale === 'en' ? 'No additional information available for this property.' : 'No hay informaciÃƒÆ’Ã‚Â³n adicional registrada para esta propiedad.',
-            'property.operationAsk' => $currentLocale === 'en' ? 'Check availability' : 'Consultar disponibilidad',
-            'property.contactUnavailable' => $currentLocale === 'en' ? 'Contact not available' : 'Contacto no disponible',
-            'property.copiedLink' => $currentLocale === 'en' ? 'Link copied to clipboard' : 'Enlace copiado al portapapeles',
-            'property.missingId' => $currentLocale === 'en' ? 'Property ID was not provided.' : 'No se recibiÃƒÆ’Ã‚Â³ el ID de la propiedad.',
-            'contact.requiredFields' => $currentLocale === 'en' ? 'Please complete all required fields.' : 'Por favor completa todos los campos requeridos.',
-            'contact.acceptPrivacy' => $currentLocale === 'en' ? 'You must accept the privacy policy.' : 'Debes aceptar la polÃƒÆ’Ã‚Â­tica de privacidad.',
-            'contact.submitSuccess' => $currentLocale === 'en' ? 'Message sent successfully! We will contact you soon.' : 'Ãƒâ€šÃ‚Â¡Mensaje enviado con ÃƒÆ’Ã‚Â©xito! Nos pondremos en contacto contigo pronto.',
-            'contact.submitError' => $currentLocale === 'en' ? 'There was an error sending your message. Please try again.' : 'Hubo un error al enviar el mensaje. Por favor intenta de nuevo.',
-            'contact.connectionError' => $currentLocale === 'en' ? 'Connection error. Please check your internet and try again.' : 'Error de conexiÃƒÆ’Ã‚Â³n. Por favor verifica tu conexiÃƒÆ’Ã‚Â³n a internet e intenta de nuevo.',
+            'common.details' => $txt('i18n_common_details', 'Ver detalles', 'View details'),
+            'common.properties' => $txt('i18n_common_properties', 'Propiedad', 'Property'),
+            'common.available' => $txt('i18n_common_available', 'Propiedad disponible', 'Available property'),
+            'common.sale' => $txt('i18n_common_sale', 'En venta', 'For sale'),
+            'common.rent' => $txt('i18n_common_rent', 'En renta', 'For rent'),
+            'common.locationAvailable' => $txt('i18n_common_locationAvailable', 'Ubicacion disponible', 'Location available'),
+            'common.consultPrice' => $txt('i18n_common_consultPrice', 'Consultar precio', 'Ask for price'),
+            'common.operation' => $txt('i18n_common_operation', 'Operacion', 'Operation'),
+            'common.updated' => $txt('i18n_common_updated', 'Actualizado', 'Updated'),
+            'common.siteName' => $txt('i18n_common_siteName', 'San Miguel Properties', 'San Miguel Properties'),
+            'property.unknownError' => $txt('i18n_property_unknownError', 'Error inesperado', 'Unexpected error'),
+            'property.networkError' => $txt('i18n_property_networkError', 'Error de red al cargar la propiedad.', 'Network error while loading the property.'),
+            'property.noDescription' => $txt('i18n_property_noDescription', 'Sin descripcion.', 'No description available.'),
+            'property.noFeatures' => $txt('i18n_property_noFeatures', 'Sin caracteristicas', 'No features'),
+            'property.noTags' => $txt('i18n_property_noTags', 'Sin etiquetas', 'No tags'),
+            'property.noExtraInfo' => $txt('i18n_property_noExtraInfo', 'No hay informacion adicional registrada para esta propiedad.', 'No additional information available for this property.'),
+            'property.operationAsk' => $txt('i18n_property_operationAsk', 'Consultar disponibilidad', 'Check availability'),
+            'property.contactUnavailable' => $txt('i18n_property_contactUnavailable', 'Contacto no disponible', 'Contact not available'),
+            'property.copiedLink' => $txt('i18n_property_copiedLink', 'Enlace copiado al portapapeles', 'Link copied to clipboard'),
+            'property.missingId' => $txt('i18n_property_missingId', 'No se recibio el ID de la propiedad.', 'Property ID was not provided.'),
+            'contact.requiredFields' => $txt('i18n_contact_requiredFields', 'Por favor completa todos los campos requeridos.', 'Please complete all required fields.'),
+            'contact.acceptPrivacy' => $txt('i18n_contact_acceptPrivacy', 'Debes aceptar la politica de privacidad.', 'You must accept the privacy policy.'),
+            'contact.submitSuccess' => $txt('i18n_contact_submitSuccess', 'Mensaje enviado con exito. Nos pondremos en contacto contigo pronto.', 'Message sent successfully. We will contact you soon.'),
+            'contact.submitError' => $txt('i18n_contact_submitError', 'Hubo un error al enviar el mensaje. Por favor intenta de nuevo.', 'There was an error sending your message. Please try again.'),
+            'contact.connectionError' => $txt('i18n_contact_connectionError', 'Error de conexion. Por favor verifica tu internet e intenta de nuevo.', 'Connection error. Please check your internet and try again.'),
         ];
     @endphp
     <style id="frontend-color-variables">

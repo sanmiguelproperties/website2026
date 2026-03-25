@@ -119,7 +119,7 @@
 
         <div class="lg:col-span-5">
             <div class="rounded-3xl overflow-hidden border shadow-soft" style="border-color: rgba(226,232,240,1);">
-                <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80" alt="Team" class="w-full h-[420px] object-cover" />
+                <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80" alt="{{ $txt('about_summary_team_image_alt', 'Equipo', 'Team') }}" class="w-full h-[420px] object-cover" />
             </div>
             <div class="mt-6 rounded-2xl border p-6" style="border-color: rgba(226,232,240,1); background: linear-gradient(to bottom right, rgba(248,250,252,1), rgba(255,255,255,1));">
                 <div class="text-sm" style="color: #64748b;">{{ $txt('about_direct_line_label', 'Línea directa', 'Direct line') }}</div>

@@ -47,7 +47,7 @@
         <div class="flex h-20 items-center justify-between">
             <a href="{{ url('/') }}" class="flex items-center gap-3 group">
                 @if(!empty($siteLogoUrl))
-                    <img src="{{ $siteLogoUrl }}" alt="{{ $siteName ?? 'San Miguel Properties' }}" class="h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
+                    <img src="{{ $siteLogoUrl }}" alt="{{ $siteName ?? $txt('i18n_common_siteName', 'San Miguel Properties', 'San Miguel Properties') }}" class="h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
                 @else
                     <div class="grid h-11 w-11 place-items-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105" style="background: linear-gradient(to bottom right, var(--fe-header-logo_gradient_from, #D1A054), var(--fe-header-logo_gradient_to, #768D59));">
                         <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -62,8 +62,8 @@
                         </svg>
                     </div>
                     <div :class="{ 'text-slate-900': scrolled, 'text-white': !scrolled }" class="transition-colors duration-300">
-                        <p class="text-base font-bold tracking-tight">San Miguel</p>
-                        <p class="text-xs font-medium opacity-80">Properties</p>
+                        <p class="text-base font-bold tracking-tight">{{ $txt('i18n_header_brand_primary', 'San Miguel', 'San Miguel') }}</p>
+                        <p class="text-xs font-medium opacity-80">{{ $txt('i18n_header_brand_secondary', 'Properties', 'Properties') }}</p>
                     </div>
                 @endif
             </a>

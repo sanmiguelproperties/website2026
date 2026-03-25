@@ -247,7 +247,7 @@
             this.agent = data.data?.agent || null;
             this.office = data.data?.office || this.agent?.office || null;
             this.coverUrl = this.agent?.photo || this.fallbackCover;
-            document.title = `${this.agent?.full_name || this.labels.agent} | San Miguel Properties`;
+            document.title = `${this.agent?.full_name || this.labels.agent} | ${tPublic('common.siteName', 'San Miguel Properties')}`;
           } catch (_e) {
             // noop
           }
