@@ -74,7 +74,7 @@
             ? ($pageEntity->meta_keywords_en ?? null)
             : ($pageEntity->meta_keywords_es ?? null);
 
-        $pageFields = method_exists($pageData, 'allFields')
+        $pageFields = ($pageData && method_exists($pageData, 'allFields'))
             ? $pageData->allFields($currentLocale)
             : [];
 
