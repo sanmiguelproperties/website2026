@@ -10,9 +10,13 @@ use App\Models\User;
 
 class RbacMirror
 {
+    private const GUARD_WEB = 'web';
+    private const GUARD_API = 'api';
+    private const BOTH_GUARDS = [self::GUARD_WEB, self::GUARD_API];
+
     private function otherGuard(string $guard): string
     {
-        return $guard === 'web' ? 'api' : 'web';
+        return $guard === self::GUARD_WEB ? self::GUARD_API : self::GUARD_WEB;
     }
 
     private function forgetCache(): void
@@ -45,6 +49,12 @@ class RbacMirror
             $counterpart->name = $permission->name;
             $counterpart->save();
         }
+
+        // Mantener sincronizadas las relaciones permiso-rol en ambos guards.
+        $sourceRoles = $permission->roles()->get();
+        $targetRoles = $this->mapRolesToGuardByName($sourceRoles, $targetGuard, true);
+        $counterpart->roles()->sync($targetRoles->pluck('id')->all());
+
         $this->forgetCache();
     }
 
@@ -66,12 +76,7 @@ class RbacMirror
             'guard_name' => $targetGuard,
         ]);
 
-        // Replicar permisos actuales del rol origen (si hubiera)
-        $sourcePerms = $role->permissions()->get();
-        if ($sourcePerms->isNotEmpty()) {
-            $targetPerms = $this->mapPermissionsToGuardByName($sourcePerms, $targetGuard, true);
-            $targetRole->syncPermissions($targetPerms->all());
-        }
+        $this->synchronizeCounterpartRolePermissions($role, $targetRole, $targetGuard);
         $this->forgetCache();
     }
 
@@ -90,7 +95,10 @@ class RbacMirror
             $counterpart->name = $role->name;
             $counterpart->save();
         }
-        // Las relaciones se sincronizan en attach/sync/detach
+
+        // Si faltaba el rol espejo, dejarlo con los mismos permisos por nombre.
+        $this->synchronizeCounterpartRolePermissions($role, $counterpart, $targetGuard);
+
         $this->forgetCache();
     }
 
@@ -143,6 +151,13 @@ class RbacMirror
         ]);
     }
 
+    private function synchronizeCounterpartRolePermissions(Role $sourceRole, Role $targetRole, string $targetGuard): void
+    {
+        $sourcePerms = $sourceRole->permissions()->get();
+        $targetPerms = $this->mapPermissionsToGuardByName($sourcePerms, $targetGuard, true);
+        $targetRole->syncPermissions($targetPerms->all());
+    }
+
     private function mapPermissionsToGuardByName(Collection $sourcePermissions, string $targetGuard, bool $createMissing = false): Collection
     {
         $names = $sourcePermissions->pluck('name')->unique()->values();
@@ -152,7 +167,7 @@ class RbacMirror
         foreach ($names as $name) {
             $perm = $existing->get($name);
             if (!$perm && $createMissing) {
-                $perm = Permission::create([
+                $perm = Permission::firstOrCreate([
                     'name' => $name,
                     'guard_name' => $targetGuard,
                 ]);
@@ -162,7 +177,29 @@ class RbacMirror
             }
         }
 
-       return $result;
+        return $result;
+    }
+
+    private function mapRolesToGuardByName(Collection $sourceRoles, string $targetGuard, bool $createMissing = false): Collection
+    {
+        $names = $sourceRoles->pluck('name')->unique()->values();
+        $existing = Role::whereIn('name', $names)->where('guard_name', $targetGuard)->get()->keyBy('name');
+
+        $result = collect();
+        foreach ($names as $name) {
+            $role = $existing->get($name);
+            if (!$role && $createMissing) {
+                $role = Role::firstOrCreate([
+                    'name' => $name,
+                    'guard_name' => $targetGuard,
+                ]);
+            }
+            if ($role) {
+                $result->push($role);
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -207,5 +244,89 @@ class RbacMirror
         $user->roles()->sync($roleIds);
 
         $this->forgetCache();
+    }
+
+    /**
+     * Repara datos legados para dejar web/api con los mismos nombres de roles/permisos
+     * y las mismas relaciones rol-permiso (usando la union de ambos guards).
+     *
+     * @return array{permissions_created:int,roles_created:int,roles_synced:int}
+     */
+    public function repairUsingUnion(): array
+    {
+        $permissionNames = Permission::whereIn('guard_name', self::BOTH_GUARDS)
+            ->pluck('name')
+            ->unique()
+            ->values();
+
+        $permissionsCreated = 0;
+        foreach ($permissionNames as $name) {
+            foreach (self::BOTH_GUARDS as $guard) {
+                $permission = Permission::firstOrCreate([
+                    'name' => $name,
+                    'guard_name' => $guard,
+                ]);
+                if ($permission->wasRecentlyCreated) {
+                    $permissionsCreated++;
+                }
+            }
+        }
+
+        $roleNames = Role::whereIn('guard_name', self::BOTH_GUARDS)
+            ->pluck('name')
+            ->unique()
+            ->values();
+
+        $rolesCreated = 0;
+        foreach ($roleNames as $name) {
+            foreach (self::BOTH_GUARDS as $guard) {
+                $role = Role::firstOrCreate([
+                    'name' => $name,
+                    'guard_name' => $guard,
+                ]);
+                if ($role->wasRecentlyCreated) {
+                    $rolesCreated++;
+                }
+            }
+        }
+
+        $rolesSynced = 0;
+        foreach ($roleNames as $roleName) {
+            $unionPermissionNames = collect();
+
+            foreach (self::BOTH_GUARDS as $guard) {
+                $role = Role::where('name', $roleName)->where('guard_name', $guard)->first();
+                if (!$role) {
+                    continue;
+                }
+                $unionPermissionNames = $unionPermissionNames->merge(
+                    $role->permissions()->pluck('name')
+                );
+            }
+
+            $unionPermissionNames = $unionPermissionNames->unique()->values();
+
+            foreach (self::BOTH_GUARDS as $guard) {
+                $role = Role::where('name', $roleName)->where('guard_name', $guard)->first();
+                if (!$role) {
+                    continue;
+                }
+
+                $targetPermissions = Permission::where('guard_name', $guard)
+                    ->whereIn('name', $unionPermissionNames)
+                    ->get();
+
+                $role->syncPermissions($targetPermissions->all());
+                $rolesSynced++;
+            }
+        }
+
+        $this->forgetCache();
+
+        return [
+            'permissions_created' => $permissionsCreated,
+            'roles_created' => $rolesCreated,
+            'roles_synced' => $rolesSynced,
+        ];
     }
 }

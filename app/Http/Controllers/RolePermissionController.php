@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\RbacMirror;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use App\Services\RbacMirror;
 
 class RolePermissionController extends Controller
 {
@@ -21,16 +22,16 @@ class RolePermissionController extends Controller
     public function index(Request $request, int $roleId)
     {
         $validator = Validator::make($request->query(), [
-            'guard' => ['sometimes','in:web,api'],
+            'guard' => ['sometimes', 'in:web,api'],
         ]);
 
         if ($validator->fails()) {
-            return $this->jsonError('Validación fallida', 422, $validator->errors()->toArray());
+            return $this->jsonError('Validacion fallida', 422, $validator->errors()->toArray());
         }
 
         $guard = $request->query('guard', 'web');
-
         $role = Role::where('id', $roleId)->where('guard_name', $guard)->first();
+
         if (!$role) {
             return $this->jsonError('Rol no encontrado', 404);
         }
@@ -50,18 +51,18 @@ class RolePermissionController extends Controller
         ];
 
         $validator = Validator::make($payload, [
-            'permissions' => ['required','array','min:1'],
-            'mode' => ['required','in:by_id,by_name'],
-            'guard_name' => ['sometimes','in:web,api'],
+            'permissions' => ['required', 'array', 'min:1'],
+            'mode' => ['required', 'in:by_id,by_name'],
+            'guard_name' => ['sometimes', 'in:web,api'],
         ]);
 
         if ($validator->fails()) {
-            return $this->jsonError('Validación fallida', 422, $validator->errors()->toArray());
+            return $this->jsonError('Validacion fallida', 422, $validator->errors()->toArray());
         }
 
         $guard = $payload['guard_name'];
-
         $role = Role::where('id', $roleId)->where('guard_name', $guard)->first();
+
         if (!$role) {
             return $this->jsonError('Rol no encontrado', 404);
         }
@@ -73,10 +74,10 @@ class RolePermissionController extends Controller
             ]);
         }
 
-        // Usar métodos de Spatie para limpiar caché y mantener eventos
-        $role->givePermissionTo($resolved['collection']->all());
-        // Replicar en guard espejo
-        $this->rbacMirror->attachPermissions($role, $resolved['collection']);
+        DB::transaction(function () use ($role, $resolved) {
+            $role->givePermissionTo($resolved['collection']->all());
+            $this->rbacMirror->attachPermissions($role, $resolved['collection']);
+        });
 
         $current = $role->permissions()->where('guard_name', $guard)->get();
 
@@ -93,18 +94,18 @@ class RolePermissionController extends Controller
         ];
 
         $validator = Validator::make($payload, [
-            'permissions' => ['required','array','min:1'],
-            'mode' => ['required','in:by_id,by_name'],
-            'guard_name' => ['sometimes','in:web,api'],
+            'permissions' => ['required', 'array', 'min:1'],
+            'mode' => ['required', 'in:by_id,by_name'],
+            'guard_name' => ['sometimes', 'in:web,api'],
         ]);
 
         if ($validator->fails()) {
-            return $this->jsonError('Validación fallida', 422, $validator->errors()->toArray());
+            return $this->jsonError('Validacion fallida', 422, $validator->errors()->toArray());
         }
 
         $guard = $payload['guard_name'];
-
         $role = Role::where('id', $roleId)->where('guard_name', $guard)->first();
+
         if (!$role) {
             return $this->jsonError('Rol no encontrado', 404);
         }
@@ -116,9 +117,10 @@ class RolePermissionController extends Controller
             ]);
         }
 
-        $role->syncPermissions($resolved['collection']->all());
-        // Replicar en guard espejo
-        $this->rbacMirror->syncPermissions($role, $resolved['collection']);
+        DB::transaction(function () use ($role, $resolved) {
+            $role->syncPermissions($resolved['collection']->all());
+            $this->rbacMirror->syncPermissions($role, $resolved['collection']);
+        });
 
         $current = $role->permissions()->where('guard_name', $guard)->get();
 
@@ -135,18 +137,18 @@ class RolePermissionController extends Controller
         ];
 
         $validator = Validator::make($payload, [
-            'permissions' => ['required','array','min:1'],
-            'mode' => ['required','in:by_id,by_name'],
-            'guard_name' => ['sometimes','in:web,api'],
+            'permissions' => ['required', 'array', 'min:1'],
+            'mode' => ['required', 'in:by_id,by_name'],
+            'guard_name' => ['sometimes', 'in:web,api'],
         ]);
 
         if ($validator->fails()) {
-            return $this->jsonError('Validación fallida', 422, $validator->errors()->toArray());
+            return $this->jsonError('Validacion fallida', 422, $validator->errors()->toArray());
         }
 
         $guard = $payload['guard_name'];
-
         $role = Role::where('id', $roleId)->where('guard_name', $guard)->first();
+
         if (!$role) {
             return $this->jsonError('Rol no encontrado', 404);
         }
@@ -158,10 +160,10 @@ class RolePermissionController extends Controller
             ]);
         }
 
-        // Idempotente: revocar un permiso no asignado no debe fallar
-        $role->revokePermissionTo($resolved['collection']->all());
-        // Replicar en guard espejo
-        $this->rbacMirror->detachPermissions($role, $resolved['collection']);
+        DB::transaction(function () use ($role, $resolved) {
+            $role->revokePermissionTo($resolved['collection']->all());
+            $this->rbacMirror->detachPermissions($role, $resolved['collection']);
+        });
 
         $current = $role->permissions()->where('guard_name', $guard)->get();
 
@@ -169,21 +171,16 @@ class RolePermissionController extends Controller
     }
 
     /**
-     * Resuelve permisos por ids o nombres en el guard especificado.
-     *
-     * @param array $items ids o nombres
-     * @param string $mode 'by_id'|'by_name'
-     * @param string $guard
-     * @return array{collection:\Illuminate\Support\Collection, missing:array}
+     * @param array<int, mixed> $items
+     * @return array{collection:\Illuminate\Support\Collection, missing:array<int, mixed>}
      */
     private function resolvePermissions(array $items, string $mode, string $guard): array
     {
         $items = array_values($items);
 
         if ($mode === 'by_id') {
-            // Normalizar a enteros positivos
-            $ids = array_values(array_unique(array_map(fn($v) => (int) $v, $items)));
-            $ids = array_filter($ids, fn($v) => $v > 0);
+            $ids = array_values(array_unique(array_map(fn ($v) => (int) $v, $items)));
+            $ids = array_values(array_filter($ids, fn ($v) => $v > 0));
 
             $found = Permission::whereIn('id', $ids)->where('guard_name', $guard)->get();
             $foundIds = $found->pluck('id')->all();
@@ -192,9 +189,8 @@ class RolePermissionController extends Controller
             return ['collection' => $found, 'missing' => $missing];
         }
 
-        // by_name
-        $names = array_values(array_unique(array_map(fn($v) => trim((string) $v), $items)));
-        $names = array_filter($names, fn($v) => $v !== '');
+        $names = array_values(array_unique(array_map(fn ($v) => trim((string) $v), $items)));
+        $names = array_values(array_filter($names, fn ($v) => $v !== ''));
 
         $found = Permission::whereIn('name', $names)->where('guard_name', $guard)->get();
         $foundNames = $found->pluck('name')->all();

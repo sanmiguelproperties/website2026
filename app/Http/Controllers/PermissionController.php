@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\RbacMirror;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
-use App\Services\RbacMirror;
 
 class PermissionController extends Controller
 {
@@ -21,16 +21,16 @@ class PermissionController extends Controller
     public function index(Request $request)
     {
         $validator = Validator::make($request->query(), [
-            'guard' => ['sometimes','in:web,api'],
-            'page' => ['sometimes','integer','min:1'],
-            'per_page' => ['sometimes','integer','min:1','max:100'],
-            'sort' => ['sometimes','in:name'],
-            'order' => ['sometimes','in:asc,desc'],
+            'guard' => ['sometimes', 'in:web,api'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'sort' => ['sometimes', 'in:name'],
+            'order' => ['sometimes', 'in:asc,desc'],
             'q' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
-            return $this->jsonError('Validación fallida', 422, $validator->errors()->toArray());
+            return $this->jsonError('Validacion fallida', 422, $validator->errors()->toArray());
         }
 
         $guard = $request->query('guard', 'web');
@@ -47,9 +47,7 @@ class PermissionController extends Controller
         }
 
         $query->orderBy($sort, $order);
-
         $paginator = $query->paginate($perPage);
-        $data = $paginator->items();
 
         $pagination = [
             'current_page' => $paginator->currentPage(),
@@ -58,7 +56,7 @@ class PermissionController extends Controller
             'last_page' => $paginator->lastPage(),
         ];
 
-        return $this->jsonSuccess($data, '', 200, ['pagination' => $pagination]);
+        return $this->jsonSuccess($paginator->items(), '', 200, ['pagination' => $pagination]);
     }
 
     public function store(Request $request)
@@ -69,12 +67,12 @@ class PermissionController extends Controller
         ];
 
         $validator = Validator::make($payload, [
-            'name' => ['required','string','max:255'],
-            'guard_name' => ['sometimes','in:web,api'],
+            'name' => ['required', 'string', 'max:255'],
+            'guard_name' => ['sometimes', 'in:web,api'],
         ]);
 
         if ($validator->fails()) {
-            return $this->jsonError('Validación fallida', 422, $validator->errors()->toArray());
+            return $this->jsonError('Validacion fallida', 422, $validator->errors()->toArray());
         }
 
         $guard = $payload['guard_name'] ?? 'web';
@@ -84,13 +82,16 @@ class PermissionController extends Controller
             return $this->jsonError('El permiso ya existe para el guard especificado', 409);
         }
 
-        $permission = Permission::create([
-            'name' => $payload['name'],
-            'guard_name' => $guard,
-        ]);
+        $permission = DB::transaction(function () use ($payload, $guard) {
+            $permission = Permission::create([
+                'name' => $payload['name'],
+                'guard_name' => $guard,
+            ]);
 
-        // Replicar al guard espejo
-        $this->rbacMirror->mirrorPermissionCreated($permission);
+            $this->rbacMirror->mirrorPermissionCreated($permission);
+
+            return $permission->fresh();
+        });
 
         return $this->jsonSuccess($permission, 'Permiso creado', 201);
     }
@@ -98,7 +99,6 @@ class PermissionController extends Controller
     public function show(Request $request, int $id)
     {
         $guard = $request->query('guard', 'web');
-
         $permission = Permission::where('id', $id)->where('guard_name', $guard)->first();
 
         if (!$permission) {
@@ -118,26 +118,31 @@ class PermissionController extends Controller
         $oldName = $permission->name;
         $oldGuard = $permission->guard_name;
 
+        if ($request->has('guard_name') && $request->input('guard_name') !== $permission->guard_name) {
+            return $this->jsonError('No se permite cambiar guard_name en una actualizacion. Usa el guard correcto sin mover el registro.', 422);
+        }
+
         $payload = [
             'name' => $request->has('name') ? trim((string) $request->input('name')) : $permission->name,
-            'guard_name' => $request->input('guard_name', $permission->guard_name),
+            'guard_name' => $permission->guard_name,
         ];
 
         $validator = Validator::make($payload, [
             'name' => [
-                'required','string','max:255',
+                'required',
+                'string',
+                'max:255',
                 Rule::unique('permissions', 'name')
                     ->where(fn ($q) => $q->where('guard_name', $payload['guard_name']))
                     ->ignore($id),
             ],
-            'guard_name' => ['sometimes','in:web,api'],
+            'guard_name' => ['sometimes', 'in:web,api'],
         ]);
 
         if ($validator->fails()) {
-            return $this->jsonError('Validación fallida', 422, $validator->errors()->toArray());
+            return $this->jsonError('Validacion fallida', 422, $validator->errors()->toArray());
         }
 
-        // Extra chequeo para conflictos de unicidad
         $exists = Permission::where('id', '!=', $id)
             ->where('guard_name', $payload['guard_name'])
             ->where('name', $payload['name'])
@@ -147,12 +152,15 @@ class PermissionController extends Controller
             return $this->jsonError('Ya existe un permiso con ese nombre en el guard especificado', 409);
         }
 
-        $permission->name = $payload['name'];
-        $permission->guard_name = $payload['guard_name'];
-        $permission->save();
+        $permission = DB::transaction(function () use ($permission, $payload, $oldName, $oldGuard) {
+            $permission->name = $payload['name'];
+            $permission->guard_name = $payload['guard_name'];
+            $permission->save();
 
-        // Replicar cambio al guard espejo
-        $this->rbacMirror->mirrorPermissionUpdated($permission, $oldName, $oldGuard);
+            $this->rbacMirror->mirrorPermissionUpdated($permission, $oldName, $oldGuard);
+
+            return $permission->fresh();
+        });
 
         return $this->jsonSuccess($permission, 'Permiso actualizado');
     }
@@ -164,7 +172,6 @@ class PermissionController extends Controller
             return $this->jsonError('Permiso no encontrado', 404);
         }
 
-        // Bloquear eliminación si el permiso está asignado directamente a algún usuario
         $tableNames = config('permission.table_names');
         $columnNames = config('permission.column_names');
         $pivotPermission = $columnNames['permission_pivot_key'] ?? 'permission_id';
@@ -176,26 +183,25 @@ class PermissionController extends Controller
             ->exists();
 
         if ($assignedToUsers) {
-            return $this->jsonError('No se puede eliminar un permiso que está asignado a usuarios', 422, [
-                'assignments' => ['El permiso está asignado directamente a uno o más usuarios. Revoca el permiso antes de eliminar.'],
+            return $this->jsonError('No se puede eliminar un permiso que esta asignado a usuarios', 422, [
+                'assignments' => ['El permiso esta asignado directamente a uno o mas usuarios. Revoca el permiso antes de eliminar.'],
             ]);
         }
 
-        // Opcionalmente, bloquear si está asignado a roles (que podrían estar asociados a usuarios)
         $assignedToRoles = DB::table($roleHasPermissions)
             ->where($pivotPermission, $permission->id)
             ->exists();
 
         if ($assignedToRoles) {
-            return $this->jsonError('No se puede eliminar un permiso que está asignado a roles', 422, [
-                'assignments' => ['El permiso está asignado a uno o más roles. Remueve el permiso de esos roles antes de eliminar.'],
+            return $this->jsonError('No se puede eliminar un permiso que esta asignado a roles', 422, [
+                'assignments' => ['El permiso esta asignado a uno o mas roles. Remueve el permiso de esos roles antes de eliminar.'],
             ]);
         }
 
-        $permission->delete();
-
-        // Replicar eliminación al guard espejo
-        $this->rbacMirror->mirrorPermissionDeleted($permission);
+        DB::transaction(function () use ($permission) {
+            $permission->delete();
+            $this->rbacMirror->mirrorPermissionDeleted($permission);
+        });
 
         return $this->jsonSuccess(null, 'Permiso eliminado');
     }

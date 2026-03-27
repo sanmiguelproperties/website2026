@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\RbacMirror;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
-use App\Services\RbacMirror;
 
 class RoleController extends Controller
 {
@@ -17,19 +17,20 @@ class RoleController extends Controller
     {
         $this->rbacMirror = app(RbacMirror::class);
     }
+
     public function index(Request $request)
     {
         $validator = Validator::make($request->query(), [
-            'guard' => ['sometimes','in:web,api'],
-            'page' => ['sometimes','integer','min:1'],
-            'per_page' => ['sometimes','integer','min:1','max:100'],
-            'sort' => ['sometimes','in:name'],
-            'order' => ['sometimes','in:asc,desc'],
+            'guard' => ['sometimes', 'in:web,api'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'sort' => ['sometimes', 'in:name'],
+            'order' => ['sometimes', 'in:asc,desc'],
             'q' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
-            return $this->jsonError('Validación fallida', 422, $validator->errors()->toArray());
+            return $this->jsonError('Validacion fallida', 422, $validator->errors()->toArray());
         }
 
         $guard = $request->query('guard', 'web');
@@ -46,10 +47,7 @@ class RoleController extends Controller
         }
 
         $query->orderBy($sort, $order);
-
         $paginator = $query->paginate($perPage);
-
-        $data = $paginator->items();
 
         $pagination = [
             'current_page' => $paginator->currentPage(),
@@ -58,7 +56,7 @@ class RoleController extends Controller
             'last_page' => $paginator->lastPage(),
         ];
 
-        return $this->jsonSuccess($data, '', 200, ['pagination' => $pagination]);
+        return $this->jsonSuccess($paginator->items(), '', 200, ['pagination' => $pagination]);
     }
 
     public function store(Request $request)
@@ -69,12 +67,12 @@ class RoleController extends Controller
         ];
 
         $validator = Validator::make($payload, [
-            'name' => ['required','string','max:255'],
-            'guard_name' => ['sometimes','in:web,api'],
+            'name' => ['required', 'string', 'max:255'],
+            'guard_name' => ['sometimes', 'in:web,api'],
         ]);
 
         if ($validator->fails()) {
-            return $this->jsonError('Validación fallida', 422, $validator->errors()->toArray());
+            return $this->jsonError('Validacion fallida', 422, $validator->errors()->toArray());
         }
 
         $guard = $payload['guard_name'] ?? 'web';
@@ -84,13 +82,16 @@ class RoleController extends Controller
             return $this->jsonError('El rol ya existe para el guard especificado', 409);
         }
 
-        $role = Role::create([
-            'name' => $payload['name'],
-            'guard_name' => $guard,
-        ]);
+        $role = DB::transaction(function () use ($payload, $guard) {
+            $role = Role::create([
+                'name' => $payload['name'],
+                'guard_name' => $guard,
+            ]);
 
-        // Replicar al guard espejo
-        $this->rbacMirror->mirrorRoleCreated($role);
+            $this->rbacMirror->mirrorRoleCreated($role);
+
+            return $role->fresh();
+        });
 
         return $this->jsonSuccess($role, 'Rol creado', 201);
     }
@@ -98,7 +99,6 @@ class RoleController extends Controller
     public function show(Request $request, int $id)
     {
         $guard = $request->query('guard', 'web');
-
         $role = Role::where('id', $id)->where('guard_name', $guard)->first();
 
         if (!$role) {
@@ -118,26 +118,31 @@ class RoleController extends Controller
         $oldName = $role->name;
         $oldGuard = $role->guard_name;
 
+        if ($request->has('guard_name') && $request->input('guard_name') !== $role->guard_name) {
+            return $this->jsonError('No se permite cambiar guard_name en una actualizacion. Usa el guard correcto sin mover el registro.', 422);
+        }
+
         $payload = [
             'name' => $request->has('name') ? trim((string) $request->input('name')) : $role->name,
-            'guard_name' => $request->input('guard_name', $role->guard_name),
+            'guard_name' => $role->guard_name,
         ];
 
         $validator = Validator::make($payload, [
             'name' => [
-                'required','string','max:255',
+                'required',
+                'string',
+                'max:255',
                 Rule::unique('roles', 'name')
                     ->where(fn ($q) => $q->where('guard_name', $payload['guard_name']))
                     ->ignore($id),
             ],
-            'guard_name' => ['sometimes','in:web,api'],
+            'guard_name' => ['sometimes', 'in:web,api'],
         ]);
 
         if ($validator->fails()) {
-            return $this->jsonError('Validación fallida', 422, $validator->errors()->toArray());
+            return $this->jsonError('Validacion fallida', 422, $validator->errors()->toArray());
         }
 
-        // Extra chequeo para conflictos de unicidad
         $exists = Role::where('id', '!=', $id)
             ->where('guard_name', $payload['guard_name'])
             ->where('name', $payload['name'])
@@ -147,12 +152,15 @@ class RoleController extends Controller
             return $this->jsonError('Ya existe un rol con ese nombre en el guard especificado', 409);
         }
 
-        $role->name = $payload['name'];
-        $role->guard_name = $payload['guard_name'];
-        $role->save();
+        $role = DB::transaction(function () use ($role, $payload, $oldName, $oldGuard) {
+            $role->name = $payload['name'];
+            $role->guard_name = $payload['guard_name'];
+            $role->save();
 
-        // Replicar cambios al guard espejo
-        $this->rbacMirror->mirrorRoleUpdated($role, $oldName, $oldGuard);
+            $this->rbacMirror->mirrorRoleUpdated($role, $oldName, $oldGuard);
+
+            return $role->fresh();
+        });
 
         return $this->jsonSuccess($role, 'Rol actualizado');
     }
@@ -164,7 +172,6 @@ class RoleController extends Controller
             return $this->jsonError('Rol no encontrado', 404);
         }
 
-        // Bloquear eliminación si el rol está asignado a algún usuario (en cualquier modelo del guard)
         $tableNames = config('permission.table_names');
         $columnNames = config('permission.column_names');
         $pivotRole = $columnNames['role_pivot_key'] ?? 'role_id';
@@ -175,17 +182,16 @@ class RoleController extends Controller
             ->exists();
 
         if ($assigned) {
-            return $this->jsonError('No se puede eliminar un rol que está asignado a usuarios', 422, [
-                'assignments' => ['El rol está asignado a uno o más usuarios. Revoca el rol antes de eliminar.'],
+            return $this->jsonError('No se puede eliminar un rol que esta asignado a usuarios', 422, [
+                'assignments' => ['El rol esta asignado a uno o mas usuarios. Revoca el rol antes de eliminar.'],
             ]);
         }
 
-        $role->delete();
-
-        // Replicar eliminación al guard espejo
-        $this->rbacMirror->mirrorRoleDeleted($role);
+        DB::transaction(function () use ($role) {
+            $role->delete();
+            $this->rbacMirror->mirrorRoleDeleted($role);
+        });
 
         return $this->jsonSuccess(null, 'Rol eliminado');
     }
-
 }

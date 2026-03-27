@@ -21,6 +21,20 @@ class EasyBrokerMlsExportService
 
     protected int $rateLimit = 20;
 
+    /**
+     * Cache en memoria para consultas de ubicación dentro del mismo request.
+     *
+     * @var array<string, array<string, mixed>|null>
+     */
+    protected array $locationQueryCache = [];
+
+    /**
+     * Cache de validación de URLs de imágenes para evitar múltiples HEAD/GET.
+     *
+     * @var array<string, bool>
+     */
+    protected array $imageUrlValidationCache = [];
+
     public function __construct()
     {
         $this->reloadConfiguration();
@@ -125,6 +139,10 @@ class EasyBrokerMlsExportService
             ? $property->tags
             : $property->tags()->get();
 
+        $mediaAssets = $property->relationLoaded('mediaAssets')
+            ? $property->mediaAssets
+            : $property->mediaAssets()->get();
+
         $title = $this->firstNonEmpty([
             $property->title,
             $rawPayload['name'] ?? null,
@@ -171,9 +189,9 @@ class EasyBrokerMlsExportService
             'title' => $title,
             'description' => $description,
             'status' => $targetStatus,
-            'street' => $street,
             'location' => [
                 'name' => $locationName,
+                'street' => $street,
             ],
         ];
 
@@ -212,6 +230,11 @@ class EasyBrokerMlsExportService
             $payload['tags'] = array_values(array_unique($tagNames));
         }
 
+        $imagesPayload = $this->buildImagesPayload($property, $rawPayload, $mediaAssets);
+        if (!empty($imagesPayload)) {
+            $payload['images'] = $imagesPayload;
+        }
+
         $missing = [];
         if ($this->isBlank($payload['property_type'] ?? null)) {
             $missing[] = 'property_type';
@@ -228,7 +251,7 @@ class EasyBrokerMlsExportService
         if ($this->isBlank($payload['status'] ?? null)) {
             $missing[] = 'status';
         }
-        if ($this->isBlank($payload['street'] ?? null)) {
+        if ($this->isBlank($payload['location']['street'] ?? null)) {
             $missing[] = 'street';
         }
         if ($this->isBlank($payload['location']['name'] ?? null)) {
@@ -243,6 +266,7 @@ class EasyBrokerMlsExportService
                 'street' => $street,
                 'location_name' => $locationName,
                 'operations_count' => count($operationsPayload),
+                'images_count' => count($imagesPayload),
             ],
         ];
     }
@@ -276,17 +300,37 @@ class EasyBrokerMlsExportService
 
         $action = 'created';
         $response = null;
+        $requestMethod = 'POST';
+        $requestEndpoint = '/properties';
 
         if (!empty($property->easybroker_public_id)) {
             $action = 'updated';
-            $response = $this->makeRequest('PATCH', '/properties/' . $property->easybroker_public_id, $payload);
+            $requestMethod = 'PATCH';
+            $requestEndpoint = '/properties/' . $property->easybroker_public_id;
+            $response = $this->makeRequest($requestMethod, $requestEndpoint, $payload);
 
             if (!$response['ok'] && $response['status'] === 404 && $createIfMissing) {
                 $action = 'created';
-                $response = $this->makeRequest('POST', '/properties', $payload);
+                $requestMethod = 'POST';
+                $requestEndpoint = '/properties';
+                $response = $this->makeRequest($requestMethod, $requestEndpoint, $payload);
             }
         } else {
-            $response = $this->makeRequest('POST', '/properties', $payload);
+            $response = $this->makeRequest($requestMethod, $requestEndpoint, $payload);
+        }
+
+        // Si la API rechaza ubicación, intentar resolver nombre válido de colonia/ciudad y reintentar una sola vez.
+        if (
+            !$response['ok']
+            && $response['status'] === 422
+            && $this->shouldRetryLocationWithCatalog($response['body'])
+        ) {
+            $retryPayload = $this->buildLocationFallbackPayload($payload, $property);
+            if ($retryPayload !== null) {
+                $retryResponse = $this->makeRequest($requestMethod, $requestEndpoint, $retryPayload);
+                $payload = $retryPayload;
+                $response = $retryResponse;
+            }
         }
 
         if (!$response['ok']) {
@@ -358,10 +402,10 @@ class EasyBrokerMlsExportService
         ?array $allowedPropertyTypes = null
     ): ?string {
         $categoryMap = [
-            'residential' => 'Casa',
-            'land and lots' => 'Terreno',
-            'commercial' => 'Local Comercial',
-            'pre sales' => 'Casa',
+            'residential' => ['Casa', 'House', 'Apartment', 'Villa'],
+            'land and lots' => ['Terreno', 'Lot', 'Commercial Lot', 'Industrial Lot', 'Orchard', 'Ranch'],
+            'commercial' => ['Local Comercial', 'Retail Space', 'Office', 'Commercial Lot', 'Shopping Mall Space'],
+            'pre sales' => ['Casa', 'House'],
         ];
 
         $category = $this->firstNonEmpty([
@@ -369,27 +413,40 @@ class EasyBrokerMlsExportService
             $rawPayload['category'] ?? null,
         ]);
 
-        $mappedCategoryType = null;
+        $mappedCategoryTypes = [];
         if ($category !== null) {
             $normalizedCategory = $this->normalizeString($category);
-            $mappedCategoryType = $categoryMap[$normalizedCategory] ?? null;
+            $mappedCategoryTypes = $categoryMap[$normalizedCategory] ?? [];
         }
 
-        $candidates = array_values(array_filter([
+        $baseCandidates = array_values(array_filter([
             $property->property_type_name,
             $rawPayload['property_type'] ?? null,
             $rawPayload['property_type_name'] ?? null,
             $property->category,
             $rawPayload['category'] ?? null,
-            $mappedCategoryType,
             $fallbackPropertyType,
         ], fn ($value) => is_string($value) && trim($value) !== ''));
+
+        $candidates = array_values(array_unique(array_merge(
+            $baseCandidates,
+            $mappedCategoryTypes
+        )));
 
         if (empty($candidates)) {
             return null;
         }
 
         if (empty($allowedPropertyTypes)) {
+            foreach ($candidates as $candidate) {
+                $aliases = $this->propertyTypeAliases($this->normalizeString($candidate));
+                foreach ($aliases as $alias) {
+                    if (is_string($alias) && trim($alias) !== '') {
+                        return trim($alias);
+                    }
+                }
+            }
+
             return trim($candidates[0]);
         }
 
@@ -408,7 +465,44 @@ class EasyBrokerMlsExportService
             }
         }
 
+        // Segunda pasada: equivalencias comunes (es/en) para cuentas con catálogos en otro idioma.
+        foreach ($candidates as $candidate) {
+            $aliases = $this->propertyTypeAliases($this->normalizeString($candidate));
+            foreach ($aliases as $alias) {
+                $normalizedAlias = $this->normalizeString($alias);
+                if (isset($allowedMap[$normalizedAlias])) {
+                    return $allowedMap[$normalizedAlias];
+                }
+            }
+        }
+
         return null;
+    }
+
+    /**
+     * Equivalencias de tipos entre catálogos en español/inglés.
+     *
+     * @return array<int, string>
+     */
+    protected function propertyTypeAliases(string $normalizedType): array
+    {
+        $aliases = [
+            'land and lots' => ['Lot', 'Terreno', 'Commercial Lot', 'Industrial Lot', 'Orchard', 'Ranch'],
+            'land lots' => ['Lot', 'Terreno', 'Commercial Lot', 'Industrial Lot', 'Orchard', 'Ranch'],
+            'lot' => ['Lot', 'Terreno', 'Commercial Lot', 'Industrial Lot'],
+            'lots' => ['Lot', 'Terreno', 'Commercial Lot', 'Industrial Lot'],
+            'terreno' => ['Terreno', 'Lot', 'Commercial Lot', 'Industrial Lot'],
+            'residential' => ['House', 'Casa', 'Apartment', 'Villa'],
+            'house' => ['House', 'Casa'],
+            'casa' => ['Casa', 'House'],
+            'commercial' => ['Retail Space', 'Local Comercial', 'Office', 'Commercial Lot', 'Shopping Mall Space'],
+            'local comercial' => ['Local Comercial', 'Retail Space', 'Shopping Mall Space'],
+            'retail space' => ['Retail Space', 'Local Comercial', 'Shopping Mall Space'],
+            'office' => ['Office', 'Oficina'],
+            'oficina' => ['Oficina', 'Office'],
+        ];
+
+        return $aliases[$normalizedType] ?? [];
     }
 
     protected function resolveLocationName(Property $property, array $rawPayload, mixed $location): ?string
@@ -455,6 +549,278 @@ class EasyBrokerMlsExportService
         ]);
     }
 
+    /**
+     * Construye el arreglo `images` para EasyBroker a partir de media_assets/pivot.
+     * Solo incluye URLs válidas para evitar rechazos 422.
+     *
+     * @return array<int, array{url: string, title?: string}>
+     */
+    protected function buildImagesPayload(Property $property, array $rawPayload, Collection $mediaAssets): array
+    {
+        $images = [];
+        $seen = [];
+
+        $coverId = $this->asInt($property->cover_media_asset_id);
+
+        $orderedMedia = $mediaAssets
+            ->filter(function ($asset) {
+                $role = strtolower(trim((string) ($asset->pivot?->role ?? '')));
+                return $role === '' || $role === 'image';
+            })
+            ->sortBy(function ($asset) use ($coverId) {
+                $isCover = $coverId !== null && $this->asInt($asset->id) === $coverId ? 0 : 1;
+                $position = $this->asInt($asset->pivot?->position) ?? 9999;
+
+                return "{$isCover}-" . str_pad((string) $position, 6, '0', STR_PAD_LEFT);
+            })
+            ->values();
+
+        foreach ($orderedMedia as $asset) {
+            $url = $this->resolveMediaAssetImageUrl($asset);
+            if ($url === null) {
+                continue;
+            }
+
+            $dedupKey = $this->normalizeUrlKey($url);
+            if (isset($seen[$dedupKey])) {
+                continue;
+            }
+
+            $seen[$dedupKey] = true;
+
+            $title = $this->sanitizeImageTitle($this->firstNonEmpty([
+                $asset->pivot?->title ?? null,
+                $asset->alt ?? null,
+                $asset->name ?? null,
+            ]));
+
+            $item = ['url' => $url];
+            if ($title !== null) {
+                $item['title'] = $title;
+            }
+
+            $images[] = $item;
+            if (count($images) >= 50) {
+                return $images;
+            }
+        }
+
+        // Fallback: usar imágenes en raw_payload cuando no hay vínculos locales.
+        if (empty($images)) {
+            $rawImages = [];
+
+            if (isset($rawPayload['images']) && is_array($rawPayload['images'])) {
+                $rawImages = array_merge($rawImages, $rawPayload['images']);
+            }
+            if (isset($rawPayload['photos']) && is_array($rawPayload['photos'])) {
+                $rawImages = array_merge($rawImages, $rawPayload['photos']);
+            }
+
+            foreach ($rawImages as $rawImage) {
+                $candidate = $this->parseRawImageCandidate($rawImage);
+                if ($candidate === null) {
+                    continue;
+                }
+
+                $dedupKey = $this->normalizeUrlKey($candidate['url']);
+                if (isset($seen[$dedupKey])) {
+                    continue;
+                }
+
+                $seen[$dedupKey] = true;
+                $images[] = $candidate;
+
+                if (count($images) >= 50) {
+                    break;
+                }
+            }
+        }
+
+        if ($mediaAssets->isNotEmpty() && empty($images)) {
+            Log::warning('[EasyBrokerMlsExport] Sin URLs de imágenes públicas/alcanzables para enviar', [
+                'property_id' => $property->id,
+                'media_assets_count' => $mediaAssets->count(),
+            ]);
+        }
+
+        return $images;
+    }
+
+    /**
+     * @return array{url: string, title?: string}|null
+     */
+    protected function parseRawImageCandidate(mixed $rawImage): ?array
+    {
+        $url = null;
+        $title = null;
+
+        if (is_string($rawImage)) {
+            $url = trim($rawImage);
+        } elseif (is_array($rawImage)) {
+            $url = $this->firstNonEmpty([
+                $rawImage['url'] ?? null,
+                $rawImage['src'] ?? null,
+                $rawImage['source_url'] ?? null,
+            ]);
+            $title = $this->sanitizeImageTitle($this->firstNonEmpty([
+                $rawImage['title'] ?? null,
+                $rawImage['alt'] ?? null,
+                $rawImage['name'] ?? null,
+            ]));
+        }
+
+        if ($url === null || !$this->isValidEasyBrokerImageUrl($url)) {
+            return null;
+        }
+
+        $item = ['url' => $url];
+        if ($title !== null) {
+            $item['title'] = $title;
+        }
+
+        return $item;
+    }
+
+    protected function resolveMediaAssetImageUrl(mixed $asset): ?string
+    {
+        $candidates = [
+            $asset->serving_url ?? null,
+            $asset->pivot?->source_url ?? null,
+            $asset->url ?? null,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (!is_string($candidate) || trim($candidate) === '') {
+                continue;
+            }
+
+            $url = trim($candidate);
+            if ($this->isValidEasyBrokerImageUrl($url) && $this->isReachableImageUrl($url)) {
+                return $url;
+            }
+        }
+
+        return null;
+    }
+
+    protected function sanitizeImageTitle(?string $title): ?string
+    {
+        if ($title === null) {
+            return null;
+        }
+
+        $title = trim($title);
+        if ($title === '') {
+            return null;
+        }
+
+        return mb_substr($title, 0, 200);
+    }
+
+    protected function isValidEasyBrokerImageUrl(string $url): bool
+    {
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+
+        $parts = parse_url($url);
+        if (!is_array($parts)) {
+            return false;
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        if ($host === '' || !$this->isPublicHost($host)) {
+            return false;
+        }
+
+        $path = (string) ($parts['path'] ?? '');
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'heic'];
+
+        return in_array($extension, $allowedExtensions, true);
+    }
+
+    protected function isPublicHost(string $host): bool
+    {
+        if (
+            in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+            || str_ends_with($host, '.localhost')
+            || str_ends_with($host, '.local')
+            || str_ends_with($host, '.test')
+        ) {
+            return false;
+        }
+
+        if (!str_contains($host, '.')) {
+            return false;
+        }
+
+        if (!filter_var($host, FILTER_VALIDATE_IP)) {
+            return true;
+        }
+
+        return filter_var(
+            $host,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        ) !== false;
+    }
+
+    protected function normalizeUrlKey(string $url): string
+    {
+        return strtolower(trim($url));
+    }
+
+    protected function isReachableImageUrl(string $url): bool
+    {
+        $cacheKey = $this->normalizeUrlKey($url);
+        if (array_key_exists($cacheKey, $this->imageUrlValidationCache)) {
+            return $this->imageUrlValidationCache[$cacheKey];
+        }
+
+        $timeout = max(3, min($this->timeout, 8));
+        $reachable = false;
+
+        try {
+            $head = Http::timeout($timeout)
+                ->withHeaders([
+                    'Accept' => 'image/*,*/*;q=0.8',
+                    'User-Agent' => 'SanMiguelProperties-EasyBroker/1.0',
+                ])
+                ->head($url);
+
+            if ($head->successful()) {
+                $contentType = strtolower((string) $head->header('Content-Type'));
+                $reachable = $contentType === '' || str_starts_with($contentType, 'image/');
+            } elseif (in_array($head->status(), [403, 405], true)) {
+                // Algunos orígenes bloquean HEAD; intentar GET con rango mínimo.
+                $get = Http::timeout($timeout)
+                    ->withHeaders([
+                        'Accept' => 'image/*,*/*;q=0.8',
+                        'Range' => 'bytes=0-0',
+                        'User-Agent' => 'SanMiguelProperties-EasyBroker/1.0',
+                    ])
+                    ->get($url);
+
+                if ($get->successful() || $get->status() === 206) {
+                    $contentType = strtolower((string) $get->header('Content-Type'));
+                    $reachable = $contentType === '' || str_starts_with($contentType, 'image/');
+                }
+            }
+        } catch (\Throwable $e) {
+            $reachable = false;
+        }
+
+        $this->imageUrlValidationCache[$cacheKey] = $reachable;
+
+        return $reachable;
+    }
+
     protected function buildOperationsPayload(Property $property, array $rawPayload, Collection $operations): array
     {
         $payload = [];
@@ -479,6 +845,7 @@ class EasyBrokerMlsExportService
 
             $item = [
                 'type' => $type,
+                'active' => true,
                 'amount' => $amount,
             ];
 
@@ -508,6 +875,7 @@ class EasyBrokerMlsExportService
 
             $item = [
                 'type' => $type,
+                'active' => true,
                 'amount' => $rawPrice,
             ];
             if ($currency !== null) {
@@ -557,6 +925,206 @@ class EasyBrokerMlsExportService
         }
 
         return $result;
+    }
+
+    /**
+     * Determina si vale la pena reintentar con fallback de ubicación.
+     */
+    protected function shouldRetryLocationWithCatalog(array $body): bool
+    {
+        $errors = $body['errors'] ?? null;
+        if (!is_array($errors)) {
+            return false;
+        }
+
+        return isset($errors['city_id'])
+            || isset($errors['administrative_division_id'])
+            || isset($errors['neighborhood'])
+            || isset($errors['location']);
+    }
+
+    /**
+     * Recalcula location.name contra catálogo de EasyBroker usando ciudad/estado
+     * y, cuando sea posible, una colonia equivalente.
+     */
+    protected function buildLocationFallbackPayload(array $payload, Property $property): ?array
+    {
+        $currentLocation = $payload['location'] ?? null;
+        if (!is_array($currentLocation)) {
+            return null;
+        }
+
+        $location = $property->relationLoaded('location')
+            ? $property->location
+            : $property->location()->first();
+
+        $rawPayload = is_array($property->raw_payload) ? $property->raw_payload : [];
+
+        $neighborhood = $this->firstNonEmpty([
+            $location?->city_area,
+            $property->mls_neighborhood,
+            $rawPayload['neighborhood'] ?? null,
+            $rawPayload['location']['neighborhood'] ?? null,
+            $rawPayload['location']['city_area'] ?? null,
+        ]);
+
+        $city = $this->firstNonEmpty([
+            $location?->city,
+            $rawPayload['city'] ?? null,
+            $rawPayload['location']['city'] ?? null,
+        ]);
+
+        $state = $this->firstNonEmpty([
+            $location?->region,
+            $rawPayload['state_province'] ?? null,
+            $rawPayload['state'] ?? null,
+            $rawPayload['location']['state'] ?? null,
+        ]);
+
+        $resolvedName = $this->resolveLocationFromCatalog($neighborhood, $city, $state);
+        if ($resolvedName === null) {
+            return null;
+        }
+
+        $currentName = $this->firstNonEmpty([$currentLocation['name'] ?? null]);
+        if (
+            $currentName !== null
+            && $this->normalizeString($currentName) === $this->normalizeString($resolvedName)
+        ) {
+            return null;
+        }
+
+        $payload['location']['name'] = $resolvedName;
+
+        return $payload;
+    }
+
+    /**
+     * Resuelve un full_name de ubicación válido para EasyBroker.
+     */
+    protected function resolveLocationFromCatalog(?string $neighborhood, ?string $city, ?string $state): ?string
+    {
+        $cityState = $this->firstNonEmpty([
+            $city !== null && $state !== null ? "{$city}, {$state}" : null,
+        ]);
+
+        if ($cityState === null) {
+            return null;
+        }
+
+        $cityData = $this->lookupLocationByQuery($cityState);
+        if ($cityData === null) {
+            return null;
+        }
+
+        $cityFullName = $this->firstNonEmpty([
+            $cityData['full_name'] ?? null,
+            $cityData['name'] ?? null,
+        ]);
+
+        $localities = $cityData['localities'] ?? [];
+        if ($neighborhood !== null && is_array($localities)) {
+            $bestNeighborhood = $this->findBestNeighborhoodFullName($neighborhood, $localities);
+            if ($bestNeighborhood !== null) {
+                return $bestNeighborhood;
+            }
+        }
+
+        return $cityFullName;
+    }
+
+    /**
+     * Obtiene ubicación desde /locations por query, con caché local.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function lookupLocationByQuery(string $query): ?array
+    {
+        $query = trim($query);
+        if ($query === '') {
+            return null;
+        }
+
+        $cacheKey = $this->normalizeString($query);
+        if (array_key_exists($cacheKey, $this->locationQueryCache)) {
+            return $this->locationQueryCache[$cacheKey];
+        }
+
+        $response = $this->makeRequest('GET', '/locations', [
+            'query' => $query,
+        ]);
+
+        if (!$response['ok'] || !is_array($response['body'])) {
+            $this->locationQueryCache[$cacheKey] = null;
+            return null;
+        }
+
+        $this->locationQueryCache[$cacheKey] = $response['body'];
+
+        return $response['body'];
+    }
+
+    /**
+     * Busca la colonia más cercana al texto de origen dentro de localities.
+     */
+    protected function findBestNeighborhoodFullName(string $neighborhood, array $localities): ?string
+    {
+        $needle = $this->normalizeString($neighborhood);
+        if ($needle === '') {
+            return null;
+        }
+
+        $bestScore = 0.0;
+        $bestFullName = null;
+
+        foreach ($localities as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $name = $this->firstNonEmpty([
+                $item['name'] ?? null,
+                $item['full_name'] ?? null,
+            ]);
+            $fullName = $this->firstNonEmpty([
+                $item['full_name'] ?? null,
+                $item['name'] ?? null,
+            ]);
+
+            if ($name === null || $fullName === null) {
+                continue;
+            }
+
+            $normalizedName = $this->normalizeString($name);
+            $normalizedFull = $this->normalizeString($fullName);
+
+            $score = 0.0;
+            if ($normalizedName === $needle || $normalizedFull === $needle) {
+                $score = 100.0;
+            } elseif (
+                str_contains($normalizedName, $needle)
+                || str_contains($normalizedFull, $needle)
+            ) {
+                $score = 90.0;
+            } elseif (
+                str_contains($needle, $normalizedName)
+                || str_contains($needle, $normalizedFull)
+            ) {
+                $score = 85.0;
+            } else {
+                similar_text($needle, $normalizedName, $nameSimilarity);
+                similar_text($needle, $normalizedFull, $fullSimilarity);
+                $score = max((float) $nameSimilarity, (float) $fullSimilarity);
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestFullName = $fullName;
+            }
+        }
+
+        // Umbral conservador para evitar empates débiles.
+        return $bestScore >= 70.0 ? $bestFullName : null;
     }
 
     protected function makeRequest(string $method, string $endpoint, array $payload = []): array

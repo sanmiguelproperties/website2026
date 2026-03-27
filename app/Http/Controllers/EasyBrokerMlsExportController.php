@@ -107,6 +107,7 @@ class EasyBrokerMlsExportController extends Controller
                 'mlsOffice:mls_office_id,name,city,state_province,is_managed_by_us',
                 'location:property_id,region,city,city_area,street,latitude,longitude',
                 'operations:id,property_id,operation_type,amount,currency_code',
+                'mediaAssets:id,url,storage_path,name,alt',
             ])
             ->withCount(['operations', 'features', 'tags']);
 
@@ -251,6 +252,7 @@ class EasyBrokerMlsExportController extends Controller
                 'operations.currency',
                 'tags:id,name',
                 'mlsOffice:mls_office_id,name,city,state_province,is_managed_by_us',
+                'mediaAssets:id,url,storage_path,name,alt',
             ])
             ->whereIn('id', $propertyIds)
             ->get()
