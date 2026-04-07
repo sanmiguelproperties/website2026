@@ -148,7 +148,7 @@
     $contactSettings = CmsService::settings('contact', $currentLocale);
     $phoneDisplay = trim((string) ($contactSettings['contact_phone'] ?? '+52 55 1234 5678'));
     $phoneHref = preg_replace('/[^0-9+]/', '', $phoneDisplay) ?: '+525512345678';
-    $parseLogoHeight = static function (?string $value, int $default, int $min, int $max): int {
+    $parsePixelSetting = static function (?string $value, int $default, int $min, int $max): int {
         if ($value === null) {
             return $default;
         }
@@ -160,8 +160,10 @@
 
         return max($min, min($max, $parsed));
     };
-    $logoHeightDesktop = $parseLogoHeight(CmsService::setting('header_logo_height_desktop', $currentLocale), 44, 24, 96);
-    $logoHeightMobile = $parseLogoHeight(CmsService::setting('header_logo_height_mobile', $currentLocale), 36, 20, 80);
+    $logoHeightDesktop = $parsePixelSetting(CmsService::setting('header_logo_height_desktop', $currentLocale), 44, 24, 96);
+    $logoHeightMobile = $parsePixelSetting(CmsService::setting('header_logo_height_mobile', $currentLocale), 36, 20, 80);
+    $headerHeightDesktop = $parsePixelSetting(CmsService::setting('header_height_desktop', $currentLocale), 80, 80, 200);
+    $headerHeightDesktop = max($headerHeightDesktop, $logoHeightDesktop + 20);
 
     $labels = [
         'home' => $txt('header_nav_home', 'Inicio', 'Home'),
@@ -196,9 +198,10 @@
         }
     "
     :class="scrolled ? 'is-scrolled bg-white/95 shadow-soft backdrop-blur-lg' : 'is-top bg-transparent'"
-    class="smp-public-header fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    class="smp-public-header fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+    style="--header-desktop-height: {{ $headerHeightDesktop }}px;">
     <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex h-20 items-center justify-between">
+        <div class="header-inner-row flex items-center justify-between">
             <a href="{{ url('/') }}"
                class="flex items-center gap-3 group"
                style="--header-logo-height-desktop: {{ $logoHeightDesktop }}px; --header-logo-height-mobile: {{ $logoHeightMobile }}px;">
@@ -562,6 +565,10 @@
 </header>
 
 <style>
+    .smp-public-header .header-inner-row {
+        height: 80px !important;
+    }
+
     .smp-public-header .header-site-logo {
         height: var(--header-logo-height-mobile, 36px) !important;
         width: auto !important;
@@ -573,6 +580,10 @@
     }
 
     @media (min-width: 1024px) {
+        .smp-public-header .header-inner-row {
+            height: var(--header-desktop-height, 80px) !important;
+        }
+
         .smp-public-header .header-site-logo {
             height: var(--header-logo-height-desktop, 44px) !important;
         }

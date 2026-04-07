@@ -61,6 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
       max: 80,
       hint: 'Valor en px para teléfono. Recomendado entre 28 y 48.',
     },
+    header_height_desktop: {
+      min: 80,
+      max: 200,
+      hint: 'Altura del header en escritorio. En móvil se mantiene la altura actual.',
+    },
   };
 
   async function loadSettings() {
