@@ -3,7 +3,14 @@
 @php
   $isEn = ($locale ?? app()->getLocale()) === 'en';
   $txt = fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($isEn ? $en : $es);
-  $pageTitle = $pageData?->entity?->title($locale ?? app()->getLocale()) ?? ($isEn ? 'Properties' : 'Propiedades');
+  $zonePage = $zonePage ?? null;
+  $isZoneLanding = $zonePage instanceof \App\Models\ZonePage;
+  $zoneTitle = $isZoneLanding ? $zonePage->title($locale ?? app()->getLocale()) : null;
+  $zoneDescription = $isZoneLanding ? $zonePage->description($locale ?? app()->getLocale()) : null;
+  $defaultPageTitle = $pageData?->entity?->title($locale ?? app()->getLocale()) ?? ($isEn ? 'Properties' : 'Propiedades');
+  $pageTitle = $isZoneLanding
+    ? ($zonePage->metaTitle($locale ?? app()->getLocale()) ?: $zoneTitle ?: $defaultPageTitle)
+    : $defaultPageTitle;
 @endphp
 
 @section('title', $pageTitle)
@@ -18,19 +25,36 @@
 
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div class="max-w-3xl">
-          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            {{ $txt('page_badge', 'CatÃ¡logo', 'Catalog') }}
-          </div>
+          @if($isZoneLanding)
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {{ $isEn ? 'Zone' : 'Zona' }}
+            </div>
 
-          <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
-            {{ $txt('page_title_prefix', 'Explora nuestras', 'Explore our') }} <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('page_title_highlight', 'propiedades', 'properties') }}</span>
-          </h1>
-          <p class="mt-4 text-lg text-slate-600">
-            {{ $txt('page_subtitle', 'Filtra por tipo y encuentra la propiedad ideal.', 'Filter by type and find the right property for you.') }}
-          </p>
+            <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
+              {{ $zoneTitle ?? ($isEn ? 'Properties by zone' : 'Propiedades por zona') }}
+            </h1>
+            <p class="mt-4 text-lg text-slate-600">
+              {{ $zoneDescription ?: ($isEn ? 'Explore this area and adjust filters to compare nearby zones.' : 'Explora esta zona y ajusta filtros para comparar zonas cercanas.') }}
+            </p>
+          @else
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              {{ $txt('page_badge', 'CatÃ¡logo', 'Catalog') }}
+            </div>
+
+            <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
+              {{ $txt('page_title_prefix', 'Explora nuestras', 'Explore our') }} <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('page_title_highlight', 'propiedades', 'properties') }}</span>
+            </h1>
+            <p class="mt-4 text-lg text-slate-600">
+              {{ $txt('page_subtitle', 'Filtra por tipo y encuentra la propiedad ideal.', 'Filter by type and find the right property for you.') }}
+            </p>
+          @endif
         </div>
       </div>
     </section>
@@ -453,6 +477,7 @@
   <script>
     const tPublic = (key, fallback = '') => (window.publicT ? window.publicT(key, fallback) : fallback);
     const isEnLocale = (window.__PUBLIC_LOCALE__ || 'es') === 'en';
+    const zoneBaseFilters = @json($zoneInitialFilters ?? []);
     function propertiesFilter() {
       return {
         // Estado del modal
@@ -570,6 +595,12 @@
               } else {
                 this.filters[key] = value;
               }
+            }
+          });
+
+          ['region', 'city', 'city_area'].forEach((key) => {
+            if (!urlParams.has(key) && zoneBaseFilters && zoneBaseFilters[key]) {
+              this.filters[key] = zoneBaseFilters[key];
             }
           });
         },
@@ -753,6 +784,12 @@
                         ${op === 'sale' ? tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta') : tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta')}
                       </span>
                     ` : ''}
+
+                    <button type="button" data-favorite-btn data-property-id="${p.id}" class="absolute bottom-4 right-4 w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300 border border-slate-200" style="background-color: var(--fe-properties-fav_btn_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-fav_btn_icon, #5B5B5B);">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </button>
                   </div>
 
                   <div class="p-6">
@@ -783,6 +820,8 @@
                 </div>
               `;
             }).join('');
+
+            window.publicFavorites?.syncButtons(grid);
           } catch (e) {
             console.error(e);
             grid.innerHTML = '';

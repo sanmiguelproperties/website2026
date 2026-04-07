@@ -12,6 +12,50 @@
 
     $companyItems = $footerCompany?->rootItems ?? collect();
     $serviceItems = $footerServices?->rootItems ?? collect();
+    $showMlsOffices = CmsService::settingBoolean('public_show_mls_offices', true);
+    $showMlsAgents = CmsService::settingBoolean('public_show_mls_agents', true);
+
+    $isHiddenMlsUrl = static function (?string $resolvedUrl) use ($showMlsOffices, $showMlsAgents): bool {
+        $path = parse_url((string) $resolvedUrl, PHP_URL_PATH);
+        $normalizedPath = '/' . ltrim((string) ($path ?? $resolvedUrl ?? ''), '/');
+        $normalizedPath = rtrim(Str::lower($normalizedPath), '/');
+        if ($normalizedPath === '') {
+            $normalizedPath = '/';
+        }
+
+        if (!$showMlsOffices && (str_starts_with($normalizedPath, '/agencias') || str_starts_with($normalizedPath, '/mls-offices'))) {
+            return true;
+        }
+
+        if (!$showMlsAgents && (str_starts_with($normalizedPath, '/agentes') || str_starts_with($normalizedPath, '/mls-agents'))) {
+            return true;
+        }
+
+        return false;
+    };
+
+    $shouldKeepMenuItem = static function ($item) use ($showMlsOffices, $showMlsAgents, $isHiddenMlsUrl): bool {
+        $routeName = (string) ($item->route_name ?? '');
+
+        if (
+            !$showMlsOffices
+            && in_array($routeName, ['public.mls-offices.index', 'public.mls-offices.show', 'public.mls-offices.legacy-index', 'public.mls-offices.legacy-show'], true)
+        ) {
+            return false;
+        }
+
+        if (
+            !$showMlsAgents
+            && in_array($routeName, ['public.mls-agents.index', 'public.mls-agents.show', 'public.mls-agents.legacy-index', 'public.mls-agents.legacy-show'], true)
+        ) {
+            return false;
+        }
+
+        return !$isHiddenMlsUrl($item->resolvedUrl());
+    };
+
+    $companyItems = $companyItems->filter($shouldKeepMenuItem)->values();
+    $serviceItems = $serviceItems->filter($shouldKeepMenuItem)->values();
 
     $siteNameValue = $settings['site_name'] ?? 'San Miguel Properties';
     $siteTagline = $settings['site_tagline'] ?? $txt('footer_site_tagline', 'Encuentra tu hogar ideal', 'Find your dream home');

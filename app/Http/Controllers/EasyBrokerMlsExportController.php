@@ -149,7 +149,8 @@ class EasyBrokerMlsExportController extends Controller
                 $property,
                 $fallbackPropertyType,
                 null,
-                $targetStatus
+                $targetStatus,
+                false
             );
 
             $primaryOperation = $property->operations->first();

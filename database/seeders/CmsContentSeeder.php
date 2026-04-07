@@ -570,6 +570,8 @@ class CmsContentSeeder extends Seeder
             ['setting_key' => 'site_name', 'setting_group' => 'general', 'label_es' => 'Nombre del sitio', 'label_en' => 'Site name', 'type' => 'text', 'value_es' => 'San Miguel Properties', 'value_en' => 'San Miguel Properties', 'sort_order' => 1],
             ['setting_key' => 'site_tagline', 'setting_group' => 'general', 'label_es' => 'Tagline', 'type' => 'text', 'value_es' => 'Encuentra tu hogar ideal', 'value_en' => 'Find your dream home', 'sort_order' => 2],
             ['setting_key' => 'copyright_text', 'setting_group' => 'general', 'label_es' => 'Texto copyright', 'type' => 'text', 'value_es' => '2024 San Miguel Properties. Todos los derechos reservados.', 'value_en' => '2024 San Miguel Properties. All rights reserved.', 'sort_order' => 3],
+            ['setting_key' => 'public_show_mls_offices', 'setting_group' => 'general', 'label_es' => 'Mostrar agencias MLS en el sitio', 'label_en' => 'Show MLS agencies on site', 'type' => 'boolean', 'value_es' => '1', 'value_en' => '1', 'sort_order' => 40],
+            ['setting_key' => 'public_show_mls_agents', 'setting_group' => 'general', 'label_es' => 'Mostrar agentes MLS en el sitio', 'label_en' => 'Show MLS agents on site', 'type' => 'boolean', 'value_es' => '1', 'value_en' => '1', 'sort_order' => 41],
 
             // â”€â”€ SEO â”€â”€
             ['setting_key' => 'default_meta_title', 'setting_group' => 'seo', 'label_es' => 'Meta tÃ­tulo por defecto', 'type' => 'text', 'value_es' => 'San Miguel Properties - Bienes RaÃ­ces', 'value_en' => 'San Miguel Properties - Real Estate', 'sort_order' => 1],

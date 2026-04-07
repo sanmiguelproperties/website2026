@@ -50,6 +50,7 @@ class MLSOffice extends Model
         'tiktok',
         'instagram',
         'paid',
+        'is_primary',
         // NOTA: is_managed_by_us es un campo manual y NO debería actualizarse vía sync.
         // Se edita por endpoint dedicado (manual) desde el dashboard.
         'mls_created_at',
@@ -62,6 +63,7 @@ class MLSOffice extends Model
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
         'paid' => 'boolean',
+        'is_primary' => 'boolean',
         'is_managed_by_us' => 'boolean',
         'mls_created_at' => 'datetime',
         'mls_updated_at' => 'datetime',

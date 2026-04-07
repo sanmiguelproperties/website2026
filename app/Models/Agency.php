@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -21,12 +22,19 @@ class Agency extends Model
         'logo_url',
         'phone',
         'email',
+        'is_primary',
         'raw_payload',
     ];
 
     protected $casts = [
+        'is_primary' => 'boolean',
         'raw_payload' => 'array',
     ];
+
+    public function scopePrimary(Builder $query): Builder
+    {
+        return $query->where('is_primary', true);
+    }
 
     public function users(): HasMany
     {

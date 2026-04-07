@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderSettingField(s) {
     const translatable = !nonTranslatable.includes(s.type);
+    const settingIsTruthy = (value) => ['1', 'true', 'yes', 'on', 'si'].includes(String(value ?? '').trim().toLowerCase());
 
     // Campo tipo IMAGE → usa media-input picker
     if (s.type === 'image') {
@@ -112,6 +113,24 @@ document.addEventListener('DOMContentLoaded', () => {
               columns="4"
             />
           </div>
+        </div>`;
+    }
+
+    // Campo tipo BOOLEAN
+    if (s.type === 'boolean') {
+      const checked = settingIsTruthy(s.value_es) ? 'checked' : '';
+      return `
+        <div>
+          <label class="flex items-center gap-3 text-sm font-medium text-[var(--c-text)]">
+            <input
+              type="checkbox"
+              data-setting-key="${esc(s.setting_key)}"
+              data-lang="es"
+              ${checked}
+              class="h-4 w-4 rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]"
+            />
+            <span>${esc(s.label_es)} <span class="text-xs text-[var(--c-muted)] font-normal">[${esc(s.setting_key)}]</span></span>
+          </label>
         </div>`;
     }
 
@@ -200,11 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const settings = {};
 
     // Campos de texto/textarea
-    $$('[data-setting-key]:not([data-setting-image-key])').forEach(el => {
+    $$('input[data-setting-key], textarea[data-setting-key], select[data-setting-key]').forEach(el => {
       const key = el.dataset.settingKey;
       const lang = el.dataset.lang;
       if (!settings[key]) settings[key] = {};
-      settings[key][`value_${lang}`] = el.value;
+      const value = el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
+      settings[key][`value_${lang}`] = value;
     });
 
     // Campos de imagen (media_asset_id)

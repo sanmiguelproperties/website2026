@@ -66,10 +66,21 @@
         </div>
 
         <div class="lg:col-span-3">
+          <label class="block text-xs text-[var(--c-muted)] mb-1">Principal</label>
+          <select id="filter-primary" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm">
+            <option value="">Todas</option>
+            <option value="1">Solo principal</option>
+            <option value="0">No principal</option>
+          </select>
+        </div>
+
+        <div class="lg:col-span-3">
           <label class="block text-xs text-[var(--c-muted)] mb-1">Orden</label>
           <select id="filter-order" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm">
             <option value="name:asc" selected>Nombre (A–Z)</option>
             <option value="name:desc">Nombre (Z–A)</option>
+            <option value="is_primary:desc">Principal primero</option>
+            <option value="is_primary:asc">Principal al final</option>
             <option value="updated_at:desc">Actualizado (desc)</option>
             <option value="updated_at:asc">Actualizado (asc)</option>
             <option value="mls_office_id:asc">MLS ID (asc)</option>
@@ -105,6 +116,7 @@
               <th class="py-2 pr-3">A cargo</th>
               <th class="py-2 pr-3">Agentes</th>
               <th class="py-2 pr-3">Propiedades</th>
+              <th class="py-2 pr-3">Principal</th>
               <th class="py-2 text-right">Acciones</th>
             </tr>
           </thead>
@@ -195,11 +207,11 @@
 
           <!-- Identificadores -->
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div class="md:col-span-3">
+            <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1">MLS Office ID <span class="text-red-400">*</span></label>
               <input id="field-mls-office-id" type="number" min="1" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="ID en el MLS" required />
             </div>
-            <div class="md:col-span-5">
+            <div class="md:col-span-4">
               <label class="block text-sm font-medium mb-1">Nombre</label>
               <input id="field-name" type="text" maxlength="255" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Nombre de la agencia" />
             </div>
@@ -208,6 +220,13 @@
               <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
                 <input id="field-paid" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
                 <span class="text-sm">Sí</span>
+              </label>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium mb-1">Principal</label>
+              <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
+                <input id="field-is-primary" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]">
+                <span class="text-sm">Si</span>
               </label>
             </div>
             <div class="md:col-span-2">
@@ -441,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // State
   const state = { list: { page: 1, perPage: 15, last: null } };
 
-  const filterEls = { search: $('#filter-search'), paid: $('#filter-paid'), managed: $('#filter-managed'), order: $('#filter-order') };
+  const filterEls = { search: $('#filter-search'), paid: $('#filter-paid'), managed: $('#filter-managed'), primary: $('#filter-primary'), order: $('#filter-order') };
 
   function getOrderParams() { const raw = filterEls.order.value || 'name:asc'; const [order, sort] = raw.split(':'); return { order: order || 'name', sort: sort || 'asc' }; }
 
@@ -452,9 +471,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const search = filterEls.search.value.trim();
     const paid = filterEls.paid.value;
     const managed = filterEls.managed?.value;
+    const primary = filterEls.primary?.value;
     if (search) p.set('search', search);
     if (paid !== '') p.set('paid', paid);
     if (managed !== undefined && managed !== '') p.set('is_managed_by_us', managed);
+    if (primary !== undefined && primary !== '') p.set('is_primary', primary);
     const { order, sort } = getOrderParams();
     p.set('order', order);
     p.set('sort', sort);
@@ -491,6 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="py-3 pr-3"><button class="btn-toggle-managed text-xs px-2 py-1 rounded-lg transition ${o.is_managed_by_us ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-[var(--c-elev)] text-[var(--c-muted)] hover:bg-[var(--c-border)]'}" data-id="${o.mls_office_id}" data-managed="${o.is_managed_by_us ? '1' : '0'}">${o.is_managed_by_us ? 'Sí' : 'No'}</button></td>
         <td class="py-3 pr-3"><span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-[var(--c-elev)] border border-[var(--c-border)]">${escapeHtml(o.agents_count ?? '—')}</span></td>
         <td class="py-3 pr-3"><span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-[var(--c-elev)] border border-[var(--c-border)]">${escapeHtml(o.properties_count ?? '—')}</span></td>
+        <td class="py-3 pr-3"><button class="btn-set-primary text-xs px-2 py-1 rounded-lg transition ${o.is_primary ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-[var(--c-elev)] text-[var(--c-muted)] hover:bg-[var(--c-border)]'}" data-id="${o.mls_office_id}" data-primary="${o.is_primary ? '1' : '0'}">${o.is_primary ? 'Principal' : 'Marcar'}</button></td>
         <td class="py-3 text-right"><div class="inline-flex items-center gap-2">
           <button class="btn-edit-office px-3 py-1.5 text-xs rounded-lg bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 transition" data-id="${o.mls_office_id}">Editar</button>
           <button class="btn-del-office px-3 py-1.5 text-xs rounded-lg bg-[var(--c-danger)] text-white hover:opacity-90 transition" data-id="${o.mls_office_id}">Eliminar</button>
@@ -498,9 +520,10 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.appendChild(tr);
     });
 
-    $('.btn-edit-office', tbody).forEach(btn => btn.addEventListener('click', () => openDrawerForEdit(btn.dataset.id)));
-    $('.btn-del-office', tbody).forEach(btn => btn.addEventListener('click', () => deleteOffice(btn.dataset.id)));
-    $('.btn-toggle-managed', tbody).forEach(btn => btn.addEventListener('click', () => toggleManagedByUs(btn.dataset.id, btn.dataset.managed === '1')));
+    $$('.btn-edit-office', tbody).forEach(btn => btn.addEventListener('click', () => openDrawerForEdit(btn.dataset.id)));
+    $$('.btn-del-office', tbody).forEach(btn => btn.addEventListener('click', () => deleteOffice(btn.dataset.id)));
+    $$('.btn-toggle-managed', tbody).forEach(btn => btn.addEventListener('click', () => toggleManagedByUs(btn.dataset.id, btn.dataset.managed === '1')));
+    $$('.btn-set-primary', tbody).forEach(btn => btn.addEventListener('click', () => setPrimaryOffice(btn.dataset.id, btn.dataset.primary === '1')));
   }
 
   function renderPager(paginated) {
@@ -539,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#office-drawer-subtitle').textContent = 'Completa la información de la agencia';
     $('#btn-office-delete').classList.add('hidden');
     $('#field-image-url').value = ''; $('#img-preview').classList.add('hidden'); $('#img-preview').src = '';
-    $('#field-mls-office-id').value = ''; $('#field-name').value = ''; $('#field-paid').checked = false; $('#field-business-hours').value = '';
+    $('#field-mls-office-id').value = ''; $('#field-name').value = ''; $('#field-paid').checked = false; $('#field-is-primary').checked = false; $('#field-business-hours').value = '';
     $('#field-state-province').value = ''; $('#field-city').value = ''; $('#field-zip-code').value = ''; $('#field-address').value = '';
     $('#field-latitude').value = ''; $('#field-longitude').value = '';
     $('#field-description').value = ''; $('#field-description-es').value = '';
@@ -563,6 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#field-mls-office-id').value = o.mls_office_id ?? '';
     $('#field-name').value = o.name ?? '';
     $('#field-paid').checked = !!o.paid;
+    $('#field-is-primary').checked = !!o.is_primary;
     $('#field-business-hours').value = o.business_hours ?? '';
     $('#field-state-province').value = o.state_province ?? '';
     $('#field-city').value = o.city ?? '';
@@ -639,6 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mls_office_id: toInt($('#field-mls-office-id').value),
       name: toStrOrNull($('#field-name').value),
       paid: $('#field-paid').checked,
+      is_primary: $('#field-is-primary').checked,
       business_hours: toStrOrNull($('#field-business-hours').value),
       state_province: toStrOrNull($('#field-state-province').value),
       city: toStrOrNull($('#field-city').value),
@@ -695,6 +720,14 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'PATCH',
         body: JSON.stringify({ is_managed_by_us: newValue })
       });
+      if (res?.success) { window.dispatchEvent(new CustomEvent('api:response', { detail: res })); await loadOffices(state.list.page); }
+    } catch (e) { /* error dispatched */ }
+  }
+
+  async function setPrimaryOffice(id, isCurrentPrimary) {
+    if (isCurrentPrimary) return;
+    try {
+      const res = await apiFetch(`${API_BASE}/mls-offices/${id}/primary`, { method: 'PATCH' });
       if (res?.success) { window.dispatchEvent(new CustomEvent('api:response', { detail: res })); await loadOffices(state.list.page); }
     } catch (e) { /* error dispatched */ }
   }
@@ -794,6 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
   filterEls.search.addEventListener('input', debounce(() => loadOffices(1), 300));
   filterEls.paid.addEventListener('change', () => loadOffices(1));
   if (filterEls.managed) filterEls.managed.addEventListener('change', () => loadOffices(1));
+  if (filterEls.primary) filterEls.primary.addEventListener('change', () => loadOffices(1));
   filterEls.order.addEventListener('change', () => loadOffices(1));
 
   // Init

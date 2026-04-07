@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class PublicLocationMenuService
 {
-    private const CACHE_KEY = 'public_mls_location_tree_v2';
+    private const CACHE_KEY = 'public_mls_location_tree_v3';
     private const CACHE_MINUTES = 10;
 
     /**
@@ -24,23 +24,51 @@ class PublicLocationMenuService
         );
     }
 
+    public static function clearCache(): void
+    {
+        Cache::forget(self::CACHE_KEY);
+    }
+
     private static function buildStateCityTree(): array
     {
-        $rows = PropertyLocation::query()
-            ->join('properties', 'properties.id', '=', 'property_locations.property_id')
-            ->where('properties.published', true)
-            ->where('properties.source', Property::SOURCE_MLS)
-            ->whereNotNull('property_locations.region')
-            ->where('property_locations.region', '!=', '')
-            ->whereNotNull('property_locations.city')
-            ->where('property_locations.city', '!=', '')
-            ->select([
-                'property_locations.region',
-                'property_locations.city',
-                'property_locations.city_area',
-            ])
-            ->distinct()
-            ->get();
+        LocationTaxonomyService::backfillFromPropertyLocations();
+        ZonePageService::syncFromPublishedProperties();
+        $zoneSlugsByLocation = ZonePageService::activeSlugMapByLocation();
+
+        $hasTaxonomyIds = LocationTaxonomyService::hasTaxonomyColumns();
+
+        if ($hasTaxonomyIds) {
+            $rows = PropertyLocation::query()
+                ->join('properties', 'properties.id', '=', 'property_locations.property_id')
+                ->leftJoin('locations_catalog as state_catalog', 'state_catalog.id', '=', 'property_locations.state_catalog_id')
+                ->leftJoin('locations_catalog as city_catalog', 'city_catalog.id', '=', 'property_locations.city_catalog_id')
+                ->leftJoin('locations_catalog as neighborhood_catalog', 'neighborhood_catalog.id', '=', 'property_locations.neighborhood_catalog_id')
+                ->where('properties.published', true)
+                ->where('properties.source', Property::SOURCE_MLS)
+                ->whereRaw("TRIM(COALESCE(state_catalog.name, property_locations.region, '')) != ''")
+                ->whereRaw("TRIM(COALESCE(city_catalog.name, property_locations.city, '')) != ''")
+                ->selectRaw('COALESCE(state_catalog.name, property_locations.region) as region')
+                ->selectRaw('COALESCE(city_catalog.name, property_locations.city) as city')
+                ->selectRaw('COALESCE(neighborhood_catalog.name, property_locations.city_area) as city_area')
+                ->distinct()
+                ->get();
+        } else {
+            $rows = PropertyLocation::query()
+                ->join('properties', 'properties.id', '=', 'property_locations.property_id')
+                ->where('properties.published', true)
+                ->where('properties.source', Property::SOURCE_MLS)
+                ->whereNotNull('property_locations.region')
+                ->where('property_locations.region', '!=', '')
+                ->whereNotNull('property_locations.city')
+                ->where('property_locations.city', '!=', '')
+                ->select([
+                    'property_locations.region',
+                    'property_locations.city',
+                    'property_locations.city_area',
+                ])
+                ->distinct()
+                ->get();
+        }
 
         $grouped = [];
 
@@ -90,14 +118,34 @@ class PublicLocationMenuService
                 $zones = $cityEntry['zones'];
                 asort($zones, SORT_NATURAL | SORT_FLAG_CASE);
 
+                $zoneEntries = [];
+                foreach ($zones as $zoneName) {
+                    $zoneEntries[] = [
+                        'name' => $zoneName,
+                        'url' => self::resolveZoneUrl(
+                            $entry['state'],
+                            $cityEntry['city'],
+                            $zoneName,
+                            $zoneSlugsByLocation
+                        ),
+                    ];
+                }
+
                 $cityEntries[] = [
                     'city' => $cityEntry['city'],
-                    'zones' => array_values($zones),
+                    'url' => route('public.properties.index', [
+                        'region' => $entry['state'],
+                        'city' => $cityEntry['city'],
+                    ]),
+                    'zones' => $zoneEntries,
                 ];
             }
 
             $result[] = [
                 'state' => $entry['state'],
+                'url' => route('public.properties.index', [
+                    'region' => $entry['state'],
+                ]),
                 'cities' => $cityEntries,
             ];
         }
@@ -109,5 +157,25 @@ class PublicLocationMenuService
     {
         $value = preg_replace('/\s+/u', ' ', trim((string) $value));
         return $value === '' ? null : $value;
+    }
+
+    private static function resolveZoneUrl(
+        string $state,
+        string $city,
+        string $zone,
+        array $zoneSlugsByLocation
+    ): string {
+        $compositeKey = ZonePageService::compositeKeyFromLabels($state, $city, $zone);
+        $slug = $zoneSlugsByLocation[$compositeKey] ?? null;
+
+        if (is_string($slug) && $slug !== '') {
+            return route('public.zones.show', ['zoneSlug' => $slug]);
+        }
+
+        return route('public.properties.index', [
+            'region' => $state,
+            'city' => $city,
+            'city_area' => $zone,
+        ]);
     }
 }

@@ -206,8 +206,8 @@
                   <p id="priceHint" class="mt-1 text-xs text-slate-500">{{ $txt('price_hint', '* Puede variar segun operacion', '* May vary by operation type') }}</p>
                 </div>
 
-                <button id="btnFavorite" type="button" class="inline-flex items-center justify-center rounded-2xl w-12 h-12 border border-slate-200 bg-white hover:bg-slate-50 transition" aria-label="{{ $txt('i18n_label_favorite', 'Favorito', 'Favorite') }}">
-                  <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="btnFavorite" type="button" data-favorite-btn data-property-id="{{ (int) ($propertyId ?? 0) }}" class="inline-flex items-center justify-center rounded-2xl w-12 h-12 border border-slate-200 bg-white hover:bg-slate-50 transition text-slate-600" aria-label="{{ $txt('i18n_label_favorite', 'Favorito', 'Favorite') }}">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 </button>
@@ -238,7 +238,7 @@
 
             {{-- Agency / Agent --}}
             <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
-              <h3 class="text-sm font-semibold text-slate-900">{{ $txt('i18n_label_advisorAgency', 'Asesor / Agencia', 'Advisor / Agency') }}</h3>
+              <h3 class="text-sm font-semibold text-slate-900">{{ $txt('i18n_label_advisorAgency', 'Agencia de contacto', 'Contact Agency') }}</h3>
 
               <div class="mt-4 flex items-center gap-4">
                 <div class="size-14 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 grid place-items-center" id="agentAvatar">
@@ -255,6 +255,11 @@
 
               {{-- MLS Agents (when property comes from MLS relationships) --}}
               <div id="mlsAgentsWrap" class="hidden mt-5 space-y-3"></div>
+
+              <div id="sourceAgencyNotice" class="hidden mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p class="text-xs font-semibold text-amber-800">{{ $txt('property_source_agency_reference_label', 'Referencia', 'Reference') }}</p>
+                <p id="sourceAgencyNoticeText" class="mt-1 text-sm text-amber-900">—</p>
+              </div>
 
               <div class="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <p class="text-xs font-semibold text-slate-600">{{ $txt('i18n_label_note', 'Nota', 'Note') }}</p>
@@ -603,16 +608,64 @@
 
       const agent = property.agent_user;
       const agency = property.agency;
-      if (agent?.name) document.getElementById('agentName').textContent = agent.name;
-      if (agency?.name) document.getElementById('agencyName').textContent = agency.name;
+      const contactAgency = property.contact_agency || null;
+      const sourceAgency = property.source_agency_reference || null;
+      const hideExternalAgents = !!property.hide_external_agents;
+      const belongsToExternalAgency = !!property.belongs_to_external_agency;
 
-      const profileUrl = resolveMediaUrl(agent?.profile_image);
-      if (profileUrl) {
-        document.getElementById('agentAvatar').innerHTML = `<img src="${escapeHtml(profileUrl)}" alt="${escapeHtml(agent?.name || tPublic('property.advisor', isEnLocale ? 'Advisor' : 'Asesor'))}" class="w-full h-full object-cover" />`;
+      const agentNameEl = document.getElementById('agentName');
+      const agencyNameEl = document.getElementById('agencyName');
+      const agentAvatarEl = document.getElementById('agentAvatar');
+
+      if (agentAvatarEl) {
+        agentAvatarEl.innerHTML = `
+          <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+          </svg>
+        `;
+      }
+
+      if (contactAgency?.name) {
+        agentNameEl.textContent = contactAgency.name;
+        agencyNameEl.textContent = tPublic('property.mainAgencyContact', isEnLocale ? 'Main agency contact' : 'Contacto de agencia principal');
+      } else {
+        if (hideExternalAgents) {
+          agentNameEl.textContent = tPublic('common.siteName', 'San Miguel Properties');
+          agencyNameEl.textContent = tPublic('property.mainAgencyContact', isEnLocale ? 'Main agency contact' : 'Contacto de agencia principal');
+        } else {
+          if (agent?.name) agentNameEl.textContent = agent.name;
+          if (agency?.name) agencyNameEl.textContent = agency.name;
+        }
+      }
+
+      const profileUrl = resolveMediaUrl(contactAgency?.image || (hideExternalAgents ? null : agent?.profile_image));
+      if (profileUrl && agentAvatarEl) {
+        const avatarAlt = contactAgency?.name || agent?.name || tPublic('property.advisor', isEnLocale ? 'Advisor' : 'Asesor');
+        agentAvatarEl.innerHTML = `<img src="${escapeHtml(profileUrl)}" alt="${escapeHtml(avatarAlt)}" class="w-full h-full object-cover" />`;
+      }
+
+      const sourceAgencyNoticeWrap = document.getElementById('sourceAgencyNotice');
+      const sourceAgencyNoticeText = document.getElementById('sourceAgencyNoticeText');
+      if (sourceAgencyNoticeWrap && sourceAgencyNoticeText) {
+        if (belongsToExternalAgency && sourceAgency?.name) {
+          const fallbackNotice = tPublic(
+            'property.sourceAgencyNotice',
+            isEnLocale
+              ? 'This property belongs to {agency}. Contact is handled by our main agency.'
+              : 'Esta propiedad pertenece a {agency}. El contacto se atiende con nuestra agencia principal.'
+          );
+
+          sourceAgencyNoticeText.textContent = String(property.source_agency_notice || fallbackNotice).replaceAll('{agency}', sourceAgency.name);
+          sourceAgencyNoticeWrap.classList.remove('hidden');
+        } else {
+          sourceAgencyNoticeText.textContent = '';
+          sourceAgencyNoticeWrap.classList.add('hidden');
+        }
       }
 
       const mlsWrap = document.getElementById('mlsAgentsWrap');
-      const mlsAgents = Array.isArray(property.mls_agents) ? property.mls_agents : [];
+      const mlsAgents = hideExternalAgents ? [] : (Array.isArray(property.mls_agents) ? property.mls_agents : []);
 
       if (mlsWrap) {
         if (!mlsAgents.length) {
@@ -688,6 +741,12 @@
       const waText = waTemplate
         .replaceAll('{id}', String(property.id || ''))
         .replaceAll('{title}', title);
+
+      const favoriteButton = document.getElementById('btnFavorite');
+      if (favoriteButton) {
+        favoriteButton.dataset.propertyId = String(property.id || window.__PROPERTY_ID__ || '');
+        window.publicFavorites?.syncButton(favoriteButton);
+      }
 
       document.getElementById('btnWhatsApp').href = `https://wa.me/${contactWhatsapp}?text=${encodeURIComponent(waText)}`;
       document.getElementById('btnCall').href = `tel:${contactPhone}`;
@@ -766,11 +825,6 @@
         } catch (_e) {
           // silent fallback
         }
-      });
-
-      document.getElementById('btnFavorite')?.addEventListener('click', (e) => {
-        e.currentTarget.classList.toggle('ring-4');
-        e.currentTarget.classList.toggle('ring-emerald-200');
       });
 
       loadProperty();

@@ -2,6 +2,8 @@
 
 use App\Services\PublicLocationMenuService;
 use App\Services\CmsService;
+use App\Services\ZonePageService;
+use App\Models\ZonePage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +32,17 @@ $publicContext = static function (string $pageSlug, array $extra = []) use ($loc
     return array_merge($base, $extra);
 };
 
+$isMlsOfficesPublicEnabled = static fn (): bool => CmsService::settingBoolean('public_show_mls_offices', true);
+$isMlsAgentsPublicEnabled = static fn (): bool => CmsService::settingBoolean('public_show_mls_agents', true);
+
+$ensureMlsOfficesPublicEnabled = static function () use ($isMlsOfficesPublicEnabled): void {
+    abort_unless($isMlsOfficesPublicEnabled(), 404);
+};
+
+$ensureMlsAgentsPublicEnabled = static function () use ($isMlsAgentsPublicEnabled): void {
+    abort_unless($isMlsAgentsPublicEnabled(), 404);
+};
+
 // Public locale switcher (ES/EN)
 Route::get('/idioma/{locale}', function (Request $request, string $locale) {
     $normalized = strtolower($locale);
@@ -54,18 +67,66 @@ Route::get('/propiedades', function () use ($publicContext) {
     return view('public.properties-index', $publicContext('properties'));
 })->name('public.properties.index');
 
-Route::get('/agencias', function () use ($publicContext) {
+Route::get('/zonas/{zoneSlug}', function (string $zoneSlug) use ($publicContext, $locale) {
+    $zonePage = ZonePage::query()
+        ->where('slug', $zoneSlug)
+        ->where('is_active', true)
+        ->first();
+
+    if (!$zonePage) {
+        ZonePageService::syncFromPublishedProperties();
+        $zonePage = ZonePage::query()
+            ->where('slug', $zoneSlug)
+            ->where('is_active', true)
+            ->firstOrFail();
+    }
+
+    $currentLocale = $locale();
+    $zoneTitle = $zonePage->title($currentLocale);
+    $zoneDescription = $zonePage->description($currentLocale);
+
+    return view('public.properties-index', $publicContext('properties', [
+        'zonePage' => $zonePage,
+        'zoneInitialFilters' => [
+            'region' => $zonePage->region,
+            'city' => $zonePage->city,
+            'city_area' => $zonePage->city_area,
+        ],
+        'seoTitleOverride' => $zonePage->metaTitle($currentLocale) ?: $zoneTitle,
+        'seoDescriptionOverride' => $zonePage->metaDescription($currentLocale) ?: $zoneDescription,
+    ]));
+})->name('public.zones.show');
+
+Route::get('/zones/{zoneSlug}', function (string $zoneSlug) {
+    return redirect()->route('public.zones.show', ['zoneSlug' => $zoneSlug], 301);
+})->name('public.zones.legacy-show');
+
+Route::get('/favoritas', function () use ($publicContext) {
+    return view('public.properties-favorites', $publicContext('properties-favorites'));
+})->name('public.properties.favorites');
+
+Route::get('/agencias', function () use ($publicContext, $ensureMlsOfficesPublicEnabled) {
+    $ensureMlsOfficesPublicEnabled();
+
     return view('public.mls-offices-index', $publicContext('mls-offices'));
 })->name('public.mls-offices.index');
 
-Route::get('/agentes', function () use ($publicContext) {
+Route::get('/agentes', function () use ($publicContext, $ensureMlsAgentsPublicEnabled) {
+    $ensureMlsAgentsPublicEnabled();
+
     return view('public.mls-agents-index', $publicContext('mls-agents'));
 })->name('public.mls-agents.index');
 
 // Legacy compatibility
-Route::redirect('/mls-offices', '/agencias', 301)->name('public.mls-offices.legacy-index');
+Route::get('/mls-offices', function () use ($ensureMlsOfficesPublicEnabled) {
+    $ensureMlsOfficesPublicEnabled();
 
-Route::get('/agencias/{mlsOfficeId}', function (string $mlsOfficeId) use ($publicContext) {
+    return redirect('/agencias', 301);
+})->name('public.mls-offices.legacy-index');
+
+Route::get('/agencias/{mlsOfficeId}', function (string $mlsOfficeId) use ($publicContext, $ensureMlsOfficesPublicEnabled) {
+    $ensureMlsOfficesPublicEnabled();
+
     return view('public.mls-office-detail', $publicContext('mls-office-detail', [
         'mlsOfficeId' => (int) $mlsOfficeId,
     ]));
@@ -73,7 +134,9 @@ Route::get('/agencias/{mlsOfficeId}', function (string $mlsOfficeId) use ($publi
     ->where('mlsOfficeId', '[0-9]+')
     ->name('public.mls-offices.show');
 
-Route::get('/agentes/{mlsAgentId}', function (string $mlsAgentId) use ($publicContext) {
+Route::get('/agentes/{mlsAgentId}', function (string $mlsAgentId) use ($publicContext, $ensureMlsAgentsPublicEnabled) {
+    $ensureMlsAgentsPublicEnabled();
+
     return view('public.mls-agent-detail', $publicContext('mls-agent-detail', [
         'mlsAgentId' => (int) $mlsAgentId,
     ]));
@@ -81,13 +144,25 @@ Route::get('/agentes/{mlsAgentId}', function (string $mlsAgentId) use ($publicCo
     ->where('mlsAgentId', '[0-9]+')
     ->name('public.mls-agents.show');
 
-Route::redirect('/mls-offices/{mlsOfficeId}', '/agencias/{mlsOfficeId}', 301)
+Route::get('/mls-offices/{mlsOfficeId}', function (string $mlsOfficeId) use ($ensureMlsOfficesPublicEnabled) {
+    $ensureMlsOfficesPublicEnabled();
+
+    return redirect('/agencias/' . (int) $mlsOfficeId, 301);
+})
     ->where('mlsOfficeId', '[0-9]+')
     ->name('public.mls-offices.legacy-show');
 
-Route::redirect('/mls-agents', '/agentes', 301)->name('public.mls-agents.legacy-index');
+Route::get('/mls-agents', function () use ($ensureMlsAgentsPublicEnabled) {
+    $ensureMlsAgentsPublicEnabled();
 
-Route::redirect('/mls-agents/{mlsAgentId}', '/agentes/{mlsAgentId}', 301)
+    return redirect('/agentes', 301);
+})->name('public.mls-agents.legacy-index');
+
+Route::get('/mls-agents/{mlsAgentId}', function (string $mlsAgentId) use ($ensureMlsAgentsPublicEnabled) {
+    $ensureMlsAgentsPublicEnabled();
+
+    return redirect('/agentes/' . (int) $mlsAgentId, 301);
+})
     ->where('mlsAgentId', '[0-9]+')
     ->name('public.mls-agents.legacy-show');
 
@@ -139,6 +214,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/properties', function () {
             return view('properties.manage');
         })->name('properties');
+
+        Route::get('/zones', function () {
+            return view('zones.manage');
+        })->name('zones');
 
         Route::get('/agencies', function () {
             return view('agencies.manage');

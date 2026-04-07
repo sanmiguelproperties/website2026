@@ -2,17 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MLSOffice;
 use App\Models\Property;
 use App\Models\PropertyLocation;
 use App\Models\PropertyOperation;
+use App\Services\LocationTaxonomyService;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class PropertyController extends Controller
 {
+    protected ?MLSOffice $cachedPrimaryPublicMlsOffice = null;
+    protected bool $didResolvePrimaryPublicMlsOffice = false;
+
     /**
      * GET /api/public/properties
      * Public endpoint for the website (no authentication required)
@@ -27,6 +34,7 @@ class PropertyController extends Controller
                 'agency',
                 'agentUser.profileImage',
                 'mlsAgents.photoMediaAsset',
+                'mlsOffice',
                 'coverMediaAsset',
                 'location',
                 'operations.currency',
@@ -171,6 +179,7 @@ class PropertyController extends Controller
             'agency',
             'agentUser.profileImage',
             'mlsAgents.photoMediaAsset',
+            'mlsOffice',
             'coverMediaAsset',
             'location',
             'operations.currency',
@@ -250,6 +259,8 @@ class PropertyController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $locationCatalogIdRule = $this->locationCatalogIdRule();
+
         $validator = Validator::make($request->all(), [
             'agency_id' => 'required|exists:agencies,id',
             'source' => 'nullable|string|in:manual,easybroker,mls',
@@ -336,9 +347,13 @@ class PropertyController extends Controller
 
             // Relaciones opcionales
             'location' => 'nullable|array',
+            'location.country' => 'nullable|string|max:100',
             'location.region' => 'nullable|string|max:255',
+            'location.state_catalog_id' => $locationCatalogIdRule,
             'location.city' => 'nullable|string|max:255',
+            'location.city_catalog_id' => $locationCatalogIdRule,
             'location.city_area' => 'nullable|string|max:255',
+            'location.neighborhood_catalog_id' => $locationCatalogIdRule,
             'location.street' => 'nullable|string|max:255',
             'location.postal_code' => 'nullable|string|max:20',
             'location.show_exact_location' => 'nullable|boolean',
@@ -415,6 +430,34 @@ class PropertyController extends Controller
                 $property = Property::create($data);
 
                 if (is_array($location)) {
+                    $resolvedTaxonomy = LocationTaxonomyService::resolveHierarchy(
+                        $location['country'] ?? null,
+                        $location['region'] ?? null,
+                        $location['city'] ?? null,
+                        $location['city_area'] ?? null
+                    );
+
+                    $location = array_merge($location, [
+                        'country' => $resolvedTaxonomy['country'] ?? ($location['country'] ?? null),
+                        'region' => $resolvedTaxonomy['state'] ?? ($location['region'] ?? null),
+                        'state_catalog_id' => $resolvedTaxonomy['state_catalog_id'] ?? ($location['state_catalog_id'] ?? null),
+                        'city' => $resolvedTaxonomy['city'] ?? ($location['city'] ?? null),
+                        'city_catalog_id' => $resolvedTaxonomy['city_catalog_id'] ?? ($location['city_catalog_id'] ?? null),
+                        'city_area' => $resolvedTaxonomy['neighborhood'] ?? ($location['city_area'] ?? null),
+                        'neighborhood_catalog_id' => $resolvedTaxonomy['neighborhood_catalog_id'] ?? ($location['neighborhood_catalog_id'] ?? null),
+                    ]);
+
+                    if (!Schema::hasColumn('property_locations', 'country')) {
+                        unset($location['country']);
+                    }
+                    if (!LocationTaxonomyService::hasTaxonomyColumns()) {
+                        unset(
+                            $location['state_catalog_id'],
+                            $location['city_catalog_id'],
+                            $location['neighborhood_catalog_id']
+                        );
+                    }
+
                     $property->location()->updateOrCreate(
                         ['property_id' => $property->id],
                         array_merge($location, ['property_id' => $property->id])
@@ -477,6 +520,8 @@ class PropertyController extends Controller
      */
     public function update(Request $request, Property $property): JsonResponse
     {
+        $locationCatalogIdRule = $this->locationCatalogIdRule();
+
         $validator = Validator::make($request->all(), [
             'agency_id' => 'sometimes|required|exists:agencies,id',
             'source' => 'sometimes|nullable|string|in:manual,easybroker,mls',
@@ -563,9 +608,13 @@ class PropertyController extends Controller
 
             // Relaciones opcionales
             'location' => 'sometimes|nullable|array',
+            'location.country' => 'nullable|string|max:100',
             'location.region' => 'nullable|string|max:255',
+            'location.state_catalog_id' => $locationCatalogIdRule,
             'location.city' => 'nullable|string|max:255',
+            'location.city_catalog_id' => $locationCatalogIdRule,
             'location.city_area' => 'nullable|string|max:255',
+            'location.neighborhood_catalog_id' => $locationCatalogIdRule,
             'location.street' => 'nullable|string|max:255',
             'location.postal_code' => 'nullable|string|max:20',
             'location.show_exact_location' => 'nullable|boolean',
@@ -631,6 +680,34 @@ class PropertyController extends Controller
 
                 // Nota: si el cliente envÃ­a `location: null`, no borramos la location existente.
                 if (is_array($location)) {
+                    $resolvedTaxonomy = LocationTaxonomyService::resolveHierarchy(
+                        $location['country'] ?? null,
+                        $location['region'] ?? null,
+                        $location['city'] ?? null,
+                        $location['city_area'] ?? null
+                    );
+
+                    $location = array_merge($location, [
+                        'country' => $resolvedTaxonomy['country'] ?? ($location['country'] ?? null),
+                        'region' => $resolvedTaxonomy['state'] ?? ($location['region'] ?? null),
+                        'state_catalog_id' => $resolvedTaxonomy['state_catalog_id'] ?? ($location['state_catalog_id'] ?? null),
+                        'city' => $resolvedTaxonomy['city'] ?? ($location['city'] ?? null),
+                        'city_catalog_id' => $resolvedTaxonomy['city_catalog_id'] ?? ($location['city_catalog_id'] ?? null),
+                        'city_area' => $resolvedTaxonomy['neighborhood'] ?? ($location['city_area'] ?? null),
+                        'neighborhood_catalog_id' => $resolvedTaxonomy['neighborhood_catalog_id'] ?? ($location['neighborhood_catalog_id'] ?? null),
+                    ]);
+
+                    if (!Schema::hasColumn('property_locations', 'country')) {
+                        unset($location['country']);
+                    }
+                    if (!LocationTaxonomyService::hasTaxonomyColumns()) {
+                        unset(
+                            $location['state_catalog_id'],
+                            $location['city_catalog_id'],
+                            $location['neighborhood_catalog_id']
+                        );
+                    }
+
                     $property->location()->updateOrCreate(
                         ['property_id' => $property->id],
                         array_merge($location, ['property_id' => $property->id])
@@ -691,6 +768,8 @@ class PropertyController extends Controller
      */
     public function filterOptions(Request $request): JsonResponse
     {
+        LocationTaxonomyService::backfillFromPropertyLocations();
+
         $publishedScope = fn ($q) => $q->where('published', true);
 
         // Tipos de propiedad distintos
@@ -711,32 +790,67 @@ class PropertyController extends Controller
             ->sort()
             ->values();
 
-        // Ciudades distintas
-        $cities = PropertyLocation::whereHas('property', $publishedScope)
-            ->whereNotNull('city')
-            ->where('city', '!=', '')
-            ->distinct()
-            ->pluck('city')
-            ->sort()
-            ->values();
+        $hasTaxonomyIds = LocationTaxonomyService::hasTaxonomyColumns();
 
-        // Regiones/estados distintos
-        $regions = PropertyLocation::whereHas('property', $publishedScope)
-            ->whereNotNull('region')
-            ->where('region', '!=', '')
-            ->distinct()
-            ->pluck('region')
-            ->sort()
-            ->values();
+        if ($hasTaxonomyIds) {
+            // Ciudades distintas (priorizando taxonomía)
+            $cities = PropertyLocation::query()
+                ->leftJoin('locations_catalog as city_catalog', 'city_catalog.id', '=', 'property_locations.city_catalog_id')
+                ->whereHas('property', $publishedScope)
+                ->whereRaw("TRIM(COALESCE(city_catalog.name, property_locations.city, '')) != ''")
+                ->selectRaw('COALESCE(city_catalog.name, property_locations.city) as city_name')
+                ->distinct()
+                ->pluck('city_name')
+                ->sort()
+                ->values();
 
-        // Zonas/colonias distintas
-        $cityAreas = PropertyLocation::whereHas('property', $publishedScope)
-            ->whereNotNull('city_area')
-            ->where('city_area', '!=', '')
-            ->distinct()
-            ->pluck('city_area')
-            ->sort()
-            ->values();
+            // Regiones/estados distintos (priorizando taxonomía)
+            $regions = PropertyLocation::query()
+                ->leftJoin('locations_catalog as state_catalog', 'state_catalog.id', '=', 'property_locations.state_catalog_id')
+                ->whereHas('property', $publishedScope)
+                ->whereRaw("TRIM(COALESCE(state_catalog.name, property_locations.region, '')) != ''")
+                ->selectRaw('COALESCE(state_catalog.name, property_locations.region) as region_name')
+                ->distinct()
+                ->pluck('region_name')
+                ->sort()
+                ->values();
+
+            // Zonas/colonias distintas (priorizando taxonomía)
+            $cityAreas = PropertyLocation::query()
+                ->leftJoin('locations_catalog as neighborhood_catalog', 'neighborhood_catalog.id', '=', 'property_locations.neighborhood_catalog_id')
+                ->whereHas('property', $publishedScope)
+                ->whereRaw("TRIM(COALESCE(neighborhood_catalog.name, property_locations.city_area, '')) != ''")
+                ->selectRaw('COALESCE(neighborhood_catalog.name, property_locations.city_area) as neighborhood_name')
+                ->distinct()
+                ->pluck('neighborhood_name')
+                ->sort()
+                ->values();
+        } else {
+            // Fallback legacy
+            $cities = PropertyLocation::whereHas('property', $publishedScope)
+                ->whereNotNull('city')
+                ->where('city', '!=', '')
+                ->distinct()
+                ->pluck('city')
+                ->sort()
+                ->values();
+
+            $regions = PropertyLocation::whereHas('property', $publishedScope)
+                ->whereNotNull('region')
+                ->where('region', '!=', '')
+                ->distinct()
+                ->pluck('region')
+                ->sort()
+                ->values();
+
+            $cityAreas = PropertyLocation::whereHas('property', $publishedScope)
+                ->whereNotNull('city_area')
+                ->where('city_area', '!=', '')
+                ->distinct()
+                ->pluck('city_area')
+                ->sort()
+                ->values();
+        }
 
         // Valores distintos de recÃ¡maras (ordenados)
         $bedroomValues = Property::where('published', true)
@@ -816,6 +930,14 @@ class PropertyController extends Controller
             'total_properties' => $totalCount,
         ]);
     }
+
+    private function locationCatalogIdRule(): string
+    {
+        return Schema::hasColumn('locations_catalog', 'id')
+            ? 'nullable|integer|exists:locations_catalog,id'
+            : 'nullable';
+    }
+
     private function resolvePublicLocale(Request $request): string
     {
         $candidate = strtolower((string) (
@@ -838,7 +960,73 @@ class PropertyController extends Controller
         $property->setAttribute('description', $property->descriptionForLocale($locale));
         $property->setAttribute('description_short', $property->shortDescriptionForLocale($locale));
 
+        $primaryOffice = $this->resolvePrimaryPublicMlsOffice();
+        $originOffice = $property->relationLoaded('mlsOffice')
+            ? $property->getRelation('mlsOffice')
+            : null;
+
+        if (!$originOffice && !empty($property->mls_office_id)) {
+            $originOffice = MLSOffice::query()
+                ->where('mls_office_id', (int) $property->mls_office_id)
+                ->first();
+        }
+
+        $belongsToExternalAgency = $primaryOffice !== null
+            && $originOffice !== null
+            && (int) $primaryOffice->mls_office_id !== (int) $originOffice->mls_office_id;
+
+        $contactOffice = $primaryOffice ?? $originOffice;
+        $sourceAgencyNotice = null;
+
+        if ($belongsToExternalAgency && !empty($originOffice?->name)) {
+            $sourceAgencyNotice = $locale === 'en'
+                ? sprintf('This property belongs to %s. Contact is handled by our main agency.', $originOffice->name)
+                : sprintf('Esta propiedad pertenece a %s. El contacto se atiende con nuestra agencia principal.', $originOffice->name);
+
+            // Si la propiedad pertenece a otra agencia, ocultamos agentes en el endpoint público.
+            $property->setRelation('agentUser', null);
+            $property->setRelation('mlsAgents', new EloquentCollection());
+        }
+
+        $property->setAttribute('contact_agency', $this->toPublicOfficePayload($contactOffice));
+        $property->setAttribute('source_agency_reference', $belongsToExternalAgency ? $this->toPublicOfficePayload($originOffice) : null);
+        $property->setAttribute('belongs_to_external_agency', $belongsToExternalAgency);
+        $property->setAttribute('hide_external_agents', $belongsToExternalAgency);
+        $property->setAttribute('source_agency_notice', $sourceAgencyNotice);
+
         return $property;
+    }
+
+    private function resolvePrimaryPublicMlsOffice(): ?MLSOffice
+    {
+        if ($this->didResolvePrimaryPublicMlsOffice) {
+            return $this->cachedPrimaryPublicMlsOffice;
+        }
+
+        $this->didResolvePrimaryPublicMlsOffice = true;
+        $this->cachedPrimaryPublicMlsOffice = MLSOffice::query()
+            ->where('is_primary', true)
+            ->orderBy('mls_office_id')
+            ->first();
+
+        return $this->cachedPrimaryPublicMlsOffice;
+    }
+
+    private function toPublicOfficePayload(?MLSOffice $office): ?array
+    {
+        if (!$office) {
+            return null;
+        }
+
+        return [
+            'mls_office_id' => (int) $office->mls_office_id,
+            'name' => $office->name,
+            'phone' => $office->phone_1 ?: ($office->phone_2 ?: $office->phone_3),
+            'email' => $office->email,
+            'website' => $office->website,
+            'image' => $office->image,
+            'is_primary' => (bool) $office->is_primary,
+        ];
     }
 }
 

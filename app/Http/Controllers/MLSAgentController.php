@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MLSAgent;
 use App\Models\MLSOffice;
 use App\Models\Property;
+use App\Services\CmsService;
 use App\Services\MLSSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -77,6 +78,10 @@ class MLSAgentController extends Controller
      */
     public function indexPublic(Request $request): JsonResponse
     {
+        if (!$this->isMlsAgentsPublicEnabled()) {
+            return $this->apiNotFound('Seccion de agentes no disponible', 'PUBLIC_MLS_AGENTS_DISABLED');
+        }
+
         $locale = $this->resolvePublicLocale($request);
 
         $query = MLSAgent::query()
@@ -132,6 +137,10 @@ class MLSAgentController extends Controller
      */
     public function showPublicByMlsId(Request $request, int $mlsAgentId): JsonResponse
     {
+        if (!$this->isMlsAgentsPublicEnabled()) {
+            return $this->apiNotFound('Seccion de agentes no disponible', 'PUBLIC_MLS_AGENTS_DISABLED');
+        }
+
         $locale = $this->resolvePublicLocale($request);
 
         $agent = MLSAgent::query()
@@ -624,6 +633,11 @@ class MLSAgentController extends Controller
         app()->setLocale($locale);
 
         return $locale;
+    }
+
+    private function isMlsAgentsPublicEnabled(): bool
+    {
+        return CmsService::settingBoolean('public_show_mls_agents', true);
     }
 
     private function transformPublicAgent(MLSAgent $agent, string $locale): MLSAgent

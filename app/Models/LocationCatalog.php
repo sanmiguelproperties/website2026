@@ -15,6 +15,7 @@ class LocationCatalog extends Model
         'name',
         'type',
         'parent_id',
+        'parent_full_name',
     ];
 
     public function parent(): BelongsTo

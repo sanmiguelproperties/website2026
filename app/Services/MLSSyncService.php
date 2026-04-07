@@ -11,6 +11,7 @@ use App\Models\MLSAgent;
 use App\Models\MLSConfig;
 use App\Models\Property;
 use App\Models\Tag;
+use App\Services\LocationTaxonomyService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -908,12 +909,22 @@ class MLSSyncService
      */
     protected function getDefaultAgencyId(): int
     {
-        $agency = Agency::first();
+        // La agencia principal se gestiona manualmente desde el admin interno.
+        // La sincronizacion debe usar una agencia NO principal cuando exista.
+        $agency = Agency::query()
+            ->where('is_primary', false)
+            ->orderBy('id')
+            ->first();
+
+        if (!$agency) {
+            $agency = Agency::query()->orderBy('id')->first();
+        }
         
         if (!$agency) {
             $agency = Agency::create([
                 'id' => 1,
-                'name' => 'Agencia Principal',
+                'name' => 'Agencia Sincronizada',
+                'is_primary' => false,
             ]);
         }
         
@@ -963,19 +974,38 @@ class MLSSyncService
         $hasExisting = $property->location()->exists();
         $this->log('debug', "[LOCATION SYNC] Propiedad: {$property->mls_public_id} | Tiene ubicación existente: " . ($hasExisting ? 'SÍ' : 'NO'));
 
+        $resolvedTaxonomy = LocationTaxonomyService::resolveHierarchy(
+            $location['country'] ?? null,
+            $location['state'] ?? $location['state_province'] ?? $location['region'] ?? null,
+            $location['city'] ?? null,
+            $location['neighborhood'] ?? $location['city_area'] ?? null
+        );
+
+        $locationAttributes = [
+            'region' => $resolvedTaxonomy['state'] ?? ($location['state'] ?? $location['state_province'] ?? $location['region'] ?? null),
+            'city' => $resolvedTaxonomy['city'] ?? ($location['city'] ?? null),
+            'city_area' => $resolvedTaxonomy['neighborhood'] ?? ($location['neighborhood'] ?? $location['city_area'] ?? null),
+            'street' => $location['street'] ?? $location['address'] ?? null,
+            'postal_code' => $location['postal_code'] ?? $location['zip_code'] ?? null,
+            'show_exact_location' => $location['show_exact_location'] ?? null,
+            'latitude' => $location['latitude'] ?? $location['lat'] ?? null,
+            'longitude' => $location['longitude'] ?? $location['lng'] ?? $location['lon'] ?? null,
+            'raw_payload' => $location,
+        ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('property_locations', 'country')) {
+            $locationAttributes['country'] = $resolvedTaxonomy['country'] ?? ($location['country'] ?? null);
+        }
+
+        if (LocationTaxonomyService::hasTaxonomyColumns()) {
+            $locationAttributes['state_catalog_id'] = $resolvedTaxonomy['state_catalog_id'] ?? null;
+            $locationAttributes['city_catalog_id'] = $resolvedTaxonomy['city_catalog_id'] ?? null;
+            $locationAttributes['neighborhood_catalog_id'] = $resolvedTaxonomy['neighborhood_catalog_id'] ?? null;
+        }
+
         $property->location()->updateOrCreate(
             ['property_id' => $property->id],
-            [
-                'region' => $location['state'] ?? $location['state_province'] ?? $location['region'] ?? null,
-                'city' => $location['city'] ?? null,
-                'city_area' => $location['neighborhood'] ?? $location['city_area'] ?? null,
-                'street' => $location['street'] ?? $location['address'] ?? null,
-                'postal_code' => $location['postal_code'] ?? $location['zip_code'] ?? null,
-                'show_exact_location' => $location['show_exact_location'] ?? null,
-                'latitude' => $location['latitude'] ?? $location['lat'] ?? null,
-                'longitude' => $location['longitude'] ?? $location['lng'] ?? $location['lon'] ?? null,
-                'raw_payload' => $location,
-            ]
+            $locationAttributes
         );
 
         $this->log('debug', "[LOCATION SYNC END] Propiedad: {$property->mls_public_id} | Ubicación sincronizada");

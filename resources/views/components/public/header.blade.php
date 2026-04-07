@@ -11,6 +11,48 @@
 
     $menu = CmsService::getMenu('main-header');
     $menuItems = $menu?->rootItems ?? collect();
+    $showMlsOffices = CmsService::settingBoolean('public_show_mls_offices', true);
+    $showMlsAgents = CmsService::settingBoolean('public_show_mls_agents', true);
+
+    $isHiddenMlsUrl = static function (?string $resolvedUrl) use ($showMlsOffices, $showMlsAgents): bool {
+        $path = parse_url((string) $resolvedUrl, PHP_URL_PATH);
+        $normalizedPath = '/' . ltrim((string) ($path ?? $resolvedUrl ?? ''), '/');
+        $normalizedPath = rtrim(Str::lower($normalizedPath), '/');
+        if ($normalizedPath === '') {
+            $normalizedPath = '/';
+        }
+
+        if (!$showMlsOffices && (str_starts_with($normalizedPath, '/agencias') || str_starts_with($normalizedPath, '/mls-offices'))) {
+            return true;
+        }
+
+        if (!$showMlsAgents && (str_starts_with($normalizedPath, '/agentes') || str_starts_with($normalizedPath, '/mls-agents'))) {
+            return true;
+        }
+
+        return false;
+    };
+
+    $menuItems = $menuItems->filter(function ($item) use ($showMlsOffices, $showMlsAgents, $isHiddenMlsUrl) {
+        $routeName = (string) ($item->route_name ?? '');
+
+        if (
+            !$showMlsOffices
+            && in_array($routeName, ['public.mls-offices.index', 'public.mls-offices.show', 'public.mls-offices.legacy-index', 'public.mls-offices.legacy-show'], true)
+        ) {
+            return false;
+        }
+
+        if (
+            !$showMlsAgents
+            && in_array($routeName, ['public.mls-agents.index', 'public.mls-agents.show', 'public.mls-agents.legacy-index', 'public.mls-agents.legacy-show'], true)
+        ) {
+            return false;
+        }
+
+        return !$isHiddenMlsUrl($item->resolvedUrl());
+    })->values();
+
     $mlsLocationMenu = $mlsLocationMenu ?? PublicLocationMenuService::stateCityTree();
     $locationMenuItems = collect($mlsLocationMenu)
         ->map(function (array $entry) {
@@ -24,21 +66,54 @@
                     if (is_string($cityEntry)) {
                         $cityName = trim($cityEntry);
                         $zones = [];
+                        $cityUrl = route('public.properties.index', [
+                            'region' => $state,
+                            'city' => $cityName,
+                        ]);
                     } else {
                         $cityName = trim((string) ($cityEntry['city'] ?? $cityEntry['name'] ?? ''));
+                        $cityUrl = trim((string) ($cityEntry['url'] ?? ''));
+                        if ($cityUrl === '') {
+                            $cityUrl = route('public.properties.index', [
+                                'region' => $state,
+                                'city' => $cityName,
+                            ]);
+                        }
+
                         $zones = collect($cityEntry['zones'] ?? [])
-                            ->map(fn ($zone) => trim((string) $zone))
+                            ->map(function ($zoneEntry) use ($state, $cityName) {
+                                if (is_string($zoneEntry)) {
+                                    $zoneName = trim($zoneEntry);
+                                    $zoneUrl = route('public.properties.index', [
+                                        'region' => $state,
+                                        'city' => $cityName,
+                                        'city_area' => $zoneName,
+                                    ]);
+                                } else {
+                                    $zoneName = trim((string) ($zoneEntry['name'] ?? $zoneEntry['zone'] ?? ''));
+                                    $zoneUrl = trim((string) ($zoneEntry['url'] ?? ''));
+
+                                    if ($zoneUrl === '') {
+                                        $zoneUrl = route('public.properties.index', [
+                                            'region' => $state,
+                                            'city' => $cityName,
+                                            'city_area' => $zoneName,
+                                        ]);
+                                    }
+                                }
+
+                                if ($zoneName === '') {
+                                    return null;
+                                }
+
+                                return [
+                                    'name' => $zoneName,
+                                    'url' => $zoneUrl,
+                                ];
+                            })
                             ->filter()
-                            ->unique(fn ($zone) => Str::lower($zone))
+                            ->unique(fn ($zone) => Str::lower($zone['name']))
                             ->values()
-                            ->map(fn ($zone) => [
-                                'name' => $zone,
-                                'url' => route('public.properties.index', [
-                                    'region' => $state,
-                                    'city' => $cityName,
-                                    'city_area' => $zone,
-                                ]),
-                            ])
                             ->all();
                     }
 
@@ -48,10 +123,7 @@
 
                     return [
                         'name' => $cityName,
-                        'url' => route('public.properties.index', [
-                            'region' => $state,
-                            'city' => $cityName,
-                        ]),
+                        'url' => $cityUrl,
                         'zones' => $zones,
                     ];
                 })
@@ -64,7 +136,9 @@
 
             return [
                 'name' => $state,
-                'url' => route('public.properties.index', ['region' => $state]),
+                'url' => trim((string) ($entry['url'] ?? '')) !== ''
+                    ? (string) $entry['url']
+                    : route('public.properties.index', ['region' => $state]),
                 'cities' => $cities,
             ];
         })
@@ -78,6 +152,7 @@
     $labels = [
         'home' => $txt('header_nav_home', 'Inicio', 'Home'),
         'properties' => $txt('header_nav_properties', 'Propiedades', 'Properties'),
+        'favorites' => $txt('header_nav_favorites', 'Favoritas', 'Favorites'),
         'offices' => $txt('header_nav_offices', 'Agencias', 'Agencies'),
         'agents' => $txt('header_nav_agents', 'Agentes', 'Agents'),
         'locations' => $txt('header_nav_locations', 'Ubicaciones', 'Locations'),
@@ -151,8 +226,12 @@
                 @else
                     <a href="{{ url('/') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['home'] }}</a>
                     <a href="{{ route('public.properties.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['properties'] }}</a>
-                    <a href="{{ route('public.mls-offices.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['offices'] }}</a>
-                    <a href="{{ route('public.mls-agents.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['agents'] }}</a>
+                    @if($showMlsOffices)
+                        <a href="{{ route('public.mls-offices.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['offices'] }}</a>
+                    @endif
+                    @if($showMlsAgents)
+                        <a href="{{ route('public.mls-agents.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['agents'] }}</a>
+                    @endif
                     <a href="{{ route('about') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['about'] }}</a>
                     <a href="{{ route('public.contact') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['contact'] }}</a>
                 @endif
@@ -258,6 +337,17 @@
                     {{ $phoneDisplay }}
                 </a>
 
+                <a href="{{ route('public.properties.favorites') }}"
+                   :class="{ 'text-slate-700 border-slate-300 bg-white': scrolled, 'text-white border-white/30 bg-white/10 hover:bg-white/20': !scrolled }"
+                   class="relative hidden sm:inline-flex items-center justify-center w-10 h-10 rounded-xl border transition-colors"
+                   aria-label="{{ $labels['favorites'] }}"
+                   title="{{ $labels['favorites'] }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    <span data-favorites-count class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] leading-[18px] text-center font-bold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">0</span>
+                </a>
+
                 @auth
                     <a href="{{ url('/dashboard') }}" class="hidden sm:inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-4" style="background: linear-gradient(to right, var(--fe-header-cta_button_from, #D1A054), var(--fe-header-cta_button_to, #768D59)); --tw-ring-color: rgba(209,160,84,0.2);">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,8 +403,12 @@
                 @else
                     <a href="{{ url('/') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['home'] }}</a>
                     <a href="{{ route('public.properties.index') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['properties'] }}</a>
-                    <a href="{{ route('public.mls-offices.index') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['offices'] }}</a>
-                    <a href="{{ route('public.mls-agents.index') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['agents'] }}</a>
+                    @if($showMlsOffices)
+                        <a href="{{ route('public.mls-offices.index') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['offices'] }}</a>
+                    @endif
+                    @if($showMlsAgents)
+                        <a href="{{ route('public.mls-agents.index') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['agents'] }}</a>
+                    @endif
                     <a href="{{ route('about') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['about'] }}</a>
                     <a href="{{ route('public.contact') }}" @click="mobileMenuOpen = false" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['contact'] }}</a>
                 @endif
@@ -424,6 +518,17 @@
 
                 <a href="tel:{{ $phoneHref }}" class="flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
                     {{ $phoneDisplay }}
+                </a>
+
+                <a href="{{ route('public.properties.favorites') }}" @click="mobileMenuOpen = false"
+                   class="flex items-center justify-between gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
+                    <span class="inline-flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        {{ $labels['favorites'] }}
+                    </span>
+                    <span data-favorites-count class="hidden min-w-[20px] h-[20px] px-1 rounded-full text-[11px] leading-[20px] text-center font-bold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">0</span>
                 </a>
 
                 @auth

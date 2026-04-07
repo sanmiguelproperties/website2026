@@ -10,6 +10,7 @@ use App\Models\Feature;
 use App\Models\MediaAsset;
 use App\Models\Property;
 use App\Models\Tag;
+use App\Services\LocationTaxonomyService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -285,12 +286,22 @@ class EasyBrokerSyncService
      */
     protected function getDefaultAgencyId(): int
     {
-        $agency = Agency::first();
+        // La agencia principal se gestiona manualmente desde el admin interno.
+        // La sincronizacion debe usar una agencia NO principal cuando exista.
+        $agency = Agency::query()
+            ->where('is_primary', false)
+            ->orderBy('id')
+            ->first();
+
+        if (!$agency) {
+            $agency = Agency::query()->orderBy('id')->first();
+        }
         
         if (!$agency) {
             $agency = Agency::create([
                 'id' => 1,
-                'name' => 'Agencia Principal',
+                'name' => 'Agencia Sincronizada',
+                'is_primary' => false,
             ]);
         }
         
@@ -532,19 +543,38 @@ class EasyBrokerSyncService
             return;
         }
 
+        $resolvedTaxonomy = LocationTaxonomyService::resolveHierarchy(
+            $location['country'] ?? null,
+            $location['state'] ?? null,
+            $location['city'] ?? null,
+            $location['neighborhood'] ?? null
+        );
+
+        $locationAttributes = [
+            'region' => $resolvedTaxonomy['state'] ?? ($location['state'] ?? null),
+            'city' => $resolvedTaxonomy['city'] ?? ($location['city'] ?? null),
+            'city_area' => $resolvedTaxonomy['neighborhood'] ?? ($location['neighborhood'] ?? null),
+            'street' => $location['street'] ?? null,
+            'postal_code' => $location['postal_code'] ?? null,
+            'show_exact_location' => $location['show_exact_location'] ?? null,
+            'latitude' => $location['latitude'] ?? null,
+            'longitude' => $location['longitude'] ?? null,
+            'raw_payload' => $location,
+        ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('property_locations', 'country')) {
+            $locationAttributes['country'] = $resolvedTaxonomy['country'] ?? ($location['country'] ?? null);
+        }
+
+        if (LocationTaxonomyService::hasTaxonomyColumns()) {
+            $locationAttributes['state_catalog_id'] = $resolvedTaxonomy['state_catalog_id'] ?? null;
+            $locationAttributes['city_catalog_id'] = $resolvedTaxonomy['city_catalog_id'] ?? null;
+            $locationAttributes['neighborhood_catalog_id'] = $resolvedTaxonomy['neighborhood_catalog_id'] ?? null;
+        }
+
         $property->location()->updateOrCreate(
             ['property_id' => $property->id],
-            [
-                'region' => $location['state'] ?? null,
-                'city' => $location['city'] ?? null,
-                'city_area' => $location['neighborhood'] ?? null,
-                'street' => $location['street'] ?? null,
-                'postal_code' => $location['postal_code'] ?? null,
-                'show_exact_location' => $location['show_exact_location'] ?? null,
-                'latitude' => $location['latitude'] ?? null,
-                'longitude' => $location['longitude'] ?? null,
-                'raw_payload' => $location,
-            ]
+            $locationAttributes
         );
     }
 

@@ -170,6 +170,17 @@
                   Propiedades
                 </a>
 
+                <a href="{{ route('zones') }}" data-route="zones" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2l8 4v6c0 5-3 9-8 10-5-1-8-5-8-10V6l8-4z"/>
+                      <path d="M12 8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>
+                      <path d="M12 14v4"/>
+                    </svg>
+                  </span>
+                  Zonas SEO
+                </a>
+
                 <a href="{{ route('agencies') }}" data-route="agencies" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M7 21V8"/><path d="M17 21V8"/><path d="M7 8l5-5 5 5"/></svg>
@@ -423,6 +434,7 @@
         'dashboard': 1,
         'funnel': 1,
         'properties': 1,
+        'zones': 1,
         'agencies': 1,
         'users': 2,
         'corporate-email': 2,

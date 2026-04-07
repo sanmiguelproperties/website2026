@@ -123,7 +123,8 @@ class EasyBrokerMlsExportService
         Property $property,
         ?string $fallbackPropertyType = null,
         ?array $allowedPropertyTypes = null,
-        ?string $targetStatus = null
+        ?string $targetStatus = null,
+        bool $includeImages = true
     ): array {
         $rawPayload = is_array($property->raw_payload) ? $property->raw_payload : [];
 
@@ -230,9 +231,12 @@ class EasyBrokerMlsExportService
             $payload['tags'] = array_values(array_unique($tagNames));
         }
 
-        $imagesPayload = $this->buildImagesPayload($property, $rawPayload, $mediaAssets);
-        if (!empty($imagesPayload)) {
-            $payload['images'] = $imagesPayload;
+        $imagesPayload = [];
+        if ($includeImages) {
+            $imagesPayload = $this->buildImagesPayload($property, $rawPayload, $mediaAssets);
+            if (!empty($imagesPayload)) {
+                $payload['images'] = $imagesPayload;
+            }
         }
 
         $missing = [];

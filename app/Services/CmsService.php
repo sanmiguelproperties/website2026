@@ -159,6 +159,31 @@ class CmsService
     }
 
     /**
+     * Obtener un setting individual como boolean.
+     * Acepta: 1/0, true/false, yes/no, on/off, si/no.
+     */
+    public static function settingBoolean(string $key, bool $default = false, ?string $locale = null): bool
+    {
+        $value = self::setting($key, $locale);
+
+        if ($value === null || trim((string) $value) === '') {
+            return $default;
+        }
+
+        $normalized = strtolower(trim((string) $value));
+
+        if (in_array($normalized, ['1', 'true', 'yes', 'on', 'si'], true)) {
+            return true;
+        }
+
+        if (in_array($normalized, ['0', 'false', 'no', 'off'], true)) {
+            return false;
+        }
+
+        return $default;
+    }
+
+    /**
      * Obtener un grupo de settings como array key => value.
      */
     public static function settings(string|array $groups, ?string $locale = null): array

@@ -6,18 +6,30 @@
         $currentLocale = app()->getLocale() === 'en' ? 'en' : 'es';
         $txt = static fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($currentLocale === 'en' ? $en : $es);
         $pageEntity = $pageData?->entity;
+        $seoTitleOverride = trim((string) ($seoTitleOverride ?? ''));
+        $seoDescriptionOverride = trim((string) ($seoDescriptionOverride ?? ''));
+        $seoKeywordsOverride = trim((string) ($seoKeywordsOverride ?? ''));
 
         $seoTitle = $pageEntity && method_exists($pageEntity, 'metaTitle')
             ? ($pageEntity->metaTitle($currentLocale) ?: ($pageEntity->title($currentLocale) ?: $txt('i18n_common_siteName', 'San Miguel Properties', 'San Miguel Properties')))
             : $txt('i18n_common_siteName', 'San Miguel Properties', 'San Miguel Properties');
+        if ($seoTitleOverride !== '') {
+            $seoTitle = $seoTitleOverride;
+        }
 
         $seoDescription = $pageEntity && method_exists($pageEntity, 'metaDescription')
             ? ($pageEntity->metaDescription($currentLocale) ?: $txt('i18n_seo_defaultDescription', 'San Miguel Properties - Portal inmobiliario en San Miguel de Allende.', 'San Miguel Properties - Real estate portal in San Miguel de Allende.'))
             : $txt('i18n_seo_defaultDescription', 'San Miguel Properties - Portal inmobiliario en San Miguel de Allende.', 'San Miguel Properties - Real estate portal in San Miguel de Allende.');
+        if ($seoDescriptionOverride !== '') {
+            $seoDescription = $seoDescriptionOverride;
+        }
 
         $seoKeywords = $currentLocale === 'en'
             ? ($pageEntity->meta_keywords_en ?? null)
             : ($pageEntity->meta_keywords_es ?? null);
+        if ($seoKeywordsOverride !== '') {
+            $seoKeywords = $seoKeywordsOverride;
+        }
     @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -57,22 +69,34 @@
 
         $currentLocale = app()->getLocale() === 'en' ? 'en' : 'es';
         $pageEntity = $pageData?->entity;
+        $seoTitleOverride = trim((string) ($seoTitleOverride ?? ''));
+        $seoDescriptionOverride = trim((string) ($seoDescriptionOverride ?? ''));
+        $seoKeywordsOverride = trim((string) ($seoKeywordsOverride ?? ''));
         $pageTitle = $pageEntity && method_exists($pageEntity, 'title')
             ? $pageEntity->title($currentLocale)
             : null;
         $seoTitle = $pageEntity && method_exists($pageEntity, 'metaTitle')
             ? ($pageEntity->metaTitle($currentLocale) ?: $pageTitle ?: $siteName)
             : ($pageTitle ?: $siteName);
+        if ($seoTitleOverride !== '') {
+            $seoTitle = $seoTitleOverride;
+        }
 
         $seoDefaultDescription = $txt('i18n_seo_defaultDescription', 'San Miguel Properties - Portal inmobiliario en San Miguel de Allende.', 'San Miguel Properties - Real estate portal in San Miguel de Allende.');
 
         $seoDescription = $pageEntity && method_exists($pageEntity, 'metaDescription')
             ? ($pageEntity->metaDescription($currentLocale) ?: $seoDefaultDescription)
             : $seoDefaultDescription;
+        if ($seoDescriptionOverride !== '') {
+            $seoDescription = $seoDescriptionOverride;
+        }
 
         $seoKeywords = $currentLocale === 'en'
             ? ($pageEntity->meta_keywords_en ?? null)
             : ($pageEntity->meta_keywords_es ?? null);
+        if ($seoKeywordsOverride !== '') {
+            $seoKeywords = $seoKeywordsOverride;
+        }
 
         $pageFields = ($pageData && method_exists($pageData, 'allFields'))
             ? $pageData->allFields($currentLocale)
@@ -104,6 +128,9 @@
             'common.operation' => $txt('i18n_common_operation', 'Operacion', 'Operation'),
             'common.updated' => $txt('i18n_common_updated', 'Actualizado', 'Updated'),
             'common.siteName' => $txt('i18n_common_siteName', 'San Miguel Properties', 'San Miguel Properties'),
+            'favorites.add' => $txt('i18n_favorites_add', 'Agregar a favoritas', 'Add to favorites'),
+            'favorites.remove' => $txt('i18n_favorites_remove', 'Quitar de favoritas', 'Remove from favorites'),
+            'favorites.nav' => $txt('i18n_favorites_nav', 'Favoritas', 'Favorites'),
             'property.unknownError' => $txt('i18n_property_unknownError', 'Error inesperado', 'Unexpected error'),
             'property.networkError' => $txt('i18n_property_networkError', 'Error de red al cargar la propiedad.', 'Network error while loading the property.'),
             'property.noDescription' => $txt('i18n_property_noDescription', 'Sin descripcion.', 'No description available.'),
@@ -545,6 +572,206 @@
                 return await response.json();
             }
         };
+
+        (function () {
+            const STORAGE_KEY = 'smp.favorite_property_ids';
+
+            function toPositiveInt(value) {
+                const parsed = Number.parseInt(String(value ?? ''), 10);
+                return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+            }
+
+            function normalizeIds(ids) {
+                const source = Array.isArray(ids) ? ids : [];
+                const result = [];
+                const seen = new Set();
+
+                source.forEach((id) => {
+                    const numericId = toPositiveInt(id);
+                    if (!numericId || seen.has(numericId)) return;
+                    seen.add(numericId);
+                    result.push(numericId);
+                });
+
+                return result;
+            }
+
+            function readIds() {
+                try {
+                    const raw = window.localStorage.getItem(STORAGE_KEY);
+                    if (!raw) return [];
+                    return normalizeIds(JSON.parse(raw));
+                } catch (_error) {
+                    return [];
+                }
+            }
+
+            function writeIds(ids) {
+                const normalized = normalizeIds(ids);
+                try {
+                    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+                } catch (_error) {
+                    // noop
+                }
+
+                window.dispatchEvent(new CustomEvent('public:favorites-changed', {
+                    detail: { ids: normalized },
+                }));
+
+                return normalized;
+            }
+
+            function getAddLabel() {
+                return window.publicT ? window.publicT('favorites.add', 'Agregar a favoritas') : 'Agregar a favoritas';
+            }
+
+            function getRemoveLabel() {
+                return window.publicT ? window.publicT('favorites.remove', 'Quitar de favoritas') : 'Quitar de favoritas';
+            }
+
+            function setButtonState(button, isActive) {
+                if (!button) return;
+
+                button.classList.toggle('text-rose-600', isActive);
+                button.classList.toggle('bg-rose-50', isActive);
+                button.classList.toggle('border-rose-200', isActive);
+                button.classList.toggle('ring-4', isActive);
+                button.classList.toggle('ring-rose-100', isActive);
+
+                if (!button.dataset.favoriteDefaultColor) {
+                    button.dataset.favoriteDefaultColor = button.style.color || '';
+                }
+
+                if (isActive) {
+                    button.style.color = 'rgb(225 29 72)';
+                } else {
+                    button.style.color = button.dataset.favoriteDefaultColor || '';
+                }
+
+                const icon = button.querySelector('svg');
+                if (icon) {
+                    if (isActive) {
+                        icon.setAttribute('fill', 'currentColor');
+                    } else {
+                        icon.setAttribute('fill', 'none');
+                    }
+                }
+
+                const label = isActive ? getRemoveLabel() : getAddLabel();
+                button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                button.setAttribute('aria-label', label);
+                button.setAttribute('title', label);
+            }
+
+            function getButtonId(button, explicitId = null) {
+                if (explicitId !== null && explicitId !== undefined) {
+                    return toPositiveInt(explicitId);
+                }
+                return toPositiveInt(button?.dataset?.propertyId);
+            }
+
+            function updateFavoritesCounter() {
+                const count = readIds().length;
+                document.querySelectorAll('[data-favorites-count]').forEach((el) => {
+                    el.textContent = String(count);
+                    el.classList.toggle('hidden', count === 0);
+                });
+            }
+
+            const publicFavorites = {
+                key: STORAGE_KEY,
+
+                getIds() {
+                    return readIds();
+                },
+
+                setIds(ids) {
+                    return writeIds(ids);
+                },
+
+                has(id) {
+                    const numericId = toPositiveInt(id);
+                    if (!numericId) return false;
+                    return readIds().includes(numericId);
+                },
+
+                add(id) {
+                    const numericId = toPositiveInt(id);
+                    if (!numericId) return readIds();
+
+                    const current = readIds();
+                    if (current.includes(numericId)) return current;
+                    current.unshift(numericId);
+                    return writeIds(current);
+                },
+
+                remove(id) {
+                    const numericId = toPositiveInt(id);
+                    if (!numericId) return readIds();
+
+                    const next = readIds().filter((item) => item !== numericId);
+                    return writeIds(next);
+                },
+
+                toggle(id) {
+                    const numericId = toPositiveInt(id);
+                    if (!numericId) {
+                        return { ids: readIds(), active: false };
+                    }
+
+                    const current = readIds();
+                    const exists = current.includes(numericId);
+                    const next = exists ? current.filter((item) => item !== numericId) : [numericId, ...current];
+                    const stored = writeIds(next);
+                    return { ids: stored, active: !exists };
+                },
+
+                syncButton(button, explicitId = null) {
+                    const numericId = getButtonId(button, explicitId);
+                    if (!button || !numericId) return;
+                    button.dataset.propertyId = String(numericId);
+                    setButtonState(button, this.has(numericId));
+                },
+
+                syncButtons(root = document) {
+                    root.querySelectorAll('[data-favorite-btn]').forEach((button) => {
+                        this.syncButton(button);
+                    });
+                },
+
+                bind(root = document) {
+                    if (!root || root.__publicFavoritesBound) return;
+                    root.__publicFavoritesBound = true;
+
+                    root.addEventListener('click', (event) => {
+                        const button = event.target.closest('[data-favorite-btn]');
+                        if (!button || !root.contains(button)) return;
+
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        const numericId = getButtonId(button);
+                        if (!numericId) return;
+
+                        const result = this.toggle(numericId);
+                        setButtonState(button, result.active);
+                    });
+                },
+            };
+
+            window.publicFavorites = publicFavorites;
+
+            document.addEventListener('DOMContentLoaded', () => {
+                publicFavorites.bind(document);
+                publicFavorites.syncButtons(document);
+                updateFavoritesCounter();
+            });
+
+            window.addEventListener('public:favorites-changed', () => {
+                publicFavorites.syncButtons(document);
+                updateFavoritesCounter();
+            });
+        })();
     </script>
 
     @stack('scripts')

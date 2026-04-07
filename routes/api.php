@@ -16,6 +16,7 @@ use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\FeatureController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\LocationCatalogController;
+use App\Http\Controllers\ZonePageController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\FrontendColorController;
 use App\Http\Controllers\EasyBrokerSyncController;
@@ -81,6 +82,7 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
 
 // EasyBroker / Inventario routes (protegidas con autenticación Passport)
   Route::middleware(['auth.api', 'admin.api'])->group(function () {
+    Route::patch('agencies/{agency}/primary', [AgencyController::class, 'setPrimary']);
     Route::apiResource('agencies', AgencyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('properties', PropertyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('features', FeatureController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
@@ -88,6 +90,13 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
     Route::apiResource('locations-catalog', LocationCatalogController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('contact-requests', ContactRequestController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
   });
+
+Route::middleware(['auth.api', 'admin.api'])->group(function () {
+    Route::get('zone-pages', [ZonePageController::class, 'index']);
+    Route::post('zone-pages/sync', [ZonePageController::class, 'sync']);
+    Route::get('zone-pages/{zonePage}', [ZonePageController::class, 'show'])->where('zonePage', '[0-9]+');
+    Route::put('zone-pages/{zonePage}', [ZonePageController::class, 'update'])->where('zonePage', '[0-9]+');
+});
 
 // RBAC routes protegidas con autenticación Passport
 Route::middleware(['auth.api', 'admin.api'])->prefix('rbac')->group(function () {
@@ -278,6 +287,7 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
 
     // Campo manual (no editable por sync): marcar si la agencia MLS está a nuestro cargo.
     Route::patch('mls-offices/{mlsOffice}/managed-by-us', [MLSOfficeController::class, 'updateManagedByUs']);
+    Route::patch('mls-offices/{mlsOffice}/primary', [MLSOfficeController::class, 'setPrimary']);
 
     // Agentes y propiedades de una office
     Route::get('mls-offices/{mls_office}/agents', [MLSOfficeController::class, 'agents']);

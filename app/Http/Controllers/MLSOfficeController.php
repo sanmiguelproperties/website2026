@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\MLSOffice;
 use App\Models\MLSAgent;
+use App\Services\CmsService;
 use App\Services\MLSSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -56,6 +58,15 @@ class MLSOfficeController extends Controller
             }
         }
 
+        if ($request->filled('is_primary')) {
+            $val = $request->input('is_primary');
+            if ($val === '1' || $val === 1 || $val === true || $val === 'true') {
+                $query->where('is_primary', true);
+            } elseif ($val === '0' || $val === 0 || $val === false || $val === 'false') {
+                $query->where('is_primary', false);
+            }
+        }
+
         if ($request->filled('city')) {
             $query->where('city', $request->input('city'));
         }
@@ -72,6 +83,7 @@ class MLSOfficeController extends Controller
             'city',
             'state_province',
             'paid',
+            'is_primary',
             'is_managed_by_us',
             'last_synced_at',
             'created_at',
@@ -113,11 +125,31 @@ class MLSOfficeController extends Controller
     }
 
     /**
+     * PATCH /api/mls-offices/{mlsOffice}/primary
+     */
+    public function setPrimary(Request $request, MLSOffice $mlsOffice): JsonResponse
+    {
+        DB::transaction(function () use ($mlsOffice): void {
+            $this->clearPrimaryExcept((int) $mlsOffice->mls_office_id);
+
+            if (!$mlsOffice->is_primary) {
+                $mlsOffice->update(['is_primary' => true]);
+            }
+        });
+
+        return $this->apiSuccess('Office principal actualizada', 'MLS_OFFICE_PRIMARY_UPDATED', $mlsOffice->fresh());
+    }
+
+    /**
      * GET /api/public/mls-offices
      * Listado pÃºblico de agencias/oficinas MLS (paginaciÃ³n + bÃºsqueda).
      */
     public function indexPublic(Request $request): JsonResponse
     {
+        if (!$this->isMlsOfficesPublicEnabled()) {
+            return $this->apiNotFound('Seccion de agencias no disponible', 'PUBLIC_MLS_OFFICES_DISABLED');
+        }
+
         $locale = $this->resolvePublicLocale($request);
 
         $query = MLSOffice::query()->withCount(['agents', 'properties']);
@@ -164,6 +196,10 @@ class MLSOfficeController extends Controller
      */
     public function showPublic(Request $request, MLSOffice $mlsOffice): JsonResponse
     {
+        if (!$this->isMlsOfficesPublicEnabled()) {
+            return $this->apiNotFound('Seccion de agencias no disponible', 'PUBLIC_MLS_OFFICES_DISABLED');
+        }
+
         $locale = $this->resolvePublicLocale($request);
 
         $mlsOffice->load(['imageMediaAsset']);
@@ -181,6 +217,10 @@ class MLSOfficeController extends Controller
      */
     public function agentsPublic(Request $request, MLSOffice $mlsOffice): JsonResponse
     {
+        if (!$this->isMlsOfficesPublicEnabled() || !$this->isMlsAgentsPublicEnabled()) {
+            return $this->apiNotFound('Seccion de agentes no disponible', 'PUBLIC_MLS_AGENTS_DISABLED');
+        }
+
         $locale = $this->resolvePublicLocale($request);
 
         $query = MLSAgent::query()
@@ -272,6 +312,7 @@ class MLSOfficeController extends Controller
             'tiktok' => 'nullable|string|max:255',
             'instagram' => 'nullable|string|max:255',
             'paid' => 'nullable|boolean',
+            'is_primary' => 'nullable|boolean',
             'mls_created_at' => 'nullable|date',
             'mls_updated_at' => 'nullable|date',
             'last_synced_at' => 'nullable|date',
@@ -283,7 +324,14 @@ class MLSOfficeController extends Controller
         }
 
         $data = $validator->validated();
-        $office = MLSOffice::create($data);
+        $office = null;
+        DB::transaction(function () use ($data, &$office): void {
+            if (array_key_exists('is_primary', $data) && (bool) $data['is_primary'] === true) {
+                $this->clearPrimaryExcept();
+            }
+
+            $office = MLSOffice::create($data);
+        });
 
         return $this->apiCreated('Office MLS creado', 'MLS_OFFICE_CREATED', $office);
     }
@@ -319,6 +367,7 @@ class MLSOfficeController extends Controller
             'tiktok' => 'sometimes|nullable|string|max:255',
             'instagram' => 'sometimes|nullable|string|max:255',
             'paid' => 'sometimes|nullable|boolean',
+            'is_primary' => 'sometimes|boolean',
             'mls_created_at' => 'sometimes|nullable|date',
             'mls_updated_at' => 'sometimes|nullable|date',
             'last_synced_at' => 'sometimes|nullable|date',
@@ -329,7 +378,15 @@ class MLSOfficeController extends Controller
             return $this->apiValidationError($validator->errors()->toArray());
         }
 
-        $mlsOffice->update($validator->validated());
+        $data = $validator->validated();
+
+        DB::transaction(function () use ($mlsOffice, $data): void {
+            if (array_key_exists('is_primary', $data) && (bool) $data['is_primary'] === true) {
+                $this->clearPrimaryExcept((int) $mlsOffice->mls_office_id);
+            }
+
+            $mlsOffice->update($data);
+        });
 
         return $this->apiSuccess('Office MLS actualizado', 'MLS_OFFICE_UPDATED', $mlsOffice->fresh());
     }
@@ -423,6 +480,17 @@ class MLSOfficeController extends Controller
             500
         );
     }
+    protected function clearPrimaryExcept(?int $mlsOfficeId = null): void
+    {
+        $query = MLSOffice::query()->where('is_primary', true);
+
+        if ($mlsOfficeId !== null) {
+            $query->where('mls_office_id', '!=', $mlsOfficeId);
+        }
+
+        $query->update(['is_primary' => false]);
+    }
+
     private function resolvePublicLocale(Request $request): string
     {
         $candidate = strtolower((string) (
@@ -436,6 +504,16 @@ class MLSOfficeController extends Controller
         app()->setLocale($locale);
 
         return $locale;
+    }
+
+    private function isMlsOfficesPublicEnabled(): bool
+    {
+        return CmsService::settingBoolean('public_show_mls_offices', true);
+    }
+
+    private function isMlsAgentsPublicEnabled(): bool
+    {
+        return CmsService::settingBoolean('public_show_mls_agents', true);
     }
 
     private function transformPublicOffice(MLSOffice $office, string $locale): MLSOffice
