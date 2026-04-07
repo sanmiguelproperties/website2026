@@ -25,11 +25,15 @@ class ZonePage extends Model
         'meta_description_es',
         'meta_description_en',
         'is_active',
+        'show_in_menu',
+        'menu_order',
         'last_detected_at',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'show_in_menu' => 'boolean',
+        'menu_order' => 'integer',
         'last_detected_at' => 'datetime',
     ];
 
@@ -79,4 +83,3 @@ class ZonePage extends Model
         return $this->meta_description_es ?: $this->meta_description_en;
     }
 }
-

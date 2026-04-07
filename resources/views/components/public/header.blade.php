@@ -148,6 +148,20 @@
     $contactSettings = CmsService::settings('contact', $currentLocale);
     $phoneDisplay = trim((string) ($contactSettings['contact_phone'] ?? '+52 55 1234 5678'));
     $phoneHref = preg_replace('/[^0-9+]/', '', $phoneDisplay) ?: '+525512345678';
+    $parseLogoHeight = static function (?string $value, int $default, int $min, int $max): int {
+        if ($value === null) {
+            return $default;
+        }
+
+        $parsed = filter_var($value, FILTER_VALIDATE_INT);
+        if ($parsed === false) {
+            return $default;
+        }
+
+        return max($min, min($max, $parsed));
+    };
+    $logoHeightDesktop = $parseLogoHeight(CmsService::setting('header_logo_height_desktop', $currentLocale), 44, 24, 96);
+    $logoHeightMobile = $parseLogoHeight(CmsService::setting('header_logo_height_mobile', $currentLocale), 36, 20, 80);
 
     $labels = [
         'home' => $txt('header_nav_home', 'Inicio', 'Home'),
@@ -185,11 +199,13 @@
     class="smp-public-header fixed top-0 left-0 right-0 z-50 transition-all duration-300">
     <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-20 items-center justify-between">
-            <a href="{{ url('/') }}" class="flex items-center gap-3 group">
+            <a href="{{ url('/') }}"
+               class="flex items-center gap-3 group"
+               style="--header-logo-height-desktop: {{ $logoHeightDesktop }}px; --header-logo-height-mobile: {{ $logoHeightMobile }}px;">
                 @if(!empty($siteLogoUrl))
-                    <img src="{{ $siteLogoUrl }}" alt="{{ $siteName ?? $txt('i18n_common_siteName', 'San Miguel Properties', 'San Miguel Properties') }}" class="h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
+                    <img src="{{ $siteLogoUrl }}" alt="{{ $siteName ?? $txt('i18n_common_siteName', 'San Miguel Properties', 'San Miguel Properties') }}" class="header-site-logo w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
                 @else
-                    <div class="grid h-11 w-11 place-items-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105" style="background: linear-gradient(to bottom right, var(--fe-header-logo_gradient_from, #D1A054), var(--fe-header-logo_gradient_to, #768D59));">
+                    <div class="header-site-logo-fallback grid place-items-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105" style="background: linear-gradient(to bottom right, var(--fe-header-logo_gradient_from, #D1A054), var(--fe-header-logo_gradient_to, #768D59));">
                         <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 21h18" />
                             <path d="M6 21V7a2 2 0 0 1 2-2h3" />
@@ -546,6 +562,27 @@
 </header>
 
 <style>
+    .smp-public-header .header-site-logo {
+        height: var(--header-logo-height-mobile, 36px) !important;
+        width: auto !important;
+    }
+
+    .smp-public-header .header-site-logo-fallback {
+        width: var(--header-logo-height-mobile, 36px) !important;
+        height: var(--header-logo-height-mobile, 36px) !important;
+    }
+
+    @media (min-width: 1024px) {
+        .smp-public-header .header-site-logo {
+            height: var(--header-logo-height-desktop, 44px) !important;
+        }
+
+        .smp-public-header .header-site-logo-fallback {
+            width: var(--header-logo-height-desktop, 44px) !important;
+            height: var(--header-logo-height-desktop, 44px) !important;
+        }
+    }
+
     .smp-public-header.is-scrolled {
         background-color: var(--fe-header-background_scrolled, rgba(255,255,255,0.95)) !important;
         box-shadow: var(--fe-header-shadow, 0 1px 2px rgba(0,0,0,.05), 0 10px 30px rgba(0,0,0,.10)) !important;

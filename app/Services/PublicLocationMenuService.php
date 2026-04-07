@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class PublicLocationMenuService
 {
-    private const CACHE_KEY = 'public_mls_location_tree_v3';
+    private const CACHE_KEY = 'public_mls_location_tree_v4';
     private const CACHE_MINUTES = 10;
 
     /**
@@ -34,6 +34,7 @@ class PublicLocationMenuService
         LocationTaxonomyService::backfillFromPropertyLocations();
         ZonePageService::syncFromPublishedProperties();
         $zoneSlugsByLocation = ZonePageService::activeSlugMapByLocation();
+        $zoneMenuConfigByLocation = ZonePageService::menuConfigMapByLocation();
 
         $hasTaxonomyIds = LocationTaxonomyService::hasTaxonomyColumns();
 
@@ -100,7 +101,20 @@ class PublicLocationMenuService
             }
 
             if ($zoneKey !== null) {
-                $grouped[$stateKey]['cities'][$cityKey]['zones'][$zoneKey] = $zone;
+                $zoneCompositeKey = ZonePageService::compositeKeyFromLabels($state, $city, $zone);
+                $menuConfig = $zoneMenuConfigByLocation[$zoneCompositeKey] ?? null;
+                $showInMenu = (bool) ($menuConfig['show_in_menu'] ?? true);
+
+                if (!$showInMenu) {
+                    continue;
+                }
+
+                $menuOrder = $menuConfig['menu_order'] ?? null;
+
+                $grouped[$stateKey]['cities'][$cityKey]['zones'][$zoneKey] = [
+                    'name' => $zone,
+                    'menu_order' => is_numeric($menuOrder) ? (int) $menuOrder : null,
+                ];
             }
         }
 
@@ -115,11 +129,12 @@ class PublicLocationMenuService
 
             $cityEntries = [];
             foreach ($cities as $cityEntry) {
-                $zones = $cityEntry['zones'];
-                asort($zones, SORT_NATURAL | SORT_FLAG_CASE);
+                $zones = array_values($cityEntry['zones']);
+                usort($zones, [self::class, 'compareZoneEntries']);
 
                 $zoneEntries = [];
-                foreach ($zones as $zoneName) {
+                foreach ($zones as $zoneEntry) {
+                    $zoneName = $zoneEntry['name'];
                     $zoneEntries[] = [
                         'name' => $zoneName,
                         'url' => self::resolveZoneUrl(
@@ -177,5 +192,28 @@ class PublicLocationMenuService
             'city' => $city,
             'city_area' => $zone,
         ]);
+    }
+
+    private static function compareZoneEntries(array $a, array $b): int
+    {
+        $orderA = $a['menu_order'] ?? null;
+        $orderB = $b['menu_order'] ?? null;
+
+        $hasOrderA = is_int($orderA);
+        $hasOrderB = is_int($orderB);
+
+        if ($hasOrderA && $hasOrderB && $orderA !== $orderB) {
+            return $orderA <=> $orderB;
+        }
+
+        if ($hasOrderA && !$hasOrderB) {
+            return -1;
+        }
+
+        if (!$hasOrderA && $hasOrderB) {
+            return 1;
+        }
+
+        return strnatcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
     }
 }

@@ -42,7 +42,7 @@ class ZonePageController extends Controller
 
         $sort = $request->input('sort', 'asc');
         $order = $request->input('order', 'city_area');
-        $validOrders = ['id', 'city_area', 'city', 'region', 'slug', 'updated_at', 'last_detected_at'];
+        $validOrders = ['id', 'city_area', 'city', 'region', 'slug', 'updated_at', 'last_detected_at', 'show_in_menu', 'menu_order'];
         if (!in_array($order, $validOrders, true)) {
             $order = 'city_area';
         }
@@ -85,6 +85,8 @@ class ZonePageController extends Controller
             'meta_description_es' => 'sometimes|nullable|string',
             'meta_description_en' => 'sometimes|nullable|string',
             'is_active' => 'sometimes|boolean',
+            'show_in_menu' => 'sometimes|boolean',
+            'menu_order' => 'sometimes|nullable|integer|min:0|max:1000000',
         ]);
 
         if ($validator->fails()) {

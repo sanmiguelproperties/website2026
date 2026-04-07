@@ -125,6 +125,24 @@ class ZonePageService
             ->all();
     }
 
+    /**
+     * Devuelve mapa [region|city|area => {show_in_menu, menu_order}] para menu publico.
+     */
+    public static function menuConfigMapByLocation(): array
+    {
+        return ZonePage::query()
+            ->get(['region_key', 'city_key', 'city_area_key', 'show_in_menu', 'menu_order'])
+            ->mapWithKeys(function (ZonePage $zonePage): array {
+                return [
+                    self::compositeKey($zonePage->region_key, $zonePage->city_key, $zonePage->city_area_key) => [
+                        'show_in_menu' => $zonePage->show_in_menu !== false,
+                        'menu_order' => $zonePage->menu_order,
+                    ],
+                ];
+            })
+            ->all();
+    }
+
     public static function compositeKeyFromLabels(string $region, string $city, string $cityArea): string
     {
         return self::compositeKey(

@@ -68,17 +68,30 @@
         <input type="hidden" id="zone-id" />
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div class="md:col-span-8">
+          <div class="md:col-span-6">
             <label class="block text-sm font-medium mb-1">Slug</label>
             <input id="zone-slug" type="text" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm" />
           </div>
-          <div class="md:col-span-4">
+          <div class="md:col-span-3">
             <label class="block text-sm font-medium mb-1">Activa</label>
             <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
               <input id="zone-is-active" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]" />
               <span class="text-sm">Visible</span>
             </label>
           </div>
+          <div class="md:col-span-3">
+            <label class="block text-sm font-medium mb-1">Menu</label>
+            <label class="inline-flex items-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-3 py-2">
+              <input id="zone-show-in-menu" type="checkbox" class="rounded border-[var(--c-border)] text-[var(--c-primary)] focus:ring-[var(--c-primary)]" />
+              <span class="text-sm">Mostrar en menu</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Orden en menu</label>
+          <input id="zone-menu-order" type="number" min="0" step="1" placeholder="Automatico" class="w-full md:max-w-xs px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm" />
+          <p class="text-xs text-[var(--c-muted)] mt-1">Menor numero = mayor prioridad. Vacio usa orden alfabetico.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -211,6 +224,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ? 'bg-emerald-100 text-emerald-700'
         : 'bg-rose-100 text-rose-700';
       const statusText = zone.is_active ? 'Activa' : 'Inactiva';
+      const inMenu = zone.show_in_menu !== false;
+      const menuClass = inMenu
+        ? 'bg-sky-100 text-sky-700'
+        : 'bg-slate-200 text-slate-700';
+      const menuText = inMenu ? 'En menu' : 'Oculta menu';
+      const menuOrderText = Number.isInteger(zone.menu_order)
+        ? String(zone.menu_order)
+        : 'auto';
 
       return `
         <div class="p-4 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -218,8 +239,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="flex flex-wrap items-center gap-2">
               <p class="font-semibold text-[var(--c-text)] truncate">${esc(zone.city_area)}, ${esc(zone.city)}</p>
               <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">${statusText}</span>
+              <span class="px-2 py-1 rounded-full text-xs font-semibold ${menuClass}">${menuText}</span>
             </div>
             <p class="text-xs text-[var(--c-muted)] mt-1">Slug: /zonas/${esc(zone.slug)} - ${esc(zone.region)}</p>
+            <p class="text-xs text-[var(--c-muted)] mt-1">Menu order: ${esc(menuOrderText)}</p>
             <p class="text-xs text-[var(--c-muted)] mt-1">ES: ${esc(zone.title_es || '-')} | EN: ${esc(zone.title_en || '-')}</p>
           </div>
           <button class="zone-edit-btn px-3 py-2 rounded-lg bg-[var(--c-primary)] text-[var(--c-primary-ink)] text-sm" data-zone-id="${zone.id}">
@@ -295,6 +318,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       $('#zone-slug').value = zone.slug || '';
       $('#zone-is-active').checked = !!zone.is_active;
+      $('#zone-show-in-menu').checked = zone.show_in_menu !== false;
+      $('#zone-menu-order').value = Number.isInteger(zone.menu_order) ? String(zone.menu_order) : '';
       $('#zone-title-es').value = zone.title_es || '';
       $('#zone-title-en').value = zone.title_en || '';
       $('#zone-description-es').value = zone.description_es || '';
@@ -317,9 +342,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoneId = $('#zone-id').value;
     if (!zoneId) return;
 
+    const menuOrderRaw = $('#zone-menu-order').value.trim();
+    if (menuOrderRaw !== '' && !/^\d+$/.test(menuOrderRaw)) {
+      window.dispatchEvent(new CustomEvent('api:response', {
+        detail: { success: false, message: 'El orden de menu debe ser un numero entero mayor o igual a 0.' }
+      }));
+      return;
+    }
+
     const body = {
       slug: $('#zone-slug').value.trim(),
       is_active: $('#zone-is-active').checked,
+      show_in_menu: $('#zone-show-in-menu').checked,
+      menu_order: menuOrderRaw === '' ? null : Number(menuOrderRaw),
       title_es: $('#zone-title-es').value.trim() || null,
       title_en: $('#zone-title-en').value.trim() || null,
       description_es: $('#zone-description-es').value.trim() || null,
@@ -378,4 +413,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 @endsection
-

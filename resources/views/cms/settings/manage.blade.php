@@ -44,11 +44,24 @@ document.addEventListener('DOMContentLoaded', () => {
     contact: { icon: '📞', name: 'Contacto', desc: 'Teléfono, email, WhatsApp, dirección' },
     social: { icon: '🌐', name: 'Redes Sociales', desc: 'Facebook, Instagram, Twitter, LinkedIn' },
     general: { icon: '🏠', name: 'General', desc: 'Nombre del sitio, tagline, logos, copyright' },
+    header: { icon: 'H', name: 'Header', desc: 'Logo en desktop y móvil' },
     seo: { icon: '🔍', name: 'SEO', desc: 'Meta tags por defecto, Google Analytics' },
     company: { icon: '🏢', name: 'Empresa', desc: 'Nombre legal, horario de oficina' },
   };
 
-  const nonTranslatable = ['phone', 'email', 'boolean', 'image'];
+  const nonTranslatable = ['phone', 'email', 'boolean', 'image', 'number'];
+  const numericFieldConfig = {
+    header_logo_height_desktop: {
+      min: 24,
+      max: 96,
+      hint: 'Valor en px. Recomendado entre 40 y 64.',
+    },
+    header_logo_height_mobile: {
+      min: 20,
+      max: 80,
+      hint: 'Valor en px para teléfono. Recomendado entre 28 y 48.',
+    },
+  };
 
   async function loadSettings() {
     try {
@@ -131,6 +144,32 @@ document.addEventListener('DOMContentLoaded', () => {
             />
             <span>${esc(s.label_es)} <span class="text-xs text-[var(--c-muted)] font-normal">[${esc(s.setting_key)}]</span></span>
           </label>
+        </div>`;
+    }
+
+    // Campo tipo NUMBER
+    if (s.type === 'number') {
+      const config = numericFieldConfig[s.setting_key] || { min: 0, max: 9999, hint: 'Valor numérico.' };
+      return `
+        <div>
+          <label class="block text-sm font-medium text-[var(--c-text)] mb-1">
+            ${esc(s.label_es)}
+            <span class="text-xs text-[var(--c-muted)] font-normal">[${esc(s.setting_key)}]</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <input
+              type="number"
+              data-setting-key="${esc(s.setting_key)}"
+              data-lang="es"
+              value="${esc(s.value_es)}"
+              min="${config.min}"
+              max="${config.max}"
+              step="1"
+              class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm"
+            />
+            <span class="text-xs text-[var(--c-muted)]">px</span>
+          </div>
+          <p class="mt-1 text-xs text-[var(--c-muted)]">${esc(config.hint)}</p>
         </div>`;
     }
 

@@ -38,7 +38,7 @@ class CmsSiteSetting extends Model
         $locale = $locale ?? app()->getLocale();
 
         // Tipos que no se traducen
-        $nonTranslatable = ['email', 'phone', 'boolean', 'image'];
+        $nonTranslatable = ['email', 'phone', 'boolean', 'image', 'number'];
         if (in_array($this->type, $nonTranslatable)) {
             return $this->value_es;
         }
