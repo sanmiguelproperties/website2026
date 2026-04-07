@@ -9,43 +9,43 @@
 @section('title', $pageTitle)
 
 @section('content')
-  <div class="relative overflow-hidden pt-24">
+  <div class="property-detail-page relative overflow-hidden pt-24">
     {{-- Background decor --}}
     <div class="absolute inset-0 pointer-events-none">
-      <div class="absolute -top-24 -right-24 h-72 w-72 rounded-full blur-3xl opacity-40" style="background-color: var(--fe-primary-from, rgba(209,160,84,.35));"></div>
-      <div class="absolute -bottom-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-40" style="background-color: var(--fe-primary-to, rgba(118,141,89,.35));"></div>
-      <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.06)_1px,transparent_0)] [background-size:28px_28px]"></div>
+      <div class="absolute -top-24 -right-24 h-72 w-72 rounded-full blur-3xl opacity-40" style="background-color: var(--fe-property_detail-decor_glow_from, var(--fe-primary-from, rgba(209,160,84,.35)));"></div>
+      <div class="absolute -bottom-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-40" style="background-color: var(--fe-property_detail-decor_glow_to, var(--fe-primary-to, rgba(118,141,89,.35)));"></div>
+      <div class="absolute inset-0 pd-decor-grid"></div>
     </div>
 
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {{-- Breadcrumbs --}}
       <nav class="flex items-center gap-2 text-sm" aria-label="Breadcrumb">
-        <a href="{{ url('/') }}" class="text-slate-600 hover:text-slate-900 transition">{{ $txt('i18n_breadcrumb_home', 'Inicio', 'Home') }}</a>
-        <span class="text-slate-400">/</span>
-        <a href="{{ route('public.properties.index') }}" class="text-slate-600 hover:text-slate-900 transition">{{ $txt('i18n_breadcrumb_properties', 'Propiedades', 'Properties') }}</a>
-        <span class="text-slate-400">/</span>
-        <span id="breadcrumbTitle" class="text-slate-900 font-medium truncate">{{ $txt('i18n_breadcrumb_detail', 'Detalle', 'Detail') }}</span>
+        <a href="{{ url('/') }}" class="text-slate-600 hover:text-slate-900 transition pd-breadcrumb-link">{{ $txt('i18n_breadcrumb_home', 'Inicio', 'Home') }}</a>
+        <span class="text-slate-400 pd-breadcrumb-separator">/</span>
+        <a href="{{ route('public.properties.index') }}" class="text-slate-600 hover:text-slate-900 transition pd-breadcrumb-link">{{ $txt('i18n_breadcrumb_properties', 'Propiedades', 'Properties') }}</a>
+        <span class="text-slate-400 pd-breadcrumb-separator">/</span>
+        <span id="breadcrumbTitle" class="text-slate-900 font-medium truncate pd-breadcrumb-current">{{ $txt('i18n_breadcrumb_detail', 'Detalle', 'Detail') }}</span>
       </nav>
 
       {{-- Header --}}
       <div class="mt-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
-            <span id="badgeOperation" class="hidden inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
+            <span id="badgeOperation" class="hidden inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold text-white" style="background: linear-gradient(to right, var(--fe-property_detail-contact_button_from, var(--fe-primary-from, #D1A054)), var(--fe-property_detail-contact_button_to, var(--fe-primary-to, #768D59))); color: var(--fe-property_detail-contact_button_text, #ffffff);">
               <span class="inline-block size-1.5 rounded-full bg-white/90"></span>
               <span id="badgeOperationText">{{ $txt('i18n_label_available', 'Disponible', 'Available') }}</span>
             </span>
-            <span id="badgeType" class="hidden inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" style="background-color: var(--fe-properties-type_badge_bg, rgba(255,255,255,0.85)); color: var(--fe-properties-type_badge_text, #1C1C1C);">
+            <span id="badgeType" class="hidden inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" style="background-color: var(--fe-property_detail-type_badge_bg, var(--fe-properties-type_badge_bg, rgba(255,255,255,0.85))); color: var(--fe-property_detail-type_badge_text, var(--fe-properties-type_badge_text, #1C1C1C));">
               <span id="badgeTypeText">{{ $txt('i18n_label_property', 'Propiedad', 'Property') }}</span>
             </span>
           </div>
 
-          <h1 id="propertyTitle" class="mt-3 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900">
+          <h1 id="propertyTitle" class="mt-3 text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 pd-title">
             <span class="inline-block align-middle">{{ $txt('i18n_label_loading', 'Cargando...','Loading...') }}</span>
           </h1>
 
           <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <div class="inline-flex items-center gap-2 text-slate-600">
+            <div class="inline-flex items-center gap-2 text-slate-600 pd-meta-row">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -53,9 +53,9 @@
               <span id="propertyLocation" class="truncate">—</span>
             </div>
 
-            <div class="hidden sm:block text-slate-300">•</div>
+            <div class="hidden sm:block text-slate-300 pd-meta-divider">•</div>
 
-            <div class="inline-flex items-center gap-2 text-slate-600">
+            <div class="inline-flex items-center gap-2 text-slate-600 pd-meta-row">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -65,13 +65,13 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button id="btnShare" type="button" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-slate-200 bg-white/90 backdrop-blur hover:bg-white transition">
+          <button id="btnShare" type="button" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-slate-200 bg-white/90 backdrop-blur hover:bg-white transition pd-btn-share">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 8a3 3 0 10-6 0v5H7l5 5 5-5h-2V8z" />
             </svg>
             {{ $txt('cta_share', 'Compartir', 'Share') }}
           </button>
-          <a href="{{ route('public.properties.index') }}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
+          <a href="{{ route('public.properties.index') }}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] pd-btn-gradient">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
@@ -85,8 +85,8 @@
         {{-- Content --}}
         <div class="lg:col-span-8 space-y-6">
           {{-- Gallery --}}
-          <section class="rounded-3xl border border-slate-200 bg-white shadow-soft overflow-hidden">
-            <div class="relative property-gallery-shell">
+          <section class="rounded-3xl border border-slate-200 bg-white shadow-soft overflow-hidden pd-panel pd-gallery-panel">
+            <div class="relative property-gallery-shell pd-gallery-shell">
               <div class="swiper property-gallery h-full" aria-label="{{ $txt('gallery_aria_label', 'Galeria de imagenes', 'Image gallery') }}">
                 <div class="swiper-wrapper h-full" id="galleryWrapper">
                   {{-- Skeleton slide --}}
@@ -100,18 +100,18 @@
               </div>
 
               <div class="absolute top-4 left-4 z-10 flex items-center gap-2">
-                <span id="galleryCount" class="hidden rounded-full px-3 py-1 text-xs font-semibold text-white/95 backdrop-blur" style="background: rgba(15,23,42,.55);">0 {{ $txt('i18n_label_photos', 'fotos', 'photos') }}</span>
+                <span id="galleryCount" class="hidden rounded-full px-3 py-1 text-xs font-semibold text-white/95 backdrop-blur pd-gallery-count">0 {{ $txt('i18n_label_photos', 'fotos', 'photos') }}</span>
               </div>
             </div>
 
             {{-- Thumbs --}}
-            <div class="border-t border-slate-100">
+            <div class="border-t border-slate-100 pd-gallery-strip">
               <div class="swiper property-thumbs px-4 py-4">
                 <div class="swiper-wrapper" id="thumbsWrapper">
                   {{-- Skeleton thumbs --}}
                   @for ($i = 0; $i < 6; $i++)
                     <div class="swiper-slide" style="width: 96px;">
-                      <div class="rounded-2xl overflow-hidden border border-slate-100 bg-slate-50" style="aspect-ratio: 4 / 3;">
+                      <div class="rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 pd-gallery-thumb" style="aspect-ratio: 4 / 3;">
                         <div class="h-full w-full skeleton"></div>
                       </div>
                     </div>
@@ -122,8 +122,8 @@
           </section>
 
           {{-- Highlights --}}
-          <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
-            <h2 class="text-lg font-bold text-slate-900">{{ $txt('i18n_section_features', 'Caracteristicas principales', 'Key Features') }}</h2>
+          <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6 pd-panel">
+            <h2 class="text-lg font-bold text-slate-900 pd-section-title">{{ $txt('i18n_section_features', 'Caracteristicas principales', 'Key Features') }}</h2>
 
             <div id="highlightsGrid" class="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
               {{-- Skeleton cards --}}
@@ -137,13 +137,13 @@
           </section>
 
           {{-- Description + Meta --}}
-          <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
+          <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6 pd-panel">
             <div class="flex items-center justify-between gap-3">
-              <h2 class="text-lg font-bold text-slate-900">{{ $txt('i18n_section_description', 'Descripcion', 'Description') }}</h2>
-              <span id="propertyIdChip" class="hidden text-xs font-semibold text-slate-600 rounded-full px-3 py-1 bg-slate-100">#—</span>
+              <h2 class="text-lg font-bold text-slate-900 pd-section-title">{{ $txt('i18n_section_description', 'Descripcion', 'Description') }}</h2>
+              <span id="propertyIdChip" class="hidden text-xs font-semibold text-slate-600 rounded-full px-3 py-1 bg-slate-100 pd-chip">#—</span>
             </div>
 
-            <div id="description" class="mt-4 text-slate-700 leading-relaxed whitespace-pre-line">
+            <div id="description" class="mt-4 text-slate-700 leading-relaxed whitespace-pre-line pd-body-text">
               <div class="space-y-3">
                 <div class="h-4 w-11/12 skeleton rounded"></div>
                 <div class="h-4 w-10/12 skeleton rounded"></div>
@@ -152,14 +152,14 @@
             </div>
 
             <div class="mt-6 border-t border-slate-100 pt-6">
-              <h3 class="text-sm font-semibold text-slate-900">{{ $txt('i18n_section_featureList', 'Caracteristicas', 'Features') }}</h3>
+              <h3 class="text-sm font-semibold text-slate-900 pd-subsection-title">{{ $txt('i18n_section_featureList', 'Caracteristicas', 'Features') }}</h3>
               <div id="featuresWrap" class="mt-3 flex flex-wrap gap-2">
                 <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">{{ $txt('i18n_label_loading', 'Cargando...','Loading...') }}</span>
               </div>
             </div>
 
             <div class="mt-6 border-t border-slate-100 pt-6">
-              <h3 class="text-sm font-semibold text-slate-900">{{ $txt('i18n_section_tags', 'Etiquetas', 'Tags') }}</h3>
+              <h3 class="text-sm font-semibold text-slate-900 pd-subsection-title">{{ $txt('i18n_section_tags', 'Etiquetas', 'Tags') }}</h3>
               <div id="tagsWrap" class="mt-3 flex flex-wrap gap-2">
                 <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">{{ $txt('i18n_label_loading', 'Cargando...','Loading...') }}</span>
               </div>
@@ -167,13 +167,13 @@
           </section>
 
           {{-- Location / Map --}}
-          <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
+          <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6 pd-panel">
             <div class="flex items-start justify-between gap-4">
               <div>
-                <h2 class="text-lg font-bold text-slate-900">{{ $txt('i18n_section_location', 'Ubicacion', 'Location') }}</h2>
-                <p id="addressLine" class="mt-2 text-slate-600">—</p>
+                <h2 class="text-lg font-bold text-slate-900 pd-section-title">{{ $txt('i18n_section_location', 'Ubicacion', 'Location') }}</h2>
+                <p id="addressLine" class="mt-2 text-slate-600 pd-meta-text">—</p>
               </div>
-              <a id="mapsLink" href="#" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
+              <a id="mapsLink" href="#" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] pd-btn-gradient">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -182,7 +182,7 @@
               </a>
             </div>
 
-            <div class="mt-5 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50" style="aspect-ratio: 16 / 7;">
+            <div class="mt-5 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 pd-map-frame-wrap" style="aspect-ratio: 16 / 7;">
               <iframe
                 id="mapFrame"
                 title="{{ $txt('i18n_label_map', 'Mapa', 'Map') }}"
@@ -198,15 +198,15 @@
         <aside class="lg:col-span-4">
           <div class="lg:sticky lg:top-28 space-y-6">
             {{-- Price / Actions --}}
-            <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
+            <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6 pd-panel">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                  <p class="text-sm font-semibold text-slate-600">{{ $txt('i18n_label_price', 'Precio', 'Price') }}</p>
-                  <p id="priceMain" class="mt-2 text-3xl font-extrabold text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">—</p>
-                  <p id="priceHint" class="mt-1 text-xs text-slate-500">{{ $txt('price_hint', '* Puede variar segun operacion', '* May vary by operation type') }}</p>
+                  <p class="text-sm font-semibold text-slate-600 pd-meta-text">{{ $txt('i18n_label_price', 'Precio', 'Price') }}</p>
+                  <p id="priceMain" class="mt-2 text-3xl font-extrabold text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-property_detail-price_from, var(--fe-primary-from, #D1A054)), var(--fe-property_detail-price_to, var(--fe-primary-to, #768D59)));">—</p>
+                  <p id="priceHint" class="mt-1 text-xs text-slate-500 pd-subtle-text">{{ $txt('price_hint', '* Puede variar segun operacion', '* May vary by operation type') }}</p>
                 </div>
 
-                <button id="btnFavorite" type="button" data-favorite-btn data-property-id="{{ (int) ($propertyId ?? 0) }}" class="inline-flex items-center justify-center rounded-2xl w-12 h-12 border border-slate-200 bg-white hover:bg-slate-50 transition text-slate-600" aria-label="{{ $txt('i18n_label_favorite', 'Favorito', 'Favorite') }}">
+                <button id="btnFavorite" type="button" data-favorite-btn data-property-id="{{ (int) ($propertyId ?? 0) }}" class="inline-flex items-center justify-center rounded-2xl w-12 h-12 border border-slate-200 bg-white hover:bg-slate-50 transition text-slate-600 pd-favorite-btn" aria-label="{{ $txt('i18n_label_favorite', 'Favorito', 'Favorite') }}">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
@@ -221,14 +221,14 @@
               </div>
 
               <div class="mt-6 grid grid-cols-1 gap-3">
-                <a id="btnWhatsApp" href="#" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]" style="background: linear-gradient(to right, #22c55e, #16a34a);">
+                <a id="btnWhatsApp" href="#" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] pd-btn-whatsapp">
                   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                   </svg>
                   {{ $txt('i18n_label_whatsapp', 'WhatsApp', 'WhatsApp') }}
                 </a>
-                <a id="btnCall" href="tel:+525512345678" class="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition">
-                  <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <a id="btnCall" href="tel:+525512345678" class="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition pd-btn-call">
+                  <svg class="w-5 h-5 text-slate-700 pd-call-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                   {{ $txt('i18n_label_call', 'Llamar', 'Call') }}
@@ -237,45 +237,45 @@
             </section>
 
             {{-- Agency / Agent --}}
-            <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6">
-              <h3 class="text-sm font-semibold text-slate-900">{{ $txt('i18n_label_advisorAgency', 'Agencia de contacto', 'Contact Agency') }}</h3>
+            <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6 pd-panel pd-agent-panel">
+              <h3 class="text-sm font-semibold text-slate-900 pd-subsection-title">{{ $txt('i18n_label_advisorAgency', 'Agencia de contacto', 'Contact Agency') }}</h3>
 
               <div class="mt-4 flex items-center gap-4">
-                <div class="size-14 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 grid place-items-center" id="agentAvatar">
-                  <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="size-14 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 grid place-items-center pd-agent-avatar" id="agentAvatar">
+                  <svg class="w-7 h-7 text-slate-400 pd-icon-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
                   </svg>
                 </div>
                 <div class="min-w-0">
-                  <p id="agentName" class="font-bold text-slate-900 truncate">{{ $txt('i18n_label_companyName', 'San Miguel Properties', 'San Miguel Properties') }}</p>
-                  <p id="agencyName" class="text-sm text-slate-600 truncate">—</p>
+                  <p id="agentName" class="font-bold text-slate-900 truncate pd-agent-name">{{ $txt('i18n_label_companyName', 'San Miguel Properties', 'San Miguel Properties') }}</p>
+                  <p id="agencyName" class="text-sm text-slate-600 truncate pd-agent-subtitle">—</p>
                 </div>
               </div>
 
               {{-- MLS Agents (when property comes from MLS relationships) --}}
               <div id="mlsAgentsWrap" class="hidden mt-5 space-y-3"></div>
 
-              <div id="sourceAgencyNotice" class="hidden mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p class="text-xs font-semibold text-amber-800">{{ $txt('property_source_agency_reference_label', 'Referencia', 'Reference') }}</p>
-                <p id="sourceAgencyNoticeText" class="mt-1 text-sm text-amber-900">—</p>
+              <div id="sourceAgencyNotice" class="hidden mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 pd-source-notice">
+                <p class="text-xs font-semibold text-amber-800 pd-source-label">{{ $txt('property_source_agency_reference_label', 'Referencia', 'Reference') }}</p>
+                <p id="sourceAgencyNoticeText" class="mt-1 text-sm text-amber-900 pd-source-text">—</p>
               </div>
 
-              <div class="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <p class="text-xs font-semibold text-slate-600">{{ $txt('i18n_label_note', 'Nota', 'Note') }}</p>
-                <p class="mt-1 text-sm text-slate-700">{{ $txt('advisor_note', 'Agenda una visita y recibe informacion completa (disponibilidad, gastos y documentos).', 'Schedule a tour and receive complete information (availability, expenses and documentation).') }}</p>
+              <div class="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4 pd-note">
+                <p class="text-xs font-semibold text-slate-600 pd-note-label">{{ $txt('i18n_label_note', 'Nota', 'Note') }}</p>
+                <p class="mt-1 text-sm text-slate-700 pd-note-text">{{ $txt('advisor_note', 'Agenda una visita y recibe informacion completa (disponibilidad, gastos y documentos).', 'Schedule a tour and receive complete information (availability, expenses and documentation).') }}</p>
               </div>
             </section>
 
             {{-- Error box --}}
-            <section id="errorBox" class="hidden rounded-3xl border border-rose-200 bg-rose-50 p-6">
-              <h3 class="text-sm font-semibold text-rose-900">{{ $txt('i18n_error_title', 'No se pudo cargar la propiedad', 'Could not load property') }}</h3>
-              <p id="errorText" class="mt-2 text-sm text-rose-800">—</p>
+            <section id="errorBox" class="hidden rounded-3xl border border-rose-200 bg-rose-50 p-6 pd-error-box">
+              <h3 class="text-sm font-semibold text-rose-900 pd-error-title">{{ $txt('i18n_error_title', 'No se pudo cargar la propiedad', 'Could not load property') }}</h3>
+              <p id="errorText" class="mt-2 text-sm text-rose-800 pd-error-text">—</p>
               <div class="mt-4 flex flex-wrap gap-2">
-                <button id="btnRetry" type="button" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
+                <button id="btnRetry" type="button" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white pd-btn-gradient">
                   {{ $txt('i18n_cta_retry', 'Reintentar', 'Retry') }}
                 </button>
-                <a href="{{ route('public.properties.index') }}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-rose-200 bg-white hover:bg-rose-50 transition">
+                <a href="{{ route('public.properties.index') }}" class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-rose-200 bg-white hover:bg-rose-50 transition pd-error-secondary-btn">
                   {{ $txt('i18n_cta_backToList', 'Volver al listado', 'Back to listing') }}
                 </a>
               </div>
@@ -289,11 +289,270 @@
 
 @push('styles')
   <style>
-    .property-gallery-shell {
+    .property-detail-page .pd-decor-grid {
+      background-image: radial-gradient(
+        circle at 1px 1px,
+        var(--fe-property_detail-decor_pattern_dot, rgba(15,23,42,0.06)) 1px,
+        transparent 0
+      );
+      background-size: 28px 28px;
+    }
+
+    .property-detail-page .pd-breadcrumb-link {
+      color: var(--fe-property_detail-breadcrumb_link, #475569);
+    }
+
+    .property-detail-page .pd-breadcrumb-link:hover {
+      color: var(--fe-property_detail-breadcrumb_link_hover, #0f172a);
+    }
+
+    .property-detail-page .pd-breadcrumb-separator {
+      color: var(--fe-property_detail-breadcrumb_separator, #94a3b8);
+    }
+
+    .property-detail-page .pd-breadcrumb-current {
+      color: var(--fe-property_detail-breadcrumb_current, #0f172a);
+    }
+
+    .property-detail-page .pd-title {
+      color: var(--fe-property_detail-title, #0f172a);
+    }
+
+    .property-detail-page .pd-meta-row {
+      color: var(--fe-property_detail-meta_text, #475569);
+    }
+
+    .property-detail-page .pd-meta-row svg {
+      color: var(--fe-property_detail-meta_icon, var(--fe-property_detail-meta_text, #475569));
+    }
+
+    .property-detail-page .pd-meta-divider {
+      color: var(--fe-property_detail-meta_divider, #cbd5e1);
+    }
+
+    .property-detail-page .pd-panel {
+      background-color: var(--fe-property_detail-panel_bg, #ffffff);
+      border-color: var(--fe-property_detail-panel_border, #e2e8f0);
+      box-shadow: var(--fe-property_detail-panel_shadow, 0 1px 2px rgba(0,0,0,.05), 0 10px 30px rgba(0,0,0,.10));
+    }
+
+    .property-detail-page .pd-gallery-panel {
+      background-color: var(--fe-gallery-panel_bg, var(--fe-property_detail-panel_bg, #ffffff));
+      border-color: var(--fe-gallery-panel_border, var(--fe-property_detail-panel_border, #e2e8f0));
+    }
+
+    .property-detail-page .pd-agent-panel {
+      background-color: var(--fe-agent_card-panel_bg, var(--fe-property_detail-panel_bg, #ffffff));
+      border-color: var(--fe-agent_card-panel_border, var(--fe-property_detail-panel_border, #e2e8f0));
+    }
+
+    .property-detail-page .pd-section-title {
+      color: var(--fe-property_detail-section_title, #0f172a);
+    }
+
+    .property-detail-page .pd-subsection-title {
+      color: var(--fe-property_detail-subsection_title, #0f172a);
+    }
+
+    .property-detail-page .pd-body-text {
+      color: var(--fe-property_detail-body_text, #334155);
+    }
+
+    .property-detail-page .pd-meta-text {
+      color: var(--fe-property_detail-muted_text, #475569);
+    }
+
+    .property-detail-page .pd-subtle-text {
+      color: var(--fe-property_detail-subtle_text, #64748b);
+    }
+
+    .property-detail-page .pd-chip {
+      background-color: var(--fe-property_detail-chip_bg, #f1f5f9);
+      color: var(--fe-property_detail-chip_text, #475569);
+    }
+
+    .property-detail-page .pd-map-frame-wrap {
+      background-color: var(--fe-property_detail-map_bg, #f8fafc);
+      border-color: var(--fe-property_detail-map_border, #f1f5f9);
+    }
+
+    .property-detail-page .pd-btn-gradient {
+      background: linear-gradient(
+        to right,
+        var(--fe-property_detail-contact_button_from, var(--fe-primary-from, #D1A054)),
+        var(--fe-property_detail-contact_button_to, var(--fe-primary-to, #768D59))
+      );
+      color: var(--fe-property_detail-contact_button_text, #ffffff);
+    }
+
+    .property-detail-page .pd-btn-share {
+      background-color: var(--fe-property_detail-share_button_bg, rgba(255,255,255,0.9));
+      border-color: var(--fe-property_detail-share_button_border, #e2e8f0);
+      color: var(--fe-property_detail-share_button_text, #0f172a);
+    }
+
+    .property-detail-page .pd-btn-share:hover {
+      background-color: var(--fe-property_detail-share_button_hover_bg, #ffffff);
+    }
+
+    .property-detail-page .pd-btn-whatsapp {
+      background: linear-gradient(
+        to right,
+        var(--fe-agent_card-whatsapp_button_from, #22c55e),
+        var(--fe-agent_card-whatsapp_button_to, #16a34a)
+      );
+      color: var(--fe-agent_card-whatsapp_button_text, #ffffff);
+    }
+
+    .property-detail-page .pd-btn-call {
+      background-color: var(--fe-property_detail-call_button_bg, #ffffff);
+      border-color: var(--fe-property_detail-call_button_border, #e2e8f0);
+      color: var(--fe-property_detail-call_button_text, #334155);
+    }
+
+    .property-detail-page .pd-btn-call:hover {
+      background-color: var(--fe-property_detail-call_button_hover_bg, #f8fafc);
+    }
+
+    .property-detail-page .pd-call-icon {
+      color: var(--fe-property_detail-call_button_icon, #334155);
+    }
+
+    .property-detail-page .pd-favorite-btn {
+      background-color: var(--fe-property_detail-favorite_button_bg, #ffffff);
+      border-color: var(--fe-property_detail-favorite_button_border, #e2e8f0);
+      color: var(--fe-property_detail-favorite_button_text, #475569);
+    }
+
+    .property-detail-page .pd-favorite-btn:hover {
+      background-color: var(--fe-property_detail-favorite_button_hover_bg, #f8fafc);
+    }
+
+    .property-detail-page .pd-source-notice {
+      background-color: var(--fe-property_detail-source_notice_bg, #fef3c7);
+      border-color: var(--fe-property_detail-source_notice_border, #fcd34d);
+    }
+
+    .property-detail-page .pd-source-label {
+      color: var(--fe-property_detail-source_notice_label, #92400e);
+    }
+
+    .property-detail-page .pd-source-text {
+      color: var(--fe-property_detail-source_notice_text, #78350f);
+    }
+
+    .property-detail-page .pd-note {
+      background-color: var(--fe-property_detail-note_bg, #f8fafc);
+      border-color: var(--fe-property_detail-note_border, #f1f5f9);
+    }
+
+    .property-detail-page .pd-note-label {
+      color: var(--fe-property_detail-note_label, #475569);
+    }
+
+    .property-detail-page .pd-note-text {
+      color: var(--fe-property_detail-note_text, #334155);
+    }
+
+    .property-detail-page .pd-error-box {
+      background-color: var(--fe-property_detail-error_bg, #fef2f2);
+      border-color: var(--fe-property_detail-error_border, #fecaca);
+    }
+
+    .property-detail-page .pd-error-title {
+      color: var(--fe-property_detail-error_title, #881337);
+    }
+
+    .property-detail-page .pd-error-text {
+      color: var(--fe-property_detail-error_text, #9f1239);
+    }
+
+    .property-detail-page .pd-error-secondary-btn {
+      background-color: var(--fe-property_detail-error_secondary_bg, #ffffff);
+      border-color: var(--fe-property_detail-error_secondary_border, #fecaca);
+      color: var(--fe-property_detail-error_secondary_text, #be123c);
+    }
+
+    .property-detail-page .pd-error-secondary-btn:hover {
+      background-color: var(--fe-property_detail-error_secondary_hover_bg, #fff1f2);
+    }
+
+    .property-detail-page .pd-gallery-shell {
       aspect-ratio: 16 / 10;
       max-height: min(72vh, 760px);
-      background: #f1f5f9;
+      background: var(--fe-gallery-shell_bg, #f1f5f9);
       overflow: hidden;
+    }
+
+    .property-detail-page .pd-gallery-count {
+      background: var(--fe-gallery-count_badge_bg, rgba(15,23,42,.55));
+      color: var(--fe-gallery-count_badge_text, rgba(255,255,255,0.95));
+    }
+
+    .property-detail-page .pd-gallery-strip {
+      border-color: var(--fe-gallery-thumbs_strip_border, #f1f5f9);
+    }
+
+    .property-detail-page .pd-gallery-thumb {
+      border-color: var(--fe-gallery-thumbnail_border, #e2e8f0);
+      background-color: var(--fe-gallery-thumbnail_bg, #f8fafc);
+    }
+
+    .property-detail-page .property-thumbs .swiper-slide-thumb-active .pd-gallery-thumb {
+      border-color: var(--fe-gallery-thumbnail_border_active, #D1A054);
+    }
+
+    .property-detail-page .pd-agent-avatar {
+      background-color: var(--fe-agent_card-avatar_bg, #f8fafc);
+      border-color: var(--fe-agent_card-avatar_border, #e2e8f0);
+    }
+
+    .property-detail-page .pd-icon-muted {
+      color: var(--fe-agent_card-avatar_icon, #94a3b8);
+    }
+
+    .property-detail-page .pd-agent-name {
+      color: var(--fe-agent_card-name_color, #0f172a);
+    }
+
+    .property-detail-page .pd-agent-subtitle {
+      color: var(--fe-agent_card-subtitle_color, #475569);
+    }
+
+    .property-detail-page .pd-mls-card {
+      background-color: var(--fe-agent_card-mls_card_bg, #f8fafc);
+      border-color: var(--fe-agent_card-mls_card_border, #f1f5f9);
+    }
+
+    .property-detail-page .pd-mls-name {
+      color: var(--fe-agent_card-mls_name, #0f172a);
+    }
+
+    .property-detail-page .pd-mls-office {
+      color: var(--fe-agent_card-mls_office, #475569);
+    }
+
+    .property-detail-page .pd-contact-link {
+      color: var(--fe-agent_card-contact_link, #334155);
+    }
+
+    .property-detail-page .pd-contact-link:hover {
+      color: var(--fe-agent_card-contact_link_hover, #0f172a);
+    }
+
+    .property-detail-page .pd-contact-unavailable {
+      color: var(--fe-agent_card-contact_unavailable, #475569);
+    }
+
+    .property-detail-page .pd-feature-tag {
+      background-color: var(--fe-property_detail-feature_tag_bg, var(--fe-properties-tag_inactive_bg, #f1f5f9));
+      color: var(--fe-property_detail-feature_tag_text, var(--fe-properties-tag_inactive_text, #475569));
+    }
+
+    .property-detail-page .pd-empty-state {
+      background-color: var(--fe-property_detail-empty_state_bg, #f8fafc);
+      border-color: var(--fe-property_detail-empty_state_border, #f1f5f9);
+      color: var(--fe-property_detail-empty_state_text, #334155);
     }
 
     .property-gallery,
@@ -304,6 +563,44 @@
 
     .property-thumbs .swiper-wrapper {
       height: auto;
+    }
+
+    /* Utility fallback overrides scoped to property detail */
+    .property-detail-page .text-slate-900 { color: var(--fe-property_detail-title, #0f172a); }
+    .property-detail-page .text-slate-700 { color: var(--fe-property_detail-body_text, #334155); }
+    .property-detail-page .text-slate-600 { color: var(--fe-property_detail-muted_text, #475569); }
+    .property-detail-page .text-slate-500 { color: var(--fe-property_detail-subtle_text, #64748b); }
+    .property-detail-page .text-slate-400 { color: var(--fe-agent_card-avatar_icon, #94a3b8); }
+    .property-detail-page .text-slate-300 { color: var(--fe-property_detail-meta_divider, #cbd5e1); }
+
+    .property-detail-page .bg-slate-100 { background-color: var(--fe-property_detail-chip_bg, #f1f5f9); }
+    .property-detail-page .bg-slate-50 { background-color: var(--fe-property_detail-card_bg, #f8fafc); }
+    .property-detail-page .bg-white { background-color: var(--fe-property_detail-panel_bg, #ffffff); }
+    .property-detail-page .bg-white\/90 { background-color: var(--fe-property_detail-share_button_bg, rgba(255,255,255,0.9)); }
+
+    .property-detail-page .border-slate-200 { border-color: var(--fe-property_detail-panel_border, #e2e8f0); }
+    .property-detail-page .border-slate-100 { border-color: var(--fe-property_detail-card_border, #f1f5f9); }
+    .property-detail-page .hover\:bg-slate-50:hover { background-color: var(--fe-property_detail-card_bg, #f8fafc); }
+    .property-detail-page .hover\:text-slate-900:hover { color: var(--fe-property_detail-breadcrumb_link_hover, #0f172a); }
+
+    .property-detail-page .bg-amber-50 { background-color: var(--fe-property_detail-source_notice_bg, #fef3c7); }
+    .property-detail-page .border-amber-200 { border-color: var(--fe-property_detail-source_notice_border, #fcd34d); }
+    .property-detail-page .text-amber-800 { color: var(--fe-property_detail-source_notice_label, #92400e); }
+    .property-detail-page .text-amber-900 { color: var(--fe-property_detail-source_notice_text, #78350f); }
+
+    .property-detail-page .bg-rose-50 { background-color: var(--fe-property_detail-error_bg, #fef2f2); }
+    .property-detail-page .border-rose-200 { border-color: var(--fe-property_detail-error_border, #fecaca); }
+    .property-detail-page .text-rose-900 { color: var(--fe-property_detail-error_title, #881337); }
+    .property-detail-page .text-rose-800 { color: var(--fe-property_detail-error_text, #9f1239); }
+    .property-detail-page .hover\:bg-rose-50:hover { background-color: var(--fe-property_detail-error_secondary_hover_bg, #fff1f2); }
+
+    /* Keep component-specific hovers above utility-level fallbacks */
+    .property-detail-page .pd-btn-call.hover\:bg-slate-50:hover {
+      background-color: var(--fe-property_detail-call_button_hover_bg, #f8fafc);
+    }
+
+    .property-detail-page .pd-favorite-btn.hover\:bg-slate-50:hover {
+      background-color: var(--fe-property_detail-favorite_button_hover_bg, #f8fafc);
     }
 
     @media (min-width: 1024px) {
@@ -423,9 +720,13 @@
 
     function operationBadgeColor(op) {
       const t = (op?.operation_type || '').toString().toLowerCase();
-      if (['sale', 'venta'].includes(t)) return 'linear-gradient(to right, #768D59, #768D59)';
-      if (['rent', 'rental', 'arriendo', 'renta'].includes(t)) return 'linear-gradient(to right, #D1A054, #D1A054)';
-      return 'linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59))';
+      if (['sale', 'venta'].includes(t)) {
+        return 'linear-gradient(to right, var(--fe-property_detail-badge_sale_from, var(--fe-property_detail-badge_sale, #768D59)), var(--fe-property_detail-badge_sale_to, var(--fe-property_detail-badge_sale, #768D59)))';
+      }
+      if (['rent', 'rental', 'arriendo', 'renta'].includes(t)) {
+        return 'linear-gradient(to right, var(--fe-property_detail-badge_rent_from, var(--fe-property_detail-badge_rent, #D1A054)), var(--fe-property_detail-badge_rent_to, var(--fe-property_detail-badge_rent, #D1A054)))';
+      }
+      return 'linear-gradient(to right, var(--fe-property_detail-contact_button_from, var(--fe-primary-from, #D1A054)), var(--fe-property_detail-contact_button_to, var(--fe-primary-to, #768D59)))';
     }
 
     function getPrimaryPrice(property) {
@@ -515,7 +816,7 @@
       const operationsList = document.getElementById('operationsList');
       if (!ops.length) {
         operationsList.innerHTML = `
-          <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+          <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 pd-empty-state">
             <p class="text-xs font-semibold text-slate-600">${tPublic('common.operation', isEnLocale ? 'Operation' : 'Operacion')}</p>
             <p class="mt-1 text-base font-semibold text-slate-900">${tPublic('property.operationAsk', isEnLocale ? 'Check availability' : 'Consultar disponibilidad')}</p>
           </div>
@@ -551,7 +852,7 @@
       const highlightsGrid = document.getElementById('highlightsGrid');
       if (!highlights.length) {
         highlightsGrid.innerHTML = `
-          <div class="col-span-2 sm:col-span-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-700">
+          <div class="col-span-2 sm:col-span-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-slate-700 pd-empty-state">
             ${tPublic('property.noExtraInfo', isEnLocale ? 'No additional information available for this property.' : 'No hay informacion adicional registrada para esta propiedad.')}
           </div>
         `;
@@ -574,22 +875,22 @@
       const featureFallbackPrefix = tPublic('property.featureFallbackPrefix', isEnLocale ? 'Feature #' : 'Caracteristica #');
       featuresWrap.innerHTML = features.length
         ? features.map((f) => `
-            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" style="background-color: var(--fe-properties-tag_inactive_bg, #f1f5f9); color: var(--fe-properties-tag_inactive_text, #475569);">
+            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold pd-feature-tag" style="background-color: var(--fe-property_detail-feature_tag_bg, var(--fe-properties-tag_inactive_bg, #f1f5f9)); color: var(--fe-property_detail-feature_tag_text, var(--fe-properties-tag_inactive_text, #475569));">
               ${escapeHtml(f.name || f.slug || (featureFallbackPrefix + f.id))}
             </span>
           `).join('')
-        : `<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">${tPublic('property.noFeatures', isEnLocale ? 'No features' : 'Sin caracteristicas')}</span>`;
+        : `<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600 pd-feature-tag">${tPublic('property.noFeatures', isEnLocale ? 'No features' : 'Sin caracteristicas')}</span>`;
 
       const tagsWrap = document.getElementById('tagsWrap');
       const tags = Array.isArray(property.tags) ? property.tags : [];
       const tagFallbackPrefix = tPublic('property.tagFallbackPrefix', isEnLocale ? 'Tag #' : 'Etiqueta #');
       tagsWrap.innerHTML = tags.length
         ? tags.map((t) => `
-            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" style="background-color: var(--fe-properties-tag_inactive_bg, #f1f5f9); color: var(--fe-properties-tag_inactive_text, #475569);">
+            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold pd-feature-tag" style="background-color: var(--fe-property_detail-feature_tag_bg, var(--fe-properties-tag_inactive_bg, #f1f5f9)); color: var(--fe-property_detail-feature_tag_text, var(--fe-properties-tag_inactive_text, #475569));">
               ${escapeHtml(t.name || t.slug || (tagFallbackPrefix + t.id))}
             </span>
           `).join('')
-        : `<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600">${tPublic('property.noTags', isEnLocale ? 'No tags' : 'Sin etiquetas')}</span>`;
+        : `<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600 pd-feature-tag">${tPublic('property.noTags', isEnLocale ? 'No tags' : 'Sin etiquetas')}</span>`;
 
       const street = property.location?.street;
       const postal = property.location?.postal_code;
@@ -619,7 +920,7 @@
 
       if (agentAvatarEl) {
         agentAvatarEl.innerHTML = `
-          <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-7 h-7 text-slate-400 pd-icon-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
           </svg>
@@ -687,40 +988,40 @@
 
             const isPrimary = !!a?.pivot?.is_primary;
             const badge = isPrimary
-              ? `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">${tPublic('property.primary', isEnLocale ? 'Primary' : 'Principal')}</span>`
+              ? `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white" style="background: linear-gradient(to right, var(--fe-agent_card-primary_badge_from, var(--fe-primary-from, #D1A054)), var(--fe-agent_card-primary_badge_to, var(--fe-primary-to, #768D59))); color: var(--fe-agent_card-primary_badge_text, #ffffff);">${tPublic('property.primary', isEnLocale ? 'Primary' : 'Principal')}</span>`
               : '';
 
             const avatarHtml = photo
               ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(name)}" class="w-full h-full object-cover" loading="lazy" onerror="this.onerror=null; this.style.display='none';" />`
               : `
-                  <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-6 h-6 text-slate-400 pd-icon-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
                   </svg>
                 `;
 
             const contactBits = [
-              phone ? `<a class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900" href="tel:${escapeHtml(phone)}">
+              phone ? `<a class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 pd-contact-link" href="tel:${escapeHtml(phone)}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
                         ${escapeHtml(phone)}
                       </a>` : '',
-              email ? `<a class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900" href="mailto:${escapeHtml(email)}">
+              email ? `<a class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-slate-900 pd-contact-link" href="mailto:${escapeHtml(email)}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V6a2 2 0 00-2-2H3a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                         ${escapeHtml(email)}
                       </a>` : '',
             ].filter(Boolean).join('');
 
             return `
-              <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 pd-mls-card">
                 <div class="flex items-start gap-4">
-                  <div class="size-12 rounded-2xl overflow-hidden border border-slate-200 bg-white grid place-items-center shrink-0">${avatarHtml}</div>
+                  <div class="size-12 rounded-2xl overflow-hidden border border-slate-200 bg-white grid place-items-center shrink-0 pd-agent-avatar">${avatarHtml}</div>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between gap-2">
-                      <p class="font-bold text-slate-900 truncate">${escapeHtml(name)}</p>
+                      <p class="font-bold text-slate-900 truncate pd-mls-name">${escapeHtml(name)}</p>
                       ${badge}
                     </div>
-                    <p class="mt-0.5 text-xs text-slate-600 truncate">${escapeHtml(office)}</p>
-                    ${contactBits ? `<div class="mt-3 flex flex-col gap-2">${contactBits}</div>` : `<p class="mt-3 text-sm text-slate-600">${tPublic('property.contactUnavailable', isEnLocale ? 'Contact not available' : 'Contacto no disponible')}</p>`}
+                    <p class="mt-0.5 text-xs text-slate-600 truncate pd-mls-office">${escapeHtml(office)}</p>
+                    ${contactBits ? `<div class="mt-3 flex flex-col gap-2">${contactBits}</div>` : `<p class="mt-3 text-sm text-slate-600 pd-contact-unavailable">${tPublic('property.contactUnavailable', isEnLocale ? 'Contact not available' : 'Contacto no disponible')}</p>`}
                   </div>
                 </div>
               </div>
@@ -769,7 +1070,7 @@
 
       thumbsWrapper.innerHTML = imgs.map((img) => `
         <div class="swiper-slide" style="width: 96px;">
-          <div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100" style="aspect-ratio: 4 / 3;">
+          <div class="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 pd-gallery-thumb" style="aspect-ratio: 4 / 3;">
             <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt)}" class="w-full h-full object-cover" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';" />
           </div>
         </div>

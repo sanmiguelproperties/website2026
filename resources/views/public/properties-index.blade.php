@@ -15,6 +15,97 @@
 
 @section('title', $pageTitle)
 
+@push('styles')
+  <style>
+    .properties-clear-btn:hover {
+      background-color: var(--fe-properties-filter_clear_hover_bg, #f8fafc);
+    }
+
+    .properties-tag-type {
+      background-color: var(--fe-properties-tag_type_bg, #e0e7ff);
+      color: var(--fe-properties-tag_type_text, #4338ca);
+    }
+    .properties-tag-operation {
+      background-color: var(--fe-properties-tag_operation_bg, #d1fae5);
+      color: var(--fe-properties-tag_operation_text, #047857);
+    }
+    .properties-tag-bedrooms {
+      background-color: var(--fe-properties-tag_bedrooms_bg, #dbeafe);
+      color: var(--fe-properties-tag_bedrooms_text, #1d4ed8);
+    }
+    .properties-tag-bathrooms {
+      background-color: var(--fe-properties-tag_bathrooms_bg, #cffafe);
+      color: var(--fe-properties-tag_bathrooms_text, #0e7490);
+    }
+    .properties-tag-price {
+      background-color: var(--fe-properties-tag_price_bg, #fef3c7);
+      color: var(--fe-properties-tag_price_text, #b45309);
+    }
+    .properties-tag-city {
+      background-color: var(--fe-properties-tag_city_bg, #f3e8ff);
+      color: var(--fe-properties-tag_city_text, #7e22ce);
+    }
+
+    .properties-tag-remove-type:hover {
+      color: var(--fe-properties-tag_type_remove_hover, #312e81);
+    }
+    .properties-tag-remove-operation:hover {
+      color: var(--fe-properties-tag_operation_remove_hover, #064e3b);
+    }
+    .properties-tag-remove-bedrooms:hover {
+      color: var(--fe-properties-tag_bedrooms_remove_hover, #1e3a8a);
+    }
+    .properties-tag-remove-bathrooms:hover {
+      color: var(--fe-properties-tag_bathrooms_remove_hover, #164e63);
+    }
+    .properties-tag-remove-price:hover {
+      color: var(--fe-properties-tag_price_remove_hover, #78350f);
+    }
+    .properties-tag-remove-city:hover {
+      color: var(--fe-properties-tag_city_remove_hover, #581c87);
+    }
+
+    .properties-option-btn {
+      background-color: var(--fe-properties-option_inactive_bg, #f1f5f9);
+      color: var(--fe-properties-option_inactive_text, #334155);
+    }
+    .properties-option-btn:hover {
+      background-color: var(--fe-properties-option_inactive_hover_bg, #e2e8f0);
+    }
+    .properties-option-btn.is-active.option-theme-type {
+      background-color: var(--fe-properties-option_type_active_bg, #eef2ff);
+      color: var(--fe-properties-option_type_active_text, #4338ca);
+      box-shadow: inset 0 0 0 2px var(--fe-properties-option_type_active_ring, #6366f1);
+    }
+    .properties-option-btn.is-active.option-theme-operation {
+      background-color: var(--fe-properties-option_operation_active_bg, #ecfdf5);
+      color: var(--fe-properties-option_operation_active_text, #047857);
+      box-shadow: inset 0 0 0 2px var(--fe-properties-option_operation_active_ring, #10b981);
+    }
+    .properties-option-btn.is-active.option-theme-feature {
+      background-color: var(--fe-properties-option_feature_active_bg, #6366f1);
+      color: var(--fe-properties-option_feature_active_text, #ffffff);
+      box-shadow: inset 0 0 0 2px var(--fe-properties-option_feature_active_ring, #4f46e5);
+    }
+
+    .properties-modal-close-btn:hover {
+      background-color: var(--fe-properties-modal_close_hover_bg, #f1f5f9);
+    }
+    .properties-modal-clear-btn:hover {
+      background-color: var(--fe-properties-modal_clear_hover_bg, #f1f5f9);
+    }
+
+    .properties-pagination-btn {
+      background-color: var(--fe-properties-pagination_bg, #ffffff);
+      border-color: var(--fe-properties-pagination_border, #e2e8f0);
+      color: var(--fe-properties-pagination_text, #475569);
+    }
+    .properties-pagination-btn:hover {
+      background-color: var(--fe-properties-pagination_hover_bg, #f8fafc);
+    }
+  </style>
+@endpush
+
 @section('content')
   <div class="pt-24">
     <section class="relative overflow-hidden">
@@ -34,10 +125,10 @@
               {{ $isEn ? 'Zone' : 'Zona' }}
             </div>
 
-            <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
+            <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight" style="color: var(--fe-properties-title, #1C1C1C);">
               {{ $zoneTitle ?? ($isEn ? 'Properties by zone' : 'Propiedades por zona') }}
             </h1>
-            <p class="mt-4 text-lg text-slate-600">
+            <p class="mt-4 text-lg" style="color: var(--fe-properties-subtitle, #5B5B5B);">
               {{ $zoneDescription ?: ($isEn ? 'Explore this area and adjust filters to compare nearby zones.' : 'Explora esta zona y ajusta filtros para comparar zonas cercanas.') }}
             </p>
           @else
@@ -48,10 +139,10 @@
               {{ $txt('page_badge', 'CatÃ¡logo', 'Catalog') }}
             </div>
 
-            <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
+            <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight" style="color: var(--fe-properties-title, #1C1C1C);">
               {{ $txt('page_title_prefix', 'Explora nuestras', 'Explore our') }} <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('page_title_highlight', 'propiedades', 'properties') }}</span>
             </h1>
-            <p class="mt-4 text-lg text-slate-600">
+            <p class="mt-4 text-lg" style="color: var(--fe-properties-subtitle, #5B5B5B);">
               {{ $txt('page_subtitle', 'Filtra por tipo y encuentra la propiedad ideal.', 'Filter by type and find the right property for you.') }}
             </p>
           @endif
@@ -67,7 +158,7 @@
           <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
             {{-- Search Input --}}
             <div class="flex-1">
-              <label class="block text-xs font-semibold text-slate-600 mb-2">{{ $txt('search_label', 'Buscar', 'Search') }}</label>
+              <label class="block text-xs font-semibold mb-2" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('search_label', 'Buscar', 'Search') }}</label>
               <div class="relative">
                 <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-properties-filter_icon, #94a3b8);">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -91,19 +182,21 @@
               {{ $txt('advanced_filters', 'Filtros avanzados', 'Advanced Filters') }}
               <span x-show="countActiveFilters() > 0" 
                     x-text="countActiveFilters()"
-                    class="ml-1 w-5 h-5 flex items-center justify-center text-xs font-bold rounded-full bg-white text-indigo-600"></span>
+                    class="ml-1 w-5 h-5 flex items-center justify-center text-xs font-bold rounded-full"
+                    style="background-color: var(--fe-properties-filter_count_bg, #ffffff); color: var(--fe-properties-filter_count_text, #4f46e5);"></span>
             </button>
           </div>
 
           {{-- Results count and clear --}}
           <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <div class="text-sm text-slate-600">
+            <div class="text-sm" style="color: var(--fe-properties-filter_results_text, #475569);">
               {{ $txt('showing_label', 'Mostrando', 'Showing') }} <span x-text="pagination?.from || 0"></span> - <span x-text="pagination?.to || 0"></span>
               {{ $txt('of_label', 'de', 'of') }} <span x-text="pagination?.total || 0"></span>
             </div>
 
             <button @click="clearFilters()" x-show="hasFilters()"
-                    class="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition">
+                    class="properties-clear-btn inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border transition"
+                    style="background-color: var(--fe-properties-filter_clear_bg, #ffffff); border-color: var(--fe-properties-filter_clear_border, #e2e8f0); color: var(--fe-properties-filter_clear_text, #334155);">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -114,49 +207,49 @@
           {{-- Active Filters Tags --}}
           <div x-show="hasFilters()" class="mt-4 flex flex-wrap gap-2">
             <template x-if="filters.property_type_name">
-              <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+              <span class="properties-tag-type inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
                 <span x-text="tPublic('properties.filterPrefixType', isEnLocale ? 'Type: ' : 'Tipo: ') + filters.property_type_name"></span>
-                <button @click="filters.property_type_name = ''; applyFilters()" class="ml-1 hover:text-indigo-900">
+                <button @click="filters.property_type_name = ''; applyFilters()" class="properties-tag-remove-type ml-1 transition-colors">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </span>
             </template>
             <template x-if="filters.operation_type">
-              <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+              <span class="properties-tag-operation inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
                 <span x-text="tPublic('properties.filterPrefixOperation', isEnLocale ? 'Operation: ' : 'Operacion: ') + getOperationLabel(filters.operation_type)"></span>
-                <button @click="filters.operation_type = ''; applyFilters()" class="ml-1 hover:text-emerald-900">
+                <button @click="filters.operation_type = ''; applyFilters()" class="properties-tag-remove-operation ml-1 transition-colors">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </span>
             </template>
             <template x-if="filters.bedrooms">
-              <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+              <span class="properties-tag-bedrooms inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
                 <span x-text="tPublic('properties.filterPrefixBedrooms', isEnLocale ? 'Bedrooms: ' : 'Recamaras: ') + filters.bedrooms + '+'"></span>
-                <button @click="filters.bedrooms = ''; applyFilters()" class="ml-1 hover:text-blue-900">
+                <button @click="filters.bedrooms = ''; applyFilters()" class="properties-tag-remove-bedrooms ml-1 transition-colors">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </span>
             </template>
             <template x-if="filters.bathrooms">
-              <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-cyan-100 text-cyan-700">
+              <span class="properties-tag-bathrooms inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
                 <span x-text="tPublic('properties.filterPrefixBathrooms', isEnLocale ? 'Bathrooms: ' : 'Banos: ') + filters.bathrooms + '+'"></span>
-                <button @click="filters.bathrooms = ''; applyFilters()" class="ml-1 hover:text-cyan-900">
+                <button @click="filters.bathrooms = ''; applyFilters()" class="properties-tag-remove-bathrooms ml-1 transition-colors">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </span>
             </template>
             <template x-if="filters.min_price || filters.max_price">
-              <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+              <span class="properties-tag-price inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
                 <span x-text="getPriceRangeLabel()"></span>
-                <button @click="filters.min_price = ''; filters.max_price = ''; applyFilters()" class="ml-1 hover:text-amber-900">
+                <button @click="filters.min_price = ''; filters.max_price = ''; applyFilters()" class="properties-tag-remove-price ml-1 transition-colors">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </span>
             </template>
             <template x-if="filters.city">
-              <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+              <span class="properties-tag-city inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
                 <span x-text="tPublic('properties.filterPrefixCity', isEnLocale ? 'City: ' : 'Ciudad: ') + filters.city"></span>
-                <button @click="filters.city = ''; applyFilters()" class="ml-1 hover:text-purple-900">
+                <button @click="filters.city = ''; applyFilters()" class="properties-tag-remove-city ml-1 transition-colors">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </span>
@@ -173,7 +266,8 @@
           </svg>
           <span x-show="countActiveFilters() > 0" 
                 x-text="countActiveFilters()"
-                class="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold rounded-full bg-red-500 text-white"></span>
+                class="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold rounded-full"
+                style="background-color: var(--fe-properties-mobile_count_bg, #ef4444); color: var(--fe-properties-mobile_count_text, #ffffff);"></span>
         </button>
 
         {{-- Filters Modal/Popup --}}
@@ -188,7 +282,7 @@
              style="display: none;">
           
           {{-- Backdrop --}}
-          <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showFiltersModal = false"></div>
+          <div class="fixed inset-0 backdrop-blur-sm" style="background-color: var(--fe-properties-modal_backdrop, rgba(0,0,0,0.5));" @click="showFiltersModal = false"></div>
           
           {{-- Modal Content --}}
           <div class="relative min-h-screen flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -199,11 +293,13 @@
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                  x-transition:leave-end="opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
-                 class="relative w-full sm:max-w-2xl bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col"
+                 class="relative w-full sm:max-w-2xl rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col"
+                 style="background-color: var(--fe-properties-modal_bg, #ffffff);"
                  @click.away="showFiltersModal = false">
               
               {{-- Modal Header --}}
-              <div class="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
+              <div class="flex items-center justify-between p-4 sm:p-6 border-b"
+                   style="border-color: var(--fe-properties-modal_header_border, #e2e8f0); background: linear-gradient(to right, var(--fe-properties-modal_header_bg_from, #f8fafc), var(--fe-properties-modal_header_bg_to, #ffffff));">
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,12 +307,12 @@
                     </svg>
                   </div>
                   <div>
-                    <h3 class="text-lg font-bold text-slate-900">{{ $txt('advanced_filters', 'Filtros avanzados', 'Advanced Filters') }}</h3>
-                    <p class="text-sm text-slate-500">{{ $txt('modal_subtitle', 'Personaliza tu busqueda', 'Customize your search') }}</p>
+                    <h3 class="text-lg font-bold" style="color: var(--fe-properties-modal_title, #0f172a);">{{ $txt('advanced_filters', 'Filtros avanzados', 'Advanced Filters') }}</h3>
+                    <p class="text-sm" style="color: var(--fe-properties-modal_subtitle, #64748b);">{{ $txt('modal_subtitle', 'Personaliza tu busqueda', 'Customize your search') }}</p>
                   </div>
                 </div>
-                <button @click="showFiltersModal = false" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-100 transition">
-                  <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button @click="showFiltersModal = false" class="properties-modal-close-btn w-10 h-10 rounded-full flex items-center justify-center transition">
+                  <svg class="w-6 h-6" style="color: var(--fe-properties-modal_close_icon, #64748b);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -227,17 +323,17 @@
                 
                 {{-- {{ $txt('property_type_label', 'Tipo de propiedad', 'Property type') }} --}}
                 <div>
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('property_type_label', 'Tipo de propiedad', 'Property type') }}</label>
+                  <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('property_type_label', 'Tipo de propiedad', 'Property type') }}</label>
                   <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <button @click="filters.property_type_name = filters.property_type_name === '' ? '' : ''; applyFiltersInModal()"
-                            :class="filters.property_type_name === '' ? 'ring-2 ring-indigo-500 bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                            class="px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                            :class="filters.property_type_name === '' ? 'is-active option-theme-type' : ''"
+                            class="properties-option-btn px-4 py-3 rounded-xl text-sm font-medium transition-all">
                       {{ $txt('all_option', 'Todos', 'All') }}
                     </button>
                     <template x-for="type in propertyTypes" :key="type">
                       <button @click="filters.property_type_name = type; applyFiltersInModal()"
-                              :class="filters.property_type_name === type ? 'ring-2 ring-indigo-500 bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                              class="px-4 py-3 rounded-xl text-sm font-medium transition-all"
+                              :class="filters.property_type_name === type ? 'is-active option-theme-type' : ''"
+                              class="properties-option-btn px-4 py-3 rounded-xl text-sm font-medium transition-all"
                               x-text="type">
                       </button>
                     </template>
@@ -246,17 +342,17 @@
 
                 {{-- {{ $txt('operation_type_label', 'Tipo de operacion', 'Operation type') }} (dinÃƒÂ¡mico) --}}
                 <div x-show="operationTypes.length > 0">
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('operation_type_label', 'Tipo de operacion', 'Operation type') }}</label>
+                  <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('operation_type_label', 'Tipo de operacion', 'Operation type') }}</label>
                   <div class="flex flex-wrap gap-2">
                     <button @click="filters.operation_type = ''; applyFiltersInModal()"
-                            :class="filters.operation_type === '' ? 'ring-2 ring-emerald-500 bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                            class="px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                            :class="filters.operation_type === '' ? 'is-active option-theme-operation' : ''"
+                            class="properties-option-btn px-4 py-3 rounded-xl text-sm font-medium transition-all">
                       {{ $txt('all_option', 'Todos', 'All') }}
                     </button>
                     <template x-for="opType in operationTypes" :key="opType">
                       <button @click="filters.operation_type = opType; applyFiltersInModal()"
-                              :class="filters.operation_type === opType ? 'ring-2 ring-emerald-500 bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                              class="px-4 py-3 rounded-xl text-sm font-medium transition-all"
+                              :class="filters.operation_type === opType ? 'is-active option-theme-operation' : ''"
+                              class="properties-option-btn px-4 py-3 rounded-xl text-sm font-medium transition-all"
                               x-text="getOperationEmoji(opType) + ' ' + getOperationLabel(opType)">
                       </button>
                     </template>
@@ -265,30 +361,30 @@
 
                 {{-- {{ $txt('price_range_label', 'Rango de precio', 'Price range') }} --}}
                 <div>
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('price_range_label', 'Rango de precio', 'Price range') }}</label>
+                  <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('price_range_label', 'Rango de precio', 'Price range') }}</label>
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('minimum_label', 'Minimo', 'Minimum') }}</label>
+                      <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('minimum_label', 'Minimo', 'Minimum') }}</label>
                       <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--fe-properties-filter_icon, #94a3b8);">$</span>
                         <input type="number" 
                                x-model="filters.min_price"
                                @input.debounce.500ms="applyFiltersInModal()"
                                placeholder="0"
-                               class="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
-                               style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                               class="w-full pl-8 pr-4 py-3 rounded-xl border transition-all focus:outline-none focus-fe-primary"
+                               style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                       </div>
                     </div>
                     <div>
-                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('maximum_label', 'Maximo', 'Maximum') }}</label>
+                      <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('maximum_label', 'Maximo', 'Maximum') }}</label>
                       <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--fe-properties-filter_icon, #94a3b8);">$</span>
                         <input type="number" 
                                x-model="filters.max_price"
                                @input.debounce.500ms="applyFiltersInModal()"
                                placeholder="{{ $txt('no_limit_label', 'Sin limite', 'No limit') }}"
-                               class="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
-                               style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                               class="w-full pl-8 pr-4 py-3 rounded-xl border transition-all focus:outline-none focus-fe-primary"
+                               style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                       </div>
                     </div>
                   </div>
@@ -296,16 +392,16 @@
 
                 {{-- {{ $txt('features_label', 'Caracteristicas', 'Features') }} (dinÃƒÂ¡micas) --}}
                 <div x-show="availableBedrooms.length > 0 || availableBathrooms.length > 0 || availableParking.length > 0">
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('features_label', 'Caracteristicas', 'Features') }}</label>
+                  <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('features_label', 'Caracteristicas', 'Features') }}</label>
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {{-- RecÃƒÂ¡maras --}}
                     <div x-show="availableBedrooms.length > 0">
-                      <label class="block text-xs text-slate-500 mb-2">{{ $txt('bedrooms_label', 'Recamaras', 'Bedrooms') }}</label>
+                      <label class="block text-xs mb-2" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('bedrooms_label', 'Recamaras', 'Bedrooms') }}</label>
                       <div class="flex items-center gap-1 flex-wrap">
                         <template x-for="n in availableBedrooms" :key="'bed-' + n">
                           <button @click="filters.bedrooms = filters.bedrooms == n ? '' : n; applyFiltersInModal()"
-                                  :class="filters.bedrooms == n ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="w-9 h-9 rounded-lg text-sm font-medium transition-all"
+                                  :class="filters.bedrooms == n ? 'is-active option-theme-feature' : ''"
+                                  class="properties-option-btn w-9 h-9 rounded-lg text-sm font-medium transition-all"
                                   x-text="n + '+'">
                           </button>
                         </template>
@@ -313,12 +409,12 @@
                     </div>
                     {{-- BaÃƒÂ±os --}}
                     <div x-show="availableBathrooms.length > 0">
-                      <label class="block text-xs text-slate-500 mb-2">{{ $txt('bathrooms_label', 'Banos', 'Bathrooms') }}</label>
+                      <label class="block text-xs mb-2" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('bathrooms_label', 'Banos', 'Bathrooms') }}</label>
                       <div class="flex items-center gap-1 flex-wrap">
                         <template x-for="n in availableBathrooms" :key="'bath-' + n">
                           <button @click="filters.bathrooms = filters.bathrooms == n ? '' : n; applyFiltersInModal()"
-                                  :class="filters.bathrooms == n ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="w-9 h-9 rounded-lg text-sm font-medium transition-all"
+                                  :class="filters.bathrooms == n ? 'is-active option-theme-feature' : ''"
+                                  class="properties-option-btn w-9 h-9 rounded-lg text-sm font-medium transition-all"
                                   x-text="n + '+'">
                           </button>
                         </template>
@@ -326,12 +422,12 @@
                     </div>
                     {{-- Estacionamientos --}}
                     <div x-show="availableParking.length > 0">
-                      <label class="block text-xs text-slate-500 mb-2">{{ $txt('parking_label', 'Estacionamientos', 'Parking') }}</label>
+                      <label class="block text-xs mb-2" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('parking_label', 'Estacionamientos', 'Parking') }}</label>
                       <div class="flex items-center gap-1 flex-wrap">
                         <template x-for="n in availableParking" :key="'park-' + n">
                           <button @click="filters.parking_spaces = filters.parking_spaces == n ? '' : n; applyFiltersInModal()"
-                                  :class="filters.parking_spaces == n ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                                  class="w-9 h-9 rounded-lg text-sm font-medium transition-all"
+                                  :class="filters.parking_spaces == n ? 'is-active option-theme-feature' : ''"
+                                  class="properties-option-btn w-9 h-9 rounded-lg text-sm font-medium transition-all"
                                   x-text="n + '+'">
                           </button>
                         </template>
@@ -342,39 +438,39 @@
 
                 {{-- TamaÃƒÂ±o --}}
                 <div>
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('size_label', 'Tamano (m2)', 'Size (m2)') }}</label>
+                  <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('size_label', 'Tamano (m2)', 'Size (m2)') }}</label>
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('minimum_construction_label', 'Construccion minima', 'Minimum construction') }}</label>
+                      <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('minimum_construction_label', 'Construccion minima', 'Minimum construction') }}</label>
                       <input type="number" 
                              x-model="filters.min_construction_size"
                              @input.debounce.500ms="applyFiltersInModal()"
                              placeholder="{{ $txt('minimum_construction_placeholder', 'Ej: 100', 'Ex: 100') }}"
-                             class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
-                             style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                             class="w-full px-4 py-3 rounded-xl border transition-all focus:outline-none focus-fe-primary"
+                             style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                     </div>
                     <div>
-                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('minimum_lot_label', 'Terreno minimo', 'Minimum lot') }}</label>
+                      <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('minimum_lot_label', 'Terreno minimo', 'Minimum lot') }}</label>
                       <input type="number" 
                              x-model="filters.min_lot_size"
                              @input.debounce.500ms="applyFiltersInModal()"
                              placeholder="{{ $txt('minimum_lot_placeholder', 'Ej: 200', 'Ex: 200') }}"
-                             class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
-                             style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                             class="w-full px-4 py-3 rounded-xl border transition-all focus:outline-none focus-fe-primary"
+                             style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                     </div>
                   </div>
                 </div>
 
                 {{-- {{ $txt('location_label', 'Ubicacion', 'Location') }} (dinÃƒÂ¡mica con selects) --}}
                 <div x-show="availableRegions.length > 0 || availableCities.length > 0 || availableCityAreas.length > 0">
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('location_label', 'Ubicacion', 'Location') }}</label>
+                  <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('location_label', 'Ubicacion', 'Location') }}</label>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div x-show="availableRegions.length > 0">
-                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('region_state_label', 'Region/Estado', 'Region/State') }}</label>
+                      <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('region_state_label', 'Region/Estado', 'Region/State') }}</label>
                       <select x-model="filters.region"
                               @change="applyFiltersInModal()"
-                              class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
-                              style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                              class="w-full px-4 py-3 rounded-xl border transition-all appearance-none cursor-pointer focus:outline-none focus-fe-primary"
+                              style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                         <option value="">{{ $txt('all_regions_option', 'Todas las regiones', 'All regions') }}</option>
                         <template x-for="r in availableRegions" :key="r">
                           <option :value="r" x-text="r"></option>
@@ -382,11 +478,11 @@
                       </select>
                     </div>
                     <div x-show="availableCities.length > 0">
-                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('city_filter_label', 'Ciudad', 'City') }}</label>
+                      <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('city_filter_label', 'Ciudad', 'City') }}</label>
                       <select x-model="filters.city"
                               @change="applyFiltersInModal()"
-                              class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
-                              style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                              class="w-full px-4 py-3 rounded-xl border transition-all appearance-none cursor-pointer focus:outline-none focus-fe-primary"
+                              style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                         <option value="">{{ $txt('all_cities_option', 'Todas las ciudades', 'All cities') }}</option>
                         <template x-for="c in availableCities" :key="c">
                           <option :value="c" x-text="c"></option>
@@ -394,11 +490,11 @@
                       </select>
                     </div>
                     <div x-show="availableCityAreas.length > 0">
-                      <label class="block text-xs text-slate-500 mb-1">{{ $txt('area_zone_label', 'Zona/Colonia', 'Area/Zone') }}</label>
+                      <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('area_zone_label', 'Zona/Colonia', 'Area/Zone') }}</label>
                       <select x-model="filters.city_area"
                               @change="applyFiltersInModal()"
-                              class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
-                              style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                              class="w-full px-4 py-3 rounded-xl border transition-all appearance-none cursor-pointer focus:outline-none focus-fe-primary"
+                              style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                         <option value="">{{ $txt('all_zones_option', 'Todas las zonas', 'All zones') }}</option>
                         <template x-for="a in availableCityAreas" :key="a">
                           <option :value="a" x-text="a"></option>
@@ -410,10 +506,10 @@
 
                 {{-- {{ $txt('sort_label', 'Ordenar por', 'Sort by') }} --}}
                 <div>
-                  <label class="block text-sm font-semibold text-slate-700 mb-3">{{ $txt('sort_label', 'Ordenar por', 'Sort by') }}</label>
+                  <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('sort_label', 'Ordenar por', 'Sort by') }}</label>
                   <select x-model="filters.order" @change="applyFiltersInModal()"
-                          class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all appearance-none cursor-pointer"
-                          style="background-color: var(--fe-properties-input_bg, #f8fafc);">
+                          class="w-full px-4 py-3 rounded-xl border transition-all appearance-none cursor-pointer focus:outline-none focus-fe-primary"
+                          style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                     <option value="updated_at">{{ $txt('sort_recent', 'Mas recientes', 'Most recent') }}</option>
                     <option value="created_at">{{ $txt('sort_oldest', 'Mas antiguas', 'Oldest') }}</option>
                     <option value="title">{{ $txt('sort_alpha', 'Alfabetico', 'A-Z') }}</option>
@@ -423,9 +519,11 @@
               </div>
 
               {{-- Modal Footer --}}
-              <div class="p-4 sm:p-6 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-3">
+              <div class="p-4 sm:p-6 border-t flex flex-col sm:flex-row gap-3"
+                   style="border-color: var(--fe-properties-modal_footer_border, #e2e8f0); background-color: var(--fe-properties-modal_footer_bg, #f8fafc);">
                 <button @click="clearFilters(); showFiltersModal = false"
-                        class="flex-1 px-6 py-3 rounded-xl font-semibold border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all">
+                        class="properties-modal-clear-btn flex-1 px-6 py-3 rounded-xl font-semibold border transition-all"
+                        style="background-color: var(--fe-properties-modal_clear_bg, #ffffff); border-color: var(--fe-properties-modal_clear_border, #cbd5e1); color: var(--fe-properties-modal_clear_text, #334155);">
                   {{ $txt('clear_all', 'Limpiar todo', 'Clear all') }}
                 </button>
                 <button @click="showFiltersModal = false"
@@ -442,29 +540,29 @@
         <div class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8" id="propertiesGrid"></div>
 
         <div id="propertiesEmpty" class="hidden text-center py-16">
-          <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-100 flex items-center justify-center">
-            <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center" style="background-color: var(--fe-properties-empty_icon_bg, #f1f5f9);">
+            <svg class="w-12 h-12" style="color: var(--fe-properties-empty_icon, #94a3b8);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-slate-900 mb-2">{{ $txt('empty_title', 'No se encontraron propiedades', 'No properties found') }}</h3>
-          <p class="text-slate-600 mb-6">{{ $txt('empty_subtitle', 'Intenta ajustar los filtros o buscar con otros terminos.', 'Try adjusting filters or searching with other terms.') }}</p>
+          <h3 class="text-xl font-semibold mb-2" style="color: var(--fe-properties-empty_title, #0f172a);">{{ $txt('empty_title', 'No se encontraron propiedades', 'No properties found') }}</h3>
+          <p class="mb-6" style="color: var(--fe-properties-empty_text, #475569);">{{ $txt('empty_subtitle', 'Intenta ajustar los filtros o buscar con otros terminos.', 'Try adjusting filters or searching with other terms.') }}</p>
           <button @click="clearFilters()" class="px-6 py-3 rounded-xl text-white font-semibold" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
             {{ $txt('clear_filters', 'Limpiar filtros', 'Clear filters') }}
           </button>
         </div>
 
         {{-- Pagination --}}
-        <div class="mt-10 pt-8 border-t border-slate-200 flex items-center justify-between gap-3">
+        <div class="mt-10 pt-8 border-t flex items-center justify-between gap-3" style="border-color: var(--fe-properties-pagination_border, #e2e8f0);">
           <button @click="goToPage((pagination?.current_page || 1) - 1)" :disabled="!(pagination?.current_page > 1)"
-                  class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                  class="properties-pagination-btn px-4 py-2 rounded-xl border disabled:opacity-50 disabled:cursor-not-allowed transition">
             {{ $txt('pagination_previous', 'Anterior', 'Previous') }}
           </button>
-          <div class="text-sm text-slate-600">
+          <div class="text-sm" style="color: var(--fe-properties-pagination_text, #475569);">
             {{ $txt('pagination_page', 'Pagina', 'Page') }} <span x-text="pagination?.current_page || 1"></span> {{ $txt('of_label', 'de', 'of') }} <span x-text="pagination?.last_page || 1"></span>
           </div>
           <button @click="goToPage((pagination?.current_page || 1) + 1)" :disabled="!(pagination?.current_page < pagination?.last_page)"
-                  class="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                  class="properties-pagination-btn px-4 py-2 rounded-xl border disabled:opacity-50 disabled:cursor-not-allowed transition">
             {{ $txt('pagination_next', 'Siguiente', 'Next') }}
           </button>
         </div>
@@ -717,7 +815,7 @@
 
           // skeletons
           grid.innerHTML = Array.from({ length: 9 }).map(() => `
-            <div class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
+            <div class="rounded-2xl overflow-hidden border shadow-sm" style="background-color: var(--fe-properties-skeleton_bg, #ffffff); border-color: var(--fe-properties-skeleton_border, #f1f5f9);">
               <div class="skeleton h-56 w-full"></div>
               <div class="p-6 space-y-4">
                 <div class="skeleton h-4 w-3/4 rounded"></div>
@@ -771,7 +869,7 @@
                 <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
                   <div class="relative h-56 overflow-hidden">
                     <img src="${imageUrl}" alt="${(p.title || tPublic('common.properties', isEnLocale ? 'Property' : 'Propiedad')).replaceAll('"','&quot;')}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style="background: linear-gradient(to top, var(--fe-properties-image_overlay, rgba(0,0,0,0.5)), transparent);"></div>
 
                     ${p.property_type_name ? `
                       <span class="absolute top-4 left-4 px-3 py-1 backdrop-blur-sm text-xs font-semibold rounded-full" style="background-color: var(--fe-properties-type_badge_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-type_badge_text, #1C1C1C);">
@@ -785,7 +883,7 @@
                       </span>
                     ` : ''}
 
-                    <button type="button" data-favorite-btn data-property-id="${p.id}" class="absolute bottom-4 right-4 w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300 border border-slate-200" style="background-color: var(--fe-properties-fav_btn_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-fav_btn_icon, #5B5B5B);">
+                    <button type="button" data-favorite-btn data-property-id="${p.id}" class="absolute bottom-4 right-4 w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300 border" style="background-color: var(--fe-properties-fav_btn_bg, rgba(255,255,255,0.9)); border-color: var(--fe-properties-fav_btn_border, #e2e8f0); color: var(--fe-properties-fav_btn_icon, #5B5B5B);">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>

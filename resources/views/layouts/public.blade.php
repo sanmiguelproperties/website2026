@@ -263,7 +263,7 @@
             height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #f1f5f9;
+            background: var(--fe-ui-scrollbar_track, #f1f5f9);
         }
         ::-webkit-scrollbar-thumb {
             background: linear-gradient(180deg, var(--fe-ui-scrollbar_from, #D1A054), var(--fe-ui-scrollbar_to, #768D59));
@@ -284,12 +284,12 @@
         /* Gradient border helper - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
         .border-gradient {
             border: 2px solid transparent;
-            background: linear-gradient(white, white) padding-box, linear-gradient(135deg, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59)) border-box;
+            background: linear-gradient(var(--fe-ui-body_bg, #ffffff), var(--fe-ui-body_bg, #ffffff)) padding-box, linear-gradient(135deg, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59)) border-box;
         }
 
         /* Glass effect */
         .glass {
-            background: rgba(255, 255, 255, 0.8);
+            background: var(--fe-ui-glass_bg, rgba(255,255,255,0.8));
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
@@ -298,7 +298,7 @@
         .swiper-pagination-bullet {
             width: 12px;
             height: 12px;
-            background: rgba(255, 255, 255, 0.5);
+            background: var(--fe-ui-swiper_bullet, rgba(255,255,255,0.5));
             opacity: 1;
         }
         .swiper-pagination-bullet-active {
@@ -306,8 +306,8 @@
         }
         .swiper-button-next,
         .swiper-button-prev {
-            color: white;
-            background: rgba(0, 0, 0, 0.3);
+            color: var(--fe-ui-swiper_nav_text, #ffffff);
+            background: var(--fe-ui-swiper_nav_bg, rgba(0,0,0,0.3));
             padding: 30px;
             border-radius: 50%;
             transition: all 0.3s ease;
@@ -328,12 +328,17 @@
         }
         .property-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            box-shadow: var(--fe-ui-card_hover_shadow, 0 25px 50px -12px rgba(0,0,0,0.25));
         }
 
         /* Loading skeleton */
         .skeleton {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background: linear-gradient(
+                90deg,
+                var(--fe-ui-skeleton_from, #f0f0f0) 25%,
+                var(--fe-ui-skeleton_mid, #e0e0e0) 50%,
+                var(--fe-ui-skeleton_to, #f0f0f0) 75%
+            );
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite;
         }
@@ -363,8 +368,44 @@
 
         /* Hero overlay gradient */
         .hero-overlay {
-            background: linear-gradient(135deg, rgba(209, 160, 84, 0.85) 0%, rgba(118, 141, 89, 0.75) 100%);
+            background: linear-gradient(
+                135deg,
+                var(--fe-hero-overlay_from, rgba(209,160,84,0.85)) 0%,
+                var(--fe-hero-overlay_to, rgba(118,141,89,0.75)) 100%
+            );
         }
+
+        /* Utility overrides to make Tailwind color tokens administrable */
+        .text-white { color: var(--fe-ui-text_white, #ffffff) !important; }
+        .text-white\/90 { color: var(--fe-ui-text_white_90, rgba(255,255,255,0.9)) !important; }
+        .text-white\/80 { color: var(--fe-ui-text_white_80, rgba(255,255,255,0.8)) !important; }
+        .text-white\/70 { color: var(--fe-ui-text_white_70, rgba(255,255,255,0.7)) !important; }
+        .text-white\/60 { color: var(--fe-ui-text_white_60, rgba(255,255,255,0.6)) !important; }
+        .text-slate-900 { color: var(--fe-ui-slate_900, #0f172a) !important; }
+        .text-slate-800 { color: var(--fe-ui-slate_800, #1e293b) !important; }
+        .text-slate-700 { color: var(--fe-ui-slate_700, #334155) !important; }
+        .text-slate-600 { color: var(--fe-ui-slate_600, #475569) !important; }
+        .text-slate-500 { color: var(--fe-ui-slate_500, #64748b) !important; }
+        .text-slate-400 { color: var(--fe-ui-slate_400, #94a3b8) !important; }
+        .text-slate-300 { color: var(--fe-ui-slate_300, #cbd5e1) !important; }
+        .bg-white\/5 { background-color: var(--fe-ui-bg_white_5, rgba(255,255,255,0.05)) !important; }
+        .bg-white\/10 { background-color: var(--fe-ui-bg_white_10, rgba(255,255,255,0.1)) !important; }
+        .bg-white\/20 { background-color: var(--fe-ui-bg_white_20, rgba(255,255,255,0.2)) !important; }
+        .bg-slate-100 { background-color: var(--fe-ui-slate_100, #f1f5f9) !important; }
+        .bg-slate-50 { background-color: var(--fe-ui-slate_50, #f8fafc) !important; }
+        .bg-slate-50\/60 { background-color: var(--fe-ui-slate_50_60, rgba(248,250,252,0.6)) !important; }
+        .border-slate-300 { border-color: var(--fe-ui-slate_300, #cbd5e1) !important; }
+        .border-slate-200 { border-color: var(--fe-ui-slate_200, #e2e8f0) !important; }
+        .border-slate-100 { border-color: var(--fe-ui-slate_100, #f1f5f9) !important; }
+        .border-white\/10 { border-color: var(--fe-ui-border_white_10, rgba(255,255,255,0.1)) !important; }
+        .border-white\/20 { border-color: var(--fe-ui-border_white_20, rgba(255,255,255,0.2)) !important; }
+        .border-white\/30 { border-color: var(--fe-ui-border_white_30, rgba(255,255,255,0.3)) !important; }
+        .hover\:text-white:hover { color: var(--fe-ui-text_white, #ffffff) !important; }
+        .hover\:bg-white:hover { background-color: var(--fe-ui-text_white, #ffffff) !important; }
+        .hover\:bg-white\/20:hover { background-color: var(--fe-ui-bg_white_20, rgba(255,255,255,0.2)) !important; }
+        .hover\:bg-slate-50:hover { background-color: var(--fe-ui-slate_50, #f8fafc) !important; }
+        .hover\:bg-slate-100:hover { background-color: var(--fe-ui-slate_100, #f1f5f9) !important; }
+        .hover\:bg-slate-100\/70:hover { background-color: var(--fe-ui-slate_100_70, rgba(241,245,249,0.7)) !important; }
 
         /* Clases de utilidad para usar variables CSS dinÃƒÆ’Ã‚Â¡micas */
         
@@ -414,11 +455,11 @@
 
     @stack('styles')
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
+<body class="min-h-screen font-sans antialiased" style="background-color: var(--fe-ui-body_bg, #f8fafc); color: var(--fe-ui-body_text, #0f172a);">
     <!-- Preloader -->
-    <div id="preloader" class="fixed inset-0 z-[9999] flex items-center justify-center bg-white transition-opacity duration-500">
+    <div id="preloader" class="fixed inset-0 z-[9999] flex items-center justify-center transition-opacity duration-500" style="background-color: var(--fe-ui-preloader_bg, #ffffff);">
         <div class="relative">
-            <div class="w-16 h-16 border-4 border-slate-200 rounded-full"></div>
+            <div class="w-16 h-16 border-4 rounded-full" style="border-color: var(--fe-ui-preloader_track, #e2e8f0);"></div>
             <div class="absolute top-0 left-0 w-16 h-16 border-4 rounded-full animate-spin" style="border-color: transparent; border-top-color: var(--fe-ui-preloader_border_1, #D1A054); border-right-color: var(--fe-ui-preloader_border_2, #768D59);"></div>
         </div>
     </div>
@@ -435,7 +476,7 @@
     @include('components.public.footer')
 
     <!-- Back to Top Button -->
-    <button id="backToTop" class="fixed bottom-8 right-8 z-50 hidden w-12 h-12 rounded-full text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl focus:outline-none focus:ring-4" style="background: linear-gradient(to right, var(--fe-ui-back_to_top_from, #D1A054), var(--fe-ui-back_to_top_to, #768D59)); --tw-ring-color: rgba(209,160,84,0.2);" aria-label="{{ $txt('layout_back_to_top_aria', 'Volver arriba', 'Back to top') }}">
+    <button id="backToTop" class="fixed bottom-8 right-8 z-50 hidden w-12 h-12 rounded-full text-white shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl focus:outline-none focus:ring-4" style="background: linear-gradient(to right, var(--fe-ui-back_to_top_from, #D1A054), var(--fe-ui-back_to_top_to, #768D59)); --tw-ring-color: var(--fe-ui-back_to_top_ring, rgba(209,160,84,0.2));" aria-label="{{ $txt('layout_back_to_top_aria', 'Volver arriba', 'Back to top') }}">
         <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
         </svg>
@@ -632,20 +673,24 @@
             function setButtonState(button, isActive) {
                 if (!button) return;
 
-                button.classList.toggle('text-rose-600', isActive);
-                button.classList.toggle('bg-rose-50', isActive);
-                button.classList.toggle('border-rose-200', isActive);
-                button.classList.toggle('ring-4', isActive);
-                button.classList.toggle('ring-rose-100', isActive);
-
                 if (!button.dataset.favoriteDefaultColor) {
-                    button.dataset.favoriteDefaultColor = button.style.color || '';
+                    const computed = window.getComputedStyle(button);
+                    button.dataset.favoriteDefaultColor = button.style.color || computed.color || '';
+                    button.dataset.favoriteDefaultBackground = button.style.backgroundColor || computed.backgroundColor || '';
+                    button.dataset.favoriteDefaultBorder = button.style.borderColor || computed.borderColor || '';
+                    button.dataset.favoriteDefaultShadow = button.style.boxShadow || computed.boxShadow || '';
                 }
 
                 if (isActive) {
-                    button.style.color = 'rgb(225 29 72)';
+                    button.style.color = 'var(--fe-ui-favorites_active_text, #e11d48)';
+                    button.style.backgroundColor = 'var(--fe-ui-favorites_active_bg, #ffe4e6)';
+                    button.style.borderColor = 'var(--fe-ui-favorites_active_border, #fecdd3)';
+                    button.style.boxShadow = '0 0 0 4px var(--fe-ui-favorites_active_ring, #ffe4e6)';
                 } else {
                     button.style.color = button.dataset.favoriteDefaultColor || '';
+                    button.style.backgroundColor = button.dataset.favoriteDefaultBackground || '';
+                    button.style.borderColor = button.dataset.favoriteDefaultBorder || '';
+                    button.style.boxShadow = button.dataset.favoriteDefaultShadow || '';
                 }
 
                 const icon = button.querySelector('svg');

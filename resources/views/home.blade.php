@@ -27,9 +27,9 @@
             {{-- Slides se cargan dinÃƒÆ’Ã‚Â¡micamente desde la API --}}
             {{-- Placeholder mientras carga --}}
             <div class="swiper-slide hero-slide-placeholder">
-                <div class="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-700"></div>
+                <div class="absolute inset-0" style="background: linear-gradient(to bottom right, var(--fe-hero-placeholder_from, #0f172a), var(--fe-hero-placeholder_to, #334155));"></div>
                 <div class="absolute inset-0 flex items-center justify-center">
-                    <div class="animate-pulse text-white/50">
+                    <div class="animate-pulse" style="color: var(--fe-hero-placeholder_text, rgba(255,255,255,0.5));">
                         <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
@@ -70,22 +70,24 @@
             </h1>
 
             {{-- Subtitle --}}
-            <p class="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10 animate-slide-up" style="animation-delay: 0.1s;">
+            <p class="text-lg sm:text-xl max-w-2xl mx-auto mb-10 animate-slide-up" style="animation-delay: 0.1s; color: var(--fe-hero-subtitle_text, rgba(255,255,255,0.8));">
                 {{ $txt('hero_subtitle', 'Casas, departamentos y terrenos en las mejores ubicaciones. Tu próxima inversión inmobiliaria está a un clic de distancia.', 'Houses, apartments and land in the best locations. Your next real estate investment is just one click away.') }}
             </p>
 
             {{-- Search Bar - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
             <div class="relative max-w-3xl mx-auto animate-slide-up" style="animation-delay: 0.2s;" x-data="heroSearch()">
-                <form @submit.prevent="submitSearch()" class="flex flex-col sm:flex-row gap-3 p-3 backdrop-blur-md rounded-2xl border border-white/20" style="background: var(--fe-hero-search_bg, rgba(255,255,255,0.1));">
+                <form @submit.prevent="submitSearch()" class="flex flex-col sm:flex-row gap-3 p-3 backdrop-blur-md rounded-2xl border" style="background: var(--fe-hero-search_bg, rgba(255,255,255,0.1)); border-color: var(--fe-hero-search_input_border, rgba(255,255,255,0.1));">
                     <div class="relative flex-1">
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-hero-search_icon, rgba(255,255,255,0.5));">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         <input type="text"
                                x-model="searchQuery"
                                placeholder="{{ $txt('hero_search_placeholder', 'Buscar por ubicación, tipo o características...', 'Search by location, type or features...') }}"
-                               class="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none transition-all"
-                               style="--tw-ring-color: var(--fe-hero-search_focus, #D1A054);">
+                               class="home-hero-search-input w-full pl-12 pr-4 py-4 rounded-xl focus:outline-none transition-all"
+                               style="background-color: var(--fe-hero-search_input_bg, rgba(255,255,255,0.1)); border: 1px solid var(--fe-hero-search_input_border, rgba(255,255,255,0.1)); color: var(--fe-hero-search_input_text, #ffffff); --tw-ring-color: var(--fe-hero-search_focus, #D1A054);"
+                               onfocus="this.style.borderColor='var(--fe-hero-search_focus, #D1A054)'"
+                               onblur="this.style.borderColor='var(--fe-hero-search_input_border, rgba(255,255,255,0.1))'">
                     </div>
                     <button type="submit" class="px-8 py-4 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59)); --tw-shadow-color: var(--fe-primary-from, #D1A054);">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,7 +107,7 @@
 
     {{-- Scroll Indicator --}}
     <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 animate-bounce hidden sm:block">
-        <a href="#servicios" class="flex flex-col items-center gap-2 text-white/60 hover:text-white transition-colors">
+        <a href="#servicios" class="flex flex-col items-center gap-2 transition-colors" style="color: var(--fe-hero-scroll_text, rgba(255,255,255,0.6));" onmouseover="this.style.color='var(--fe-hero-scroll_text_hover, #ffffff)'" onmouseout="this.style.color='var(--fe-hero-scroll_text, rgba(255,255,255,0.6))'">
             <span class="text-xs font-medium uppercase tracking-wider">{{ $txt('hero_scroll_cta', 'Descubre más', 'Discover more') }}</span>
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -251,29 +253,29 @@
                 {{ $txt('cta_sale_badge', 'Propiedades en Venta', 'Properties for Sale') }}
             </div>
 
-            <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+            <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6" style="color: var(--fe-cta_sale-title, #ffffff);">
                 {{ $txt('cta_sale_title_line1', 'Tu próxima', 'Your next') }}
                 <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-cta_sale-highlight_from, #768D59), var(--fe-cta_sale-highlight_to, #979790));">{{ $txt('cta_sale_title_highlight', 'inversión', 'investment') }}</span>
                 {{ $txt('cta_sale_title_line2', 'te espera', 'is waiting for you') }}
             </h2>
 
-            <p class="text-xl text-white/80 mb-8">
+            <p class="text-xl mb-8" style="color: var(--fe-cta_sale-text, rgba(255,255,255,0.8));">
                 {{ $txt('cta_sale_description', 'Descubre nuestra selección exclusiva de propiedades en venta. Desde acogedores departamentos hasta lujosas residencias, encontrarás opciones para todos los presupuestos.', 'Discover our exclusive selection of properties for sale. From cozy apartments to luxury residences, you will find options for every budget.') }}
             </p>
 
             {{-- Stats --}}
             <div class="flex flex-wrap gap-8 mb-10">
                 <div>
-                    <div class="text-4xl font-bold text-white">{{ $txt('cta_sale_stat_houses_value', '200+', '200+') }}</div>
-                    <div class="text-white/60 text-sm">{{ $txt('cta_sale_stat_houses', 'Casas disponibles', 'Available houses') }}</div>
+                    <div class="text-4xl font-bold" style="color: var(--fe-cta_sale-stat_value, #ffffff);">{{ $txt('cta_sale_stat_houses_value', '200+', '200+') }}</div>
+                    <div class="text-sm" style="color: var(--fe-cta_sale-stat_label, rgba(255,255,255,0.6));">{{ $txt('cta_sale_stat_houses', 'Casas disponibles', 'Available houses') }}</div>
                 </div>
                 <div>
-                    <div class="text-4xl font-bold text-white">{{ $txt('cta_sale_stat_apartments_value', '150+', '150+') }}</div>
-                    <div class="text-white/60 text-sm">{{ $txt('cta_sale_stat_apartments', 'Departamentos', 'Apartments') }}</div>
+                    <div class="text-4xl font-bold" style="color: var(--fe-cta_sale-stat_value, #ffffff);">{{ $txt('cta_sale_stat_apartments_value', '150+', '150+') }}</div>
+                    <div class="text-sm" style="color: var(--fe-cta_sale-stat_label, rgba(255,255,255,0.6));">{{ $txt('cta_sale_stat_apartments', 'Departamentos', 'Apartments') }}</div>
                 </div>
                 <div>
-                    <div class="text-4xl font-bold text-white">{{ $txt('cta_sale_stat_land_value', '50+', '50+') }}</div>
-                    <div class="text-white/60 text-sm">{{ $txt('cta_sale_stat_land', 'Terrenos', 'Land') }}</div>
+                    <div class="text-4xl font-bold" style="color: var(--fe-cta_sale-stat_value, #ffffff);">{{ $txt('cta_sale_stat_land_value', '50+', '50+') }}</div>
+                    <div class="text-sm" style="color: var(--fe-cta_sale-stat_label, rgba(255,255,255,0.6));">{{ $txt('cta_sale_stat_land', 'Terrenos', 'Land') }}</div>
                 </div>
             </div>
 
@@ -285,7 +287,7 @@
                     </svg>
                     {{ $txt('cta_sale_button_primary', 'Ver propiedades en venta', 'View properties for sale') }}
                 </a>
-                <a href="#contacto" class="inline-flex items-center justify-center gap-2 px-8 py-4 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300" style="background: var(--fe-cta_sale-btn_secondary_bg, rgba(255,255,255,0.1));">
+                <a href="#contacto" class="inline-flex items-center justify-center gap-2 px-8 py-4 backdrop-blur-sm font-semibold rounded-xl border transition-all duration-300" style="background: var(--fe-cta_sale-btn_secondary_bg, rgba(255,255,255,0.1)); color: var(--fe-cta_sale-btn_secondary_text, #ffffff); border-color: var(--fe-cta_sale-btn_secondary_border, rgba(255,255,255,0.2));" onmouseover="this.style.background='var(--fe-cta_sale-btn_secondary_hover_bg, rgba(255,255,255,0.2))'" onmouseout="this.style.background='var(--fe-cta_sale-btn_secondary_bg, rgba(255,255,255,0.1))'">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
@@ -297,7 +299,7 @@
 
     {{-- Decorative Elements --}}
     <div class="absolute bottom-0 right-0 w-1/3 h-full hidden lg:block">
-        <div class="absolute bottom-10 right-10 w-64 h-64 border-2 border-white/10 rounded-3xl"></div>
+        <div class="absolute bottom-10 right-10 w-64 h-64 border-2 rounded-3xl" style="border-color: var(--fe-cta_sale-decor_border, rgba(255,255,255,0.1));"></div>
         <div class="absolute bottom-20 right-20 w-64 h-64 rounded-3xl" style="border: 2px solid var(--fe-cta_sale-decor, rgba(118, 141, 89, 0.2));"></div>
     </div>
 </section>
@@ -322,30 +324,30 @@
                 {{ $txt('cta_rent_badge', 'Propiedades en Renta', 'Properties for Rent') }}
             </div>
 
-            <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+            <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6" style="color: var(--fe-cta_rent-title, #ffffff);">
                 {{ $txt('cta_rent_title_line1', 'Renta sin', 'Rent with no') }}
                 <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-cta_rent-highlight_from, #D1A054), var(--fe-cta_rent-highlight_to, #D1A054));">{{ $txt('cta_rent_title_highlight', 'complicaciones', 'hassle') }}</span>
             </h2>
 
-            <p class="text-xl text-white/80 mb-8">
+            <p class="text-xl mb-8" style="color: var(--fe-cta_rent-text, rgba(255,255,255,0.8));">
                 {{ $txt('cta_rent_description', 'Encuentra el espacio perfecto para tu próxima aventura. Contratos flexibles, propiedades verificadas y mudanza express disponible.', 'Find the perfect space for your next adventure. Flexible contracts, verified properties and express move-in available.') }}
             </p>
 
             {{-- Features List --}}
             <div class="flex flex-wrap justify-end gap-4 mb-10">
-                <div class="flex items-center gap-2 text-white/80">
+                <div class="flex items-center gap-2" style="color: var(--fe-cta_rent-feature_text, rgba(255,255,255,0.8));">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-cta_rent-check_color, #D1A054);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
                     {{ $txt('cta_rent_feature1', 'Sin aval', 'No guarantor') }}
                 </div>
-                <div class="flex items-center gap-2 text-white/80">
+                <div class="flex items-center gap-2" style="color: var(--fe-cta_rent-feature_text, rgba(255,255,255,0.8));">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-cta_rent-check_color, #D1A054);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
                     {{ $txt('cta_rent_feature2', 'Contratos flexibles', 'Flexible contracts') }}
                 </div>
-                <div class="flex items-center gap-2 text-white/80">
+                <div class="flex items-center gap-2" style="color: var(--fe-cta_rent-feature_text, rgba(255,255,255,0.8));">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-cta_rent-check_color, #D1A054);">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
@@ -361,7 +363,7 @@
                     </svg>
                     {{ $txt('cta_rent_button_primary', 'Ver propiedades en renta', 'View rental properties') }}
                 </a>
-                <a href="#contacto" class="inline-flex items-center justify-center gap-2 px-8 py-4 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300" style="background: var(--fe-cta_rent-btn_secondary_bg, rgba(255,255,255,0.1));">
+                <a href="#contacto" class="inline-flex items-center justify-center gap-2 px-8 py-4 backdrop-blur-sm font-semibold rounded-xl border transition-all duration-300" style="background: var(--fe-cta_rent-btn_secondary_bg, rgba(255,255,255,0.1)); color: var(--fe-cta_rent-btn_secondary_text, #ffffff); border-color: var(--fe-cta_rent-btn_secondary_border, rgba(255,255,255,0.2));" onmouseover="this.style.background='var(--fe-cta_rent-btn_secondary_hover_bg, rgba(255,255,255,0.2))'" onmouseout="this.style.background='var(--fe-cta_rent-btn_secondary_bg, rgba(255,255,255,0.1))'">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
@@ -373,7 +375,7 @@
 
     {{-- Decorative Elements --}}
     <div class="absolute bottom-0 left-0 w-1/3 h-full hidden lg:block">
-        <div class="absolute bottom-10 left-10 w-64 h-64 border-2 border-white/10 rounded-3xl"></div>
+        <div class="absolute bottom-10 left-10 w-64 h-64 border-2 rounded-3xl" style="border-color: var(--fe-cta_rent-decor_border, rgba(255,255,255,0.1));"></div>
         <div class="absolute bottom-20 left-20 w-64 h-64 rounded-3xl" style="border: 2px solid var(--fe-cta_rent-decor, rgba(209, 160, 84, 0.2));"></div>
     </div>
 </section>
@@ -477,7 +479,7 @@
         <div id="propertiesGrid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {{-- Loading Skeleton --}}
             <template x-for="i in 6" :key="i">
-                <div class="property-skeleton bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
+                <div class="property-skeleton rounded-2xl overflow-hidden border shadow-sm" style="background-color: var(--fe-properties-skeleton_bg, #ffffff); border-color: var(--fe-properties-skeleton_border, #f1f5f9);">
                     <div class="skeleton h-56 w-full"></div>
                     <div class="p-6 space-y-4">
                         <div class="skeleton h-4 w-3/4 rounded"></div>
@@ -495,21 +497,21 @@
 
         {{-- Empty State --}}
         <div id="propertiesEmpty" class="hidden text-center py-16">
-            <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-100 flex items-center justify-center">
-                <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center" style="background-color: var(--fe-properties-empty_icon_bg, #f1f5f9);">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--fe-properties-empty_icon, #94a3b8);">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
             </div>
-            <h3 class="text-xl font-semibold text-slate-900 mb-2">{{ $txt('properties_empty_title', 'No se encontraron propiedades', 'No properties found') }}</h3>
-            <p class="text-slate-600 mb-6">{{ $txt('properties_empty_subtitle', 'Intenta ajustar los filtros o buscar con otros términos.', 'Try adjusting filters or searching with other terms.') }}</p>
+            <h3 class="text-xl font-semibold mb-2" style="color: var(--fe-properties-empty_title, #0f172a);">{{ $txt('properties_empty_title', 'No se encontraron propiedades', 'No properties found') }}</h3>
+            <p class="mb-6" style="color: var(--fe-properties-empty_text, #475569);">{{ $txt('properties_empty_subtitle', 'Intenta ajustar los filtros o buscar con otros términos.', 'Try adjusting filters or searching with other terms.') }}</p>
             <button onclick="window.propertiesApp.clearFilters()" class="px-6 py-3 text-white font-medium rounded-xl transition-colors hover:opacity-90" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                 {{ $txt('properties_clear_filters', 'Limpiar filtros', 'Clear filters') }}
             </button>
         </div>
 
         {{-- Pagination --}}
-        <div id="propertiesPagination" class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-12 pt-8 border-t border-slate-200">
-            <div class="text-sm text-slate-600">
+        <div id="propertiesPagination" class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-12 pt-8 border-t" style="border-color: var(--fe-properties-pagination_border, #e2e8f0);">
+            <div class="text-sm" style="color: var(--fe-properties-pagination_text, #475569);">
                 {{ $txt('properties_pagination_showing', 'Mostrando', 'Showing') }} <span id="paginationFrom">0</span> - <span id="paginationTo">0</span> {{ $txt('properties_pagination_of', 'de', 'of') }} <span id="paginationTotal">0</span> {{ $txt('properties_pagination_properties', 'propiedades', 'properties') }}
             </div>
             <div class="flex items-center gap-2" id="paginationButtons">
@@ -527,7 +529,7 @@
     <div class="absolute inset-0 pointer-events-none">
         <div class="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl animate-float" style="background-color: var(--fe-process-glow1, rgba(209, 160, 84, 0.2));"></div>
         <div class="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl animate-float" style="animation-delay: -3s; background-color: var(--fe-process-glow2, rgba(118, 141, 89, 0.2));"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.05)_1px,transparent_0)] [background-size:40px_40px]"></div>
+        <div class="absolute inset-0 [background-size:40px_40px]" style="background-image: radial-gradient(circle at 1px 1px, var(--fe-process-pattern, rgba(255,255,255,0.05)) 1px, transparent 0);"></div>
     </div>
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -539,7 +541,7 @@
                 </svg>
                 {{ $txt('process_badge', 'Proceso Simplificado', 'Simplified Process') }}
             </div>
-            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" style="color: var(--fe-process-title, #ffffff);">
                 {{ $txt('process_title', 'Tu nuevo hogar en', 'Your new home in') }}
                 <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-process-highlight_from, #D1A054), var(--fe-process-highlight_to, #768D59));">{{ $txt('process_title_highlight', '4 simples pasos', '4 simple steps') }}</span>
             </h2>
@@ -557,7 +559,7 @@
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl font-bold mb-6" style="background: linear-gradient(to bottom right, var(--fe-process-step1_from, #D1A054), var(--fe-process-step1_to, #D1A054));">
                         1
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">{{ $txt('process_step1_title', 'Explora', 'Explore') }}</h3>
+                    <h3 class="text-xl font-bold mb-3" style="color: var(--fe-process-step_title, #ffffff);">{{ $txt('process_step1_title', 'Explora', 'Explore') }}</h3>
                     <p style="color: var(--fe-process-card_text, #94a3b8);">{{ $txt('process_step1_desc', 'Navega por nuestro catálogo y usa los filtros para encontrar propiedades que te interesen.', 'Browse our catalog and use filters to find properties that interest you.') }}</p>
                 </div>
                 {{-- Connector --}}
@@ -571,7 +573,7 @@
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl font-bold mb-6" style="background: linear-gradient(to bottom right, var(--fe-process-step2_from, #A52A2A), var(--fe-process-step2_to, #A52A2A));">
                         2
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">{{ $txt('process_step2_title', 'Agenda', 'Schedule') }}</h3>
+                    <h3 class="text-xl font-bold mb-3" style="color: var(--fe-process-step_title, #ffffff);">{{ $txt('process_step2_title', 'Agenda', 'Schedule') }}</h3>
                     <p style="color: var(--fe-process-card_text, #94a3b8);">{{ $txt('process_step2_desc', 'Programa una visita presencial o virtual con uno de nuestros asesores expertos.', 'Schedule an in-person or virtual visit with one of our expert advisors.') }}</p>
                 </div>
                 {{-- Connector --}}
@@ -585,7 +587,7 @@
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl font-bold mb-6" style="background: linear-gradient(to bottom right, var(--fe-process-step3_from, #5B5B5B), var(--fe-process-step3_to, #979790));">
                         3
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">{{ $txt('process_step3_title', 'Negocia', 'Negotiate') }}</h3>
+                    <h3 class="text-xl font-bold mb-3" style="color: var(--fe-process-step_title, #ffffff);">{{ $txt('process_step3_title', 'Negocia', 'Negotiate') }}</h3>
                     <p style="color: var(--fe-process-card_text, #94a3b8);">{{ $txt('process_step3_desc', 'Te ayudamos a negociar el mejor precio y condiciones para tu compra o renta.', 'We help you negotiate the best price and conditions for your purchase or rental.') }}</p>
                 </div>
                 {{-- Connector --}}
@@ -599,7 +601,7 @@
                     <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl font-bold mb-6" style="background: linear-gradient(to bottom right, var(--fe-process-step4_from, #768D59), var(--fe-process-step4_to, #768D59));">
                         4
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">{{ $txt('process_step4_title', '¡Listo!', 'Done!') }}</h3>
+                    <h3 class="text-xl font-bold mb-3" style="color: var(--fe-process-step_title, #ffffff);">{{ $txt('process_step4_title', '¡Listo!', 'Done!') }}</h3>
                     <p style="color: var(--fe-process-card_text, #94a3b8);">{{ $txt('process_step4_desc', 'Firma, recibe las llaves y disfruta de tu nuevo hogar. ¡Así de fácil!', 'Sign, receive the keys and enjoy your new home. It is that easy!') }}</p>
                 </div>
             </div>
@@ -727,8 +729,8 @@
                     <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80" alt="{{ $txt('about_image_alt', 'Equipo San Miguel Properties', 'San Miguel Properties team') }}" class="w-full h-[500px] object-cover">
                     <div class="absolute inset-0" style="background: linear-gradient(to top, var(--fe-about-image_overlay, rgba(28, 28, 28, 0.6)), transparent);"></div>
                     <div class="absolute bottom-0 left-0 right-0 p-8">
-                        <p class="text-white text-lg font-medium">{{ $txt('about_image_caption_title', 'Nuestro equipo de expertos', 'Our team of experts') }}</p>
-                        <p class="text-white/70">{{ $txt('about_image_caption_subtitle', '+15 años de experiencia en el mercado', '+15 years of market experience') }}</p>
+                        <p class="text-lg font-medium" style="color: var(--fe-about-image_caption_title, #ffffff);">{{ $txt('about_image_caption_title', 'Nuestro equipo de expertos', 'Our team of experts') }}</p>
+                        <p style="color: var(--fe-about-image_caption_subtitle, rgba(255,255,255,0.7));">{{ $txt('about_image_caption_subtitle', '+15 años de experiencia en el mercado', '+15 years of market experience') }}</p>
                     </div>
                 </div>
                 {{-- Floating Card --}}
@@ -830,7 +832,7 @@
 
                 <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6" style="color: var(--fe-contact-title, #1C1C1C);">
                     {{ $txt('home_contact_title', '¿Listo para encontrar tu', 'Ready to find your') }}
-                    <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('home_contact_title_highlight', 'hogar ideal', 'ideal home') }}</span>?
+                    <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('home_contact_title_highlight', 'hogar ideal', 'ideal home') }}</span>
                 </h2>
 
                 <p class="text-lg mb-10" style="color: var(--fe-contact-text, #5B5B5B);">
@@ -929,8 +931,8 @@
 
                     <div class="flex items-start gap-3">
                         <input type="checkbox" id="contact_privacy" name="privacy" required
-                               class="mt-1 h-4 w-4 rounded border-slate-300 focus:ring-2"
-                               style="color: var(--fe-primary-from, #D1A054);">
+                               class="mt-1 h-4 w-4 rounded focus:ring-2"
+                               style="color: var(--fe-primary-from, #D1A054); border-color: var(--fe-contact-privacy_check_border, #cbd5e1);">
                         <label for="contact_privacy" class="text-sm" style="color: var(--fe-contact-privacy_text, #5B5B5B);">
                             {{ $txt('home_contact_form_privacy', 'Acepto la política de privacidad y autorizo el tratamiento de mis datos.', 'I accept the privacy policy and authorize data processing.') }}
                         </label>
@@ -950,6 +952,18 @@
     </div>
 </section>
 @endsection
+
+@push('styles')
+<style>
+    .home-hero-search-input::placeholder {
+        color: var(--fe-hero-search_input_placeholder, rgba(255,255,255,0.5));
+    }
+
+    .home-pagination-btn:hover:not(:disabled) {
+        background-color: var(--fe-properties-pagination_hover_bg, #f8fafc);
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>
@@ -1014,7 +1028,7 @@ async function loadHomeFilterOptions() {
             const heroFiltersEl = document.getElementById('heroQuickFilters');
             if (heroFiltersEl && opts.property_types && opts.property_types.length > 0) {
                 heroFiltersEl.innerHTML = opts.property_types.map(type =>
-                    `<a href="/propiedades?property_type_name=${encodeURIComponent(type)}" class="px-4 py-2 rounded-full bg-white/10 text-white/80 text-sm font-medium hover:bg-white/20 transition-colors border border-white/10">
+                    `<a href="/propiedades?property_type_name=${encodeURIComponent(type)}" class="px-4 py-2 rounded-full text-sm font-medium transition-colors border" style="background-color: var(--fe-hero-quick_filter_bg, rgba(255,255,255,0.1)); color: var(--fe-hero-quick_filter_text, rgba(255,255,255,0.8)); border-color: var(--fe-hero-quick_filter_border, rgba(255,255,255,0.1));" onmouseover="this.style.backgroundColor='var(--fe-hero-quick_filter_hover_bg, rgba(255,255,255,0.2))'" onmouseout="this.style.backgroundColor='var(--fe-hero-quick_filter_bg, rgba(255,255,255,0.1))'">
                         ${type}
                     </a>`
                 ).join('');
@@ -1047,13 +1061,13 @@ async function loadHeroSlides() {
                     <div class="absolute inset-0">
                         <img src="${imageUrl}" alt="${property.title || homeI18n.heroImageAlt}" class="w-full h-full object-cover">
                     </div>
-                    <div class="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/80 to-transparent z-10 hidden">
+                    <div class="absolute bottom-0 left-0 right-0 p-8 z-10 hidden" style="background: linear-gradient(to top, var(--fe-properties-image_overlay, rgba(0,0,0,0.8)), transparent);">
                         <div class="max-w-7xl mx-auto">
                             <span class="inline-block px-3 py-1 text-white text-sm font-medium rounded-full mb-4" style="background-color: var(--fe-primary-from, #D1A054);">
                                 ${property.property_type_name || homeI18n.heroTypeFallback}
                             </span>
-                            <h3 class="text-2xl lg:text-3xl font-bold text-white mb-2">${property.title || homeI18n.heroFeaturedFallback}</h3>
-                            <p class="text-white/80">${property.location?.city || ''} ${property.location?.city_area || ''}</p>
+                            <h3 class="text-2xl lg:text-3xl font-bold mb-2" style="color: var(--fe-hero-search_input_text, #ffffff);">${property.title || homeI18n.heroFeaturedFallback}</h3>
+                            <p style="color: var(--fe-hero-subtitle_text, rgba(255,255,255,0.8));">${property.location?.city || ''} ${property.location?.city_area || ''}</p>
                         </div>
                     </div>
                 `;
@@ -1170,7 +1184,7 @@ function propertiesFilter() {
                     <div class="relative h-56 overflow-hidden">
                         <img src="${imageUrl}" alt="${property.title || homeI18n.heroImageAlt}"
                              class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style="background: linear-gradient(to top, var(--fe-properties-image_overlay, rgba(0,0,0,0.5)), transparent);"></div>
                         
                         ${property.property_type_name ? `
                         <span class="absolute top-4 left-4 px-3 py-1 backdrop-blur-sm text-xs font-medium rounded-full" style="background-color: var(--fe-properties-type_badge_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-type_badge_text, #1C1C1C);">
@@ -1184,7 +1198,7 @@ function propertiesFilter() {
                         </span>
                         ` : ''}
                         
-                        <button type="button" data-favorite-btn data-property-id="${property.id}" class="absolute bottom-4 right-4 w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300 border border-slate-200" style="background-color: var(--fe-properties-fav_btn_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-fav_btn_icon, #5B5B5B);">
+                        <button type="button" data-favorite-btn data-property-id="${property.id}" class="absolute bottom-4 right-4 w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300 border" style="background-color: var(--fe-properties-fav_btn_bg, rgba(255,255,255,0.9)); border-color: var(--fe-properties-fav_btn_border, #e2e8f0); color: var(--fe-properties-fav_btn_icon, #5B5B5B);">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
@@ -1268,7 +1282,8 @@ function propertiesFilter() {
             buttons += `
                 <button onclick="window.propertiesApp.goToPage(${this.pagination.current_page - 1})" 
                         ${this.pagination.current_page <= 1 ? 'disabled' : ''}
-                        class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        class="home-pagination-btn px-4 py-2 rounded-lg border disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        style="border-color: var(--fe-properties-pagination_border, #e2e8f0); color: var(--fe-properties-pagination_text, #475569);">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
@@ -1286,9 +1301,11 @@ function propertiesFilter() {
                         <button onclick="window.propertiesApp.goToPage(${i})"
                                 class="w-10 h-10 rounded-lg ${i === this.pagination.current_page
                                     ? 'text-white'
-                                    : 'border border-slate-200 text-slate-600 hover:bg-slate-50'}
+                                    : 'home-pagination-btn border'}
                                 font-medium transition-colors"
-                                ${i === this.pagination.current_page ? 'style="background: linear-gradient(to right, var(--fe-pagination-active_from, #D1A054), var(--fe-pagination-active_to, #768D59));"' : ''}>
+                                style="${i === this.pagination.current_page
+                                    ? 'background: linear-gradient(to right, var(--fe-pagination-active_from, #D1A054), var(--fe-pagination-active_to, #768D59));'
+                                    : 'border-color: var(--fe-properties-pagination_border, #e2e8f0); color: var(--fe-properties-pagination_text, #475569);'}">
                             ${i}
                         </button>
                     `;
@@ -1296,7 +1313,7 @@ function propertiesFilter() {
                     i === this.pagination.current_page - 2 ||
                     i === this.pagination.current_page + 2
                 ) {
-                    buttons += `<span class="px-2 text-slate-400">...</span>`;
+                    buttons += `<span class="px-2" style="color: var(--fe-properties-pagination_ellipsis, #94a3b8);">...</span>`;
                 }
             }
 
@@ -1304,7 +1321,8 @@ function propertiesFilter() {
             buttons += `
                 <button onclick="window.propertiesApp.goToPage(${this.pagination.current_page + 1})" 
                         ${this.pagination.current_page >= this.pagination.last_page ? 'disabled' : ''}
-                        class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                        class="home-pagination-btn px-4 py-2 rounded-lg border disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        style="border-color: var(--fe-properties-pagination_border, #e2e8f0); color: var(--fe-properties-pagination_text, #475569);">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>

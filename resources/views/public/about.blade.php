@@ -64,24 +64,24 @@
 @section('content')
 <section class="relative pt-32 pb-20 lg:pt-40 lg:pb-28 overflow-hidden">
     <div class="absolute inset-0 z-0">
-        <div class="absolute inset-0" style="background: linear-gradient(135deg, var(--fe-about_page-hero_bg_from, #1C1C1C) 0%, rgba(209,160,84,0.95) 45%, var(--fe-about_page-hero_bg_to, #768D59) 100%);"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.10)_1px,transparent_0)] [background-size:40px_40px]"></div>
+        <div class="absolute inset-0" style="background: linear-gradient(135deg, var(--fe-about_page-hero_bg_from, #1C1C1C) 0%, var(--fe-about_page-hero_bg_via, rgba(209,160,84,0.95)) 45%, var(--fe-about_page-hero_bg_to, #768D59) 100%);"></div>
+        <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, var(--fe-about_page-hero_pattern_dot, rgba(255,255,255,0.10)) 1px, transparent 0); background-size: 40px 40px;"></div>
     </div>
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div class="max-w-3xl mx-auto">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm text-white/90 text-sm font-medium mb-6" style="background: rgba(255,255,255,0.12);">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium mb-6" style="background: var(--fe-about_page-hero_badge_bg, rgba(255,255,255,0.12)); color: var(--fe-about_page-hero_badge_text, rgba(255,255,255,0.9));">
                 {{ $pageData?->field('about_hero_badge') ?? ($isEn ? 'Who we are' : 'Quiénes somos') }}
             </div>
 
-            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6" style="color: var(--fe-about_page-hero_title, #ffffff);">
                 {{ $pageData?->field('about_hero_title') ?? ($isEn ? 'We build trust,' : 'Construimos confianza,') }}
-                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, rgba(52,211,153,1), rgba(34,211,238,1));">
+                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-about_page-hero_highlight_from, rgba(52,211,153,1)), var(--fe-about_page-hero_highlight_to, rgba(34,211,238,1)));">
                     {{ $pageData?->field('about_hero_title_highlight') ?? ($isEn ? 'we close opportunities' : 'cerramos oportunidades') }}
                 </span>
             </h1>
 
-            <p class="text-lg sm:text-xl text-white/80">
+            <p class="text-lg sm:text-xl" style="color: var(--fe-about_page-hero_subtitle, rgba(255,255,255,0.8));">
                 {{ $pageData?->field('about_hero_subtitle') ?? ($isEn ? 'A real estate team that combines experience, data and human support.' : 'Un equipo inmobiliario que combina experiencia, datos y acompañamiento humano.') }}
             </p>
 
@@ -89,7 +89,7 @@
                 <a href="{{ route('public.properties.index') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                     {{ $txt('about_hero_cta_primary', 'Ver propiedades', 'View Properties') }}
                 </a>
-                <a href="{{ route('public.contact') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-white/95 border border-white/20 backdrop-blur-sm transition-all duration-300 hover:bg-white/20" style="background: rgba(255,255,255,0.10);">
+                <a href="{{ route('public.contact') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold border backdrop-blur-sm transition-all duration-300 hover:bg-white/20" style="background: var(--fe-about_page-hero_secondary_cta_bg, rgba(255,255,255,0.10)); color: var(--fe-about_page-hero_secondary_cta_text, rgba(255,255,255,0.95)); border-color: var(--fe-about_page-hero_secondary_cta_border, rgba(255,255,255,0.2));">
                     {{ $txt('about_hero_cta_secondary', 'Hablar con un asesor', 'Talk to an advisor') }}
                 </a>
             </div>
@@ -97,10 +97,10 @@
     </div>
 </section>
 
-<section class="py-16 lg:py-24 bg-white">
+<section class="py-16 lg:py-24" style="background-color: var(--fe-about_page-summary_section_bg, #ffffff);">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-12 lg:gap-16">
         <div class="lg:col-span-7">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6" style="background-color: rgba(209,160,84,0.08); color: var(--fe-primary-from, #D1A054);">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6" style="background-color: var(--fe-about_page-summary_badge_bg, rgba(209,160,84,0.08)); color: var(--fe-about_page-summary_badge_text, #D1A054);">
                 {{ $pageData?->field('about_summary_badge') ?? ($isEn ? 'Our promise' : 'Nuestra promesa') }}
             </div>
 
@@ -111,34 +111,34 @@
                 </span>
             </h2>
 
-            <div class="space-y-4 text-lg" style="color: #475569;">
+            <div class="space-y-4 text-lg" style="color: var(--fe-about_page-body_text, #475569);">
                 <p>{{ $pageData?->field('about_summary_text1') ?? ($isEn ? 'We combine technology with personalized advice.' : 'Combinamos tecnología con asesoría personalizada.') }}</p>
                 <p>{{ $pageData?->field('about_summary_text2') ?? ($isEn ? 'Our approach is clear process, communication and measurable results.' : 'Nuestro enfoque es claridad en el proceso, comunicación y resultados medibles.') }}</p>
             </div>
         </div>
 
         <div class="lg:col-span-5">
-            <div class="rounded-3xl overflow-hidden border shadow-soft" style="border-color: rgba(226,232,240,1);">
+            <div class="rounded-3xl overflow-hidden border shadow-soft" style="border-color: var(--fe-about_page-summary_media_border, #e2e8f0);">
                 <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80" alt="{{ $txt('about_summary_team_image_alt', 'Equipo', 'Team') }}" class="w-full h-[420px] object-cover" />
             </div>
-            <div class="mt-6 rounded-2xl border p-6" style="border-color: rgba(226,232,240,1); background: linear-gradient(to bottom right, rgba(248,250,252,1), rgba(255,255,255,1));">
-                <div class="text-sm" style="color: #64748b;">{{ $txt('about_direct_line_label', 'Línea directa', 'Direct line') }}</div>
+            <div class="mt-6 rounded-2xl border p-6" style="border-color: var(--fe-about_page-summary_media_border, #e2e8f0); background: linear-gradient(to bottom right, var(--fe-about_page-summary_media_box_bg_from, rgba(248,250,252,1)), var(--fe-about_page-summary_media_box_bg_to, rgba(255,255,255,1)));">
+                <div class="text-sm" style="color: var(--fe-about_page-summary_direct_label, #64748b);">{{ $txt('about_direct_line_label', 'Línea directa', 'Direct line') }}</div>
                 <a href="tel:{{ $contactPhoneHref }}" class="font-semibold hover:underline" style="color: var(--fe-about_page-section_title, #1e293b);">{{ $contactPhone }}</a>
             </div>
         </div>
     </div>
 </section>
 
-<section class="py-16 lg:py-24" style="background: linear-gradient(to bottom, rgba(248,250,252,1), rgba(255,255,255,1));">
+<section class="py-16 lg:py-24" style="background: linear-gradient(to bottom, var(--fe-about_page-values_section_bg_from, rgba(248,250,252,1)), var(--fe-about_page-values_section_bg_to, rgba(255,255,255,1)));">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center max-w-3xl mx-auto mb-12">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: rgba(118,141,89,0.10); color: rgba(5,150,105,1);">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: var(--fe-about_page-values_badge_bg, rgba(118,141,89,0.10)); color: var(--fe-about_page-values_badge_text, rgba(5,150,105,1));">
                 {{ $pageData?->field('about_values_badge') ?? ($isEn ? 'Our culture' : 'Nuestra cultura') }}
             </div>
             <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--fe-about_page-section_title, #1e293b);">
                 {{ $pageData?->field('about_values_title') ?? ($isEn ? 'Values felt in every operation' : 'Valores que se sienten en cada operación') }}
             </h2>
-            <p class="text-lg" style="color: #475569;">
+            <p class="text-lg" style="color: var(--fe-about_page-body_text, #475569);">
                 {{ $pageData?->field('about_values_subtitle') ?? ($isEn ? 'Closing is not enough, we do it right.' : 'No solo cerramos, lo hacemos bien.') }}
             </p>
         </div>
@@ -154,22 +154,22 @@
 
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             @foreach($valueRows as $value)
-                <div class="rounded-3xl p-8 border transition-all duration-300 hover:shadow-xl" style="border-color: var(--fe-about_page-team_card_border, #e2e8f0); background: linear-gradient(to bottom right, rgba(255,255,255,1), rgba(248,250,252,1));">
+                <div class="rounded-3xl p-8 border transition-all duration-300 hover:shadow-xl" style="border-color: var(--fe-about_page-value_card_border, #e2e8f0); background: linear-gradient(to bottom right, var(--fe-about_page-value_card_bg_from, rgba(255,255,255,1)), var(--fe-about_page-value_card_bg_to, rgba(248,250,252,1)));">
                     <h3 class="text-xl font-bold mb-2" style="color: var(--fe-about_page-section_title, #1e293b);">{{ $value['title'] }}</h3>
-                    <p style="color: #475569;">{{ $value['description'] }}</p>
+                    <p style="color: var(--fe-about_page-body_text, #475569);">{{ $value['description'] }}</p>
                 </div>
             @endforeach
         </div>
     </div>
 </section>
 
-<section class="py-16 lg:py-24 bg-white">
+<section class="py-16 lg:py-24" style="background-color: var(--fe-about_page-timeline_section_bg, #ffffff);">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-12 lg:gap-16">
         <div class="lg:col-span-5">
             <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--fe-about_page-section_title, #1e293b);">
                 {{ $pageData?->field('about_timeline_title') ?? ($isEn ? 'Our history' : 'Nuestra historia') }}
             </h2>
-            <p class="text-lg" style="color: #475569;">
+            <p class="text-lg" style="color: var(--fe-about_page-body_text, #475569);">
                 {{ $pageData?->field('about_timeline_subtitle') ?? ($isEn ? 'We evolve with the market.' : 'Hemos evolucionado con el mercado.') }}
             </p>
         </div>
@@ -189,10 +189,10 @@
             @foreach($timelineRows as $item)
                 <div class="relative pb-8">
                     <div class="absolute -left-[2px] top-2 w-4 h-4 rounded-full" style="background-color: var(--fe-about_page-timeline_dot_active, #D1A054);"></div>
-                    <div class="ml-6 rounded-3xl border p-6" style="border-color: rgba(226,232,240,1); background: linear-gradient(to bottom right, rgba(255,255,255,1), rgba(248,250,252,1));">
-                        <div class="text-sm font-semibold" style="color: var(--fe-primary-from, #D1A054);">{{ $item['year'] }}</div>
+                    <div class="ml-6 rounded-3xl border p-6" style="border-color: var(--fe-about_page-timeline_card_border, #e2e8f0); background: linear-gradient(to bottom right, var(--fe-about_page-timeline_card_bg_from, rgba(255,255,255,1)), var(--fe-about_page-timeline_card_bg_to, rgba(248,250,252,1)));">
+                        <div class="text-sm font-semibold" style="color: var(--fe-about_page-timeline_year, #D1A054);">{{ $item['year'] }}</div>
                         <h3 class="mt-2 text-xl font-bold" style="color: var(--fe-about_page-section_title, #1e293b);">{{ $item['title'] }}</h3>
-                        <p class="mt-2" style="color: #475569;">{{ $item['description'] }}</p>
+                        <p class="mt-2" style="color: var(--fe-about_page-body_text, #475569);">{{ $item['description'] }}</p>
                     </div>
                 </div>
             @endforeach
@@ -200,16 +200,16 @@
     </div>
 </section>
 
-<section class="py-16 lg:py-24" style="background: linear-gradient(to bottom, rgba(248,250,252,1), rgba(255,255,255,1));">
+<section class="py-16 lg:py-24" style="background: linear-gradient(to bottom, var(--fe-about_page-team_section_bg_from, rgba(248,250,252,1)), var(--fe-about_page-team_section_bg_to, rgba(255,255,255,1)));">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center max-w-3xl mx-auto mb-12">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: rgba(147,51,234,0.10); color: rgba(147,51,234,1);">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: var(--fe-about_page-team_badge_bg, rgba(147,51,234,0.10)); color: var(--fe-about_page-team_badge_text, rgba(147,51,234,1));">
                 {{ $pageData?->field('about_team_badge') ?? ($isEn ? 'The team' : 'El equipo') }}
             </div>
             <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--fe-about_page-section_title, #1e293b);">
                 {{ $pageData?->field('about_team_title') ?? ($isEn ? 'Real people, real results' : 'Personas reales, resultados reales') }}
             </h2>
-            <p class="text-lg" style="color: #475569;">
+            <p class="text-lg" style="color: var(--fe-about_page-body_text, #475569);">
                 {{ $pageData?->field('about_team_subtitle') ?? ($isEn ? 'A team focused on your objective.' : 'Un equipo enfocado en tu objetivo.') }}
             </p>
         </div>
@@ -221,7 +221,7 @@
                     $memberRole = $person->field('member_role') ?? ($isEn ? 'Real Estate Advisor' : 'Asesor Inmobiliario');
                     $memberImage = $person->image('member_image') ?: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=900&q=80';
                 @endphp
-                <div class="group rounded-3xl overflow-hidden border transition-all duration-300 hover:shadow-xl" style="border-color: var(--fe-about_page-team_card_border, #e2e8f0); background: #fff;">
+                <div class="group rounded-3xl overflow-hidden border transition-all duration-300 hover:shadow-xl" style="border-color: var(--fe-about_page-team_card_border, #e2e8f0); background: var(--fe-about_page-team_card_bg, #ffffff);">
                     <div class="relative h-60 overflow-hidden">
                         <img src="{{ $memberImage }}" alt="{{ $memberName }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     </div>
@@ -240,15 +240,15 @@
     </div>
 </section>
 
-<section class="py-16 lg:py-24 bg-white">
+<section class="py-16 lg:py-24" style="background-color: var(--fe-about_page-cta_section_bg, #ffffff);">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="relative overflow-hidden rounded-3xl border p-10 lg:p-14" style="border-color: rgba(226,232,240,1); background: linear-gradient(135deg, rgba(209,160,84,0.08), rgba(118,141,89,0.10));">
+        <div class="relative overflow-hidden rounded-3xl border p-10 lg:p-14" style="border-color: var(--fe-about_page-cta_box_border, #e2e8f0); background: linear-gradient(135deg, var(--fe-about_page-cta_box_bg_from, rgba(209,160,84,0.08)), var(--fe-about_page-cta_box_bg_to, rgba(118,141,89,0.10)));">
             <div class="grid lg:grid-cols-12 gap-8 items-center">
                 <div class="lg:col-span-8">
                     <h2 class="text-3xl sm:text-4xl font-bold" style="color: var(--fe-about_page-section_title, #1e293b);">
                         {{ $pageData?->field('about_cta_title') ?? ($isEn ? 'Shall we talk about your next property?' : '¿Hablamos de tu próxima propiedad?') }}
                     </h2>
-                    <p class="mt-3 text-lg" style="color: #475569;">
+                    <p class="mt-3 text-lg" style="color: var(--fe-about_page-body_text, #475569);">
                         {{ $pageData?->field('about_cta_subtitle') ?? ($isEn ? 'Tell us what you are looking for and we will share real options.' : 'Cuéntanos qué buscas y te compartimos opciones reales.') }}
                     </p>
                 </div>
@@ -256,7 +256,7 @@
                     <a href="{{ route('public.contact') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                         {{ $txt('about_cta_button_primary', 'Ir a contacto', 'Go to contact') }}
                     </a>
-                    <a href="{{ route('public.properties.index') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold border transition-colors" style="border-color: rgba(226,232,240,1); color: rgba(30,41,59,1); background: rgba(255,255,255,0.7);">
+                    <a href="{{ route('public.properties.index') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold border transition-colors" style="border-color: var(--fe-about_page-cta_secondary_btn_border, #e2e8f0); color: var(--fe-about_page-cta_secondary_btn_text, rgba(30,41,59,1)); background: var(--fe-about_page-cta_secondary_btn_bg, rgba(255,255,255,0.7));">
                         {{ $txt('about_cta_button_secondary', 'Explorar catálogo', 'Explore catalog') }}
                     </a>
                 </div>

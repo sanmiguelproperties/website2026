@@ -66,7 +66,18 @@ class FrontendColorService
      */
     public function getColorSetting(int $id): ?FrontendColorSetting
     {
-        return FrontendColorSetting::find($id);
+        $setting = FrontendColorSetting::find($id);
+        if (!$setting) {
+            return null;
+        }
+
+        // Completar colores faltantes con defaults para facilitar edicion en admin
+        $setting->setAttribute(
+            'colors',
+            FrontendColorSetting::mergeWithDefaults($setting->view_slug, (array) ($setting->colors ?? []))
+        );
+
+        return $setting;
     }
 
     /**
@@ -84,6 +95,8 @@ class FrontendColorService
         // Si no se proporcionan colores, usar los por defecto para esa vista
         if (!isset($data['colors']) || empty($data['colors'])) {
             $data['colors'] = FrontendColorSetting::getDefaultColorsForView($viewSlug);
+        } else {
+            $data['colors'] = FrontendColorSetting::mergeWithDefaults($viewSlug, (array) $data['colors']);
         }
 
         return FrontendColorSetting::create($data);
@@ -104,7 +117,10 @@ class FrontendColorService
 
         // Merge colores existentes con los nuevos (actualización parcial)
         if (isset($data['colors']) && is_array($data['colors'])) {
-            $existingColors = $setting->colors ?? [];
+            $existingColors = FrontendColorSetting::mergeWithDefaults(
+                $setting->view_slug,
+                (array) ($setting->colors ?? [])
+            );
             $data['colors'] = $this->mergeColorsDeep($existingColors, $data['colors']);
         }
 

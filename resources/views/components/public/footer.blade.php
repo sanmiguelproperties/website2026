@@ -97,20 +97,20 @@
     ];
 @endphp
 
-<footer class="relative text-white overflow-hidden" style="background-color: var(--fe-footer-background, #1C1C1C);">
+<footer class="smp-public-footer relative text-white overflow-hidden" style="background-color: var(--fe-footer-background, #1C1C1C);">
     <div class="absolute inset-0 pointer-events-none overflow-hidden">
         <div class="absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl" style="background-color: var(--fe-footer-accent_from, rgba(209, 160, 84, 0.2));"></div>
         <div class="absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl" style="background-color: var(--fe-footer-accent_to, rgba(118, 141, 89, 0.2));"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.03)_1px,transparent_0)] [background-size:32px_32px]"></div>
+        <div class="absolute inset-0 [background-size:32px_32px]" style="background-image: radial-gradient(circle at 1px 1px, var(--fe-footer-pattern, rgba(255,255,255,0.03)) 1px, transparent 0);"></div>
     </div>
 
     <div class="relative">
-        <div class="border-b border-white/10">
+        <div class="footer-divider border-b border-white/10">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 text-center">
                 <h3 class="text-2xl sm:text-3xl font-bold mb-3">{{ $newsletterTitle }}</h3>
-                <p class="text-slate-400 mb-7 max-w-2xl mx-auto">{{ $newsletterText }}</p>
+                <p class="footer-text-secondary text-slate-400 mb-7 max-w-2xl mx-auto">{{ $newsletterText }}</p>
                 <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                    <input type="email" placeholder="{{ $txt('footer_newsletter_placeholder', 'tu@correo.com', 'you@email.com') }}" class="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none" />
+                    <input type="email" placeholder="{{ $txt('footer_newsletter_placeholder', 'tu@correo.com', 'you@email.com') }}" class="footer-input w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none" />
                     <button type="submit" class="px-6 py-3.5 rounded-xl font-semibold text-white hover:shadow-lg transition-all duration-300 hover:scale-105" style="background: linear-gradient(to right, var(--fe-footer-newsletter_button_from, #D1A054), var(--fe-footer-newsletter_button_to, #768D59));">
                         {{ $newsletterButton }}
                     </button>
@@ -137,7 +137,7 @@
                         @endif
                         <div>
                             <p class="text-lg font-bold tracking-tight">{{ $siteNameValue }}</p>
-                            <p class="text-sm text-slate-400">{{ $siteTagline }}</p>
+                            <p class="footer-text-secondary text-sm text-slate-400">{{ $siteTagline }}</p>
                         </div>
                     </a>
 
@@ -145,7 +145,7 @@
                         @foreach($socialLinks as $social)
                             @php $socialUrl = $settings[$social['key']] ?? null; @endphp
                             @continue(empty($socialUrl))
-                            <a href="{{ $socialUrl }}" target="_blank" rel="noopener" class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-slate-300 hover:text-white transition-all duration-300" aria-label="{{ $social['label'] }}">
+                            <a href="{{ $socialUrl }}" target="_blank" rel="noopener" class="footer-social-link w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-slate-300 hover:text-white transition-all duration-300" aria-label="{{ $social['label'] }}">
                                 <span class="text-xs font-semibold">{{ strtoupper(substr($social['label'], 0, 1)) }}</span>
                             </a>
                         @endforeach
@@ -153,7 +153,7 @@
                 </div>
 
                 <div>
-                    <h4 class="text-white font-semibold text-lg mb-6">{{ $labels['quick_links'] }}</h4>
+                    <h4 class="footer-heading text-white font-semibold text-lg mb-6">{{ $labels['quick_links'] }}</h4>
                     <ul class="space-y-3">
                         @forelse($companyItems as $item)
                             @php
@@ -162,19 +162,19 @@
                                 $href = $isExternal ? $resolved : url($resolved);
                             @endphp
                             <li>
-                                <a href="{{ $href }}" class="text-slate-400 hover:text-white transition-colors duration-200">
+                                <a href="{{ $href }}" class="footer-link text-slate-400 hover:text-white transition-colors duration-200">
                                     {{ $item->label($locale) }}
                                 </a>
                             </li>
                         @empty
-                            <li><a href="{{ route('about') }}" class="text-slate-400 hover:text-white transition-colors duration-200">{{ $labels['about'] }}</a></li>
-                            <li><a href="{{ route('public.contact') }}" class="text-slate-400 hover:text-white transition-colors duration-200">{{ $labels['contact'] }}</a></li>
+                            <li><a href="{{ route('about') }}" class="footer-link text-slate-400 hover:text-white transition-colors duration-200">{{ $labels['about'] }}</a></li>
+                            <li><a href="{{ route('public.contact') }}" class="footer-link text-slate-400 hover:text-white transition-colors duration-200">{{ $labels['contact'] }}</a></li>
                         @endforelse
                     </ul>
                 </div>
 
                 <div>
-                    <h4 class="text-white font-semibold text-lg mb-6">{{ $labels['services'] }}</h4>
+                    <h4 class="footer-heading text-white font-semibold text-lg mb-6">{{ $labels['services'] }}</h4>
                     <ul class="space-y-3">
                         @forelse($serviceItems as $item)
                             @php
@@ -183,40 +183,40 @@
                                 $href = $isExternal ? $resolved : url($resolved);
                             @endphp
                             <li>
-                                <a href="{{ $href }}" class="text-slate-400 hover:text-white transition-colors duration-200">
+                                <a href="{{ $href }}" class="footer-link text-slate-400 hover:text-white transition-colors duration-200">
                                     {{ $item->label($locale) }}
                                 </a>
                             </li>
                         @empty
-                            <li><a href="{{ route('public.properties.index') }}" class="text-slate-400 hover:text-white transition-colors duration-200">{{ $labels['properties'] }}</a></li>
+                            <li><a href="{{ route('public.properties.index') }}" class="footer-link text-slate-400 hover:text-white transition-colors duration-200">{{ $labels['properties'] }}</a></li>
                         @endforelse
                     </ul>
                 </div>
 
                 <div>
-                    <h4 class="text-white font-semibold text-lg mb-6">{{ $labels['contact'] }}</h4>
-                    <ul class="space-y-4 text-slate-400">
+                    <h4 class="footer-heading text-white font-semibold text-lg mb-6">{{ $labels['contact'] }}</h4>
+                    <ul class="footer-text-secondary space-y-4 text-slate-400">
                         <li>
-                            <a href="tel:{{ $phoneHref }}" class="hover:text-white transition-colors duration-200">
-                                <span class="font-medium text-white">{{ $labels['phone'] }}:</span> {{ $phoneDisplay }}
+                            <a href="tel:{{ $phoneHref }}" class="footer-link hover:text-white transition-colors duration-200">
+                                <span class="footer-contact-label font-medium text-white">{{ $labels['phone'] }}:</span> {{ $phoneDisplay }}
                             </a>
                         </li>
                         <li>
-                            <a href="mailto:{{ $email }}" class="hover:text-white transition-colors duration-200">
-                                <span class="font-medium text-white">{{ $labels['email'] }}:</span> {{ $email }}
+                            <a href="mailto:{{ $email }}" class="footer-link hover:text-white transition-colors duration-200">
+                                <span class="footer-contact-label font-medium text-white">{{ $labels['email'] }}:</span> {{ $email }}
                             </a>
                         </li>
                         @if(!empty($whatsapp))
                             <li>
-                                <a href="https://wa.me/{{ $whatsapp }}" target="_blank" rel="noopener" class="hover:text-white transition-colors duration-200">{{ $labels['whatsapp'] }}</a>
+                                <a href="https://wa.me/{{ $whatsapp }}" target="_blank" rel="noopener" class="footer-link hover:text-white transition-colors duration-200">{{ $labels['whatsapp'] }}</a>
                             </li>
                         @endif
                         <li>
-                            <span class="font-medium text-white">{{ $labels['address'] }}:</span>
+                            <span class="footer-contact-label font-medium text-white">{{ $labels['address'] }}:</span>
                             <p class="text-sm mt-1">{{ $address }}</p>
                         </li>
                         <li>
-                            <span class="font-medium text-white">{{ $labels['hours'] }}:</span>
+                            <span class="footer-contact-label font-medium text-white">{{ $labels['hours'] }}:</span>
                             <p class="text-sm mt-1">{{ $officeHours }}</p>
                         </li>
                     </ul>
@@ -224,14 +224,61 @@
             </div>
         </div>
 
-        <div class="border-t border-white/10">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row justify-between items-center gap-3 text-sm text-slate-500">
+        <div class="footer-divider border-t border-white/10">
+            <div class="footer-bottom-text max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row justify-between items-center gap-3 text-sm text-slate-500">
                 <p>{{ date('Y') }} {{ $siteNameValue }}. {{ $copyrightText }}</p>
                 <div class="flex items-center gap-6">
-                    <a href="{{ route('public.contact') }}" class="hover:text-white transition-colors duration-200">{{ $labels['privacy'] }}</a>
-                    <a href="{{ route('public.contact') }}" class="hover:text-white transition-colors duration-200">{{ $labels['terms'] }}</a>
+                    <a href="{{ route('public.contact') }}" class="footer-link hover:text-white transition-colors duration-200">{{ $labels['privacy'] }}</a>
+                    <a href="{{ route('public.contact') }}" class="footer-link hover:text-white transition-colors duration-200">{{ $labels['terms'] }}</a>
                 </div>
             </div>
         </div>
     </div>
 </footer>
+
+<style>
+    .smp-public-footer .footer-divider {
+        border-color: var(--fe-footer-divider, rgba(255,255,255,0.1)) !important;
+    }
+
+    .smp-public-footer .footer-text-secondary {
+        color: var(--fe-footer-text_secondary, #94a3b8) !important;
+    }
+
+    .smp-public-footer .footer-heading,
+    .smp-public-footer .footer-contact-label {
+        color: var(--fe-footer-text_primary, #ffffff) !important;
+    }
+
+    .smp-public-footer .footer-link {
+        color: var(--fe-footer-link_text, #94a3b8) !important;
+    }
+
+    .smp-public-footer .footer-link:hover {
+        color: var(--fe-footer-link_hover, #ffffff) !important;
+    }
+
+    .smp-public-footer .footer-input {
+        background-color: var(--fe-footer-input_bg, rgba(255,255,255,0.05)) !important;
+        border-color: var(--fe-footer-input_border, rgba(255,255,255,0.1)) !important;
+        color: var(--fe-footer-input_text, #ffffff) !important;
+    }
+
+    .smp-public-footer .footer-input::placeholder {
+        color: var(--fe-footer-input_placeholder, #64748b) !important;
+    }
+
+    .smp-public-footer .footer-social-link {
+        background-color: var(--fe-footer-social_bg, rgba(255,255,255,0.05)) !important;
+        color: var(--fe-footer-social_text, #cbd5e1) !important;
+    }
+
+    .smp-public-footer .footer-social-link:hover {
+        background-color: var(--fe-footer-social_hover_bg, rgba(255,255,255,0.1)) !important;
+        color: var(--fe-footer-social_hover_text, #ffffff) !important;
+    }
+
+    .smp-public-footer .footer-bottom-text {
+        color: var(--fe-footer-copyright_text, #64748b) !important;
+    }
+</style>
