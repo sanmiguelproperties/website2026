@@ -181,6 +181,18 @@
                   Zonas SEO
                 </a>
 
+                <a href="{{ route('team-members') }}" data-route="team-members" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                      <circle cx="9" cy="7" r="4"/>
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                  </span>
+                  Equipo
+                </a>
+
                 <a href="{{ route('agencies') }}" data-route="agencies" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M7 21V8"/><path d="M17 21V8"/><path d="M7 8l5-5 5 5"/></svg>
@@ -425,6 +437,39 @@
   <script src="{{ asset('js/media-inputs.js') }}"></script>
   <script src="{{ asset('js/media-picker.js') }}"></script>
   <script>
+    function normalizeDisplayCurrencyCode(currencyCode) {
+      const code = String(currencyCode || '').trim().toUpperCase();
+      if (code === 'MXN' || code === 'USD') return code;
+      return code || 'MXN';
+    }
+
+    function toDisplayAmount(amount) {
+      if (amount === null || amount === undefined || amount === '') return null;
+      if (typeof amount === 'number') return Number.isFinite(amount) ? amount : null;
+
+      const normalized = String(amount).replace(/,/g, '').trim();
+      const parsed = Number.parseFloat(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    if (typeof window.formatDisplayPrice !== 'function') {
+      window.formatDisplayPrice = function formatDisplayPrice(amount, currencyCode = 'MXN') {
+        const numeric = toDisplayAmount(amount);
+        if (numeric === null) return '';
+
+        const rounded = Math.round((numeric + Number.EPSILON) * 100) / 100;
+        const code = normalizeDisplayCurrencyCode(currencyCode);
+        const hasCents = Math.abs(rounded - Math.trunc(rounded)) > 0.00001;
+        const fixed = rounded.toFixed(hasCents ? 2 : 0);
+        const [integer, decimals] = fixed.split('.');
+        const integerWithThousands = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const decimalSuffix = decimals ? `.${decimals}` : '';
+        const symbol = (code === 'MXN' || code === 'USD') ? '$' : '';
+
+        return `${symbol}${integerWithThousands}${decimalSuffix} ${code}`.trim();
+      };
+    }
+
     (function(){
       // --- Ruta actual ---
       const currentRoute = '{{ request()->route()->getName() }}';
@@ -435,6 +480,7 @@
         'funnel': 1,
         'properties': 1,
         'zones': 1,
+        'team-members': 1,
         'agencies': 1,
         'users': 2,
         'corporate-email': 2,

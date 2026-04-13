@@ -46,7 +46,7 @@
   <div class="bg-[var(--c-surface)] rounded-2xl border border-[var(--c-border)] overflow-hidden">
     <div class="p-5 border-b border-[var(--c-border)]">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-        <div class="lg:col-span-5">
+        <div class="lg:col-span-4">
           <label class="block text-xs text-[var(--c-muted)] mb-1">Buscar</label>
           <div class="flex items-center gap-2 rounded-xl bg-[var(--c-elev)] px-3 py-2 ring-1 ring-[var(--c-border)] focus-within:ring-[var(--c-primary)]">
             <svg class="size-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -54,7 +54,7 @@
           </div>
         </div>
 
-        <div class="lg:col-span-3">
+        <div class="lg:col-span-2">
           <label class="block text-xs text-[var(--c-muted)] mb-1">Estado</label>
           <select id="filter-active" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm">
             <option value="">Todos</option>
@@ -63,7 +63,15 @@
           </select>
         </div>
 
-        <div class="lg:col-span-4">
+        <div class="lg:col-span-3">
+          <label class="block text-xs text-[var(--c-muted)] mb-1">Agencia MLS</label>
+          <select id="filter-primary-office" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm">
+            <option value="primary" selected>Solo principal</option>
+            <option value="all">Todas</option>
+          </select>
+        </div>
+
+        <div class="lg:col-span-3">
           <label class="block text-xs text-[var(--c-muted)] mb-1">Orden</label>
           <select id="filter-order" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm">
             <option value="name:asc" selected>Nombre (Aâ€“Z)</option>
@@ -464,6 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterEls = {
     search: $('#filter-search'),
     active: $('#filter-active'),
+    primaryOffice: $('#filter-primary-office'),
     order: $('#filter-order'),
   };
 
@@ -480,9 +489,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const search = filterEls.search.value.trim();
     const active = filterEls.active.value;
+    const officeScope = filterEls.primaryOffice.value || 'primary';
 
     if (search) p.set('search', search);
     if (active !== '') p.set('is_active', active);
+    p.set('office_scope', officeScope);
 
     const { order, sort } = getOrderParams();
     p.set('order', order);
@@ -1283,6 +1294,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   filterEls.search.addEventListener('input', debounce(() => loadAgents(1), 300));
   filterEls.active.addEventListener('change', () => loadAgents(1));
+  filterEls.primaryOffice.addEventListener('change', () => loadAgents(1));
   filterEls.order.addEventListener('change', () => loadAgents(1));
 
   // Init

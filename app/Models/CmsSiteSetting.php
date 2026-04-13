@@ -39,7 +39,13 @@ class CmsSiteSetting extends Model
 
         // Tipos que no se traducen
         $nonTranslatable = ['email', 'phone', 'boolean', 'image', 'number'];
-        if (in_array($this->type, $nonTranslatable)) {
+        $nonTranslatableKeys = [
+            'hero_slider_source_type',
+            'hero_slider_property_ids',
+            'hero_slider_image_ids',
+        ];
+
+        if (in_array($this->type, $nonTranslatable, true) || in_array($this->setting_key, $nonTranslatableKeys, true)) {
             return $this->value_es;
         }
 

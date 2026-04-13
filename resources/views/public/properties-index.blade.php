@@ -366,24 +366,24 @@
                     <div>
                       <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('minimum_label', 'Minimo', 'Minimum') }}</label>
                       <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--fe-properties-filter_icon, #94a3b8);">$</span>
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase" x-text="getPriceRangeCurrencyCode()" style="color: var(--fe-properties-filter_icon, #94a3b8);">MXN</span>
                         <input type="number" 
                                x-model="filters.min_price"
                                @input.debounce.500ms="applyFiltersInModal()"
                                placeholder="0"
-                               class="w-full pl-8 pr-4 py-3 rounded-xl border transition-all focus:outline-none focus-fe-primary"
+                               class="w-full pl-14 pr-4 py-3 rounded-xl border transition-all focus:outline-none focus-fe-primary"
                                style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                       </div>
                     </div>
                     <div>
                       <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('maximum_label', 'Maximo', 'Maximum') }}</label>
                       <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--fe-properties-filter_icon, #94a3b8);">$</span>
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase" x-text="getPriceRangeCurrencyCode()" style="color: var(--fe-properties-filter_icon, #94a3b8);">MXN</span>
                         <input type="number" 
                                x-model="filters.max_price"
                                @input.debounce.500ms="applyFiltersInModal()"
                                placeholder="{{ $txt('no_limit_label', 'Sin limite', 'No limit') }}"
-                               class="w-full pl-8 pr-4 py-3 rounded-xl border transition-all focus:outline-none focus-fe-primary"
+                               class="w-full pl-14 pr-4 py-3 rounded-xl border transition-all focus:outline-none focus-fe-primary"
                                style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
                       </div>
                     </div>
@@ -753,16 +753,41 @@
           return this.filters.search !== '' || this.countActiveFilters() > 0;
         },
 
+        getPriceRangeCurrencyCode() {
+          const firstOperation = (this.properties || [])
+            .map((property) => property?.operations?.[0] || null)
+            .find((operation) => operation && (operation.currency?.code || operation.currency_code));
+
+          const detected = firstOperation?.currency?.code || firstOperation?.currency_code || '';
+          const normalized = String(detected || '').trim().toUpperCase();
+
+          if (normalized === 'MXN' || normalized === 'USD') {
+            return normalized;
+          }
+
+          return normalized || 'MXN';
+        },
+
+        formatPriceValue(amount) {
+          if (typeof window.formatDisplayPrice === 'function') {
+            return window.formatDisplayPrice(amount, this.getPriceRangeCurrencyCode());
+          }
+
+          const numeric = Number(amount);
+          if (!Number.isFinite(numeric)) return '';
+          return `${numeric.toLocaleString('en-US')} ${this.getPriceRangeCurrencyCode()}`;
+        },
+
         // Obtener etiqueta del rango de precio
         getPriceRangeLabel() {
           const min = this.filters.min_price;
           const max = this.filters.max_price;
           if (min && max) {
-            return `${tPublic('properties.priceRangeLabel', isEnLocale ? 'Price' : 'Precio')}: $${Number(min).toLocaleString()} - $${Number(max).toLocaleString()}`;
+            return `${tPublic('properties.priceRangeLabel', isEnLocale ? 'Price' : 'Precio')}: ${this.formatPriceValue(min)} - ${this.formatPriceValue(max)}`;
           } else if (min) {
-            return `${tPublic('properties.priceFromLabel', isEnLocale ? 'Price from' : 'Precio desde')} $${Number(min).toLocaleString()}`;
+            return `${tPublic('properties.priceFromLabel', isEnLocale ? 'Price from' : 'Precio desde')} ${this.formatPriceValue(min)}`;
           } else if (max) {
-            return `${tPublic('properties.priceUpToLabel', isEnLocale ? 'Price up to' : 'Precio hasta')} $${Number(max).toLocaleString()}`;
+            return `${tPublic('properties.priceUpToLabel', isEnLocale ? 'Price up to' : 'Precio hasta')} ${this.formatPriceValue(max)}`;
           }
           return '';
         },
@@ -861,7 +886,11 @@
 
             grid.innerHTML = this.properties.map((p) => {
               const imageUrl = p.cover_media_asset?.serving_url || p.cover_media_asset?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';
-              const price = p.operations?.[0]?.formatted_amount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
+              const firstOperation = p.operations?.[0] || null;
+              const fallbackAmount = (typeof window.formatDisplayPrice === 'function')
+                ? window.formatDisplayPrice(firstOperation?.amount, firstOperation?.currency?.code || firstOperation?.currency_code)
+                : '';
+              const price = firstOperation?.formatted_amount || fallbackAmount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
               const op = p.operations?.[0]?.operation_type || '';
               const location = [p.location?.city, p.location?.city_area].filter(Boolean).join(', ') || tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible');
 

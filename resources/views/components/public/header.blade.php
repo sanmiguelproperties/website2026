@@ -53,6 +53,13 @@
         return !$isHiddenMlsUrl($item->resolvedUrl());
     })->values();
 
+    $hasTeamMenuLink = $menuItems->contains(function ($item) {
+        $routeName = (string) ($item->route_name ?? '');
+        $resolvedUrl = trim((string) ($item->resolvedUrl() ?? ''), '/');
+
+        return $routeName === 'public.team' || in_array(Str::lower($resolvedUrl), ['equipo', 'team'], true);
+    });
+
     $mlsLocationMenu = $mlsLocationMenu ?? PublicLocationMenuService::stateCityTree();
     $locationMenuItems = collect($mlsLocationMenu)
         ->map(function (array $entry) {
@@ -176,6 +183,7 @@
         'view_city' => $txt('header_nav_view_city', 'Ver ciudad', 'View city'),
         'locations_empty' => $txt('header_nav_locations_empty', 'No hay ubicaciones disponibles', 'No locations available'),
         'about' => $txt('header_nav_about', 'Nosotros', 'About'),
+        'team' => $txt('header_nav_team', 'Equipo', 'Team'),
         'contact' => $txt('header_nav_contact', 'Contacto', 'Contact'),
         'dashboard' => $txt('header_cta_dashboard', 'Panel', 'Dashboard'),
         'login' => $txt('header_cta_login', 'Acceder', 'Login'),
@@ -242,6 +250,9 @@
                             {{ $item->label($currentLocale) }}
                         </a>
                     @endforeach
+                    @if(!$hasTeamMenuLink)
+                        <a href="{{ route('public.team') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['team'] }}</a>
+                    @endif
                 @else
                     <a href="{{ url('/') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['home'] }}</a>
                     <a href="{{ route('public.properties.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['properties'] }}</a>
@@ -252,6 +263,7 @@
                         <a href="{{ route('public.mls-agents.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['agents'] }}</a>
                     @endif
                     <a href="{{ route('about') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['about'] }}</a>
+                    <a href="{{ route('public.team') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['team'] }}</a>
                     <a href="{{ route('public.contact') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['contact'] }}</a>
                 @endif
 
@@ -419,6 +431,9 @@
                             {{ $item->label($currentLocale) }}
                         </a>
                     @endforeach
+                    @if(!$hasTeamMenuLink)
+                        <a href="{{ route('public.team') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['team'] }}</a>
+                    @endif
                 @else
                     <a href="{{ url('/') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['home'] }}</a>
                     <a href="{{ route('public.properties.index') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['properties'] }}</a>
@@ -429,6 +444,7 @@
                         <a href="{{ route('public.mls-agents.index') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['agents'] }}</a>
                     @endif
                     <a href="{{ route('about') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['about'] }}</a>
+                    <a href="{{ route('public.team') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['team'] }}</a>
                     <a href="{{ route('public.contact') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['contact'] }}</a>
                 @endif
 

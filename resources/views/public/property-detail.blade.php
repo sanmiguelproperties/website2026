@@ -377,12 +377,13 @@
     }
 
     .property-detail-page .pd-btn-gradient {
-      background: linear-gradient(
-        to right,
-        var(--fe-property_detail-contact_button_from, var(--fe-primary-from, #D1A054)),
-        var(--fe-property_detail-contact_button_to, var(--fe-primary-to, #768D59))
-      );
-      color: var(--fe-property_detail-contact_button_text, #ffffff);
+      background-color: var(--fe-buttons-primary_bg, #D1A054);
+      color: var(--fe-buttons-primary_text, #ffffff);
+      border-color: var(--fe-buttons-primary_border, var(--fe-buttons-primary_bg, #D1A054));
+    }
+
+    .property-detail-page .pd-btn-gradient:hover {
+      background-color: var(--fe-buttons-primary_hover_bg, var(--fe-buttons-primary_bg, #D1A054));
     }
 
     .property-detail-page .pd-btn-share {
@@ -396,12 +397,12 @@
     }
 
     .property-detail-page .pd-btn-whatsapp {
-      background: linear-gradient(
-        to right,
-        var(--fe-agent_card-whatsapp_button_from, #22c55e),
-        var(--fe-agent_card-whatsapp_button_to, #16a34a)
-      );
-      color: var(--fe-agent_card-whatsapp_button_text, #ffffff);
+      background-color: var(--fe-buttons-success_bg, #22c55e);
+      color: var(--fe-buttons-success_text, #ffffff);
+    }
+
+    .property-detail-page .pd-btn-whatsapp:hover {
+      background-color: var(--fe-buttons-success_hover_bg, var(--fe-buttons-success_bg, #22c55e));
     }
 
     .property-detail-page .pd-btn-call {
@@ -733,7 +734,12 @@
       const ops = Array.isArray(property.operations) ? property.operations : [];
       const first = ops[0] || null;
       if (!first) return tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
-      return first.formatted_amount || first.amount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
+
+      const fallbackAmount = (typeof window.formatDisplayPrice === 'function')
+        ? window.formatDisplayPrice(first.amount, first.currency?.code || first.currency_code)
+        : '';
+
+      return first.formatted_amount || fallbackAmount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
     }
 
     function setError(message) {
@@ -824,7 +830,10 @@
       } else {
         operationsList.innerHTML = ops.map((op) => {
           const label = operationLabel(op);
-          const amount = op.formatted_amount || op.amount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar');
+          const fallbackAmount = (typeof window.formatDisplayPrice === 'function')
+            ? window.formatDisplayPrice(op.amount, op.currency?.code || op.currency_code)
+            : '';
+          const amount = op.formatted_amount || fallbackAmount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar');
           const unit = op.unit ? ` / ${escapeHtml(op.unit)}` : '';
           const bg = operationBadgeColor(op);
           return `
@@ -910,7 +919,6 @@
       const agent = property.agent_user;
       const agency = property.agency;
       const contactAgency = property.contact_agency || null;
-      const sourceAgency = property.source_agency_reference || null;
       const hideExternalAgents = !!property.hide_external_agents;
       const belongsToExternalAgency = !!property.belongs_to_external_agency;
 
@@ -949,15 +957,15 @@
       const sourceAgencyNoticeWrap = document.getElementById('sourceAgencyNotice');
       const sourceAgencyNoticeText = document.getElementById('sourceAgencyNoticeText');
       if (sourceAgencyNoticeWrap && sourceAgencyNoticeText) {
-        if (belongsToExternalAgency && sourceAgency?.name) {
+        if (belongsToExternalAgency) {
           const fallbackNotice = tPublic(
             'property.sourceAgencyNotice',
             isEnLocale
-              ? 'This property belongs to {agency}. Contact is handled by our main agency.'
-              : 'Esta propiedad pertenece a {agency}. El contacto se atiende con nuestra agencia principal.'
+              ? 'This property is shared through MLS. Contact is handled by our main agency.'
+              : 'Esta propiedad se comparte por MLS. El contacto se atiende con nuestra agencia principal.'
           );
 
-          sourceAgencyNoticeText.textContent = String(property.source_agency_notice || fallbackNotice).replaceAll('{agency}', sourceAgency.name);
+          sourceAgencyNoticeText.textContent = String(property.source_agency_notice || fallbackNotice);
           sourceAgencyNoticeWrap.classList.remove('hidden');
         } else {
           sourceAgencyNoticeText.textContent = '';

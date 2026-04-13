@@ -3,269 +3,329 @@
 @php
     $locale = ($locale ?? app()->getLocale()) === 'en' ? 'en' : 'es';
     $isEn = $locale === 'en';
+
     $txt = fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($isEn ? $en : $es);
     $pageTitle = $pageData?->entity?->title($locale) ?? ($isEn ? 'About Us' : 'Nosotros');
 
-    $aboutValues = $pageData?->repeater('about_values_items') ?? [];
-    $aboutTimeline = $pageData?->repeater('about_timeline_items') ?? [];
-    $aboutTeam = $pageData?->repeater('about_team_members') ?? [];
+    $whoTitle = $pageData?->field('about_who_title')
+        ?? ($isEn ? 'Who are we?' : '¿Quiénes somos?');
+    $whoSubtitle = $pageData?->field('about_who_text')
+        ?? $pageData?->field('about_hero_subtitle')
+        ?? ($isEn
+            ? 'A modern real estate team focused on strategy, trust and measurable results.'
+            : 'Un equipo inmobiliario moderno, enfocado en estrategia, confianza y resultados medibles.');
 
-    $contactPhone = $settings['contact_phone'] ?? '+52 55 1234 5678';
-    $contactPhoneHref = preg_replace('/[^0-9+]/', '', $contactPhone) ?: '+525512345678';
+    $historyTitle = $pageData?->field('about_history_title') ?? ($isEn ? 'History' : 'Historia');
+    $historyText = $pageData?->field('about_history_text') ?? ($isEn
+        ? 'We evolved from a local operation to a structured real estate partner with high standards.'
+        : 'Evolucionamos de una operación local a un aliado inmobiliario estructurado y de alto estándar.');
 
-    $fallbackValues = [
-        [
-            'title' => $isEn ? 'Transparency' : 'Transparencia',
-            'description' => $isEn
-                ? 'Clear information, defined costs and honest support from day one.'
-                : 'Información clara, costos definidos y acompañamiento honesto desde el primer día.',
-        ],
-        [
-            'title' => $isEn ? 'Speed with control' : 'Velocidad con control',
-            'description' => $isEn
-                ? 'Agile processes without improvisation: we validate what matters most.'
-                : 'Procesos ágiles sin improvisación: validamos lo que realmente importa.',
-        ],
-        [
-            'title' => $isEn ? 'Innovation' : 'Innovación',
-            'description' => $isEn
-                ? 'Data, automation and digital marketing to make better decisions.'
-                : 'Datos, automatización y marketing digital para tomar mejores decisiones.',
-        ],
-    ];
+    $missionTitle = $pageData?->field('about_mission_title') ?? ($isEn ? 'Mission' : 'Misión');
+    $missionText = $pageData?->field('about_mission_text') ?? ($isEn
+        ? 'Deliver transparent advisory and clear execution in every transaction.'
+        : 'Entregar asesoría transparente y una ejecución clara en cada operación.');
 
-    $fallbackTimeline = [
-        [
-            'year' => '2009',
-            'title' => $isEn ? 'Local beginnings' : 'Nacemos con enfoque local',
-            'description' => $isEn
-                ? 'We started accompanying families and small investors.'
-                : 'Iniciamos acompañando familias y pequeños inversionistas.',
-        ],
-        [
-            'year' => '2016',
-            'title' => $isEn ? 'Standardized process' : 'Estandarizamos procesos',
-            'description' => $isEn
-                ? 'We implemented checklists and document validation.'
-                : 'Implementamos checklists y validación documental.',
-        ],
-        [
-            'year' => '2021',
-            'title' => $isEn ? 'Digital boost' : 'Impulso digital',
-            'description' => $isEn
-                ? 'CRM, analytics and marketing to improve experience.'
-                : 'CRM, analítica y marketing para mejorar la experiencia.',
-        ],
-    ];
+    $visionTitle = $pageData?->field('about_vision_title') ?? ($isEn ? 'Vision' : 'Visión');
+    $visionText = $pageData?->field('about_vision_text') ?? ($isEn
+        ? 'Be the most trusted agency in our market by combining people, process and technology.'
+        : 'Ser la agencia más confiable de nuestro mercado combinando personas, procesos y tecnología.');
+
+    $brokersRows = $pageData?->repeater('about_brokers_members') ?? [];
+    $brokers = !empty($brokersRows)
+        ? collect($brokersRows)
+            ->map(fn ($row) => [
+                'name' => trim((string) ($row->field('broker_name') ?? '')),
+                'role' => trim((string) ($row->field('broker_role') ?? '')),
+                'bio' => trim((string) ($row->field('broker_bio') ?? '')),
+                'image' => $row->image('broker_image'),
+            ])
+            ->filter(fn ($row) => $row['name'] !== '')
+            ->values()
+            ->all()
+        : [];
+
+    if (empty($brokers)) {
+        $brokers = [
+            [
+                'name' => 'Erwit',
+                'role' => $isEn ? 'Lead Broker' : 'Broker Líder',
+                'bio' => $isEn
+                    ? 'Specialized in premium listings and strategic negotiations.'
+                    : 'Especializado en propiedades premium y negociaciones estratégicas.',
+                'image' => null,
+            ],
+            [
+                'name' => 'Jenny',
+                'role' => $isEn ? 'Senior Broker' : 'Broker Senior',
+                'bio' => $isEn
+                    ? 'Focused on client experience and efficient closing workflows.'
+                    : 'Enfocada en experiencia del cliente y cierres eficientes.',
+                'image' => null,
+            ],
+        ];
+    }
+
+    $teamRows = $pageData?->repeater('about_core_team_members') ?? [];
+    $teamMembers = !empty($teamRows)
+        ? collect($teamRows)
+            ->map(fn ($row) => [
+                'name' => trim((string) ($row->field('core_member_name') ?? '')),
+                'role' => trim((string) ($row->field('core_member_role') ?? '')),
+                'bio' => trim((string) ($row->field('core_member_bio') ?? '')),
+                'image' => $row->image('core_member_image'),
+            ])
+            ->filter(fn ($row) => $row['name'] !== '')
+            ->values()
+            ->all()
+        : [];
+
+    if (empty($teamMembers)) {
+        $teamMembers = [
+            [
+                'name' => 'Sophia',
+                'role' => $isEn ? 'Operations' : 'Operaciones',
+                'bio' => $isEn
+                    ? 'Coordinates internal workflows to keep every operation on track.'
+                    : 'Coordina los flujos internos para mantener cada operación en ritmo.',
+                'image' => null,
+            ],
+            [
+                'name' => 'Jorge',
+                'role' => $isEn ? 'Marketing' : 'Marketing',
+                'bio' => $isEn
+                    ? 'Drives positioning, content and digital acquisition.'
+                    : 'Impulsa posicionamiento, contenido y adquisición digital.',
+                'image' => null,
+            ],
+            [
+                'name' => 'Greta',
+                'role' => $isEn ? 'Customer Success' : 'Customer Success',
+                'bio' => $isEn
+                    ? 'Leads post-sale service and long-term client relationships.'
+                    : 'Lidera la atención postventa y la relación de largo plazo con clientes.',
+                'image' => null,
+            ],
+        ];
+    }
+
+    $brokersTitle = $txt('about_brokers_title', 'Nuestros Brokers', 'Our Brokers');
+    $brokersSubtitle = $txt(
+        'about_brokers_subtitle',
+        'Liderazgo comercial con criterio, experiencia y ejecución precisa.',
+        'Commercial leadership with judgment, experience and precise execution.'
+    );
+
+    $coreTeamTitle = $txt('about_core_team_title', 'Nuestro equipo', 'Our Team');
+    $coreTeamSubtitle = $txt(
+        'about_core_team_subtitle',
+        'El equipo interno que sostiene la operación de punta a punta.',
+        'The internal team that sustains operations end-to-end.'
+    );
+
+    $agentsTitle = $txt('about_agents_title', 'Nuestros agentes', 'Our Agents');
+    $agentsSubtitle = $txt(
+        'about_agents_subtitle',
+        'Mostramos únicamente agentes activos de la agencia principal.',
+        'We only show active agents from the main agency.'
+    );
+
+    $primaryOfficeName = $primaryOffice?->name ?? ($isEn ? 'Main agency' : 'Agencia principal');
+    $primaryOfficeAgents = collect($primaryOfficeAgents ?? []);
 @endphp
 
 @section('title', $pageTitle)
 
 @section('content')
-<section class="relative pt-32 pb-20 lg:pt-40 lg:pb-28 overflow-hidden">
-    <div class="absolute inset-0 z-0">
-        <div class="absolute inset-0" style="background: linear-gradient(135deg, var(--fe-about_page-hero_bg_from, #1C1C1C) 0%, var(--fe-about_page-hero_bg_via, rgba(209,160,84,0.95)) 45%, var(--fe-about_page-hero_bg_to, #768D59) 100%);"></div>
-        <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, var(--fe-about_page-hero_pattern_dot, rgba(255,255,255,0.10)) 1px, transparent 0); background-size: 40px 40px;"></div>
-    </div>
-
-    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div class="max-w-3xl mx-auto">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium mb-6" style="background: var(--fe-about_page-hero_badge_bg, rgba(255,255,255,0.12)); color: var(--fe-about_page-hero_badge_text, rgba(255,255,255,0.9));">
-                {{ $pageData?->field('about_hero_badge') ?? ($isEn ? 'Who we are' : 'Quiénes somos') }}
-            </div>
-
-            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6" style="color: var(--fe-about_page-hero_title, #ffffff);">
-                {{ $pageData?->field('about_hero_title') ?? ($isEn ? 'We build trust,' : 'Construimos confianza,') }}
-                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-about_page-hero_highlight_from, rgba(52,211,153,1)), var(--fe-about_page-hero_highlight_to, rgba(34,211,238,1)));">
-                    {{ $pageData?->field('about_hero_title_highlight') ?? ($isEn ? 'we close opportunities' : 'cerramos oportunidades') }}
-                </span>
-            </h1>
-
-            <p class="text-lg sm:text-xl" style="color: var(--fe-about_page-hero_subtitle, rgba(255,255,255,0.8));">
-                {{ $pageData?->field('about_hero_subtitle') ?? ($isEn ? 'A real estate team that combines experience, data and human support.' : 'Un equipo inmobiliario que combina experiencia, datos y acompañamiento humano.') }}
-            </p>
-
-            <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="{{ route('public.properties.index') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-                    {{ $txt('about_hero_cta_primary', 'Ver propiedades', 'View Properties') }}
-                </a>
-                <a href="{{ route('public.contact') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold border backdrop-blur-sm transition-all duration-300 hover:bg-white/20" style="background: var(--fe-about_page-hero_secondary_cta_bg, rgba(255,255,255,0.10)); color: var(--fe-about_page-hero_secondary_cta_text, rgba(255,255,255,0.95)); border-color: var(--fe-about_page-hero_secondary_cta_border, rgba(255,255,255,0.2));">
-                    {{ $txt('about_hero_cta_secondary', 'Hablar con un asesor', 'Talk to an advisor') }}
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="py-16 lg:py-24" style="background-color: var(--fe-about_page-summary_section_bg, #ffffff);">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-12 lg:gap-16">
-        <div class="lg:col-span-7">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6" style="background-color: var(--fe-about_page-summary_badge_bg, rgba(209,160,84,0.08)); color: var(--fe-about_page-summary_badge_text, #D1A054);">
-                {{ $pageData?->field('about_summary_badge') ?? ($isEn ? 'Our promise' : 'Nuestra promesa') }}
-            </div>
-
-            <h2 class="text-3xl sm:text-4xl font-bold mb-6" style="color: var(--fe-about_page-section_title, #1e293b);">
-                {{ $pageData?->field('about_summary_title') ?? ($isEn ? 'Modern real estate experience,' : 'Experiencia inmobiliaria moderna,') }}
-                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-                    {{ $pageData?->field('about_summary_title_highlight') ?? ($isEn ? 'frictionless' : 'sin fricciones') }}
-                </span>
-            </h2>
-
-            <div class="space-y-4 text-lg" style="color: var(--fe-about_page-body_text, #475569);">
-                <p>{{ $pageData?->field('about_summary_text1') ?? ($isEn ? 'We combine technology with personalized advice.' : 'Combinamos tecnología con asesoría personalizada.') }}</p>
-                <p>{{ $pageData?->field('about_summary_text2') ?? ($isEn ? 'Our approach is clear process, communication and measurable results.' : 'Nuestro enfoque es claridad en el proceso, comunicación y resultados medibles.') }}</p>
-            </div>
+<div class="pt-24">
+    <section class="relative overflow-hidden py-16 lg:py-24">
+        <div class="absolute inset-0">
+            <div class="absolute inset-0" style="background: radial-gradient(circle at 0% 0%, rgba(209,160,84,0.20), transparent 45%), radial-gradient(circle at 100% 100%, rgba(118,141,89,0.28), transparent 42%), linear-gradient(145deg, #0f172a, #1f2937 55%, #334155);"></div>
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.14) 1px, transparent 0); background-size: 30px 30px;"></div>
         </div>
 
-        <div class="lg:col-span-5">
-            <div class="rounded-3xl overflow-hidden border shadow-soft" style="border-color: var(--fe-about_page-summary_media_border, #e2e8f0);">
-                <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80" alt="{{ $txt('about_summary_team_image_alt', 'Equipo', 'Team') }}" class="w-full h-[420px] object-cover" />
-            </div>
-            <div class="mt-6 rounded-2xl border p-6" style="border-color: var(--fe-about_page-summary_media_border, #e2e8f0); background: linear-gradient(to bottom right, var(--fe-about_page-summary_media_box_bg_from, rgba(248,250,252,1)), var(--fe-about_page-summary_media_box_bg_to, rgba(255,255,255,1)));">
-                <div class="text-sm" style="color: var(--fe-about_page-summary_direct_label, #64748b);">{{ $txt('about_direct_line_label', 'Línea directa', 'Direct line') }}</div>
-                <a href="tel:{{ $contactPhoneHref }}" class="font-semibold hover:underline" style="color: var(--fe-about_page-section_title, #1e293b);">{{ $contactPhone }}</a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="py-16 lg:py-24" style="background: linear-gradient(to bottom, var(--fe-about_page-values_section_bg_from, rgba(248,250,252,1)), var(--fe-about_page-values_section_bg_to, rgba(255,255,255,1)));">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-3xl mx-auto mb-12">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: var(--fe-about_page-values_badge_bg, rgba(118,141,89,0.10)); color: var(--fe-about_page-values_badge_text, rgba(5,150,105,1));">
-                {{ $pageData?->field('about_values_badge') ?? ($isEn ? 'Our culture' : 'Nuestra cultura') }}
-            </div>
-            <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--fe-about_page-section_title, #1e293b);">
-                {{ $pageData?->field('about_values_title') ?? ($isEn ? 'Values felt in every operation' : 'Valores que se sienten en cada operación') }}
-            </h2>
-            <p class="text-lg" style="color: var(--fe-about_page-body_text, #475569);">
-                {{ $pageData?->field('about_values_subtitle') ?? ($isEn ? 'Closing is not enough, we do it right.' : 'No solo cerramos, lo hacemos bien.') }}
-            </p>
-        </div>
-
-        @php
-            $valueRows = !empty($aboutValues)
-                ? collect($aboutValues)->map(fn($row) => [
-                    'title' => $row->field('value_title'),
-                    'description' => $row->field('value_description'),
-                ])->filter(fn($row) => !empty($row['title']) || !empty($row['description']))->values()->all()
-                : $fallbackValues;
-        @endphp
-
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            @foreach($valueRows as $value)
-                <div class="rounded-3xl p-8 border transition-all duration-300 hover:shadow-xl" style="border-color: var(--fe-about_page-value_card_border, #e2e8f0); background: linear-gradient(to bottom right, var(--fe-about_page-value_card_bg_from, rgba(255,255,255,1)), var(--fe-about_page-value_card_bg_to, rgba(248,250,252,1)));">
-                    <h3 class="text-xl font-bold mb-2" style="color: var(--fe-about_page-section_title, #1e293b);">{{ $value['title'] }}</h3>
-                    <p style="color: var(--fe-about_page-body_text, #475569);">{{ $value['description'] }}</p>
-                </div>
-            @endforeach
-        </div>
-    </div>
-</section>
-
-<section class="py-16 lg:py-24" style="background-color: var(--fe-about_page-timeline_section_bg, #ffffff);">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-12 lg:gap-16">
-        <div class="lg:col-span-5">
-            <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--fe-about_page-section_title, #1e293b);">
-                {{ $pageData?->field('about_timeline_title') ?? ($isEn ? 'Our history' : 'Nuestra historia') }}
-            </h2>
-            <p class="text-lg" style="color: var(--fe-about_page-body_text, #475569);">
-                {{ $pageData?->field('about_timeline_subtitle') ?? ($isEn ? 'We evolve with the market.' : 'Hemos evolucionado con el mercado.') }}
-            </p>
-        </div>
-
-        @php
-            $timelineRows = !empty($aboutTimeline)
-                ? collect($aboutTimeline)->map(fn($row) => [
-                    'year' => $row->field('timeline_year'),
-                    'title' => $row->field('timeline_title'),
-                    'description' => $row->field('timeline_description'),
-                ])->filter(fn($row) => !empty($row['title']))->values()->all()
-                : $fallbackTimeline;
-        @endphp
-
-        <div class="lg:col-span-7 relative pl-6">
-            <div class="absolute left-2 top-0 bottom-0 w-px" style="background-color: var(--fe-about_page-timeline_line, #e2e8f0);"></div>
-            @foreach($timelineRows as $item)
-                <div class="relative pb-8">
-                    <div class="absolute -left-[2px] top-2 w-4 h-4 rounded-full" style="background-color: var(--fe-about_page-timeline_dot_active, #D1A054);"></div>
-                    <div class="ml-6 rounded-3xl border p-6" style="border-color: var(--fe-about_page-timeline_card_border, #e2e8f0); background: linear-gradient(to bottom right, var(--fe-about_page-timeline_card_bg_from, rgba(255,255,255,1)), var(--fe-about_page-timeline_card_bg_to, rgba(248,250,252,1)));">
-                        <div class="text-sm font-semibold" style="color: var(--fe-about_page-timeline_year, #D1A054);">{{ $item['year'] }}</div>
-                        <h3 class="mt-2 text-xl font-bold" style="color: var(--fe-about_page-section_title, #1e293b);">{{ $item['title'] }}</h3>
-                        <p class="mt-2" style="color: var(--fe-about_page-body_text, #475569);">{{ $item['description'] }}</p>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    </div>
-</section>
-
-<section class="py-16 lg:py-24" style="background: linear-gradient(to bottom, var(--fe-about_page-team_section_bg_from, rgba(248,250,252,1)), var(--fe-about_page-team_section_bg_to, rgba(255,255,255,1)));">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-3xl mx-auto mb-12">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: var(--fe-about_page-team_badge_bg, rgba(147,51,234,0.10)); color: var(--fe-about_page-team_badge_text, rgba(147,51,234,1));">
-                {{ $pageData?->field('about_team_badge') ?? ($isEn ? 'The team' : 'El equipo') }}
-            </div>
-            <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--fe-about_page-section_title, #1e293b);">
-                {{ $pageData?->field('about_team_title') ?? ($isEn ? 'Real people, real results' : 'Personas reales, resultados reales') }}
-            </h2>
-            <p class="text-lg" style="color: var(--fe-about_page-body_text, #475569);">
-                {{ $pageData?->field('about_team_subtitle') ?? ($isEn ? 'A team focused on your objective.' : 'Un equipo enfocado en tu objetivo.') }}
-            </p>
-        </div>
-
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            @foreach($aboutTeam as $person)
-                @php
-                    $memberName = $person->field('member_name') ?? ($isEn ? 'Advisor' : 'Asesor');
-                    $memberRole = $person->field('member_role') ?? ($isEn ? 'Real Estate Advisor' : 'Asesor Inmobiliario');
-                    $memberImage = $person->image('member_image') ?: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=900&q=80';
-                @endphp
-                <div class="group rounded-3xl overflow-hidden border transition-all duration-300 hover:shadow-xl" style="border-color: var(--fe-about_page-team_card_border, #e2e8f0); background: var(--fe-about_page-team_card_bg, #ffffff);">
-                    <div class="relative h-60 overflow-hidden">
-                        <img src="{{ $memberImage }}" alt="{{ $memberName }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                    </div>
-                    <div class="p-6">
-                        <div class="text-lg font-bold" style="color: var(--fe-about_page-team_name, #1e293b);">{{ $memberName }}</div>
-                        <div class="text-sm" style="color: var(--fe-about_page-team_role, #64748b);">{{ $memberRole }}</div>
-                        <div class="mt-5">
-                            <a href="{{ route('public.contact') }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:shadow-lg" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-                                {{ $txt('about_team_member_cta', 'Contactar', 'Contact') }}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    </div>
-</section>
-
-<section class="py-16 lg:py-24" style="background-color: var(--fe-about_page-cta_section_bg, #ffffff);">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="relative overflow-hidden rounded-3xl border p-10 lg:p-14" style="border-color: var(--fe-about_page-cta_box_border, #e2e8f0); background: linear-gradient(135deg, var(--fe-about_page-cta_box_bg_from, rgba(209,160,84,0.08)), var(--fe-about_page-cta_box_bg_to, rgba(118,141,89,0.10)));">
-            <div class="grid lg:grid-cols-12 gap-8 items-center">
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-12 gap-8 lg:gap-12 items-end">
                 <div class="lg:col-span-8">
-                    <h2 class="text-3xl sm:text-4xl font-bold" style="color: var(--fe-about_page-section_title, #1e293b);">
-                        {{ $pageData?->field('about_cta_title') ?? ($isEn ? 'Shall we talk about your next property?' : '¿Hablamos de tu próxima propiedad?') }}
-                    </h2>
-                    <p class="mt-3 text-lg" style="color: var(--fe-about_page-body_text, #475569);">
-                        {{ $pageData?->field('about_cta_subtitle') ?? ($isEn ? 'Tell us what you are looking for and we will share real options.' : 'Cuéntanos qué buscas y te compartimos opciones reales.') }}
+                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold tracking-wide uppercase" style="background-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.92);">
+                        {{ $whoTitle }}
+                    </span>
+                    <h1 class="mt-6 text-4xl sm:text-5xl lg:text-6xl font-black leading-tight text-white">
+                        {{ $txt('about_who_heading', 'Real estate con visión moderna', 'Real estate with modern vision') }}
+                    </h1>
+                    <p class="mt-6 text-lg sm:text-xl max-w-3xl" style="color: rgba(255,255,255,0.82);">
+                        {{ $whoSubtitle }}
                     </p>
                 </div>
-                <div class="lg:col-span-4 flex flex-col gap-3 justify-end">
-                    <a href="{{ route('public.contact') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-                        {{ $txt('about_cta_button_primary', 'Ir a contacto', 'Go to contact') }}
-                    </a>
-                    <a href="{{ route('public.properties.index') }}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold border transition-colors" style="border-color: var(--fe-about_page-cta_secondary_btn_border, #e2e8f0); color: var(--fe-about_page-cta_secondary_btn_text, rgba(30,41,59,1)); background: var(--fe-about_page-cta_secondary_btn_bg, rgba(255,255,255,0.7));">
-                        {{ $txt('about_cta_button_secondary', 'Explorar catálogo', 'Explore catalog') }}
-                    </a>
+
+                <div class="lg:col-span-4">
+                    <div class="rounded-3xl border p-6 backdrop-blur" style="border-color: rgba(255,255,255,0.18); background: rgba(15,23,42,0.45);">
+                        <div class="text-xs uppercase tracking-wide font-semibold" style="color: rgba(255,255,255,0.72);">
+                            {{ $isEn ? 'Focus' : 'Enfoque' }}
+                        </div>
+                        <div class="mt-3 text-2xl font-extrabold text-white">
+                            {{ $txt('about_focus_label', 'Estrategia + Ejecución', 'Strategy + Execution') }}
+                        </div>
+                        <p class="mt-3 text-sm" style="color: rgba(255,255,255,0.78);">
+                            {{ $txt('about_focus_text', 'Decisiones con datos, operación clara y acompañamiento cercano.', 'Data-driven decisions, clear execution and close support.') }}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
+
+    <section id="historia" class="py-14 lg:py-20" style="background: linear-gradient(to bottom, #ffffff, #f8fafc);">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <article class="rounded-3xl border p-8 lg:p-10 shadow-soft" style="border-color: #e2e8f0; background: linear-gradient(130deg, rgba(255,255,255,1), rgba(248,250,252,1));">
+                <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style="background: rgba(209,160,84,0.15); color: #9a7035;">{{ $historyTitle }}</span>
+                <p class="mt-5 text-lg leading-relaxed" style="color: #334155;">{{ $historyText }}</p>
+            </article>
+        </div>
+    </section>
+
+    <section id="mision" class="py-10" style="background-color: #f8fafc;">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <article class="rounded-3xl border p-8 lg:p-10 shadow-soft" style="border-color: #dbeafe; background: linear-gradient(135deg, rgba(239,246,255,1), rgba(255,255,255,1));">
+                <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style="background: rgba(59,130,246,0.12); color: #1d4ed8;">{{ $missionTitle }}</span>
+                <p class="mt-5 text-lg leading-relaxed" style="color: #1e3a8a;">{{ $missionText }}</p>
+            </article>
+        </div>
+    </section>
+
+    <section id="vision" class="py-10 lg:pb-16" style="background-color: #f8fafc;">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <article class="rounded-3xl border p-8 lg:p-10 shadow-soft" style="border-color: #dcfce7; background: linear-gradient(135deg, rgba(240,253,244,1), rgba(255,255,255,1));">
+                <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style="background: rgba(34,197,94,0.14); color: #15803d;">{{ $visionTitle }}</span>
+                <p class="mt-5 text-lg leading-relaxed" style="color: #14532d;">{{ $visionText }}</p>
+            </article>
+        </div>
+    </section>
+
+    <section id="brokers" class="py-16 lg:py-20" style="background: linear-gradient(to bottom, #ffffff, #f8fafc);">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-10">
+                <h2 class="text-3xl sm:text-4xl font-black" style="color: #0f172a;">{{ $brokersTitle }}</h2>
+                <p class="mt-3 text-lg" style="color: #475569;">{{ $brokersSubtitle }}</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 lg:gap-8">
+                @foreach($brokers as $index => $broker)
+                    @php
+                        $brokerImage = $broker['image']
+                            ?: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=900&q=80';
+                    @endphp
+                    <article class="group rounded-3xl overflow-hidden border shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style="border-color: #e2e8f0; background-color: #ffffff;">
+                        <div class="h-64 overflow-hidden">
+                            <img src="{{ $brokerImage }}" alt="{{ $broker['name'] }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-2xl font-extrabold" style="color: #0f172a;">{{ $broker['name'] }}</h3>
+                            @if(!empty($broker['role']))
+                                <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: #9a7035;">{{ $broker['role'] }}</p>
+                            @endif
+                            @if(!empty($broker['bio']))
+                                <p class="mt-4 text-sm leading-relaxed" style="color: #475569;">{{ $broker['bio'] }}</p>
+                            @endif
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    <section id="equipo" class="py-16 lg:py-20" style="background: linear-gradient(to bottom, #f8fafc, #ffffff);">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-10">
+                <h2 class="text-3xl sm:text-4xl font-black" style="color: #0f172a;">{{ $coreTeamTitle }}</h2>
+                <p class="mt-3 text-lg" style="color: #475569;">{{ $coreTeamSubtitle }}</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                @foreach($teamMembers as $member)
+                    @php
+                        $memberImage = $member['image']
+                            ?: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&q=80';
+                    @endphp
+                    <article class="group rounded-3xl overflow-hidden border shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style="border-color: #e2e8f0; background-color: #ffffff;">
+                        <div class="h-56 overflow-hidden">
+                            <img src="{{ $memberImage }}" alt="{{ $member['name'] }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-2xl font-extrabold" style="color: #0f172a;">{{ $member['name'] }}</h3>
+                            @if(!empty($member['role']))
+                                <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: #0f766e;">{{ $member['role'] }}</p>
+                            @endif
+                            @if(!empty($member['bio']))
+                                <p class="mt-4 text-sm leading-relaxed" style="color: #475569;">{{ $member['bio'] }}</p>
+                            @endif
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    <section id="agentes" class="py-16 lg:py-20" style="background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mb-10">
+                <h2 class="text-3xl sm:text-4xl font-black text-white">{{ $agentsTitle }}</h2>
+                <p class="mt-3 text-lg" style="color: rgba(255,255,255,0.78);">{{ $agentsSubtitle }}</p>
+                <div class="mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide" style="background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.92);">
+                    {{ $isEn ? 'Primary agency' : 'Agencia principal' }}: {{ $primaryOfficeName }}
+                </div>
+            </div>
+
+            @if($primaryOfficeAgents->isEmpty())
+                <div class="rounded-3xl border p-8 text-center" style="border-color: rgba(255,255,255,0.2); background: rgba(15,23,42,0.4);">
+                    <h3 class="text-xl font-bold text-white">{{ $isEn ? 'No agents available right now' : 'No hay agentes disponibles en este momento' }}</h3>
+                    <p class="mt-2" style="color: rgba(255,255,255,0.75);">
+                        {{ $isEn
+                            ? 'When agents are active in the main agency, they will appear here automatically.'
+                            : 'Cuando existan agentes activos en la agencia principal, aparecerán aquí automáticamente.' }}
+                    </p>
+                </div>
+            @else
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                    @foreach($primaryOfficeAgents as $agent)
+                        @php
+                            $agentName = $agent->full_name ?: ($agent->name ?? (($isEn ? 'Agent' : 'Agente') . ' #' . $agent->mls_agent_id));
+                            $agentBio = trim((string) ($agent->bioForLocale($locale) ?? ''));
+                            $agentImage = $agent->photo ?: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=900&q=80';
+                            $agentPhone = trim((string) ($agent->phone ?? $agent->mobile ?? ''));
+                            $agentPhoneHref = preg_replace('/[^0-9+]/', '', $agentPhone);
+                        @endphp
+
+                        <article class="rounded-3xl overflow-hidden border" style="border-color: rgba(255,255,255,0.2); background: rgba(15,23,42,0.45); backdrop-filter: blur(8px);">
+                            <div class="h-56 overflow-hidden">
+                                <img src="{{ $agentImage }}" alt="{{ $agentName }}" class="w-full h-full object-cover" loading="lazy" />
+                            </div>
+                            <div class="p-6">
+                                <h3 class="text-xl font-extrabold text-white">{{ $agentName }}</h3>
+
+                                @if(!empty($agent->email))
+                                    <p class="mt-2 text-sm" style="color: rgba(255,255,255,0.74);">{{ $agent->email }}</p>
+                                @endif
+
+                                @if($agentBio !== '')
+                                    <p class="mt-3 text-sm line-clamp-2" style="color: rgba(255,255,255,0.78);">{{ $agentBio }}</p>
+                                @endif
+
+                                <div class="mt-5 flex gap-2">
+                                    <a href="{{ route('public.mls-agents.show', ['mlsAgentId' => (int) $agent->mls_agent_id]) }}" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
+                                        {{ $isEn ? 'View profile' : 'Ver perfil' }}
+                                    </a>
+                                    @if(!empty($agentPhoneHref))
+                                        <a href="tel:{{ $agentPhoneHref }}" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border" style="border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.9);">
+                                            {{ $isEn ? 'Call' : 'Llamar' }}
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </section>
+</div>
 @endsection
-
-
-
-

@@ -349,14 +349,14 @@
 
         /* Filter chip active state - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
         .filter-chip.active {
-            background: linear-gradient(135deg, var(--fe-filters-active_from, #D1A054), var(--fe-filters-active_to, #768D59));
-            color: white;
+            background-color: var(--fe-buttons-secondary_bg, #768D59);
+            color: var(--fe-buttons-secondary_text, #ffffff);
         }
         
         /* Filter tag states for properties section */
         .filter-tag-active {
-            background: linear-gradient(to right, var(--fe-properties-tag_active_from, #D1A054), var(--fe-properties-tag_active_to, #768D59));
-            color: white;
+            background-color: var(--fe-buttons-secondary_bg, #768D59);
+            color: var(--fe-buttons-secondary_text, #ffffff);
         }
         .filter-tag-inactive {
             background-color: var(--fe-properties-tag_inactive_bg, #f1f5f9);
@@ -411,7 +411,87 @@
         
         /* Gradientes primarios */
         .bg-fe-gradient-primary {
-            background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));
+            background: none;
+            background-color: var(--fe-buttons-primary_bg, #D1A054);
+            color: var(--fe-buttons-primary_text, #ffffff);
+        }
+
+        a[style*="linear-gradient"][style*="--fe-primary-from"],
+        button[style*="linear-gradient"][style*="--fe-primary-from"],
+        a[style*="linear-gradient"][style*="--fe-header-cta_button_from"],
+        button[style*="linear-gradient"][style*="--fe-header-cta_button_from"],
+        a[style*="linear-gradient"][style*="--fe-contact_page-submit_button_from"],
+        button[style*="linear-gradient"][style*="--fe-contact_page-submit_button_from"],
+        a[style*="linear-gradient"][style*="--fe-property_detail-contact_button_from"],
+        button[style*="linear-gradient"][style*="--fe-property_detail-contact_button_from"],
+        a[style*="linear-gradient"][style*="--fe-cta_rent-btn_primary_from"],
+        button[style*="linear-gradient"][style*="--fe-cta_rent-btn_primary_from"] {
+            background: none !important;
+            background-color: var(--fe-buttons-primary_bg, #D1A054) !important;
+            color: var(--fe-buttons-primary_text, #ffffff) !important;
+            border-color: var(--fe-buttons-primary_border, var(--fe-buttons-primary_bg, #D1A054)) !important;
+        }
+
+        a[style*="linear-gradient"][style*="--fe-primary-from"]:hover,
+        button[style*="linear-gradient"][style*="--fe-primary-from"]:hover,
+        a[style*="linear-gradient"][style*="--fe-header-cta_button_from"]:hover,
+        button[style*="linear-gradient"][style*="--fe-header-cta_button_from"]:hover,
+        a[style*="linear-gradient"][style*="--fe-contact_page-submit_button_from"]:hover,
+        button[style*="linear-gradient"][style*="--fe-contact_page-submit_button_from"]:hover,
+        a[style*="linear-gradient"][style*="--fe-property_detail-contact_button_from"]:hover,
+        button[style*="linear-gradient"][style*="--fe-property_detail-contact_button_from"]:hover,
+        a[style*="linear-gradient"][style*="--fe-cta_rent-btn_primary_from"]:hover,
+        button[style*="linear-gradient"][style*="--fe-cta_rent-btn_primary_from"]:hover {
+            background-color: var(--fe-buttons-primary_hover_bg, var(--fe-buttons-primary_bg, #D1A054)) !important;
+        }
+
+        a[style*="linear-gradient"][style*="--fe-cta_sale-btn_primary_from"],
+        button[style*="linear-gradient"][style*="--fe-cta_sale-btn_primary_from"],
+        a[style*="linear-gradient"][style*="--fe-footer-newsletter_button_from"],
+        button[style*="linear-gradient"][style*="--fe-footer-newsletter_button_from"],
+        a[style*="linear-gradient"][style*="--fe-pagination-active_from"],
+        button[style*="linear-gradient"][style*="--fe-pagination-active_from"] {
+            background: none !important;
+            background-color: var(--fe-buttons-secondary_bg, #768D59) !important;
+            color: var(--fe-buttons-secondary_text, #ffffff) !important;
+            border-color: var(--fe-buttons-secondary_border, var(--fe-buttons-secondary_bg, #768D59)) !important;
+        }
+
+        a[style*="linear-gradient"][style*="--fe-cta_sale-btn_primary_from"]:hover,
+        button[style*="linear-gradient"][style*="--fe-cta_sale-btn_primary_from"]:hover,
+        a[style*="linear-gradient"][style*="--fe-footer-newsletter_button_from"]:hover,
+        button[style*="linear-gradient"][style*="--fe-footer-newsletter_button_from"]:hover,
+        a[style*="linear-gradient"][style*="--fe-pagination-active_from"]:hover,
+        button[style*="linear-gradient"][style*="--fe-pagination-active_from"]:hover {
+            background-color: var(--fe-buttons-secondary_hover_bg, var(--fe-buttons-secondary_bg, #768D59)) !important;
+        }
+
+        a[style*="linear-gradient"][style*="--fe-agent_card-whatsapp_button_from"],
+        button[style*="linear-gradient"][style*="--fe-agent_card-whatsapp_button_from"] {
+            background: none !important;
+            background-color: var(--fe-buttons-success_bg, #22c55e) !important;
+            color: var(--fe-buttons-success_text, #ffffff) !important;
+        }
+
+        a[style*="linear-gradient"][style*="--fe-agent_card-whatsapp_button_from"]:hover,
+        button[style*="linear-gradient"][style*="--fe-agent_card-whatsapp_button_from"]:hover {
+            background-color: var(--fe-buttons-success_hover_bg, var(--fe-buttons-success_bg, #22c55e)) !important;
+        }
+
+        [data-favorites-count][style*="linear-gradient"][style*="--fe-primary-from"] {
+            background: none !important;
+            background-color: var(--fe-buttons-badge_bg, #D1A054) !important;
+            color: var(--fe-buttons-badge_text, #ffffff) !important;
+        }
+
+        #backToTop {
+            background: none !important;
+            background-color: var(--fe-buttons-secondary_bg, #768D59) !important;
+            color: var(--fe-buttons-secondary_text, #ffffff) !important;
+        }
+
+        #backToTop:hover {
+            background-color: var(--fe-buttons-secondary_hover_bg, var(--fe-buttons-secondary_bg, #768D59)) !important;
         }
         
         /* Gradiente para tÃƒÆ’Ã‚Â­tulos hero */
@@ -578,15 +658,46 @@
             });
         });
 
-        // Format currency helper
-        function formatCurrency(amount, currency = 'MXN') {
-            return new Intl.NumberFormat((window.__PUBLIC_LOCALE__ === 'en') ? 'en-US' : 'es-MX', {
-                style: 'currency',
-                currency: currency,
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(amount);
+        // Price formatter helper:
+        // $12,345,678 MXN
+        // $12,345,678.90 USD
+        function normalizeDisplayCurrencyCode(currencyCode) {
+            const code = String(currencyCode || '').trim().toUpperCase();
+            if (code === 'MXN' || code === 'USD') return code;
+            return code || 'MXN';
         }
+
+        function toDisplayAmount(amount) {
+            if (amount === null || amount === undefined || amount === '') return null;
+            if (typeof amount === 'number') return Number.isFinite(amount) ? amount : null;
+
+            const normalized = String(amount).replace(/,/g, '').trim();
+            const parsed = Number.parseFloat(normalized);
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+
+        function formatDisplayPrice(amount, currencyCode = 'MXN') {
+            const numeric = toDisplayAmount(amount);
+            if (numeric === null) return '';
+
+            const rounded = Math.round((numeric + Number.EPSILON) * 100) / 100;
+            const code = normalizeDisplayCurrencyCode(currencyCode);
+            const hasCents = Math.abs(rounded - Math.trunc(rounded)) > 0.00001;
+            const fixed = rounded.toFixed(hasCents ? 2 : 0);
+            const [integer, decimals] = fixed.split('.');
+            const integerWithThousands = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const decimalSuffix = decimals ? `.${decimals}` : '';
+            const symbol = (code === 'MXN' || code === 'USD') ? '$' : '';
+
+            return `${symbol}${integerWithThousands}${decimalSuffix} ${code}`.trim();
+        }
+
+        function formatCurrency(amount, currency = 'MXN') {
+            return formatDisplayPrice(amount, currency);
+        }
+
+        window.formatDisplayPrice = formatDisplayPrice;
+        window.formatCurrency = formatCurrency;
 
         // API Helper
         const API = {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PriceFormatter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -31,6 +32,33 @@ class PropertyOperation extends Model
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
+    }
+
+    public function getFormattedAmountAttribute(?string $value): ?string
+    {
+        $currencyCode = $this->attributes['currency_code'] ?? null;
+        if (($currencyCode === null || $currencyCode === '') && $this->relationLoaded('currency')) {
+            $currencyCode = $this->currency?->code;
+        }
+
+        $formattedFromAmount = PriceFormatter::format(
+            $this->attributes['amount'] ?? null,
+            $currencyCode
+        );
+
+        if ($formattedFromAmount !== null) {
+            return $formattedFromAmount;
+        }
+
+        $parsedAmount = PriceFormatter::extractNumericAmount($value);
+        if ($parsedAmount !== null) {
+            $formattedFromString = PriceFormatter::format($parsedAmount, $currencyCode);
+            if ($formattedFromString !== null) {
+                return $formattedFromString;
+            }
+        }
+
+        return PriceFormatter::ensureCurrencySuffix($value, $currencyCode);
     }
 }
 

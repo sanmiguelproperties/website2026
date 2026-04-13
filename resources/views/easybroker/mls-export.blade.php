@@ -267,8 +267,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const missing = row.export_preview?.missing_required || [];
       const ready = row.export_preview?.ready;
 
+      const operationCurrency = row.primary_operation?.currency_code || 'MXN';
+      const operationAmount = row.primary_operation?.amount;
+      const operationAmountLabel = typeof window.formatDisplayPrice === 'function'
+        ? window.formatDisplayPrice(operationAmount, operationCurrency)
+        : (operationAmount || '—');
+
       const operation = row.primary_operation
-        ? `${row.primary_operation.type || '—'} · ${row.primary_operation.amount || '—'} ${row.primary_operation.currency_code || ''}`
+        ? `${row.primary_operation.type || '—'} · ${operationAmountLabel || '—'}`
         : '—';
 
       const officeName = row.mls_office?.name || '—';

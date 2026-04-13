@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Color group labels
   const groupLabels = {
     'primary': 'Primarios',
+    'buttons': 'Botones Globales',
     'header': 'Header',
     'footer': 'Footer',
     'ui': 'UI General',
@@ -226,6 +227,17 @@ document.addEventListener('DOMContentLoaded', function() {
     'from': 'Color inicial',
     'to': 'Color final',
     'via': 'Color intermedio',
+    'primary_bg': 'Botón primario - fondo',
+    'primary_text': 'Botón primario - texto',
+    'primary_hover_bg': 'Botón primario - hover',
+    'primary_border': 'Botón primario - borde',
+    'secondary_bg': 'Botón secundario - fondo',
+    'secondary_text': 'Botón secundario - texto',
+    'secondary_hover_bg': 'Botón secundario - hover',
+    'secondary_border': 'Botón secundario - borde',
+    'success_bg': 'Botón éxito - fondo',
+    'success_text': 'Botón éxito - texto',
+    'success_hover_bg': 'Botón éxito - hover',
     'title_gradient_from': 'Título - inicio',
     'title_gradient_via': 'Título - medio',
     'title_gradient_to': 'Título - fin',
@@ -837,6 +849,66 @@ document.addEventListener('DOMContentLoaded', function() {
     'primary_badge_text': 'Badge principal - texto',
   };
 
+  const BUTTON_PRESETS = {
+    gold: {
+      label: 'Gold',
+      description: 'Dorado de marca + oliva',
+      colors: {
+        primary_bg: '#D1A054',
+        primary_text: '#ffffff',
+        primary_hover_bg: '#B8883F',
+        primary_border: '#D1A054',
+        secondary_bg: '#768D59',
+        secondary_text: '#ffffff',
+        secondary_hover_bg: '#627748',
+        secondary_border: '#768D59',
+        success_bg: '#22C55E',
+        success_text: '#ffffff',
+        success_hover_bg: '#16A34A',
+        badge_bg: '#D1A054',
+        badge_text: '#ffffff'
+      }
+    },
+    green: {
+      label: 'Green',
+      description: 'Verde dominante + acento neutro',
+      colors: {
+        primary_bg: '#768D59',
+        primary_text: '#ffffff',
+        primary_hover_bg: '#627748',
+        primary_border: '#768D59',
+        secondary_bg: '#5B5B5B',
+        secondary_text: '#ffffff',
+        secondary_hover_bg: '#4A4A4A',
+        secondary_border: '#5B5B5B',
+        success_bg: '#22C55E',
+        success_text: '#ffffff',
+        success_hover_bg: '#16A34A',
+        badge_bg: '#768D59',
+        badge_text: '#ffffff'
+      }
+    },
+    terracotta: {
+      label: 'Terracotta',
+      description: 'Terracota cálido + dorado',
+      colors: {
+        primary_bg: '#A52A2A',
+        primary_text: '#ffffff',
+        primary_hover_bg: '#8B2323',
+        primary_border: '#A52A2A',
+        secondary_bg: '#D1A054',
+        secondary_text: '#ffffff',
+        secondary_hover_bg: '#B8883F',
+        secondary_border: '#D1A054',
+        success_bg: '#768D59',
+        success_text: '#ffffff',
+        success_hover_bg: '#627748',
+        badge_bg: '#A52A2A',
+        badge_text: '#ffffff'
+      }
+    }
+  };
+
   // Initialize
   loadViews();
 
@@ -1054,19 +1126,57 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const colors = modifiedColors[group];
+    const showButtonPresets = currentViewSlug === 'global' && group === 'buttons';
 
     container.innerHTML = `
       <div class="mb-4">
         <h3 class="text-lg font-semibold text-[var(--c-text)]">${groupLabels[group] || group}</h3>
         <p class="text-sm text-[var(--c-muted)]">Edita los colores de esta sección</p>
       </div>
+      ${showButtonPresets ? createButtonPresetToolbar() : ''}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         ${Object.entries(colors).map(([key, value]) => createColorField(group, key, value)).join('')}
       </div>
     `;
 
+    if (showButtonPresets) {
+      attachButtonPresetEvents();
+    }
+
     // Attach color picker events
     attachColorPickerEvents();
+  }
+
+  function createButtonPresetToolbar() {
+    const presetsMarkup = Object.entries(BUTTON_PRESETS).map(([key, preset]) => `
+      <button
+        type="button"
+        class="btn-color-preset inline-flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] hover:bg-[var(--c-surface)] transition text-left"
+        data-preset="${key}"
+        title="Aplicar preset ${preset.label}">
+        <span class="flex items-center gap-1">
+          <span class="w-4 h-4 rounded-md border border-white/40" style="background-color: ${preset.colors.primary_bg};"></span>
+          <span class="w-4 h-4 rounded-md border border-white/40" style="background-color: ${preset.colors.secondary_bg};"></span>
+          <span class="w-4 h-4 rounded-md border border-white/40" style="background-color: ${preset.colors.success_bg};"></span>
+        </span>
+        <span>
+          <span class="block text-sm font-semibold text-[var(--c-text)]">${preset.label}</span>
+          <span class="block text-xs text-[var(--c-muted)]">${preset.description}</span>
+        </span>
+      </button>
+    `).join('');
+
+    return `
+      <div class="mb-6 rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)]/40 p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h4 class="text-sm font-semibold text-[var(--c-text)]">Presets de Botones</h4>
+          <p class="text-xs text-[var(--c-muted)]">Un clic aplica y guarda en la configuracion activa</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          ${presetsMarkup}
+        </div>
+      </div>
+    `;
   }
 
   function createColorField(group, key, value) {
@@ -1098,6 +1208,34 @@ document.addEventListener('DOMContentLoaded', function() {
         ${isRgba ? '<p class="text-[10px] text-[var(--c-muted)] mt-1">Formato rgba con transparencia</p>' : ''}
       </div>
     `;
+  }
+
+  function attachButtonPresetEvents() {
+    document.querySelectorAll('.btn-color-preset').forEach(button => {
+      button.addEventListener('click', async () => {
+        const presetKey = button.dataset.preset;
+        await applyButtonPreset(presetKey);
+      });
+    });
+  }
+
+  async function applyButtonPreset(presetKey) {
+    const preset = BUTTON_PRESETS[presetKey];
+    if (!preset || !currentConfigId || !currentConfig) {
+      return;
+    }
+
+    if (!modifiedColors.buttons || typeof modifiedColors.buttons !== 'object') {
+      modifiedColors.buttons = {};
+    }
+
+    modifiedColors.buttons = {
+      ...modifiedColors.buttons,
+      ...preset.colors
+    };
+
+    renderColorGroup('buttons');
+    await saveColors();
   }
 
   function attachColorPickerEvents() {
@@ -1138,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function saveColors() {
-    if (!currentConfigId) return;
+    if (!currentConfigId) return false;
 
     try {
       const response = await fetch(`${API_BASE}/${currentConfigId}`, {
@@ -1157,12 +1295,15 @@ document.addEventListener('DOMContentLoaded', function() {
       if (data.success) {
         window.dispatchEvent(new CustomEvent('api:response', { detail: data }));
         currentConfig.colors = JSON.parse(JSON.stringify(modifiedColors));
+        return true;
       } else {
         showError('Error', data.message || 'No se pudieron guardar los colores');
+        return false;
       }
     } catch (error) {
       console.error('Error saving colors:', error);
       showError('Error', 'Error al guardar los colores');
+      return false;
     }
   }
 

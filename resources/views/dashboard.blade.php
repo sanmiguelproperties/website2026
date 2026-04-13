@@ -151,10 +151,10 @@
         <tbody class="divide-y divide-[var(--c-border)]">
           @php
             $rows = [
-              ['name' => 'Apartamento Laureles 302', 'type' => 'Venta', 'status' => 'Activo', 'price' => '$ 420.000.000'],
-              ['name' => 'Casa Campestre • Envigado', 'type' => 'Arriendo', 'status' => 'Visitas', 'price' => '$ 4.800.000 / mes'],
-              ['name' => 'Local Comercial • Centro', 'type' => 'Venta', 'status' => 'En negociación', 'price' => '$ 690.000.000'],
-              ['name' => 'Apartaestudio • El Poblado', 'type' => 'Arriendo', 'status' => 'Activo', 'price' => '$ 2.300.000 / mes'],
+              ['name' => 'Apartamento Laureles 302', 'type' => 'Venta', 'status' => 'Activo', 'price' => '$420,000,000 MXN'],
+              ['name' => 'Casa Campestre • Envigado', 'type' => 'Arriendo', 'status' => 'Visitas', 'price' => '$4,800 USD / mes'],
+              ['name' => 'Local Comercial • Centro', 'type' => 'Venta', 'status' => 'En negociación', 'price' => '$690,000,000 MXN'],
+              ['name' => 'Apartaestudio • El Poblado', 'type' => 'Arriendo', 'status' => 'Activo', 'price' => '$2,300 USD / mes'],
             ];
           @endphp
 

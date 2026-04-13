@@ -978,10 +978,10 @@ class PropertyController extends Controller
         $contactOffice = $primaryOffice ?? $originOffice;
         $sourceAgencyNotice = null;
 
-        if ($belongsToExternalAgency && !empty($originOffice?->name)) {
+        if ($belongsToExternalAgency) {
             $sourceAgencyNotice = $locale === 'en'
-                ? sprintf('This property belongs to %s. Contact is handled by our main agency.', $originOffice->name)
-                : sprintf('Esta propiedad pertenece a %s. El contacto se atiende con nuestra agencia principal.', $originOffice->name);
+                ? 'This property is shared through MLS. Contact is handled by our main agency.'
+                : 'Esta propiedad se comparte por MLS. El contacto se atiende con nuestra agencia principal.';
 
             // Si la propiedad pertenece a otra agencia, ocultamos agentes en el endpoint público.
             $property->setRelation('agentUser', null);
@@ -989,7 +989,7 @@ class PropertyController extends Controller
         }
 
         $property->setAttribute('contact_agency', $this->toPublicOfficePayload($contactOffice));
-        $property->setAttribute('source_agency_reference', $belongsToExternalAgency ? $this->toPublicOfficePayload($originOffice) : null);
+        $property->setAttribute('source_agency_reference', null);
         $property->setAttribute('belongs_to_external_agency', $belongsToExternalAgency);
         $property->setAttribute('hide_external_agents', $belongsToExternalAgency);
         $property->setAttribute('source_agency_notice', $sourceAgencyNotice);

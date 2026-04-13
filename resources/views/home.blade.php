@@ -12,6 +12,56 @@
     $contactWhatsappRaw = $settings['contact_whatsapp'] ?? '+525512345678';
     $contactWhatsapp = preg_replace('/[^0-9]/', '', (string) $contactWhatsappRaw) ?: '525512345678';
     $contactEmail = $settings['contact_email'] ?? 'info@sanmiguelproperties.com';
+
+    $parseCsvIds = static function (?string $rawValue, int $limit = 10): array {
+        $parts = preg_split('/\s*,\s*/', (string) $rawValue, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $result = [];
+        $seen = [];
+
+        foreach ($parts as $part) {
+            $id = (int) $part;
+            if ($id <= 0 || isset($seen[$id])) {
+                continue;
+            }
+
+            $seen[$id] = true;
+            $result[] = $id;
+
+            if (count($result) >= $limit) {
+                break;
+            }
+        }
+
+        return $result;
+    };
+
+    $heroSliderSource = in_array(strtolower((string) ($settings['hero_slider_source_type'] ?? 'properties')), ['properties', 'images'], true)
+        ? strtolower((string) ($settings['hero_slider_source_type'] ?? 'properties'))
+        : 'properties';
+    $heroSliderPropertyIds = $parseCsvIds($settings['hero_slider_property_ids'] ?? '', 10);
+    $heroSliderImageIds = $parseCsvIds($settings['hero_slider_image_ids'] ?? '', 10);
+
+    $heroSliderImageUrls = [];
+    if (!empty($heroSliderImageIds)) {
+        $heroMediaById = \App\Models\MediaAsset::query()
+            ->whereIn('id', $heroSliderImageIds)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($heroSliderImageIds as $mediaId) {
+            $asset = $heroMediaById->get($mediaId);
+            $url = $asset?->serving_url ?? $asset?->url;
+            if ($url) {
+                $heroSliderImageUrls[] = $url;
+            }
+        }
+    }
+
+    $heroSliderConfig = [
+        'sourceType' => $heroSliderSource,
+        'propertyIds' => $heroSliderPropertyIds,
+        'imageUrls' => $heroSliderImageUrls,
+    ];
 @endphp
 
 @section('title', $pageTitle)
@@ -969,6 +1019,7 @@
 <script>
 const isEnLocale = (window.__PUBLIC_LOCALE__ || 'es') === 'en';
 const tPublic = window.publicT || ((key, fallback = '') => fallback);
+const heroSliderConfig = @json($heroSliderConfig);
 const homeI18n = {
     heroImageAlt: tPublic('home.hero.imageAlt', isEnLocale ? 'Property' : 'Propiedad'),
     heroTypeFallback: tPublic('home.hero.typeFallback', isEnLocale ? 'Property' : 'Propiedad'),
@@ -983,6 +1034,64 @@ const homeI18n = {
     detailsCta: tPublic('common.details', isEnLocale ? 'View details' : 'Ver detalles'),
     areaUnit: tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2'),
 };
+
+const heroFallbackImage = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80';
+const normalizeHeroSourceType = (value) => String(value || '').toLowerCase() === 'images' ? 'images' : 'properties';
+
+function normalizeIdList(values, max = 10) {
+    if (!Array.isArray(values)) return [];
+
+    const ids = [];
+    const seen = new Set();
+
+    values.forEach((value) => {
+        const id = Number(value);
+        if (!Number.isFinite(id) || id <= 0 || seen.has(id)) return;
+        seen.add(id);
+        ids.push(id);
+    });
+
+    return ids.slice(0, max);
+}
+
+function renderHeroSlidesFromItems(items) {
+    if (!Array.isArray(items) || items.length === 0) return;
+
+    const swiperWrapper = document.getElementById('heroSliderWrapper');
+    if (!swiperWrapper) return;
+    swiperWrapper.innerHTML = '';
+
+    items.forEach((item) => {
+        const imageUrl = item.imageUrl || heroFallbackImage;
+        const title = item.title || homeI18n.heroFeaturedFallback;
+        const propertyType = item.propertyType || homeI18n.heroTypeFallback;
+        const location = item.location || '';
+
+        const slide = document.createElement('div');
+        slide.className = 'swiper-slide';
+        slide.innerHTML = `
+            <div class="absolute inset-0">
+                <img src="${imageUrl}" alt="${title || homeI18n.heroImageAlt}" class="w-full h-full object-cover">
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 p-8 z-10 hidden" style="background: linear-gradient(to top, var(--fe-properties-image_overlay, rgba(0,0,0,0.8)), transparent);">
+                <div class="max-w-7xl mx-auto">
+                    <span class="inline-block px-3 py-1 text-white text-sm font-medium rounded-full mb-4" style="background-color: var(--fe-primary-from, #D1A054);">
+                        ${propertyType}
+                    </span>
+                    <h3 class="text-2xl lg:text-3xl font-bold mb-2" style="color: var(--fe-hero-search_input_text, #ffffff);">${title}</h3>
+                    <p style="color: var(--fe-hero-subtitle_text, rgba(255,255,255,0.8));">${location}</p>
+                </div>
+            </div>
+        `;
+        swiperWrapper.appendChild(slide);
+    });
+
+    const swiper = document.querySelector('.hero-slider')?.swiper;
+    if (swiper) {
+        swiper.update();
+        swiper.slideToLoop(0);
+    }
+}
 
 // ============================================
 // HERO SLIDER - SWIPER.JS
@@ -1044,6 +1153,59 @@ async function loadHomeFilterOptions() {
 
 async function loadHeroSlides() {
     try {
+        const sourceType = normalizeHeroSourceType(heroSliderConfig?.sourceType);
+        const configuredPropertyIds = normalizeIdList(heroSliderConfig?.propertyIds, 10);
+        const configuredImageUrls = Array.isArray(heroSliderConfig?.imageUrls) ? heroSliderConfig.imageUrls.filter(Boolean) : [];
+        let slideItems = [];
+
+        if (sourceType === 'images' && configuredImageUrls.length > 0) {
+            slideItems = configuredImageUrls.map((url, index) => ({
+                imageUrl: url,
+                title: `${homeI18n.heroFeaturedFallback} ${index + 1}`,
+                propertyType: homeI18n.heroTypeFallback,
+                location: '',
+            }));
+        } else if (configuredPropertyIds.length > 0) {
+            const configuredResponses = await Promise.all(
+                configuredPropertyIds.map(async (propertyId) => {
+                    try {
+                        const response = await fetch(`/api/public/properties/${propertyId}`);
+                        if (!response.ok) return null;
+                        const payload = await response.json();
+                        if (!payload?.success || !payload?.data) return null;
+
+                        const property = payload.data;
+                        return {
+                            imageUrl: property.cover_media_asset?.serving_url || property.cover_media_asset?.url || heroFallbackImage,
+                            title: property.title || homeI18n.heroFeaturedFallback,
+                            propertyType: property.property_type_name || homeI18n.heroTypeFallback,
+                            location: [property.location?.city, property.location?.city_area].filter(Boolean).join(', '),
+                        };
+                    } catch (_error) {
+                        return null;
+                    }
+                })
+            );
+
+            slideItems = configuredResponses.filter(Boolean);
+        }
+
+        if (slideItems.length === 0) {
+            const response = await fetch('/api/public/properties?per_page=3&sort=desc&order=updated_at');
+            const payload = await response.json();
+            const rows = payload?.success ? (payload?.data?.data || []) : [];
+
+            slideItems = rows.map((property) => ({
+                imageUrl: property.cover_media_asset?.serving_url || property.cover_media_asset?.url || heroFallbackImage,
+                title: property.title || homeI18n.heroFeaturedFallback,
+                propertyType: property.property_type_name || homeI18n.heroTypeFallback,
+                location: [property.location?.city, property.location?.city_area].filter(Boolean).join(', '),
+            }));
+        }
+
+        renderHeroSlidesFromItems(slideItems);
+        return;
+
         const response = await fetch('/api/public/properties?per_page=3&sort=desc&order=updated_at');
         const data = await response.json();
         
@@ -1175,7 +1337,11 @@ function propertiesFilter() {
             const imageUrl = property.cover_media_asset?.serving_url || property.cover_media_asset?.url ||
                            'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';
             
-            const price = property.operations?.[0]?.formatted_amount || homeI18n.priceFallback;
+            const firstOperation = property.operations?.[0] || null;
+            const fallbackAmount = (typeof window.formatDisplayPrice === 'function')
+                ? window.formatDisplayPrice(firstOperation?.amount, firstOperation?.currency?.code || firstOperation?.currency_code)
+                : '';
+            const price = firstOperation?.formatted_amount || fallbackAmount || homeI18n.priceFallback;
             const operationType = property.operations?.[0]?.operation_type || '';
             const location = [property.location?.city, property.location?.city_area].filter(Boolean).join(', ') || homeI18n.locationFallback;
 

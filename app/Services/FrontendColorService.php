@@ -390,6 +390,7 @@ class FrontendColorService
         return [
             // Globales
             'primary' => 'Colores Primarios',
+            'buttons' => 'Botones Globales',
             'header' => 'Header',
             'footer' => 'Footer',
             'ui' => 'Elementos UI',

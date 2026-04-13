@@ -390,7 +390,11 @@
 
             grid.innerHTML = this.properties.map((p) => {
               const imageUrl = p.cover_media_asset?.serving_url || p.cover_media_asset?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';
-              const price = p.operations?.[0]?.formatted_amount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
+              const firstOperation = p.operations?.[0] || null;
+              const fallbackAmount = (typeof window.formatDisplayPrice === 'function')
+                ? window.formatDisplayPrice(firstOperation?.amount, firstOperation?.currency?.code || firstOperation?.currency_code)
+                : '';
+              const price = firstOperation?.formatted_amount || fallbackAmount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
               const op = p.operations?.[0]?.operation_type || '';
               const location = [p.location?.city, p.location?.city_area].filter(Boolean).join(', ') || tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible');
 

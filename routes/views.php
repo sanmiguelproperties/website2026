@@ -4,6 +4,8 @@ use App\Services\PublicLocationMenuService;
 use App\Services\CmsService;
 use App\Services\ZonePageService;
 use App\Models\ZonePage;
+use App\Models\MLSOffice;
+use App\Models\MLSAgent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -181,9 +183,49 @@ Route::get('/contacto', function () use ($publicContext) {
 })->name('public.contact');
 
 Route::get('/nosotros', function () use ($publicContext) {
-    $context = $publicContext('about');
+    $primaryOffice = MLSOffice::query()
+        ->where('is_primary', true)
+        ->orderBy('mls_office_id')
+        ->first();
+
+    $primaryOfficeAgents = collect();
+
+    if ($primaryOffice) {
+        $primaryOfficeAgents = MLSAgent::query()
+            ->with(['photoMediaAsset'])
+            ->where('is_active', true)
+            ->where('mls_office_id', (int) $primaryOffice->mls_office_id)
+            ->orderBy('name')
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
+    }
+
+    $context = $publicContext('about', [
+        'primaryOffice' => $primaryOffice,
+        'primaryOfficeAgents' => $primaryOfficeAgents,
+    ]);
+
     return view('public.about', $context);
 })->name('about');
+
+Route::get('/equipo', function () use ($publicContext, $locale) {
+    $currentLocale = $locale();
+    $context = $publicContext('about', [
+        'seoTitleOverride' => $currentLocale === 'en'
+            ? 'Team - San Miguel Properties'
+            : 'Equipo - San Miguel Properties',
+        'seoDescriptionOverride' => $currentLocale === 'en'
+            ? 'Meet the complete team behind San Miguel Properties.'
+            : 'Conoce al equipo completo que impulsa San Miguel Properties.',
+    ]);
+
+    return view('public.team', $context);
+})->name('public.team');
+
+Route::get('/team', function () {
+    return redirect()->route('public.team', [], 301);
+})->name('public.team.legacy');
 
 // Auth view routes
 Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login')->middleware('guest');
@@ -218,6 +260,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/zones', function () {
             return view('zones.manage');
         })->name('zones');
+
+        Route::get('/team-members', function () {
+            return view('team.manage');
+        })->name('team-members');
 
         Route::get('/agencies', function () {
             return view('agencies.manage');

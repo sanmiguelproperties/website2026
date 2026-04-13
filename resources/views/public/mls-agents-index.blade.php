@@ -4,6 +4,7 @@
   $isEn = ($locale ?? app()->getLocale()) === 'en';
   $txt = fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($isEn ? $en : $es);
   $pageTitle = $pageData?->entity?->title($locale ?? app()->getLocale()) ?? ($isEn ? 'Agents' : 'Agentes');
+  $enforcePrimaryOfficeOnly = \App\Services\CmsService::settingBoolean('public_mls_only_primary_office', false);
 @endphp
 
 @section('title', $pageTitle)
@@ -32,7 +33,9 @@
             <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('page_title_highlight', 'agentes', 'agents') }}</span>
           </h1>
           <p class="mt-4 text-lg text-slate-600">
-            {{ $txt('page_subtitle', 'Busca agentes, filtra por agencia y revisa sus propiedades.', 'Search agents, filter by agency and review their properties.') }}
+            {{ $enforcePrimaryOfficeOnly
+                ? $txt('page_subtitle_primary_only', 'Conoce a los agentes de nuestra agencia principal.', 'Meet the agents from our main agency.')
+                : $txt('page_subtitle', 'Busca agentes, filtra por agencia y revisa sus propiedades.', 'Search agents, filter by agency and review their properties.') }}
           </p>
         </div>
       </div>
@@ -57,7 +60,7 @@
               </div>
             </div>
 
-            <div class="min-w-[220px]">
+            <div class="min-w-[220px]" x-show="!enforcePrimaryOfficeOnly">
               <label class="block text-xs font-semibold text-slate-600 mb-2">{{ $txt('agency_filter_label', 'Agencia (MLS Office ID)', 'Agency (MLS Office ID)') }}</label>
               <div class="relative">
                 <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +129,11 @@
             </svg>
           </div>
           <h3 class="text-xl font-semibold text-slate-900 mb-2">{{ $txt('empty_title', 'No se encontraron agentes', 'No agents found') }}</h3>
-          <p class="text-slate-600">{{ $txt('empty_subtitle', 'Intenta ajustar la busqueda o el filtro de agencia.', 'Try adjusting search or agency filter.') }}</p>
+          <p class="text-slate-600">
+            {{ $enforcePrimaryOfficeOnly
+                ? $txt('empty_subtitle_primary_only', 'Intenta ajustar tu busqueda.', 'Try adjusting your search.')
+                : $txt('empty_subtitle', 'Intenta ajustar la busqueda o el filtro de agencia.', 'Try adjusting search or agency filter.') }}
+          </p>
         </div>
 
         <div class="mt-10 pt-8 border-t border-slate-200 flex items-center justify-between gap-3">
@@ -154,6 +161,7 @@
 
     function mlsAgentsIndex() {
       return {
+        enforcePrimaryOfficeOnly: @json($enforcePrimaryOfficeOnly),
         filters: {
           search: '',
           office_id: '',
@@ -177,16 +185,21 @@
         loadFiltersFromUrl() {
           const p = new URLSearchParams(window.location.search);
           ['search', 'office_id', 'order', 'sort', 'per_page', 'page'].forEach((k) => {
+            if (k === 'office_id' && this.enforcePrimaryOfficeOnly) return;
             if (!p.has(k)) return;
             const v = p.get(k);
             if (['per_page', 'page', 'office_id'].includes(k)) this.filters[k] = v ? (parseInt(v, 10) || v) : '';
             else this.filters[k] = v;
           });
+          if (this.enforcePrimaryOfficeOnly) {
+            this.filters.office_id = '';
+          }
         },
 
         updateUrl() {
           const p = new URLSearchParams();
           Object.keys(this.filters).forEach((k) => {
+            if (k === 'office_id' && this.enforcePrimaryOfficeOnly) return;
             const v = this.filters[k];
             if (v === '' || v === null || v === undefined) return;
             if (k === 'order' && v === 'name') return;
@@ -200,7 +213,7 @@
         },
 
         hasFilters() {
-          return !!(this.filters.search || this.filters.office_id);
+          return !!(this.filters.search || (!this.enforcePrimaryOfficeOnly && this.filters.office_id));
         },
 
         applyFilters() {
@@ -249,6 +262,7 @@
           try {
             const p = new URLSearchParams();
             Object.keys(this.filters).forEach((k) => {
+              if (k === 'office_id' && this.enforcePrimaryOfficeOnly) return;
               const v = this.filters[k];
               if (v === '' || v === null || v === undefined) return;
               p.set(k, String(v));

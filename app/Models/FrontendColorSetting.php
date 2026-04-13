@@ -39,7 +39,7 @@ class FrontendColorSetting extends Model
             'global' => [
                 'name' => 'Global (Compartido)',
                 'description' => 'Colores compartidos en todas las páginas (header, footer, UI)',
-                'groups' => ['primary', 'header', 'footer', 'ui', 'pagination'],
+                'groups' => ['primary', 'buttons', 'header', 'footer', 'ui', 'pagination'],
             ],
             'home' => [
                 'name' => 'Página de Inicio',
@@ -430,6 +430,21 @@ class FrontendColorSetting extends Model
                 'active_from' => '#D1A054',
                 'active_to' => '#768D59',
                 'hover_bg' => '#FFFAF5',
+            ],
+            'buttons' => [
+                'primary_bg' => '#D1A054',
+                'primary_text' => '#ffffff',
+                'primary_hover_bg' => '#b8883f',
+                'primary_border' => '#D1A054',
+                'secondary_bg' => '#768D59',
+                'secondary_text' => '#ffffff',
+                'secondary_hover_bg' => '#627748',
+                'secondary_border' => '#768D59',
+                'success_bg' => '#22c55e',
+                'success_text' => '#ffffff',
+                'success_hover_bg' => '#16a34a',
+                'badge_bg' => '#D1A054',
+                'badge_text' => '#ffffff',
             ],
 
             // === COLORES DE HOME ===

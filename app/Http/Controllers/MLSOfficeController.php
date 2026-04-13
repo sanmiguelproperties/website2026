@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\Validator;
  */
 class MLSOfficeController extends Controller
 {
+    protected ?MLSOffice $cachedPrimaryPublicMlsOffice = null;
+    protected bool $didResolvePrimaryPublicMlsOffice = false;
+
     public function __construct(
         protected MLSSyncService $syncService
     ) {
@@ -154,6 +157,10 @@ class MLSOfficeController extends Controller
 
         $query = MLSOffice::query()->withCount(['agents', 'properties']);
 
+        if ($this->isPublicOnlyPrimaryOfficeEnabled()) {
+            $query->where('is_primary', true);
+        }
+
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             $query->where(function ($q) use ($search) {
@@ -202,6 +209,10 @@ class MLSOfficeController extends Controller
 
         $locale = $this->resolvePublicLocale($request);
 
+        if ($this->isPublicOnlyPrimaryOfficeEnabled() && !$this->isPrimaryPublicOffice($mlsOffice)) {
+            return $this->apiNotFound('Agencia MLS no encontrada', 'MLS_OFFICE_NOT_FOUND');
+        }
+
         $mlsOffice->load(['imageMediaAsset']);
 
         // Nota: no incluimos propiedades aquÃ­ para evitar payload gigante;
@@ -222,6 +233,10 @@ class MLSOfficeController extends Controller
         }
 
         $locale = $this->resolvePublicLocale($request);
+
+        if ($this->isPublicOnlyPrimaryOfficeEnabled() && !$this->isPrimaryPublicOffice($mlsOffice)) {
+            return $this->apiNotFound('Seccion de agentes no disponible', 'PUBLIC_MLS_AGENTS_DISABLED');
+        }
 
         $query = MLSAgent::query()
             ->where('mls_office_id', $mlsOffice->mls_office_id)
@@ -514,6 +529,42 @@ class MLSOfficeController extends Controller
     private function isMlsAgentsPublicEnabled(): bool
     {
         return CmsService::settingBoolean('public_show_mls_agents', true);
+    }
+
+    private function isPublicOnlyPrimaryOfficeEnabled(): bool
+    {
+        return CmsService::settingBoolean('public_mls_only_primary_office', false);
+    }
+
+    private function resolvePrimaryPublicMlsOffice(): ?MLSOffice
+    {
+        if ($this->didResolvePrimaryPublicMlsOffice) {
+            return $this->cachedPrimaryPublicMlsOffice;
+        }
+
+        $this->didResolvePrimaryPublicMlsOffice = true;
+        $this->cachedPrimaryPublicMlsOffice = MLSOffice::query()
+            ->where('is_primary', true)
+            ->orderBy('mls_office_id')
+            ->first();
+
+        return $this->cachedPrimaryPublicMlsOffice;
+    }
+
+    private function resolvePrimaryPublicMlsOfficeId(): ?int
+    {
+        $office = $this->resolvePrimaryPublicMlsOffice();
+        return $office ? (int) $office->mls_office_id : null;
+    }
+
+    private function isPrimaryPublicOffice(MLSOffice $office): bool
+    {
+        $primaryOfficeId = $this->resolvePrimaryPublicMlsOfficeId();
+        if ($primaryOfficeId === null) {
+            return false;
+        }
+
+        return (int) $office->mls_office_id === $primaryOfficeId;
     }
 
     private function transformPublicOffice(MLSOffice $office, string $locale): MLSOffice

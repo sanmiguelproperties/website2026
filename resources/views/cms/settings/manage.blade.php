@@ -29,6 +29,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const $ = (s, e = document) => e.querySelector(s);
   const $$ = (s, e = document) => Array.from(e.querySelectorAll(s));
   const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const HERO_SLIDER_KEYS = {
+    sourceType: 'hero_slider_source_type',
+    propertyIds: 'hero_slider_property_ids',
+    imageIds: 'hero_slider_image_ids',
+  };
+  const HERO_SLIDER_MAX_PROPERTIES = 10;
+  const HERO_SLIDER_MAX_IMAGES = 10;
+  const heroPropertyCache = new Map();
+  const normalizeSourceType = (value) => String(value || '').toLowerCase() === 'images' ? 'images' : 'properties';
+
+  function parseIdList(value, max = Infinity) {
+    const source = Array.isArray(value) ? value.join(',') : String(value ?? '');
+    const seen = new Set();
+    const ids = [];
+
+    source.split(',').forEach(part => {
+      const parsed = parseInt(String(part).trim(), 10);
+      if (!Number.isFinite(parsed) || parsed <= 0 || seen.has(parsed)) return;
+      seen.add(parsed);
+      ids.push(parsed);
+    });
+
+    return ids.slice(0, Math.max(0, max));
+  }
+
+  function idsToCsv(ids, max = Infinity) {
+    return parseIdList(ids, max).join(',');
+  }
 
   async function api(url, opts = {}) {
     const method = (opts.method || 'GET').toUpperCase();
@@ -98,19 +126,131 @@ document.addEventListener('DOMContentLoaded', () => {
       container.insertAdjacentHTML('beforeend', html);
     }
 
-    // Inicializar media inputs después de renderizar
+    // Inicializar media inputs despues de renderizar
     initMediaInputs();
+    initHeroSliderControls();
+  }
+
+  function renderHeroSliderSourceField(s) {
+    const current = normalizeSourceType(s.value_es);
+
+    return `
+      <div class="setting-field" data-setting-key="${esc(s.setting_key)}" data-type="hero-slider-source">
+        <label class="block text-sm font-medium text-[var(--c-text)] mb-2">
+          ${esc(s.label_es)}
+          <span class="text-xs text-[var(--c-muted)] font-normal ml-2">[${esc(s.setting_key)}]</span>
+        </label>
+        <select
+          data-setting-key="${esc(s.setting_key)}"
+          data-lang="es"
+          data-hero-slider-mode-select
+          class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm"
+        >
+          <option value="properties" ${current === 'properties' ? 'selected' : ''}>Propiedades seleccionadas</option>
+          <option value="images" ${current === 'images' ? 'selected' : ''}>Imagenes manuales</option>
+        </select>
+        <p class="mt-1 text-xs text-[var(--c-muted)]">Elige si el hero usa propiedades publicadas o imágenes del media manager.</p>
+      </div>`;
+  }
+
+  function renderHeroSliderPropertyField(s) {
+    const initialCsv = idsToCsv(s.value_es, HERO_SLIDER_MAX_PROPERTIES);
+
+    return `
+      <div class="setting-field" data-setting-key="${esc(s.setting_key)}" data-type="hero-slider-properties" data-hero-slider-role="properties">
+        <label class="block text-sm font-medium text-[var(--c-text)] mb-2">
+          ${esc(s.label_es)}
+          <span class="text-xs text-[var(--c-muted)] font-normal ml-2">[${esc(s.setting_key)}]</span>
+        </label>
+        <input type="hidden" data-setting-key="${esc(s.setting_key)}" data-lang="es" data-hero-prop-ids-input value="${esc(initialCsv)}" />
+        <div class="rounded-2xl border border-[var(--c-border)] p-4 bg-[var(--c-surface)] space-y-3">
+          <div class="flex flex-col sm:flex-row items-stretch gap-2">
+            <input
+              type="search"
+              data-hero-prop-search
+              placeholder="Buscar propiedad por título o ID..."
+              class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm"
+            />
+            <button
+              type="button"
+              data-hero-prop-search-btn
+              class="px-4 py-2 rounded-xl bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 text-sm whitespace-nowrap"
+            >
+              Buscar
+            </button>
+          </div>
+          <p class="text-xs text-[var(--c-muted)]">
+            Selecciona hasta ${HERO_SLIDER_MAX_PROPERTIES} propiedades publicadas. El slider usará la imagen destacada de cada una.
+          </p>
+          <div data-hero-prop-selected class="flex flex-wrap gap-2"></div>
+          <div data-hero-prop-results class="space-y-2 hidden"></div>
+        </div>
+      </div>`;
+  }
+
+  function renderHeroSliderImageField(s) {
+    const key = s.setting_key;
+    const uniqueId = `setting_img_${key}`;
+    const initialCsv = idsToCsv(s.value_es, HERO_SLIDER_MAX_IMAGES);
+
+    return `
+      <div class="setting-field" data-setting-key="${esc(key)}" data-type="hero-slider-images" data-hero-slider-role="images">
+        <label class="block text-sm font-medium text-[var(--c-text)] mb-2">
+          ${esc(s.label_es)}
+          <span class="text-xs text-[var(--c-muted)] font-normal ml-2">[${esc(key)}]</span>
+        </label>
+        <div class="media-input-wrapper">
+          <div data-fp-scope class="rounded-2xl border border-[var(--c-border)] p-4 bg-[var(--c-surface)]">
+            <div class="flex items-center gap-3">
+              <input
+                type="text"
+                id="${uniqueId}"
+                value="${esc(initialCsv)}"
+                placeholder="IDs separados por coma"
+                readonly
+                class="w-full rounded-lg border px-3 py-2 bg-[var(--c-elev)] border-[var(--c-border)] text-sm"
+                data-filepicker="multiple"
+                data-fp-max="${HERO_SLIDER_MAX_IMAGES}"
+                data-fp-per-page="10"
+                data-fp-preview="#${uniqueId}_preview"
+                data-fp-columns="5"
+                data-setting-key="${esc(key)}"
+                data-lang="es"
+              />
+              <button
+                type="button"
+                class="cms-fp-open-btn px-3 py-2 rounded-lg bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 text-sm whitespace-nowrap"
+                data-hero-slider-open-media
+                aria-controls="archive_manager-root"
+              >
+                Seleccionar imágenes
+              </button>
+            </div>
+            <div id="${uniqueId}_preview" class="mt-3"></div>
+          </div>
+        </div>
+        <p class="mt-1 text-xs text-[var(--c-muted)]">Selecciona hasta ${HERO_SLIDER_MAX_IMAGES} imágenes para el fondo del hero.</p>
+      </div>`;
   }
 
   function renderSettingField(s) {
+    if (s.setting_key === HERO_SLIDER_KEYS.sourceType) {
+      return renderHeroSliderSourceField(s);
+    }
+    if (s.setting_key === HERO_SLIDER_KEYS.propertyIds) {
+      return renderHeroSliderPropertyField(s);
+    }
+    if (s.setting_key === HERO_SLIDER_KEYS.imageIds) {
+      return renderHeroSliderImageField(s);
+    }
+
     const translatable = !nonTranslatable.includes(s.type);
     const settingIsTruthy = (value) => ['1', 'true', 'yes', 'on', 'si'].includes(String(value ?? '').trim().toLowerCase());
 
-    // Campo tipo IMAGE → usa media-input picker
+    // Campo tipo IMAGE -> usa media-input picker
     if (s.type === 'image') {
       const mediaId = s.media_asset_id || '';
       const mediaUrl = s.media_asset?.serving_url || s.media_asset?.url || '';
-      const uniqueId = 'setting_img_' + s.setting_key;
 
       return `
         <div class="setting-field" data-setting-key="${esc(s.setting_key)}" data-type="image">
@@ -120,16 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </label>
           ${mediaUrl ? `<div class="mb-2"><img src="${esc(mediaUrl)}" class="h-16 rounded-xl border border-[var(--c-border)] object-contain" alt="Preview" /></div>` : ''}
           <div class="media-input-wrapper">
-            <x-media-input
-              name="${uniqueId}"
-              mode="single"
-              :max="1"
-              value="${mediaId}"
-              placeholder="ID del media asset"
-              button="Seleccionar imagen"
-              preview="true"
-              columns="4"
-            />
+            <input type="text" value="${esc(mediaId)}" hidden />
           </div>
         </div>`;
     }
@@ -193,12 +324,21 @@ document.addEventListener('DOMContentLoaded', () => {
     return `<div><label class="block text-sm font-medium text-[var(--c-text)] mb-1">${esc(s.label_es)} <span class="text-xs text-[var(--c-muted)] font-normal">[${esc(s.type)}]</span></label><input data-setting-key="${esc(s.setting_key)}" data-lang="es" value="${esc(s.value_es)}" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm" /></div>`;
   }
 
+  function bindMediaPickerButton(button, input) {
+    if (!button || !input || button.dataset.fpBound === '1') return;
+    button.dataset.fpBound = '1';
+
+    button.addEventListener('click', () => {
+      if (typeof window.openMediaPickerFor === 'function') {
+        window.openMediaPickerFor(input);
+      } else {
+        console.error('Media Picker no disponible. Asegurate de que media-picker.js este cargado.');
+      }
+    });
+  }
+
   /**
    * Inicializa los campos de imagen con el media picker.
-   * Los inputs se crean dinámicamente, así que necesitamos:
-   * 1. Crear el HTML del input + botón
-   * 2. Bindear el botón para abrir el picker manualmente
-   * 3. El MutationObserver de media-inputs.js se encarga del preview
    */
   function initMediaInputs() {
     $$('.setting-field[data-type="image"]').forEach(wrapper => {
@@ -211,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const existingInput = mediaInputWrapper.querySelector('input[type="text"]');
       const currentValue = existingInput?.value || '';
 
-      // Crear el HTML del input + botón
+      // Crear el HTML del input + boton
       const uniqueId = 'setting_img_' + key;
       mediaInputWrapper.innerHTML = `
         <div data-fp-scope class="rounded-2xl border border-[var(--c-border)] p-4 bg-[var(--c-surface)]">
@@ -234,7 +374,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <button
               type="button"
               class="cms-fp-open-btn px-3 py-2 rounded-lg bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 text-sm whitespace-nowrap"
-              data-fp-open
               aria-controls="archive_manager-root"
             >
               Seleccionar
@@ -243,19 +382,258 @@ document.addEventListener('DOMContentLoaded', () => {
           <div id="${uniqueId}_preview" class="mt-3"></div>
         </div>`;
 
-      // Bindear el botón para abrir el media picker usando la API global
-      // media-picker.js expone window.openMediaPickerFor(input)
       const btn = mediaInputWrapper.querySelector('.cms-fp-open-btn');
       const input = mediaInputWrapper.querySelector('input[data-filepicker]');
-      if (btn && input) {
-        btn.addEventListener('click', () => {
-          if (typeof window.openMediaPickerFor === 'function') {
-            window.openMediaPickerFor(input);
-          } else {
-            console.error('Media Picker no disponible. Asegúrate de que media-picker.js esté cargado.');
-          }
+      bindMediaPickerButton(btn, input);
+    });
+  }
+
+  function initHeroSliderControls() {
+    initHeroSliderModeToggle();
+    initHeroSliderImagePickers();
+    initHeroSliderPropertyPickers();
+  }
+
+  function initHeroSliderModeToggle() {
+    const modeInput = $('[data-hero-slider-mode-select]');
+    if (!modeInput) return;
+
+    const applyModeVisibility = () => {
+      const activeMode = normalizeSourceType(modeInput.value);
+      $$('[data-hero-slider-role]').forEach(field => {
+        const role = field.dataset.heroSliderRole;
+        field.classList.toggle('hidden', role !== activeMode);
+      });
+    };
+
+    if (modeInput.dataset.initialized !== '1') {
+      modeInput.dataset.initialized = '1';
+      modeInput.addEventListener('change', applyModeVisibility);
+    }
+
+    applyModeVisibility();
+  }
+
+  function initHeroSliderImagePickers() {
+    $$('.setting-field[data-type="hero-slider-images"]').forEach(wrapper => {
+      if (wrapper.dataset.initialized === '1') return;
+      wrapper.dataset.initialized = '1';
+
+      const btn = wrapper.querySelector('[data-hero-slider-open-media]');
+      const input = wrapper.querySelector('input[data-filepicker]');
+      bindMediaPickerButton(btn, input);
+    });
+  }
+
+  function normalizePropertySummary(property) {
+    if (!property || !property.id) return null;
+
+    return {
+      id: Number(property.id),
+      title: property.title || `Propiedad #${property.id}`,
+      property_type_name: property.property_type_name || '',
+      published: property.published === undefined ? true : Boolean(property.published),
+      cover_url: property.cover_media_asset?.serving_url || property.cover_media_asset?.url || '',
+      city: property.location?.city || '',
+      city_area: property.location?.city_area || '',
+    };
+  }
+
+  async function fetchPropertySummaryById(id) {
+    const normalizedId = Number(id);
+    if (!Number.isFinite(normalizedId) || normalizedId <= 0) return null;
+    if (heroPropertyCache.has(normalizedId)) return heroPropertyCache.get(normalizedId);
+
+    try {
+      const response = await api(`${API}/properties/${normalizedId}`);
+      if (!response?.success || !response?.data) return null;
+      const summary = normalizePropertySummary(response.data);
+      if (summary) heroPropertyCache.set(normalizedId, summary);
+      return summary;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  async function searchPublishedProperties(searchTerm = '') {
+    const params = new URLSearchParams({
+      per_page: '8',
+      published: '1',
+      order: 'updated_at',
+      sort: 'desc',
+    });
+
+    if (searchTerm.trim()) {
+      params.set('search', searchTerm.trim());
+    }
+
+    const response = await api(`${API}/properties?${params.toString()}`);
+    const rows = response?.data?.data || [];
+
+    return rows
+      .map(normalizePropertySummary)
+      .filter(Boolean);
+  }
+
+  function emitClientMessage(success, message) {
+    window.dispatchEvent(new CustomEvent('api:response', { detail: { success, message } }));
+  }
+
+  function initHeroSliderPropertyPickers() {
+    $$('.setting-field[data-type="hero-slider-properties"]').forEach(wrapper => {
+      if (wrapper.dataset.initialized === '1') return;
+      wrapper.dataset.initialized = '1';
+
+      const hiddenInput = wrapper.querySelector('[data-hero-prop-ids-input]');
+      const searchInput = wrapper.querySelector('[data-hero-prop-search]');
+      const searchBtn = wrapper.querySelector('[data-hero-prop-search-btn]');
+      const selectedContainer = wrapper.querySelector('[data-hero-prop-selected]');
+      const resultsContainer = wrapper.querySelector('[data-hero-prop-results]');
+      if (!hiddenInput || !searchInput || !searchBtn || !selectedContainer || !resultsContainer) return;
+
+      const state = {
+        selectedIds: parseIdList(hiddenInput.value, HERO_SLIDER_MAX_PROPERTIES),
+        selectedMap: new Map(),
+        searchRows: [],
+        debounceTimer: null,
+      };
+
+      const syncHiddenInput = () => {
+        hiddenInput.value = idsToCsv(state.selectedIds, HERO_SLIDER_MAX_PROPERTIES);
+      };
+
+      const renderSelected = () => {
+        if (!state.selectedIds.length) {
+          selectedContainer.innerHTML = `<p class="text-xs text-[var(--c-muted)]">No hay propiedades seleccionadas.</p>`;
+          return;
+        }
+
+        selectedContainer.innerHTML = state.selectedIds.map(id => {
+          const property = state.selectedMap.get(id);
+          const label = property?.title || `Propiedad #${id}`;
+          const location = [property?.city, property?.city_area].filter(Boolean).join(', ');
+          const status = property && property.published === false
+            ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700">No publicada</span>`
+            : '';
+
+          return `
+            <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)]">
+              <div class="min-w-0">
+                <p class="text-xs font-medium text-[var(--c-text)] truncate">${esc(label)}</p>
+                ${location ? `<p class="text-[11px] text-[var(--c-muted)] truncate">${esc(location)}</p>` : ''}
+              </div>
+              ${status}
+              <button type="button" data-hero-prop-remove="${id}" class="text-[var(--c-muted)] hover:text-red-600 text-sm leading-none" title="Quitar">x</button>
+            </div>
+          `;
+        }).join('');
+
+        $$('[data-hero-prop-remove]', selectedContainer).forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = Number(btn.dataset.heroPropRemove);
+            state.selectedIds = state.selectedIds.filter(currentId => currentId !== id);
+            state.selectedMap.delete(id);
+            syncHiddenInput();
+            renderSelected();
+            renderSearchResults(state.searchRows);
+          });
         });
-      }
+      };
+
+      const renderSearchResults = (rows) => {
+        state.searchRows = rows;
+        resultsContainer.classList.remove('hidden');
+
+        if (!rows.length) {
+          resultsContainer.innerHTML = `<p class="text-xs text-[var(--c-muted)]">No se encontraron propiedades publicadas.</p>`;
+          return;
+        }
+
+        resultsContainer.innerHTML = rows.map(row => {
+          const alreadySelected = state.selectedIds.includes(row.id);
+          const location = [row.city, row.city_area].filter(Boolean).join(', ');
+          const subtitle = [row.property_type_name, location].filter(Boolean).join(' • ');
+          const canAdd = !alreadySelected && state.selectedIds.length < HERO_SLIDER_MAX_PROPERTIES;
+
+          return `
+            <div class="flex items-center justify-between gap-3 p-3 rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)]">
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-[var(--c-text)] truncate">${esc(row.title)}</p>
+                <p class="text-xs text-[var(--c-muted)] truncate">${esc(subtitle || `ID ${row.id}`)}</p>
+              </div>
+              <button
+                type="button"
+                data-hero-prop-add="${row.id}"
+                class="px-3 py-1.5 rounded-lg text-xs ${canAdd ? 'bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95' : 'bg-[var(--c-surface)] text-[var(--c-muted)] cursor-not-allowed'}"
+                ${canAdd ? '' : 'disabled'}
+              >
+                ${alreadySelected ? 'Agregada' : 'Agregar'}
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        $$('[data-hero-prop-add]', resultsContainer).forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = Number(btn.dataset.heroPropAdd);
+            if (!Number.isFinite(id) || id <= 0) return;
+            if (state.selectedIds.includes(id)) return;
+
+            if (state.selectedIds.length >= HERO_SLIDER_MAX_PROPERTIES) {
+              emitClientMessage(false, `Solo puedes seleccionar ${HERO_SLIDER_MAX_PROPERTIES} propiedades.`);
+              return;
+            }
+
+            state.selectedIds.push(id);
+            const row = state.searchRows.find(item => item.id === id);
+            if (row) state.selectedMap.set(id, row);
+            syncHiddenInput();
+            renderSelected();
+            renderSearchResults(state.searchRows);
+          });
+        });
+      };
+
+      const hydrateSelectedIds = async () => {
+        if (!state.selectedIds.length) return;
+
+        await Promise.all(state.selectedIds.map(async (id) => {
+          const property = await fetchPropertySummaryById(id);
+          if (property) state.selectedMap.set(id, property);
+        }));
+
+        renderSelected();
+      };
+
+      const runSearch = async () => {
+        const term = searchInput.value || '';
+        resultsContainer.classList.remove('hidden');
+        resultsContainer.innerHTML = `<p class="text-xs text-[var(--c-muted)]">Buscando...</p>`;
+
+        try {
+          const rows = await searchPublishedProperties(term);
+          rows.forEach(row => heroPropertyCache.set(row.id, row));
+          renderSearchResults(rows);
+        } catch (_error) {
+          resultsContainer.innerHTML = `<p class="text-xs text-red-600">No se pudo cargar la lista de propiedades.</p>`;
+        }
+      };
+
+      searchBtn.addEventListener('click', runSearch);
+      searchInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        runSearch();
+      });
+      searchInput.addEventListener('input', () => {
+        clearTimeout(state.debounceTimer);
+        state.debounceTimer = setTimeout(runSearch, 350);
+      });
+
+      syncHiddenInput();
+      renderSelected();
+      hydrateSelectedIds();
+      runSearch();
     });
   }
 

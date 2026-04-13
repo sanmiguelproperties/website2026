@@ -140,7 +140,11 @@
 
         createPropertyCard(property) {
           const imageUrl = property.cover_media_asset?.serving_url || property.cover_media_asset?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';
-          const price = property.operations?.[0]?.formatted_amount || FAVORITES_LABELS.askPrice || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
+          const firstOperation = property.operations?.[0] || null;
+          const fallbackAmount = (typeof window.formatDisplayPrice === 'function')
+            ? window.formatDisplayPrice(firstOperation?.amount, firstOperation?.currency?.code || firstOperation?.currency_code)
+            : '';
+          const price = firstOperation?.formatted_amount || fallbackAmount || FAVORITES_LABELS.askPrice || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
           const operationType = property.operations?.[0]?.operation_type || '';
           const location = [property.location?.city, property.location?.city_area].filter(Boolean).join(', ') || FAVORITES_LABELS.locationFallback || tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible');
           const title = property.title || tPublic('common.available', isEnLocale ? 'Available property' : 'Propiedad disponible');

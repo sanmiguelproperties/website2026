@@ -25,6 +25,7 @@ use App\Http\Controllers\MLSSyncController;
 use App\Http\Controllers\MLSAgentController;
 use App\Http\Controllers\MLSOfficeController;
 use App\Http\Controllers\CorporateEmailController;
+use App\Http\Controllers\AgencyTeamMemberController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,6 +64,10 @@ Route::apiResource('media', MediaAssetController::class);
     Route::get('properties/filter-options', [PropertyController::class, 'filterOptions']);
     Route::get('properties', [PropertyController::class, 'indexPublic']);
     Route::get('properties/{property}', [PropertyController::class, 'showPublic']);
+
+    // Equipo de trabajo (pÃºblico)
+    Route::get('team-members', [AgencyTeamMemberController::class, 'indexPublic']);
+    Route::get('team-members/departments', [AgencyTeamMemberController::class, 'departmentsPublic']);
   });
 
 // User Management routes protegidas con autenticación Passport
@@ -96,6 +101,16 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
     Route::post('zone-pages/sync', [ZonePageController::class, 'sync']);
     Route::get('zone-pages/{zonePage}', [ZonePageController::class, 'show'])->where('zonePage', '[0-9]+');
     Route::put('zone-pages/{zonePage}', [ZonePageController::class, 'update'])->where('zonePage', '[0-9]+');
+});
+
+Route::middleware(['auth.api', 'admin.api'])->group(function () {
+    Route::get('team-members/departments', [AgencyTeamMemberController::class, 'departments']);
+    Route::get('team-members', [AgencyTeamMemberController::class, 'index']);
+    Route::post('team-members', [AgencyTeamMemberController::class, 'store']);
+    Route::get('team-members/{teamMember}', [AgencyTeamMemberController::class, 'show'])->where('teamMember', '[0-9]+');
+    Route::put('team-members/{teamMember}', [AgencyTeamMemberController::class, 'update'])->where('teamMember', '[0-9]+');
+    Route::patch('team-members/{teamMember}', [AgencyTeamMemberController::class, 'update'])->where('teamMember', '[0-9]+');
+    Route::delete('team-members/{teamMember}', [AgencyTeamMemberController::class, 'destroy'])->where('teamMember', '[0-9]+');
 });
 
 // RBAC routes protegidas con autenticación Passport
