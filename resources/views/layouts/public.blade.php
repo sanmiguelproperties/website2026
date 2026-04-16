@@ -52,9 +52,9 @@
         $pageData = $pageData ?? null;
         $settings = $settings ?? [];
         $frontendColorService = app(\App\Services\FrontendColorService::class);
-        // Detectar la vista actual basÃƒÆ’Ã‚Â¡ndose en la ruta
+        // Detectar la vista actual basándose en la ruta
         $currentView = $frontendColorService->detectCurrentView();
-        // Generar CSS con colores combinados (global + vista especÃƒÆ’Ã‚Â­fica)
+        // Generar CSS con colores combinados (global + vista específica)
         $frontendCss = $frontendColorService->generateCssForView($currentView);
 
         // CMS Site Settings (logos, contacto, etc.) - disponibles en todo el layout
@@ -257,7 +257,7 @@
 
     <!-- Custom Styles (Using Dynamic Variables) -->
     <style>
-        /* Scrollbar personalizado - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
+        /* Scrollbar personalizado - Usa variables CSS dinámicas */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -273,7 +273,7 @@
             background: linear-gradient(180deg, var(--fe-ui-scrollbar_hover_from, #A52A2A), var(--fe-ui-scrollbar_hover_to, #768D59));
         }
 
-        /* Gradient text helper - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
+        /* Gradient text helper - Usa variables CSS dinámicas */
         .text-gradient {
             background: linear-gradient(135deg, var(--fe-primary-from, #D1A054) 0%, var(--fe-primary-to, #768D59) 100%);
             -webkit-background-clip: text;
@@ -281,7 +281,7 @@
             background-clip: text;
         }
 
-        /* Gradient border helper - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
+        /* Gradient border helper - Usa variables CSS dinámicas */
         .border-gradient {
             border: 2px solid transparent;
             background: linear-gradient(var(--fe-ui-body_bg, #ffffff), var(--fe-ui-body_bg, #ffffff)) padding-box, linear-gradient(135deg, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59)) border-box;
@@ -294,7 +294,7 @@
             -webkit-backdrop-filter: blur(12px);
         }
 
-        /* Swiper custom styles - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
+        /* Swiper custom styles - Usa variables CSS dinámicas */
         .swiper-pagination-bullet {
             width: 12px;
             height: 12px;
@@ -347,7 +347,7 @@
             100% { background-position: -200% 0; }
         }
 
-        /* Filter chip active state - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas */
+        /* Filter chip active state - Usa variables CSS dinámicas */
         .filter-chip.active {
             background-color: var(--fe-buttons-secondary_bg, #768D59);
             color: var(--fe-buttons-secondary_text, #ffffff);
@@ -407,7 +407,7 @@
         .hover\:bg-slate-100:hover { background-color: var(--fe-ui-slate_100, #f1f5f9) !important; }
         .hover\:bg-slate-100\/70:hover { background-color: var(--fe-ui-slate_100_70, rgba(241,245,249,0.7)) !important; }
 
-        /* Clases de utilidad para usar variables CSS dinÃƒÆ’Ã‚Â¡micas */
+        /* Clases de utilidad para usar variables CSS dinámicas */
         
         /* Gradientes primarios */
         .bg-fe-gradient-primary {
@@ -494,7 +494,7 @@
             background-color: var(--fe-buttons-secondary_hover_bg, var(--fe-buttons-secondary_bg, #768D59)) !important;
         }
         
-        /* Gradiente para tÃƒÆ’Ã‚Â­tulos hero */
+        /* Gradiente para títulos hero */
         .text-fe-hero-gradient {
             background: linear-gradient(to right, var(--fe-hero-title_gradient_from, #D1A054), var(--fe-hero-title_gradient_via, #FFFAF5), var(--fe-hero-title_gradient_to, #768D59));
             -webkit-background-clip: text;
@@ -530,6 +530,68 @@
             display: -webkit-box;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 2;
+        }
+
+        .rich-content {
+            line-height: 1.7;
+            color: inherit;
+            word-break: break-word;
+        }
+        .rich-content > :first-child {
+            margin-top: 0;
+        }
+        .rich-content > :last-child {
+            margin-bottom: 0;
+        }
+        .rich-content p,
+        .rich-content ul,
+        .rich-content ol,
+        .rich-content blockquote,
+        .rich-content pre,
+        .rich-content table {
+            margin: 0.75rem 0;
+        }
+        .rich-content ul,
+        .rich-content ol {
+            padding-left: 1.25rem;
+        }
+        .rich-content ul {
+            list-style: disc;
+        }
+        .rich-content ol {
+            list-style: decimal;
+        }
+        .rich-content h1,
+        .rich-content h2,
+        .rich-content h3,
+        .rich-content h4,
+        .rich-content h5,
+        .rich-content h6 {
+            margin: 0.9rem 0 0.45rem;
+            line-height: 1.35;
+            font-weight: 700;
+            color: inherit;
+        }
+        .rich-content a {
+            color: var(--fe-links-primary, #2563eb);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            transition: color .2s ease;
+        }
+        .rich-content a:hover {
+            color: var(--fe-links-primary_hover, #1d4ed8);
+        }
+        .rich-content blockquote {
+            border-left: 3px solid #cbd5e1;
+            padding-left: 0.85rem;
+            color: #475569;
+        }
+        .rich-content code {
+            background-color: #f1f5f9;
+            border-radius: 0.35rem;
+            padding: 0.1rem 0.35rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.92em;
         }
     </style>
 
@@ -584,6 +646,218 @@
             }
             return fallback;
         };
+
+        (function () {
+            const ALLOWED_TAGS = new Set([
+                'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's',
+                'ul', 'ol', 'li', 'blockquote',
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'a', 'span', 'div', 'code', 'pre'
+            ]);
+            const GLOBAL_ALLOWED_ATTRIBUTES = new Set(['class', 'style', 'title', 'href', 'target', 'rel']);
+            const ALLOWED_STYLE_PROPERTIES = new Set([
+                'color', 'background-color',
+                'font-weight', 'font-style', 'font-size', 'line-height', 'letter-spacing',
+                'text-align', 'text-decoration',
+                'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+                'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+                'border', 'border-color', 'border-radius'
+            ]);
+            const ALLOWED_REL_TOKENS = new Set(['noopener', 'noreferrer', 'nofollow', 'ugc', 'sponsored']);
+
+            function escapeHtml(value) {
+                return String(value ?? '')
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#039;');
+            }
+
+            function sanitizeUrl(url) {
+                const raw = String(url ?? '').trim();
+                if (!raw) return '#';
+
+                if (raw.startsWith('#') || raw.startsWith('/') || raw.startsWith('./') || raw.startsWith('../')) {
+                    return raw;
+                }
+
+                const lower = raw.toLowerCase();
+                if (lower.startsWith('http://') || lower.startsWith('https://') || lower.startsWith('mailto:') || lower.startsWith('tel:')) {
+                    return raw;
+                }
+
+                return '#';
+            }
+
+            function sanitizeRel(rel) {
+                const tokens = String(rel ?? '')
+                    .toLowerCase()
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .filter((token) => ALLOWED_REL_TOKENS.has(token));
+
+                return Array.from(new Set(tokens)).join(' ');
+            }
+
+            function sanitizeStyle(styleValue) {
+                const declarations = String(styleValue ?? '').split(';');
+                const sanitized = [];
+
+                for (const declaration of declarations) {
+                    if (!declaration.includes(':')) continue;
+
+                    const idx = declaration.indexOf(':');
+                    const prop = declaration.slice(0, idx).trim().toLowerCase();
+                    const value = declaration.slice(idx + 1).trim();
+                    const valueLower = value.toLowerCase();
+
+                    if (!prop || !value) continue;
+                    if (!ALLOWED_STYLE_PROPERTIES.has(prop)) continue;
+                    if (valueLower.includes('expression(') || valueLower.includes('javascript:') || valueLower.includes('vbscript:') || valueLower.includes('url(')) continue;
+
+                    const cleanValue = value.replace(/[<>]/g, '').trim();
+                    if (!cleanValue) continue;
+
+                    sanitized.push(`${prop}: ${cleanValue}`);
+                }
+
+                return sanitized.join('; ');
+            }
+
+            function sanitizeElement(element) {
+                const tag = element.tagName.toLowerCase();
+
+                if (!ALLOWED_TAGS.has(tag)) {
+                    const parent = element.parentNode;
+                    if (!parent) {
+                        element.remove();
+                        return false;
+                    }
+
+                    while (element.firstChild) {
+                        parent.insertBefore(element.firstChild, element);
+                    }
+                    parent.removeChild(element);
+                    return false;
+                }
+
+                for (const attr of Array.from(element.attributes)) {
+                    const name = attr.name.toLowerCase();
+                    const value = attr.value;
+
+                    if (name.startsWith('on')) {
+                        element.removeAttribute(attr.name);
+                        continue;
+                    }
+
+                    if (!GLOBAL_ALLOWED_ATTRIBUTES.has(name)) {
+                        element.removeAttribute(attr.name);
+                        continue;
+                    }
+
+                    if (tag !== 'a' && (name === 'href' || name === 'target' || name === 'rel')) {
+                        element.removeAttribute(attr.name);
+                        continue;
+                    }
+
+                    if (name === 'href') {
+                        element.setAttribute(attr.name, sanitizeUrl(value));
+                        continue;
+                    }
+
+                    if (name === 'target') {
+                        if (value !== '_blank' && value !== '_self') {
+                            element.removeAttribute(attr.name);
+                        }
+                        continue;
+                    }
+
+                    if (name === 'rel') {
+                        const safeRel = sanitizeRel(value);
+                        if (!safeRel) {
+                            element.removeAttribute(attr.name);
+                        } else {
+                            element.setAttribute(attr.name, safeRel);
+                        }
+                        continue;
+                    }
+
+                    if (name === 'style') {
+                        const safeStyle = sanitizeStyle(value);
+                        if (!safeStyle) {
+                            element.removeAttribute(attr.name);
+                        } else {
+                            element.setAttribute(attr.name, safeStyle);
+                        }
+                        continue;
+                    }
+                }
+
+                if (tag === 'a' && element.getAttribute('target') === '_blank') {
+                    const relSet = new Set(
+                        (element.getAttribute('rel') || '')
+                            .split(/\s+/)
+                            .filter(Boolean)
+                    );
+                    relSet.add('noopener');
+                    relSet.add('noreferrer');
+                    element.setAttribute('rel', Array.from(relSet).join(' '));
+                }
+
+                return true;
+            }
+
+            function sanitizeNodeTree(root) {
+                const children = Array.from(root.childNodes);
+                for (const node of children) {
+                    if (node.nodeType === Node.COMMENT_NODE) {
+                        node.remove();
+                        continue;
+                    }
+
+                    if (node.nodeType !== Node.ELEMENT_NODE) continue;
+
+                    const keepNode = sanitizeElement(node);
+                    if (keepNode) {
+                        sanitizeNodeTree(node);
+                    }
+                }
+            }
+
+            function sanitizeRichHtml(input, fallback = '') {
+                const source = String(input ?? '').trim();
+                const fallbackText = String(fallback ?? '');
+
+                if (!source) {
+                    return fallbackText ? escapeHtml(fallbackText) : '';
+                }
+
+                if (!/<\s*\/?\s*[a-z][^>]*>/i.test(source)) {
+                    return escapeHtml(source).replace(/\r?\n/g, '<br>');
+                }
+
+                const template = document.createElement('template');
+                template.innerHTML = source;
+                sanitizeNodeTree(template.content);
+
+                const html = template.innerHTML.trim();
+                if (!html) {
+                    return fallbackText ? escapeHtml(fallbackText) : '';
+                }
+
+                return html;
+            }
+
+            function renderRichText(target, input, fallback = '') {
+                if (!(target instanceof Element)) return;
+                target.innerHTML = sanitizeRichHtml(input, fallback);
+                target.classList.add('rich-content');
+            }
+
+            window.publicSanitizeRichHtml = sanitizeRichHtml;
+            window.publicRenderRichText = renderRichText;
+        })();
 
         (function () {
             const locale = window.__PUBLIC_LOCALE__ || 'es';

@@ -143,7 +143,7 @@
               <span id="propertyIdChip" class="hidden text-xs font-semibold text-slate-600 rounded-full px-3 py-1 bg-slate-100 pd-chip">#—</span>
             </div>
 
-            <div id="description" class="mt-4 text-slate-700 leading-relaxed whitespace-pre-line pd-body-text">
+            <div id="description" class="mt-4 text-slate-700 leading-relaxed rich-content pd-body-text">
               <div class="space-y-3">
                 <div class="h-4 w-11/12 skeleton rounded"></div>
                 <div class="h-4 w-10/12 skeleton rounded"></div>
@@ -874,10 +874,15 @@
         `).join('');
       }
 
-      document.getElementById('description').textContent = safeText(
-        property.description,
-        tPublic('property.noDescription', isEnLocale ? 'No description available.' : 'Sin descripcion.')
-      );
+      const descriptionFallback = tPublic('property.noDescription', isEnLocale ? 'No description available.' : 'Sin descripcion.');
+      const descriptionEl = document.getElementById('description');
+      if (descriptionEl) {
+        if (typeof window.publicRenderRichText === 'function') {
+          window.publicRenderRichText(descriptionEl, property.description, descriptionFallback);
+        } else {
+          descriptionEl.textContent = safeText(property.description, descriptionFallback);
+        }
+      }
 
       const featuresWrap = document.getElementById('featuresWrap');
       const features = Array.isArray(property.features) ? property.features : [];

@@ -74,7 +74,7 @@
     {{-- Slider Container --}}
     <div class="swiper hero-slider absolute inset-0 w-full h-full">
         <div class="swiper-wrapper" id="heroSliderWrapper">
-            {{-- Slides se cargan dinÃƒÆ’Ã‚Â¡micamente desde la API --}}
+            {{-- Slides se cargan dinámicamente desde la API --}}
             {{-- Placeholder mientras carga --}}
             <div class="swiper-slide hero-slide-placeholder">
                 <div class="absolute inset-0" style="background: linear-gradient(to bottom right, var(--fe-hero-placeholder_from, #0f172a), var(--fe-hero-placeholder_to, #334155));"></div>
@@ -97,12 +97,12 @@
         <div class="swiper-button-next !right-4 lg:!right-8"></div>
     </div>
 
-    {{-- Hero Content Overlay - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+    {{-- Hero Content Overlay - Usa variables CSS dinámicas --}}
     <div class="absolute inset-0 z-10" style="background: linear-gradient(to bottom, var(--fe-hero-overlay_from, rgba(0,0,0,0.6)), var(--fe-hero-overlay_via, rgba(0,0,0,0.4)), var(--fe-hero-overlay_to, rgba(0,0,0,0.7)));"></div>
     
     <div class="relative z-20 h-full flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8">
         <div class="max-w-4xl mx-auto">
-            {{-- Badge - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+            {{-- Badge - Usa variables CSS dinámicas --}}
             <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm text-white/90 text-sm font-medium mb-6 animate-fade-in" style="background: var(--fe-hero-badge_bg, rgba(255,255,255,0.1));">
                 <span class="flex h-2 w-2 relative">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: var(--fe-hero-badge_dot, #768D59);"></span>
@@ -111,7 +111,7 @@
                 {{ $txt('hero_badge_text', '+500 propiedades disponibles', '+500 available properties') }}
             </div>
 
-            {{-- Main Title - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+            {{-- Main Title - Usa variables CSS dinámicas --}}
             <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 animate-slide-up">
                 {{ $txt('hero_title_line1', 'Encuentra tu', 'Find your') }}
                 <span class="block text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-hero-title_gradient_from, #D1A054), var(--fe-hero-title_gradient_via, #FFFAF5), var(--fe-hero-title_gradient_to, #768D59));">
@@ -124,7 +124,7 @@
                 {{ $txt('hero_subtitle', 'Casas, departamentos y terrenos en las mejores ubicaciones. Tu próxima inversión inmobiliaria está a un clic de distancia.', 'Houses, apartments and land in the best locations. Your next real estate investment is just one click away.') }}
             </p>
 
-            {{-- Search Bar - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+            {{-- Search Bar - Usa variables CSS dinámicas --}}
             <div class="relative max-w-3xl mx-auto animate-slide-up" style="animation-delay: 0.2s;" x-data="heroSearch()">
                 <form @submit.prevent="submitSearch()" class="flex flex-col sm:flex-row gap-3 p-3 backdrop-blur-md rounded-2xl border" style="background: var(--fe-hero-search_bg, rgba(255,255,255,0.1)); border-color: var(--fe-hero-search_input_border, rgba(255,255,255,0.1));">
                     <div class="relative flex-1">
@@ -147,9 +147,9 @@
                     </button>
                 </form>
 
-                {{-- Quick Filters (dinÃƒÆ’Ã‚Â¡micos) --}}
+                {{-- Quick Filters (dinámicos) --}}
                 <div class="flex flex-wrap justify-center gap-2 mt-4" id="heroQuickFilters">
-                    {{-- Se llenan dinÃƒÆ’Ã‚Â¡micamente desde JS --}}
+                    {{-- Se llenan dinámicamente desde JS --}}
                 </div>
             </div>
         </div>
@@ -167,7 +167,7 @@
 </section>
 
 {{-- ============================================== --}}
-{{-- STATS BAR - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+{{-- STATS BAR - Usa variables CSS dinámicas --}}
 {{-- ============================================== --}}
 <section class="relative z-30 -mt-16">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -186,7 +186,7 @@
 </section>
 
 {{-- ============================================== --}}
-{{-- SERVICIOS / CARACTERÃƒÆ’Ã‚ÂSTICAS - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+{{-- SERVICIOS / CARACTERÍSTICAS - Usa variables CSS dinámicas --}}
 {{-- ============================================== --}}
 <section id="servicios" class="py-20 lg:py-28" style="background-color: var(--fe-services-bg, #ffffff);">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,7 +208,7 @@
 
         {{-- Features Grid --}}
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {{-- Feature 1 - BÃƒÆ’Ã‚Âºsqueda Inteligente --}}
+            {{-- Feature 1 - Búsqueda Inteligente --}}
             <div class="group relative p-8 rounded-2xl border transition-all duration-300 hover:shadow-xl" style="background: linear-gradient(to bottom right, var(--fe-services-card_bg_from, #f8fafc), var(--fe-services-card_bg_to, #ffffff)); border-color: var(--fe-services-card_border, #f1f5f9);">
                 <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-services-feature1_from, #D1A054), var(--fe-services-feature1_to, #D1A054));">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,7 +268,7 @@
                 <div class="absolute top-4 right-4 w-20 h-20 rounded-full blur-2xl transition-colors" style="background-color: var(--fe-services-feature5_glow, rgba(165, 42, 42, 0.05));"></div>
             </div>
 
-            {{-- Feature 6 - App MÃƒÆ’Ã‚Â³vil --}}
+            {{-- Feature 6 - App Móvil --}}
             <div class="group relative p-8 rounded-2xl border transition-all duration-300 hover:shadow-xl" style="background: linear-gradient(to bottom right, var(--fe-services-card_bg_from, #f8fafc), var(--fe-services-card_bg_to, #ffffff)); border-color: var(--fe-services-card_border, #f1f5f9);">
                 <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-services-feature6_from, #768D59), var(--fe-services-feature6_to, #979790));">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,7 +284,7 @@
 </section>
 
 {{-- ============================================== --}}
-{{-- CTA - PROPIEDADES EN VENTA - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+{{-- CTA - PROPIEDADES EN VENTA - Usa variables CSS dinámicas --}}
 {{-- ============================================== --}}
 <section id="venta" class="relative py-24 lg:py-32 overflow-hidden">
     {{-- Background Image --}}
@@ -355,7 +355,7 @@
 </section>
 
 {{-- ============================================== --}}
-{{-- CTA - PROPIEDADES EN RENTA - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+{{-- CTA - PROPIEDADES EN RENTA - Usa variables CSS dinámicas --}}
 {{-- ============================================== --}}
 <section id="renta" class="relative py-24 lg:py-32 overflow-hidden">
     {{-- Background Image --}}
@@ -431,7 +431,7 @@
 </section>
 
 {{-- ============================================== --}}
-{{-- PROPIEDADES CON FILTROS Y PAGINACIÃƒÆ’Ã¢â‚¬Å“N - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+{{-- PROPIEDADES CON FILTROS Y PAGINACIÓN - Usa variables CSS dinámicas --}}
 {{-- ============================================== --}}
 <section id="propiedades" class="py-20 lg:py-28" style="background: linear-gradient(to bottom, var(--fe-properties-bg_from, #f8fafc), var(--fe-properties-bg_to, #ffffff));">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -470,7 +470,7 @@
                         </div>
                     </div>
 
-                    {{-- Property Type Filter (dinÃƒÆ’Ã‚Â¡mico) --}}
+                    {{-- Property Type Filter (dinámico) --}}
                     <div class="min-w-[180px]">
                         <select x-model="filters.property_type_name"
                                 @change="applyFilters()"
@@ -507,7 +507,7 @@
                     </button>
                 </div>
 
-                {{-- Quick Filter Tags (dinÃƒÆ’Ã‚Â¡micos) --}}
+                {{-- Quick Filter Tags (dinámicos) --}}
                 <div class="flex flex-wrap gap-2 mt-4 pt-4" style="border-top: 1px solid var(--fe-properties-filter_divider, #f1f5f9);">
                     <button @click="togglePublished(true)"
                             :class="filters.published === true ? 'filter-tag-active' : 'filter-tag-inactive'"
@@ -572,7 +572,7 @@
 </section>
 
 {{-- ============================================== --}}
-{{-- SECCIÃƒÆ’Ã¢â‚¬Å“N FUTURISTA - PROCESO DE COMPRA - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+{{-- SECCIÓN FUTURISTA - PROCESO DE COMPRA - Usa variables CSS dinámicas --}}
 {{-- ============================================== --}}
 <section class="py-20 lg:py-28 relative overflow-hidden" style="background-color: var(--fe-process-bg, #1C1C1C);">
     {{-- Animated Background --}}
@@ -670,7 +670,7 @@
 </section>
 
 {{-- ============================================== --}}
-{{-- TESTIMONIOS - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+{{-- TESTIMONIOS - Usa variables CSS dinámicas --}}
 {{-- ============================================== --}}
 <section class="py-20 lg:py-28" style="background-color: var(--fe-testimonials-bg, #ffffff);">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -768,7 +768,7 @@
 </section>
 
 {{-- ============================================== --}}
-{{-- SOBRE NOSOTROS - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+{{-- SOBRE NOSOTROS - Usa variables CSS dinámicas --}}
 {{-- ============================================== --}}
 <section id="nosotros" class="py-20 lg:py-28" style="background: linear-gradient(to bottom right, var(--fe-about-bg_from, #f8fafc), var(--fe-about-bg_to, rgba(238, 242, 255, 0.3)));">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -866,7 +866,7 @@
 </section>
 
 {{-- ============================================== --}}
-{{-- FORMULARIO DE CONTACTO - Usa variables CSS dinÃƒÆ’Ã‚Â¡micas --}}
+{{-- FORMULARIO DE CONTACTO - Usa variables CSS dinámicas --}}
 {{-- ============================================== --}}
 <section id="contacto" class="py-20 lg:py-28" style="background-color: var(--fe-contact-bg, #ffffff);">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1122,7 +1122,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cargar propiedades para el slider desde la API
     loadHeroSlides();
 
-    // Cargar opciones de filtro dinÃƒÆ’Ã‚Â¡micas para el hero y la barra de stats
+    // Cargar opciones de filtro dinámicas para el hero y la barra de stats
     loadHomeFilterOptions();
 });
 
@@ -1144,7 +1144,7 @@ async function loadHomeFilterOptions() {
             }
 
             // Badge de propiedades: ya no se sobrescribe porque el texto viene del CMS
-            // El admin puede personalizar el badge desde /admin/cms/pages ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Home ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ hero_badge_text
+            // El admin puede personalizar el badge desde /admin/cms/pages → Home → hero_badge_text
         }
     } catch (e) {
         console.error('Error loading home filter options:', e);
@@ -1236,7 +1236,7 @@ async function loadHeroSlides() {
                 swiperWrapper.appendChild(slide);
             });
 
-            // Reinicializar Swiper despuÃƒÆ’Ã‚Â©s de agregar slides
+            // Reinicializar Swiper después de agregar slides
             const swiper = document.querySelector('.hero-slider').swiper;
             swiper.update();
             swiper.slideToLoop(0);
@@ -1344,6 +1344,11 @@ function propertiesFilter() {
             const price = firstOperation?.formatted_amount || fallbackAmount || homeI18n.priceFallback;
             const operationType = property.operations?.[0]?.operation_type || '';
             const location = [property.location?.city, property.location?.city_area].filter(Boolean).join(', ') || homeI18n.locationFallback;
+            const constructionArea = Number(property.construction_size);
+            const lotArea = Number(property.lot_size);
+            const areaSize = Number.isFinite(constructionArea) && constructionArea > 0
+                ? property.construction_size
+                : (Number.isFinite(lotArea) && lotArea > 0 ? property.lot_size : null);
 
             return `
                 <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
@@ -1389,7 +1394,7 @@ function propertiesFilter() {
                         </div>
                         
                         <div class="flex items-center gap-4 text-sm border-t pt-4" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
-                            ${property.bedrooms !== null ? `
+                            ${property.bedrooms != null ? `
                             <div class="flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -1398,7 +1403,7 @@ function propertiesFilter() {
                             </div>
                             ` : ''}
                             
-                            ${property.bathrooms !== null ? `
+                            ${property.bathrooms != null ? `
                             <div class="flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1407,12 +1412,12 @@ function propertiesFilter() {
                             </div>
                             ` : ''}
                             
-                            ${property.construction_size ? `
+                            ${areaSize != null && areaSize !== '' ? `
                             <div class="flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                                 </svg>
-                                ${property.construction_size} ${homeI18n.areaUnit}
+                                ${areaSize} ${homeI18n.areaUnit}
                             </div>
                             ` : ''}
                         </div>
@@ -1544,7 +1549,7 @@ function propertiesFilter() {
 }
 
 // ============================================
-// HERO SEARCH - FunciÃƒÆ’Ã‚Â³n para el buscador del hero
+// HERO SEARCH - Función para el buscador del hero
 // ============================================
 function heroSearch() {
     return {

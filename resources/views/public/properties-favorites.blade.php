@@ -148,6 +148,14 @@
           const operationType = property.operations?.[0]?.operation_type || '';
           const location = [property.location?.city, property.location?.city_area].filter(Boolean).join(', ') || FAVORITES_LABELS.locationFallback || tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible');
           const title = property.title || tPublic('common.available', isEnLocale ? 'Available property' : 'Propiedad disponible');
+          const bedroomsShort = tPublic('home.property.bedroomsShort', isEnLocale ? 'Beds' : 'Rec.');
+          const bathroomsShort = tPublic('home.property.bathroomsShort', isEnLocale ? 'Baths' : 'Banos');
+          const areaUnit = tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2');
+          const constructionArea = Number(property.construction_size);
+          const lotArea = Number(property.lot_size);
+          const areaSize = Number.isFinite(constructionArea) && constructionArea > 0
+            ? property.construction_size
+            : (Number.isFinite(lotArea) && lotArea > 0 ? property.lot_size : null);
 
           return `
             <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
@@ -189,6 +197,35 @@
 
                 <div class="text-2xl font-extrabold text-transparent bg-clip-text mb-4" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                   ${this.escapeHtml(price)}
+                </div>
+
+                <div class="flex items-center gap-4 text-sm border-t pt-4 mb-5" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
+                  ${property.bedrooms != null ? `
+                  <div class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                    ${this.escapeHtml(property.bedrooms)} ${this.escapeHtml(bedroomsShort)}
+                  </div>
+                  ` : ''}
+
+                  ${property.bathrooms != null ? `
+                  <div class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    ${this.escapeHtml(property.bathrooms)} ${this.escapeHtml(bathroomsShort)}
+                  </div>
+                  ` : ''}
+
+                  ${areaSize != null && areaSize !== '' ? `
+                  <div class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                    </svg>
+                    ${this.escapeHtml(areaSize)} ${this.escapeHtml(areaUnit)}
+                  </div>
+                  ` : ''}
                 </div>
 
                 <a href="/propiedades/${this.escapeHtml(property.id)}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">

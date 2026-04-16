@@ -1,6 +1,6 @@
 @php
+    use App\Models\ZonePage;
     use App\Services\CmsService;
-    use App\Services\PublicLocationMenuService;
     use Illuminate\Support\Str;
 
     $isHome = request()->routeIs('home');
@@ -53,104 +53,19 @@
         return !$isHiddenMlsUrl($item->resolvedUrl());
     })->values();
 
-    $hasTeamMenuLink = $menuItems->contains(function ($item) {
-        $routeName = (string) ($item->route_name ?? '');
+    $isHomeMenuItem = static function ($item): bool {
+        $routeName = Str::lower(trim((string) ($item->route_name ?? '')));
+        if (in_array($routeName, ['home', 'public.home'], true)) {
+            return true;
+        }
+
         $resolvedUrl = trim((string) ($item->resolvedUrl() ?? ''), '/');
+        if ($resolvedUrl === '') {
+            return true;
+        }
 
-        return $routeName === 'public.team' || in_array(Str::lower($resolvedUrl), ['equipo', 'team'], true);
-    });
-
-    $mlsLocationMenu = $mlsLocationMenu ?? PublicLocationMenuService::stateCityTree();
-    $locationMenuItems = collect($mlsLocationMenu)
-        ->map(function (array $entry) {
-            $state = trim((string) ($entry['state'] ?? ''));
-            if ($state === '') {
-                return null;
-            }
-
-            $cities = collect($entry['cities'] ?? [])
-                ->map(function ($cityEntry) use ($state) {
-                    if (is_string($cityEntry)) {
-                        $cityName = trim($cityEntry);
-                        $zones = [];
-                        $cityUrl = route('public.properties.index', [
-                            'region' => $state,
-                            'city' => $cityName,
-                        ]);
-                    } else {
-                        $cityName = trim((string) ($cityEntry['city'] ?? $cityEntry['name'] ?? ''));
-                        $cityUrl = trim((string) ($cityEntry['url'] ?? ''));
-                        if ($cityUrl === '') {
-                            $cityUrl = route('public.properties.index', [
-                                'region' => $state,
-                                'city' => $cityName,
-                            ]);
-                        }
-
-                        $zones = collect($cityEntry['zones'] ?? [])
-                            ->map(function ($zoneEntry) use ($state, $cityName) {
-                                if (is_string($zoneEntry)) {
-                                    $zoneName = trim($zoneEntry);
-                                    $zoneUrl = route('public.properties.index', [
-                                        'region' => $state,
-                                        'city' => $cityName,
-                                        'city_area' => $zoneName,
-                                    ]);
-                                } else {
-                                    $zoneName = trim((string) ($zoneEntry['name'] ?? $zoneEntry['zone'] ?? ''));
-                                    $zoneUrl = trim((string) ($zoneEntry['url'] ?? ''));
-
-                                    if ($zoneUrl === '') {
-                                        $zoneUrl = route('public.properties.index', [
-                                            'region' => $state,
-                                            'city' => $cityName,
-                                            'city_area' => $zoneName,
-                                        ]);
-                                    }
-                                }
-
-                                if ($zoneName === '') {
-                                    return null;
-                                }
-
-                                return [
-                                    'name' => $zoneName,
-                                    'url' => $zoneUrl,
-                                ];
-                            })
-                            ->filter()
-                            ->unique(fn ($zone) => Str::lower($zone['name']))
-                            ->values()
-                            ->all();
-                    }
-
-                    if ($cityName === '') {
-                        return null;
-                    }
-
-                    return [
-                        'name' => $cityName,
-                        'url' => $cityUrl,
-                        'zones' => $zones,
-                    ];
-                })
-                ->filter()
-                ->unique(fn ($city) => Str::lower($city['name']))
-                ->values()
-                ->sortBy(fn ($city) => Str::lower($city['name']))
-                ->values()
-                ->all();
-
-            return [
-                'name' => $state,
-                'url' => trim((string) ($entry['url'] ?? '')) !== ''
-                    ? (string) $entry['url']
-                    : route('public.properties.index', ['region' => $state]),
-                'cities' => $cities,
-            ];
-        })
-        ->filter()
-        ->values();
+        return in_array(Str::lower($resolvedUrl), ['inicio', 'home'], true);
+    };
 
     $contactSettings = CmsService::settings('contact', $currentLocale);
     $phoneDisplay = trim((string) ($contactSettings['contact_phone'] ?? '+52 55 1234 5678'));
@@ -175,13 +90,10 @@
     $labels = [
         'home' => $txt('header_nav_home', 'Inicio', 'Home'),
         'properties' => $txt('header_nav_properties', 'Propiedades', 'Properties'),
+        'neighborhoods' => $txt('header_nav_neighborhoods', 'Colonias', 'Neighborhoods'),
         'favorites' => $txt('header_nav_favorites', 'Favoritas', 'Favorites'),
         'offices' => $txt('header_nav_offices', 'Agencias', 'Agencies'),
-        'agents' => $txt('header_nav_agents', 'Agentes', 'Agents'),
-        'locations' => $txt('header_nav_locations', 'Ubicaciones', 'Locations'),
-        'view_all_state' => $txt('header_nav_view_all_state', 'Ver todo en', 'View all in'),
-        'view_city' => $txt('header_nav_view_city', 'Ver ciudad', 'View city'),
-        'locations_empty' => $txt('header_nav_locations_empty', 'No hay ubicaciones disponibles', 'No locations available'),
+        'agents' => $currentLocale === 'en' ? 'Agents' : 'Vendedores',
         'about' => $txt('header_nav_about', 'Nosotros', 'About'),
         'team' => $txt('header_nav_team', 'Equipo', 'Team'),
         'contact' => $txt('header_nav_contact', 'Contacto', 'Contact'),
@@ -189,14 +101,297 @@
         'login' => $txt('header_cta_login', 'Acceder', 'Login'),
         'menu' => $txt('header_mobile_menu', 'Abrir menu', 'Open menu'),
     ];
+    $neighborhoodMenuItems = ZonePage::query()
+        ->where('is_active', true)
+        ->where(function ($query): void {
+            $query->whereNull('show_in_menu')
+                ->orWhere('show_in_menu', true);
+        })
+        ->orderByRaw('CASE WHEN menu_order IS NULL THEN 1 ELSE 0 END')
+        ->orderBy('menu_order')
+        ->orderBy('city_area')
+        ->get(['slug', 'city_area', 'title_es', 'title_en'])
+        ->map(function (ZonePage $zonePage): array {
+            $label = trim((string) $zonePage->city_area);
+            if ($label === '') {
+                $label = trim((string) ($zonePage->title_es ?: $zonePage->title_en ?: ''));
+            }
+
+            return [
+                'label' => $label,
+                'href' => route('public.zones.show', ['zoneSlug' => $zonePage->slug]),
+                'target' => '_self',
+            ];
+        })
+        ->filter(fn (array $entry): bool => trim((string) ($entry['label'] ?? '')) !== '')
+        ->unique(fn (array $entry): string => Str::lower(trim((string) $entry['label']) . '|' . trim((string) $entry['href'])))
+        ->values()
+        ->all();
+    $luxuryPropertiesHref = route('public.properties.index', [
+        'search' => 'Casa',
+        'operation_type' => 'sale',
+        'min_price' => 1500000,
+    ]);
+    $terrainPropertiesHref = route('public.properties.index', [
+        'property_type_name' => 'Land and Lots',
+    ]);
+    $terrainMenuLabel = $txt('header_nav_properties_terrains', 'Terrenos', 'Land');
+    $commercialPropertiesHref = route('public.properties.index', [
+        'property_type_name' => 'Commercial',
+    ]);
+    $commercialMenuLabel = $txt('header_nav_properties_commercial', 'Commercial', 'Commercial');
+    $resolveMenuLink = static function ($item): array {
+        $resolvedUrl = $item->resolvedUrl() ?? '#';
+        $isExternal = Str::startsWith($resolvedUrl, ['http://', 'https://', 'mailto:', 'tel:', '#']);
+
+        return [
+            'href' => $isExternal ? $resolvedUrl : url($resolvedUrl),
+            'target' => $item->target ?: '_self',
+        ];
+    };
+    $isPropertiesMenuItem = static function ($item): bool {
+        $routeName = (string) ($item->route_name ?? '');
+        if ($routeName === 'public.properties.index') {
+            return true;
+        }
+
+        $resolvedUrl = trim((string) ($item->resolvedUrl() ?? ''), '/');
+        if (in_array(Str::lower($resolvedUrl), ['propiedades', 'properties'], true)) {
+            return true;
+        }
+
+        $labelEs = Str::lower(trim((string) ($item->label_es ?? '')));
+        $labelEn = Str::lower(trim((string) ($item->label_en ?? '')));
+
+        return str_contains($labelEs, 'propiedad') || str_contains($labelEn, 'propert');
+    };
+    $isAgentsMenuItem = static function ($item): bool {
+        $routeName = Str::lower(trim((string) ($item->route_name ?? '')));
+        if (in_array($routeName, ['public.mls-agents.index', 'public.mls-agents.show', 'public.mls-agents.legacy-index', 'public.mls-agents.legacy-show'], true)) {
+            return true;
+        }
+
+        $resolvedUrl = Str::lower(trim((string) ($item->resolvedUrl() ?? ''), '/'));
+        if (in_array($resolvedUrl, ['agentes', 'agents', 'mls-agents'], true)) {
+            return true;
+        }
+
+        $labelEs = Str::lower(trim((string) ($item->label_es ?? '')));
+        $labelEn = Str::lower(trim((string) ($item->label_en ?? '')));
+
+        return str_contains($labelEs, 'agente') || str_contains($labelEn, 'agent');
+    };
+    $isAboutMenuItem = static function ($item): bool {
+        $routeName = Str::lower(trim((string) ($item->route_name ?? '')));
+        if (in_array($routeName, ['about', 'public.about'], true)) {
+            return true;
+        }
+
+        $resolvedUrl = Str::lower(trim((string) ($item->resolvedUrl() ?? ''), '/'));
+        if (in_array($resolvedUrl, ['nosotros', 'about'], true)) {
+            return true;
+        }
+
+        $labelEs = Str::lower(trim((string) ($item->label_es ?? '')));
+        $labelEn = Str::lower(trim((string) ($item->label_en ?? '')));
+
+        return str_contains($labelEs, 'nosotros') || str_contains($labelEn, 'about');
+    };
+    $isTeamMenuItem = static function ($item): bool {
+        $routeName = Str::lower(trim((string) ($item->route_name ?? '')));
+        if (in_array($routeName, ['public.team', 'public.team.legacy'], true)) {
+            return true;
+        }
+
+        $resolvedUrl = Str::lower(trim((string) ($item->resolvedUrl() ?? ''), '/'));
+        if (in_array($resolvedUrl, ['equipo', 'team'], true)) {
+            return true;
+        }
+
+        $labelEs = Str::lower(trim((string) ($item->label_es ?? '')));
+        $labelEn = Str::lower(trim((string) ($item->label_en ?? '')));
+
+        return str_contains($labelEs, 'equipo') || str_contains($labelEn, 'team');
+    };
+    $menuItemLabel = static function ($item) use ($currentLocale, $labels, $isAgentsMenuItem): string {
+        if ($isAgentsMenuItem($item)) {
+            return $labels['agents'];
+        }
+
+        return $item->label($currentLocale);
+    };
+    $menuItems = $menuItems->reject($isHomeMenuItem)->values();
+    $menuItems = $menuItems->reject($isTeamMenuItem)->values();
+    [$propertyMenuItems, $otherMenuItems] = $menuItems->partition(fn ($item) => $isPropertiesMenuItem($item));
+    $menuItems = $propertyMenuItems->concat($otherMenuItems)->values();
+    $localizedMenuLabel = static function (?string $rawLabel, string $locale): string {
+        $label = trim((string) $rawLabel);
+        if ($label === '') {
+            return '';
+        }
+
+        $parts = preg_split('/\s+\/\s+/u', $label);
+        if (!is_array($parts) || count($parts) !== 2) {
+            return $label;
+        }
+
+        return trim($locale === 'en' ? $parts[1] : $parts[0]);
+    };
+    $buildAboutSubmenuItems = static function ($item) use ($resolveMenuLink, $currentLocale, $localizedMenuLabel, $labels): array {
+        $submenuItems = [];
+        $children = $item->children ?? collect();
+
+        foreach ($children as $child) {
+            $childLink = $resolveMenuLink($child);
+            $submenuItems[] = [
+                'label' => $localizedMenuLabel($child->label($currentLocale), $currentLocale),
+                'href' => $childLink['href'],
+                'target' => $childLink['target'],
+            ];
+        }
+
+        $hasTeamLink = collect($submenuItems)->contains(function (array $entry): bool {
+            $label = Str::lower(trim((string) ($entry['label'] ?? '')));
+            $href = Str::lower(trim((string) ($entry['href'] ?? '')));
+
+            return str_contains($label, 'equipo')
+                || str_contains($label, 'team')
+                || str_contains($href, '/equipo')
+                || str_ends_with($href, '/team');
+        });
+
+        if (!$hasTeamLink) {
+            $submenuItems[] = [
+                'label' => $labels['team'],
+                'href' => route('public.team'),
+                'target' => '_self',
+            ];
+        }
+
+        return collect($submenuItems)
+            ->filter(fn (array $entry) => trim((string) ($entry['label'] ?? '')) !== '')
+            ->unique(fn (array $entry) => Str::lower(trim((string) $entry['label']) . '|' . trim((string) $entry['href'])))
+            ->values()
+            ->all();
+    };
+    $isLuxurySubmenuItem = static function (array $entry) use ($luxuryPropertiesHref): bool {
+        $label = Str::lower(trim((string) ($entry['label'] ?? '')));
+        $href = Str::lower(trim((string) ($entry['href'] ?? '')));
+        $luxuryHref = Str::lower($luxuryPropertiesHref);
+
+        return str_contains($label, 'lujo')
+            || str_contains($label, 'luxury')
+            || str_contains($href, 'min_price=1500000')
+            || str_contains($href, 'search=casa')
+            || $href === $luxuryHref;
+    };
+    $isTerrainSubmenuItem = static function (array $entry) use ($terrainPropertiesHref): bool {
+        $label = Str::lower(trim((string) ($entry['label'] ?? '')));
+        $href = Str::lower(trim((string) ($entry['href'] ?? '')));
+        $terrainHref = Str::lower($terrainPropertiesHref);
+
+        return str_contains($label, 'terreno')
+            || str_contains($label, 'land')
+            || str_contains($label, 'lote')
+            || str_contains($label, 'lot')
+            || str_contains($href, 'property_type_name=land+and+lots')
+            || str_contains($href, 'property_type_name=land%20and%20lots')
+            || str_contains($href, 'property_type_name=terreno')
+            || $href === $terrainHref;
+    };
+    $isCommercialSubmenuItem = static function (array $entry) use ($commercialPropertiesHref): bool {
+        $label = Str::lower(trim((string) ($entry['label'] ?? '')));
+        $href = Str::lower(trim((string) ($entry['href'] ?? '')));
+        $commercialHref = Str::lower($commercialPropertiesHref);
+
+        return str_contains($label, 'commercial')
+            || str_contains($label, 'comercial')
+            || str_contains($href, 'property_type_name=commercial')
+            || $href === $commercialHref;
+    };
+    $buildPropertiesSubmenuItems = static function ($item) use (
+        $resolveMenuLink,
+        $txt,
+        $currentLocale,
+        $luxuryPropertiesHref,
+        $terrainPropertiesHref,
+        $terrainMenuLabel,
+        $commercialPropertiesHref,
+        $commercialMenuLabel,
+        $localizedMenuLabel,
+        $isLuxurySubmenuItem,
+        $isTerrainSubmenuItem,
+        $isCommercialSubmenuItem
+    ): array {
+        $baseLink = $resolveMenuLink($item);
+        $allPropertiesItem = [
+            'label' => $txt('header_nav_properties_all', 'Todas las propiedades', 'All properties'),
+            'href' => $baseLink['href'],
+            'target' => $baseLink['target'],
+        ];
+
+        $children = $item->children ?? collect();
+        $regularItems = [];
+        $luxuryItem = null;
+        $terrainItem = null;
+        $commercialItem = null;
+
+        foreach ($children as $child) {
+            $childLink = $resolveMenuLink($child);
+            $entry = [
+                'label' => $localizedMenuLabel($child->label($currentLocale), $currentLocale),
+                'href' => $childLink['href'],
+                'target' => $childLink['target'],
+            ];
+
+            if ($isLuxurySubmenuItem($entry)) {
+                $luxuryItem = $luxuryItem ?? $entry;
+                continue;
+            }
+
+            if ($isTerrainSubmenuItem($entry)) {
+                $terrainItem = $terrainItem ?? $entry;
+                continue;
+            }
+
+            if ($isCommercialSubmenuItem($entry)) {
+                $commercialItem = $commercialItem ?? $entry;
+                continue;
+            }
+
+            $regularItems[] = $entry;
+        }
+
+        $luxuryItem = $luxuryItem ?? [
+            'label' => $txt('header_nav_properties_luxury', 'Lujo', 'Luxury'),
+            'href' => $luxuryPropertiesHref,
+            'target' => '_self',
+        ];
+        $terrainItem = $terrainItem ?? [
+            'label' => $terrainMenuLabel,
+            'href' => $terrainPropertiesHref,
+            'target' => '_self',
+        ];
+        $commercialItem = $commercialItem ?? [
+            'label' => $commercialMenuLabel,
+            'href' => $commercialPropertiesHref,
+            'target' => '_self',
+        ];
+        $submenuItems = array_merge([$luxuryItem, $terrainItem, $commercialItem, $allPropertiesItem], $regularItems);
+
+        return collect($submenuItems)
+            ->filter(fn (array $entry) => trim((string) ($entry['label'] ?? '')) !== '')
+            ->unique(fn (array $entry) => Str::lower(trim((string) $entry['label']) . '|' . trim((string) $entry['href'])))
+            ->values()
+            ->all();
+    };
     $languageSwitchLabel = $nextLocale === 'en'
         ? $txt('header_switch_to_en', 'Cambiar a ingles', 'Switch to English')
         : $txt('header_switch_to_es', 'Cambiar a espanol', 'Switch to Spanish');
 @endphp
 
 <header
-    x-data="{ mobileMenuOpen: false, mobileLocationsOpen: false, desktopLocationsOpen: false, scrolled: {{ $isHome ? 'false' : 'true' }}, isHome: {{ $isHome ? 'true' : 'false' }} }"
-    @keydown.escape.window="desktopLocationsOpen = false; mobileLocationsOpen = false"
+    x-data="{ mobileMenuOpen: false, scrolled: {{ $isHome ? 'false' : 'true' }}, isHome: {{ $isHome ? 'true' : 'false' }} }"
     x-init="
         if (isHome) {
             scrolled = window.pageYOffset > 50;
@@ -239,116 +434,233 @@
                 @if($menuItems->isNotEmpty())
                     @foreach($menuItems as $item)
                         @php
-                            $resolvedUrl = $item->resolvedUrl() ?? '#';
-                            $isExternal = Str::startsWith($resolvedUrl, ['http://', 'https://', 'mailto:', 'tel:', '#']);
-                            $href = $isExternal ? $resolvedUrl : url($resolvedUrl);
-                            $target = $item->target ?: '_self';
+                            $itemLink = $resolveMenuLink($item);
+                            $href = $itemLink['href'];
+                            $target = $itemLink['target'];
+                            $isPropertiesItem = $isPropertiesMenuItem($item);
+                            $propertiesSubmenuItems = $isPropertiesItem ? $buildPropertiesSubmenuItems($item) : [];
+                            $isAboutItem = $isAboutMenuItem($item);
+                            $aboutSubmenuItems = $isAboutItem ? $buildAboutSubmenuItems($item) : [];
                         @endphp
-                        <a href="{{ $href }}" target="{{ $target }}"
-                           :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
-                           class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
-                            {{ $item->label($currentLocale) }}
-                        </a>
+                        @if($isPropertiesItem && !empty($propertiesSubmenuItems))
+                            <div x-data="{ open: false }"
+                                 class="relative"
+                                 @mouseenter="open = true"
+                                 @mouseleave="open = false"
+                                 @click.outside="open = false"
+                                 @keydown.escape.window="open = false">
+                                <a href="{{ $href }}" target="{{ $target }}"
+                                   :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
+                                   class="header-nav-link relative inline-flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
+                                    {{ $menuItemLabel($item) }}
+                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+
+                                <div x-show="open"
+                                     x-cloak
+                                     x-transition:enter="transition ease-out duration-150"
+                                     x-transition:enter-start="opacity-0 -translate-y-2"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     x-transition:leave="transition ease-in duration-100"
+                                 x-transition:leave-start="opacity-100 translate-y-0"
+                                 x-transition:leave-end="opacity-0 -translate-y-2"
+                                 class="header-dropdown-panel absolute left-0 top-full z-40 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
+                                    @if(!empty($neighborhoodMenuItems))
+                                        <div x-data="{ neighborhoodsOpen: false }"
+                                             class="relative"
+                                             @mouseenter="neighborhoodsOpen = true"
+                                             @mouseleave="neighborhoodsOpen = false">
+                                            <button type="button"
+                                                    @click.prevent="neighborhoodsOpen = !neighborhoodsOpen"
+                                                    class="header-dropdown-link flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                                <span>{{ $labels['neighborhoods'] }}</span>
+                                                <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': neighborhoodsOpen }" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                            <div x-show="neighborhoodsOpen"
+                                                 x-cloak
+                                                 x-transition:enter="transition ease-out duration-150"
+                                                 x-transition:enter-start="opacity-0 -translate-y-2"
+                                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                                 x-transition:leave="transition ease-in duration-100"
+                                                 x-transition:leave-start="opacity-100 translate-y-0"
+                                                 x-transition:leave-end="opacity-0 -translate-y-2"
+                                                 class="header-dropdown-panel absolute left-full top-0 z-50 ml-2 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
+                                                <div class="max-h-72 space-y-1 overflow-y-auto pr-1">
+                                                    @foreach($neighborhoodMenuItems as $zoneMenuItem)
+                                                        <a href="{{ $zoneMenuItem['href'] }}"
+                                                           target="{{ $zoneMenuItem['target'] }}"
+                                                           class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                                            {{ $zoneMenuItem['label'] }}
+                                                        </a>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                    @foreach($propertiesSubmenuItems as $submenuItem)
+                                        <a href="{{ $submenuItem['href'] }}"
+                                           target="{{ $submenuItem['target'] }}"
+                                           class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                            {{ $submenuItem['label'] }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @elseif($isAboutItem && !empty($aboutSubmenuItems))
+                            <div x-data="{ open: false }"
+                                 class="relative"
+                                 @mouseenter="open = true"
+                                 @mouseleave="open = false"
+                                 @click.outside="open = false"
+                                 @keydown.escape.window="open = false">
+                                <a href="{{ $href }}" target="{{ $target }}"
+                                   :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
+                                   class="header-nav-link relative inline-flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
+                                    {{ $menuItemLabel($item) }}
+                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+
+                                <div x-show="open"
+                                     x-cloak
+                                     x-transition:enter="transition ease-out duration-150"
+                                     x-transition:enter-start="opacity-0 -translate-y-2"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     x-transition:leave="transition ease-in duration-100"
+                                     x-transition:leave-start="opacity-100 translate-y-0"
+                                     x-transition:leave-end="opacity-0 -translate-y-2"
+                                     class="header-dropdown-panel absolute left-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
+                                    @foreach($aboutSubmenuItems as $submenuItem)
+                                        <a href="{{ $submenuItem['href'] }}"
+                                           target="{{ $submenuItem['target'] }}"
+                                           class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                            {{ $submenuItem['label'] }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @else
+                            <a href="{{ $href }}" target="{{ $target }}"
+                               :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
+                               class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
+                                {{ $menuItemLabel($item) }}
+                            </a>
+                        @endif
                     @endforeach
-                    @if(!$hasTeamMenuLink)
-                        <a href="{{ route('public.team') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['team'] }}</a>
-                    @endif
                 @else
-                    <a href="{{ url('/') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['home'] }}</a>
-                    <a href="{{ route('public.properties.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['properties'] }}</a>
+                    <div x-data="{ open: false }"
+                         class="relative"
+                         @mouseenter="open = true"
+                         @mouseleave="open = false"
+                         @click.outside="open = false"
+                         @keydown.escape.window="open = false">
+                        <a href="{{ route('public.properties.index') }}"
+                           :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
+                           class="header-nav-link relative inline-flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
+                            {{ $labels['properties'] }}
+                            <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <div x-show="open"
+                             x-cloak
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 -translate-y-2"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-2"
+                             class="header-dropdown-panel absolute left-0 top-full z-40 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
+                            @if(!empty($neighborhoodMenuItems))
+                                <div x-data="{ neighborhoodsOpen: false }"
+                                     class="relative"
+                                     @mouseenter="neighborhoodsOpen = true"
+                                     @mouseleave="neighborhoodsOpen = false">
+                                    <button type="button"
+                                            @click.prevent="neighborhoodsOpen = !neighborhoodsOpen"
+                                            class="header-dropdown-link flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                        <span>{{ $labels['neighborhoods'] }}</span>
+                                        <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': neighborhoodsOpen }" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <div x-show="neighborhoodsOpen"
+                                         x-cloak
+                                         x-transition:enter="transition ease-out duration-150"
+                                         x-transition:enter-start="opacity-0 -translate-y-2"
+                                         x-transition:enter-end="opacity-100 translate-y-0"
+                                         x-transition:leave="transition ease-in duration-100"
+                                         x-transition:leave-start="opacity-100 translate-y-0"
+                                         x-transition:leave-end="opacity-0 -translate-y-2"
+                                         class="header-dropdown-panel absolute left-full top-0 z-50 ml-2 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
+                                        <div class="max-h-72 space-y-1 overflow-y-auto pr-1">
+                                            @foreach($neighborhoodMenuItems as $zoneMenuItem)
+                                                <a href="{{ $zoneMenuItem['href'] }}"
+                                                   target="{{ $zoneMenuItem['target'] }}"
+                                                   class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                                    {{ $zoneMenuItem['label'] }}
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                            <a href="{{ $luxuryPropertiesHref }}" class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                {{ $txt('header_nav_properties_luxury', 'Lujo', 'Luxury') }}
+                            </a>
+                            <a href="{{ $terrainPropertiesHref }}" class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                {{ $terrainMenuLabel }}
+                            </a>
+                            <a href="{{ $commercialPropertiesHref }}" class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                {{ $commercialMenuLabel }}
+                            </a>
+                            <a href="{{ route('public.properties.index') }}" class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                {{ $txt('header_nav_properties_all', 'Todas las propiedades', 'All properties') }}
+                            </a>
+                        </div>
+                    </div>
                     @if($showMlsOffices)
                         <a href="{{ route('public.mls-offices.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['offices'] }}</a>
                     @endif
                     @if($showMlsAgents)
                         <a href="{{ route('public.mls-agents.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['agents'] }}</a>
                     @endif
-                    <a href="{{ route('about') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['about'] }}</a>
-                    <a href="{{ route('public.team') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['team'] }}</a>
-                    <a href="{{ route('public.contact') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['contact'] }}</a>
-                @endif
+                    <div x-data="{ open: false }"
+                         class="relative"
+                         @mouseenter="open = true"
+                         @mouseleave="open = false"
+                         @click.outside="open = false"
+                         @keydown.escape.window="open = false">
+                        <a href="{{ route('about') }}"
+                           :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
+                           class="header-nav-link relative inline-flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
+                            {{ $labels['about'] }}
+                            <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
 
-                <div class="relative"
-                     @mouseenter="desktopLocationsOpen = true"
-                     @mouseleave="desktopLocationsOpen = false"
-                     @click.outside="desktopLocationsOpen = false">
-                    <button type="button"
-                            @click.prevent="desktopLocationsOpen = !desktopLocationsOpen"
-                            :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
-                            class="header-nav-link relative inline-flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
-                        {{ $labels['locations'] }}
-                        <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': desktopLocationsOpen }" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-
-                    <div x-show="desktopLocationsOpen"
-                         x-cloak
-                         x-transition:enter="transition ease-out duration-150"
-                         x-transition:enter-start="opacity-0 -translate-y-2"
-                         x-transition:enter-end="opacity-100 translate-y-0"
-                         x-transition:leave="transition ease-in duration-100"
-                         x-transition:leave-start="opacity-100 translate-y-0"
-                         x-transition:leave-end="opacity-0 -translate-y-2"
-                         class="header-dropdown-panel absolute left-0 top-full z-40 mt-2 w-[24rem] rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
-                        <div class="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
-                            @if($locationMenuItems->isNotEmpty())
-                                @foreach($locationMenuItems as $stateItem)
-                                    <div class="header-dropdown-state rounded-xl border border-slate-100 p-3">
-                                        <a href="{{ $stateItem['url'] }}" class="header-dropdown-title text-sm font-semibold text-slate-900 transition-colors nav-link-hover">
-                                            {{ $stateItem['name'] }}
-                                        </a>
-                                        @if(!empty($stateItem['cities']))
-                                            <div class="mt-2 grid grid-cols-1 gap-1">
-                                                @foreach($stateItem['cities'] as $cityItem)
-                                                    @if(!empty($cityItem['zones']))
-                                                        <div x-data="{ cityOpen: false }" class="rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-50">
-                                                            <div class="flex items-center justify-between gap-2">
-                                                                <a href="{{ $cityItem['url'] }}" class="header-dropdown-link text-sm text-slate-700 hover:text-slate-900">
-                                                                    {{ $cityItem['name'] }}
-                                                                </a>
-                                                                <button type="button"
-                                                                        @click.prevent="cityOpen = !cityOpen"
-                                                                        class="header-dropdown-icon inline-flex items-center rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700">
-                                                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': cityOpen }" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
-                                                                    </svg>
-                                                                </button>
-                                                            </div>
-                                                            <div x-show="cityOpen"
-                                                                 x-transition:enter="transition ease-out duration-120"
-                                                                 x-transition:enter-start="opacity-0 -translate-y-1"
-                                                                 x-transition:enter-end="opacity-100 translate-y-0"
-                                                                 x-transition:leave="transition ease-in duration-100"
-                                                                 x-transition:leave-start="opacity-100 translate-y-0"
-                                                                 x-transition:leave-end="opacity-0 -translate-y-1"
-                                                                 class="mt-1 flex flex-wrap gap-1">
-                                                                @foreach($cityItem['zones'] as $zoneItem)
-                                                                    <a href="{{ $zoneItem['url'] }}" class="header-dropdown-tag inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-600 hover:border-slate-300 hover:text-slate-900">
-                                                                        {{ $zoneItem['name'] }}
-                                                                    </a>
-                                                                @endforeach
-                                                            </div>
-                                                        </div>
-                                                    @else
-                                                        <div class="rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-50">
-                                                            <a href="{{ $cityItem['url'] }}" class="header-dropdown-link text-sm text-slate-700 hover:text-slate-900">
-                                                                {{ $cityItem['name'] }}
-                                                            </a>
-                                                        </div>
-                                                    @endif
-                                                @endforeach
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            @else
-                                <div class="header-dropdown-empty rounded-xl border border-slate-100 px-3 py-2 text-sm text-slate-500">
-                                    {{ $labels['locations_empty'] }}
-                                </div>
-                            @endif
+                        <div x-show="open"
+                             x-cloak
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 -translate-y-2"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-2"
+                             class="header-dropdown-panel absolute left-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
+                            <a href="{{ route('public.team') }}" class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                {{ $labels['team'] }}
+                            </a>
                         </div>
                     </div>
-                </div>
+                    <a href="{{ route('public.contact') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['contact'] }}</a>
+                @endif
             </div>
 
             <div class="flex items-center gap-3">
@@ -395,7 +707,7 @@
                     </a>
                 @endauth
 
-                <button @click="mobileMenuOpen = !mobileMenuOpen; if (!mobileMenuOpen) { mobileLocationsOpen = false; }"
+                <button @click="mobileMenuOpen = !mobileMenuOpen"
                         :class="{ 'text-slate-900': scrolled, 'text-white': !scrolled }"
                         class="header-mobile-toggle lg:hidden inline-flex items-center justify-center p-2 rounded-lg transition-colors duration-200 hover:bg-slate-900/10 focus:outline-none"
                         aria-label="{{ $labels['menu'] }}">
@@ -422,128 +734,212 @@
                 @if($menuItems->isNotEmpty())
                     @foreach($menuItems as $item)
                         @php
-                            $resolvedUrl = $item->resolvedUrl() ?? '#';
-                            $isExternal = Str::startsWith($resolvedUrl, ['http://', 'https://', 'mailto:', 'tel:', '#']);
-                            $href = $isExternal ? $resolvedUrl : url($resolvedUrl);
-                            $target = $item->target ?: '_self';
+                            $itemLink = $resolveMenuLink($item);
+                            $href = $itemLink['href'];
+                            $target = $itemLink['target'];
+                            $isPropertiesItem = $isPropertiesMenuItem($item);
+                            $propertiesSubmenuItems = $isPropertiesItem ? $buildPropertiesSubmenuItems($item) : [];
+                            $isAboutItem = $isAboutMenuItem($item);
+                            $aboutSubmenuItems = $isAboutItem ? $buildAboutSubmenuItems($item) : [];
                         @endphp
-                        <a href="{{ $href }}" target="{{ $target }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
-                            {{ $item->label($currentLocale) }}
-                        </a>
+                        @if($isPropertiesItem && !empty($propertiesSubmenuItems))
+                            <div x-data="{ open: false }" class="header-mobile-section rounded-xl border border-slate-100 bg-slate-50/60">
+                                <button type="button"
+                                        @click="open = !open"
+                                        class="flex w-full items-center justify-between px-4 py-3 text-left text-slate-700 font-medium rounded-xl transition-colors hover:bg-slate-100/70">
+                                    <span>{{ $menuItemLabel($item) }}</span>
+                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <div x-show="open"
+                                     x-cloak
+                                     x-transition:enter="transition ease-out duration-150"
+                                     x-transition:enter-start="opacity-0 -translate-y-2"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     x-transition:leave="transition ease-in duration-100"
+                                     x-transition:leave-start="opacity-100 translate-y-0"
+                                     x-transition:leave-end="opacity-0 -translate-y-2"
+                                     class="space-y-1 px-3 pb-3">
+                                    @if(!empty($neighborhoodMenuItems))
+                                        <div x-data="{ neighborhoodsOpen: false }" class="rounded-lg border border-slate-200 bg-white">
+                                            <button type="button"
+                                                    @click="neighborhoodsOpen = !neighborhoodsOpen"
+                                                    class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                                <span>{{ $labels['neighborhoods'] }}</span>
+                                                <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': neighborhoodsOpen }" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                            <div x-show="neighborhoodsOpen"
+                                                 x-cloak
+                                                 x-transition:enter="transition ease-out duration-150"
+                                                 x-transition:enter-start="opacity-0 -translate-y-2"
+                                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                                 x-transition:leave="transition ease-in duration-100"
+                                                 x-transition:leave-start="opacity-100 translate-y-0"
+                                                 x-transition:leave-end="opacity-0 -translate-y-2"
+                                                 class="space-y-1 px-2 pb-2">
+                                                @foreach($neighborhoodMenuItems as $zoneMenuItem)
+                                                    <a href="{{ $zoneMenuItem['href'] }}"
+                                                       target="{{ $zoneMenuItem['target'] }}"
+                                                       @click="mobileMenuOpen = false; open = false; neighborhoodsOpen = false"
+                                                       class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                                        {{ $zoneMenuItem['label'] }}
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+                                    @foreach($propertiesSubmenuItems as $submenuItem)
+                                        <a href="{{ $submenuItem['href'] }}"
+                                           target="{{ $submenuItem['target'] }}"
+                                           @click="mobileMenuOpen = false; open = false"
+                                           class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
+                                            {{ $submenuItem['label'] }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @elseif($isAboutItem && !empty($aboutSubmenuItems))
+                            <div x-data="{ open: false }" class="header-mobile-section rounded-xl border border-slate-100 bg-slate-50/60">
+                                <button type="button"
+                                        @click="open = !open"
+                                        class="flex w-full items-center justify-between px-4 py-3 text-left text-slate-700 font-medium rounded-xl transition-colors hover:bg-slate-100/70">
+                                    <span>{{ $menuItemLabel($item) }}</span>
+                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <div x-show="open"
+                                     x-cloak
+                                     x-transition:enter="transition ease-out duration-150"
+                                     x-transition:enter-start="opacity-0 -translate-y-2"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     x-transition:leave="transition ease-in duration-100"
+                                     x-transition:leave-start="opacity-100 translate-y-0"
+                                     x-transition:leave-end="opacity-0 -translate-y-2"
+                                     class="space-y-1 px-3 pb-3">
+                                    @foreach($aboutSubmenuItems as $submenuItem)
+                                        <a href="{{ $submenuItem['href'] }}"
+                                           target="{{ $submenuItem['target'] }}"
+                                           @click="mobileMenuOpen = false; open = false"
+                                           class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
+                                            {{ $submenuItem['label'] }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @else
+                            <a href="{{ $href }}" target="{{ $target }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">
+                                {{ $menuItemLabel($item) }}
+                            </a>
+                        @endif
                     @endforeach
-                    @if(!$hasTeamMenuLink)
-                        <a href="{{ route('public.team') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['team'] }}</a>
-                    @endif
                 @else
-                    <a href="{{ url('/') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['home'] }}</a>
-                    <a href="{{ route('public.properties.index') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['properties'] }}</a>
+                    <div x-data="{ open: false }" class="header-mobile-section rounded-xl border border-slate-100 bg-slate-50/60">
+                        <button type="button"
+                                @click="open = !open"
+                                class="flex w-full items-center justify-between px-4 py-3 text-left text-slate-700 font-medium rounded-xl transition-colors hover:bg-slate-100/70">
+                            <span>{{ $labels['properties'] }}</span>
+                            <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div x-show="open"
+                             x-cloak
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 -translate-y-2"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-2"
+                             class="space-y-1 px-3 pb-3">
+                            @if(!empty($neighborhoodMenuItems))
+                                <div x-data="{ neighborhoodsOpen: false }" class="rounded-lg border border-slate-200 bg-white">
+                                    <button type="button"
+                                            @click="neighborhoodsOpen = !neighborhoodsOpen"
+                                            class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50">
+                                        <span>{{ $labels['neighborhoods'] }}</span>
+                                        <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': neighborhoodsOpen }" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <div x-show="neighborhoodsOpen"
+                                         x-cloak
+                                         x-transition:enter="transition ease-out duration-150"
+                                         x-transition:enter-start="opacity-0 -translate-y-2"
+                                         x-transition:enter-end="opacity-100 translate-y-0"
+                                         x-transition:leave="transition ease-in duration-100"
+                                         x-transition:leave-start="opacity-100 translate-y-0"
+                                         x-transition:leave-end="opacity-0 -translate-y-2"
+                                         class="space-y-1 px-2 pb-2">
+                                        @foreach($neighborhoodMenuItems as $zoneMenuItem)
+                                            <a href="{{ $zoneMenuItem['href'] }}"
+                                               target="{{ $zoneMenuItem['target'] }}"
+                                               @click="mobileMenuOpen = false; open = false; neighborhoodsOpen = false"
+                                               class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                                {{ $zoneMenuItem['label'] }}
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                            <a href="{{ $luxuryPropertiesHref }}"
+                               @click="mobileMenuOpen = false; open = false"
+                               class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
+                                {{ $txt('header_nav_properties_luxury', 'Lujo', 'Luxury') }}
+                            </a>
+                            <a href="{{ $terrainPropertiesHref }}"
+                               @click="mobileMenuOpen = false; open = false"
+                               class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
+                                {{ $terrainMenuLabel }}
+                            </a>
+                            <a href="{{ $commercialPropertiesHref }}"
+                               @click="mobileMenuOpen = false; open = false"
+                               class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
+                                {{ $commercialMenuLabel }}
+                            </a>
+                            <a href="{{ route('public.properties.index') }}"
+                               @click="mobileMenuOpen = false; open = false"
+                               class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
+                                {{ $txt('header_nav_properties_all', 'Todas las propiedades', 'All properties') }}
+                            </a>
+                        </div>
+                    </div>
                     @if($showMlsOffices)
                         <a href="{{ route('public.mls-offices.index') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['offices'] }}</a>
                     @endif
                     @if($showMlsAgents)
                         <a href="{{ route('public.mls-agents.index') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['agents'] }}</a>
                     @endif
-                    <a href="{{ route('about') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['about'] }}</a>
-                    <a href="{{ route('public.team') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['team'] }}</a>
+                    <div x-data="{ open: false }" class="header-mobile-section rounded-xl border border-slate-100 bg-slate-50/60">
+                        <button type="button"
+                                @click="open = !open"
+                                class="flex w-full items-center justify-between px-4 py-3 text-left text-slate-700 font-medium rounded-xl transition-colors hover:bg-slate-100/70">
+                            <span>{{ $labels['about'] }}</span>
+                            <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div x-show="open"
+                             x-cloak
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 -translate-y-2"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-2"
+                             class="space-y-1 px-3 pb-3">
+                            <a href="{{ route('public.team') }}"
+                               @click="mobileMenuOpen = false; open = false"
+                               class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
+                                {{ $labels['team'] }}
+                            </a>
+                        </div>
+                    </div>
                     <a href="{{ route('public.contact') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['contact'] }}</a>
                 @endif
-
-                <div class="header-mobile-section mt-1 rounded-xl border border-slate-100 bg-slate-50/60">
-                    <button type="button"
-                            @click="mobileLocationsOpen = !mobileLocationsOpen"
-                            class="flex w-full items-center justify-between px-4 py-3 text-left text-slate-700 font-medium rounded-xl transition-colors hover:bg-slate-100/70">
-                        <span>{{ $labels['locations'] }}</span>
-                        <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': mobileLocationsOpen }" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-
-                    <div x-show="mobileLocationsOpen"
-                         x-cloak
-                         x-transition:enter="transition ease-out duration-150"
-                         x-transition:enter-start="opacity-0 -translate-y-2"
-                         x-transition:enter-end="opacity-100 translate-y-0"
-                         x-transition:leave="transition ease-in duration-100"
-                         x-transition:leave-start="opacity-100 translate-y-0"
-                         x-transition:leave-end="opacity-0 -translate-y-2"
-                         class="space-y-2 px-3 pb-3">
-                        @if($locationMenuItems->isNotEmpty())
-                            @foreach($locationMenuItems as $stateItem)
-                                <div x-data="{ stateOpen: false }" class="header-mobile-state rounded-xl border border-slate-200 bg-white">
-                                    <button type="button"
-                                            @click="stateOpen = !stateOpen"
-                                            class="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-semibold text-slate-800">
-                                        <span>{{ $stateItem['name'] }}</span>
-                                        <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': stateOpen }" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-
-                                    <div x-show="stateOpen"
-                                         x-transition:enter="transition ease-out duration-150"
-                                         x-transition:enter-start="opacity-0 -translate-y-1"
-                                         x-transition:enter-end="opacity-100 translate-y-0"
-                                         x-transition:leave="transition ease-in duration-100"
-                                         x-transition:leave-start="opacity-100 translate-y-0"
-                                         x-transition:leave-end="opacity-0 -translate-y-1"
-                                         class="space-y-1 px-2 pb-2">
-                                        <a href="{{ $stateItem['url'] }}"
-                                           @click="mobileMenuOpen = false; mobileLocationsOpen = false"
-                                           class="block rounded-lg px-2.5 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:bg-slate-50">
-                                            {{ $labels['view_all_state'] }} {{ $stateItem['name'] }}
-                                        </a>
-                                        @foreach($stateItem['cities'] as $cityItem)
-                                            @if(!empty($cityItem['zones']))
-                                                <div x-data="{ cityOpen: false }" class="header-mobile-city rounded-lg border border-slate-100 bg-slate-50/60">
-                                                    <button type="button"
-                                                            @click="cityOpen = !cityOpen"
-                                                            class="flex w-full items-center justify-between px-2.5 py-2 text-left text-sm text-slate-700">
-                                                        <span>{{ $cityItem['name'] }}</span>
-                                                        <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': cityOpen }" viewBox="0 0 20 20" fill="currentColor">
-                                                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
-                                                        </svg>
-                                                    </button>
-
-                                                    <div x-show="cityOpen"
-                                                         x-transition:enter="transition ease-out duration-150"
-                                                         x-transition:enter-start="opacity-0 -translate-y-1"
-                                                         x-transition:enter-end="opacity-100 translate-y-0"
-                                                         x-transition:leave="transition ease-in duration-100"
-                                                         x-transition:leave-start="opacity-100 translate-y-0"
-                                                         x-transition:leave-end="opacity-0 -translate-y-1"
-                                                         class="space-y-1 px-2 pb-2">
-                                                        <a href="{{ $cityItem['url'] }}"
-                                                           @click="mobileMenuOpen = false; mobileLocationsOpen = false"
-                                                           class="block rounded-lg px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 hover:bg-white">
-                                                            {{ $labels['view_city'] }}: {{ $cityItem['name'] }}
-                                                        </a>
-                                                        @foreach($cityItem['zones'] as $zoneItem)
-                                                            <a href="{{ $zoneItem['url'] }}"
-                                                               @click="mobileMenuOpen = false; mobileLocationsOpen = false"
-                                                               class="block rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-white">
-                                                                {{ $zoneItem['name'] }}
-                                                            </a>
-                                                        @endforeach
-                                                    </div>
-                                                </div>
-                                            @else
-                                                <a href="{{ $cityItem['url'] }}"
-                                                   @click="mobileMenuOpen = false; mobileLocationsOpen = false"
-                                                   class="block rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                                                    {{ $cityItem['name'] }}
-                                                </a>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endforeach
-                        @else
-                            <div class="header-mobile-empty rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
-                                {{ $labels['locations_empty'] }}
-                            </div>
-                        @endif
-                    </div>
-                </div>
 
                 <div class="header-mobile-divider my-4 border-t border-slate-100"></div>
 

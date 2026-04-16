@@ -1,4 +1,4 @@
-﻿@extends('layouts.public')
+@extends('layouts.public')
 
 @php
   $isEn = ($locale ?? app()->getLocale()) === 'en';
@@ -10,11 +10,11 @@
     'agencies' => $txt('i18n_breadcrumb_agencies', 'Agencias', 'Agencies'),
     'agents' => $txt('agents_title', 'Agentes', 'Agents'),
     'properties' => $txt('i18n_label_properties', 'Propiedades', 'Properties'),
-    'phone' => $txt('i18n_label_phone', 'TelÃ©fono', 'Phone'),
-    'description' => $txt('i18n_label_description', 'DescripciÃ³n', 'Description'),
+    'phone' => $txt('i18n_label_phone', 'Teléfono', 'Phone'),
+    'description' => $txt('i18n_label_description', 'Descripción', 'Description'),
     'contact' => $txt('i18n_label_contact', 'Contacto', 'Contact'),
     'paid' => $txt('i18n_label_paid', 'Pagado', 'Paid'),
-    'locationAvailable' => $txt('i18n_common_locationAvailable', 'UbicaciÃ³n disponible', 'Location available'),
+    'locationAvailable' => $txt('i18n_common_locationAvailable', 'Ubicación disponible', 'Location available'),
     'loading' => $txt('i18n_label_loading', 'Cargando...', 'Loading...'),
     'website' => $txt('i18n_label_website', 'Sitio web', 'Website'),
     'search' => $txt('i18n_label_search', 'Buscar', 'Search'),
@@ -23,12 +23,12 @@
     'clearFilters' => $txt('i18n_label_clearFilters', 'Limpiar filtros', 'Clear filters'),
     'previous' => $txt('i18n_label_previous', 'Anterior', 'Previous'),
     'next' => $txt('i18n_label_next', 'Siguiente', 'Next'),
-    'page' => $txt('i18n_label_page', 'PÃ¡gina', 'Page'),
+    'page' => $txt('i18n_label_page', 'Página', 'Page'),
     'of' => $txt('i18n_label_of', 'de', 'of'),
     'showing' => $txt('i18n_label_showing', 'Mostrando', 'Showing'),
     'noAgents' => $txt('i18n_label_noAgents', 'No hay agentes para esta agencia.', 'No agents in this agency.'),
     'noProperties' => $txt('i18n_label_noProperties', 'No se encontraron propiedades', 'No properties found'),
-    'noPropertiesHelp' => $txt('i18n_label_noPropertiesHelp', 'Intenta ajustar tu bÃºsqueda.', 'Try adjusting your search.'),
+    'noPropertiesHelp' => $txt('i18n_label_noPropertiesHelp', 'Intenta ajustar tu búsqueda.', 'Try adjusting your search.'),
     'propertiesTitle' => $txt('properties_title', 'Propiedades de la agencia', 'Agency properties'),
     'propertiesSubtitle' => $txt('properties_subtitle', 'Busca y navega propiedades vinculadas a esta agencia.', 'Search and browse properties linked to this agency.'),
   ];
@@ -73,7 +73,7 @@
 
               <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 text-white/90">
                 <div class="inline-flex items-center gap-2" x-text="officeLocation || labels.locationAvailable"></div>
-                <div class="hidden sm:block text-white/40">â€¢</div>
+                <div class="hidden sm:block text-white/40">•</div>
                 <div class="inline-flex items-center gap-2" x-show="office?.email" x-text="office?.email"></div>
               </div>
             </div>
@@ -83,25 +83,25 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <p class="text-xs font-semibold text-slate-600" x-text="labels.agents"></p>
-                <p class="mt-1 text-lg font-extrabold text-slate-900" x-text="office?.agents_count ?? 'â€”'"></p>
+                <p class="mt-1 text-lg font-extrabold text-slate-900" x-text="office?.agents_count ?? '—'"></p>
               </div>
               <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <p class="text-xs font-semibold text-slate-600" x-text="labels.properties"></p>
-                <p class="mt-1 text-lg font-extrabold text-slate-900" x-text="office?.properties_count ?? 'â€”'"></p>
+                <p class="mt-1 text-lg font-extrabold text-slate-900" x-text="office?.properties_count ?? '—'"></p>
               </div>
               <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <p class="text-xs font-semibold text-slate-600" x-text="labels.phone"></p>
-                <p class="mt-1 text-sm font-semibold text-slate-900 truncate" x-text="officePhone || 'â€”'"></p>
+                <p class="mt-1 text-sm font-semibold text-slate-900 truncate" x-text="officePhone || '—'"></p>
               </div>
               <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <p class="text-xs font-semibold text-slate-600" x-text="labels.website"></p>
-                <a class="mt-1 text-sm font-semibold text-slate-900 truncate block hover:underline" :href="office?.website || '#'" target="_blank" rel="noopener" x-text="office?.website ? office.website.replace(/^https?:\/\//,'') : 'â€”'"></a>
+                <a class="mt-1 text-sm font-semibold text-slate-900 truncate block hover:underline" :href="office?.website || '#'" target="_blank" rel="noopener" x-text="office?.website ? office.website.replace(/^https?:\/\//,'') : '—'"></a>
               </div>
             </div>
 
             <div class="mt-6" x-show="officeDescription">
               <h2 class="text-lg font-bold text-slate-900" x-text="labels.description"></h2>
-              <p class="mt-3 text-slate-700 leading-relaxed whitespace-pre-line" x-text="officeDescription"></p>
+              <div class="mt-3 text-slate-700 leading-relaxed rich-content" x-html="officeDescriptionHtml"></div>
             </div>
           </div>
         </section>
@@ -140,7 +140,7 @@
                     </div>
                     <div class="min-w-0 flex-1">
                       <p class="font-bold text-slate-900 truncate" x-text="a.full_name"></p>
-                      <p class="mt-0.5 text-xs text-slate-600 truncate" x-text="a.email || 'â€”'"></p>
+                      <p class="mt-0.5 text-xs text-slate-600 truncate" x-text="a.email || '—'"></p>
                     </div>
                   </div>
                 </a>
@@ -227,6 +227,13 @@
 
         get officeDescription() {
           return (this.office?.description || this.office?.description_es || '').toString().trim();
+        },
+
+        get officeDescriptionHtml() {
+          if (typeof window.publicSanitizeRichHtml === 'function') {
+            return window.publicSanitizeRichHtml(this.officeDescription, '');
+          }
+          return this.officeDescription;
         },
 
         async init() {
@@ -387,6 +394,9 @@
             empty.classList.add('hidden');
 
             const esc = (s) => String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'", '&#039;');
+            const bedroomsShort = tPublic('home.property.bedroomsShort', isEnLocale ? 'Beds' : 'Rec.');
+            const bathroomsShort = tPublic('home.property.bathroomsShort', isEnLocale ? 'Baths' : 'Banos');
+            const areaUnit = tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2');
 
             grid.innerHTML = this.properties.map((p) => {
               const imageUrl = p.cover_media_asset?.serving_url || p.cover_media_asset?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';
@@ -397,11 +407,17 @@
               const price = firstOperation?.formatted_amount || fallbackAmount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
               const op = p.operations?.[0]?.operation_type || '';
               const location = [p.location?.city, p.location?.city_area].filter(Boolean).join(', ') || tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible');
+              const constructionArea = Number(p.construction_size);
+              const lotArea = Number(p.lot_size);
+              const areaSize = Number.isFinite(constructionArea) && constructionArea > 0
+                ? p.construction_size
+                : (Number.isFinite(lotArea) && lotArea > 0 ? p.lot_size : null);
 
               return `
                 <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
                   <div class="relative h-52 overflow-hidden">
                     <img src="${esc(imageUrl)}" alt="${esc(p.title || tPublic('common.properties', isEnLocale ? 'Property' : 'Propiedad'))}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';" />
+                    ${p.property_type_name ? `<span class="absolute top-4 left-4 px-3 py-1 backdrop-blur-sm text-xs font-semibold rounded-full" style="background-color: var(--fe-properties-type_badge_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-type_badge_text, #1C1C1C);">${esc(p.property_type_name)}</span>` : ''}
                     ${op ? `<span class="absolute top-4 right-4 px-3 py-1 text-white text-xs font-semibold rounded-full" style="background-color:${op === 'sale' ? 'var(--fe-properties-sale_badge, #768D59)' : 'var(--fe-properties-rent_badge, #D1A054)'};">${op === 'sale' ? tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta') : tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta')}</span>` : ''}
                     <button type="button" data-favorite-btn data-property-id="${esc(p.id)}" class="absolute bottom-4 right-4 w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300 border border-slate-200" style="background-color: var(--fe-properties-fav_btn_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-fav_btn_icon, #5B5B5B);">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,9 +426,41 @@
                     </button>
                   </div>
                   <div class="p-6">
-                    <div class="text-sm text-slate-600 mb-2">${esc(location)}</div>
+                    <div class="flex items-center gap-2 text-sm mb-2" style="color: var(--fe-properties-card_location, #64748b);">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      ${esc(location)}
+                    </div>
                     <h3 class="text-lg font-bold mb-3 line-clamp-2 text-slate-900">${esc(p.title || tPublic('common.available', isEnLocale ? 'Available property' : 'Propiedad disponible'))}</h3>
                     <div class="text-2xl font-extrabold text-transparent bg-clip-text mb-4" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">${esc(price)}</div>
+                    <div class="flex items-center gap-4 text-sm border-t pt-4 mb-5" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
+                      ${p.bedrooms != null ? `
+                      <div class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        ${esc(p.bedrooms)} ${esc(bedroomsShort)}
+                      </div>
+                      ` : ''}
+                      ${p.bathrooms != null ? `
+                      <div class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        ${esc(p.bathrooms)} ${esc(bathroomsShort)}
+                      </div>
+                      ` : ''}
+                      ${areaSize != null && areaSize !== '' ? `
+                      <div class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                        </svg>
+                        ${esc(areaSize)} ${esc(areaUnit)}
+                      </div>
+                      ` : ''}
+                    </div>
                     <a href="/propiedades/${esc(p.id)}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">${tPublic('common.details', isEnLocale ? 'View details' : 'Ver detalles')}</a>
                   </div>
                 </div>

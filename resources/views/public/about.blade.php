@@ -131,6 +131,7 @@
 
     $primaryOfficeName = $primaryOffice?->name ?? ($isEn ? 'Main agency' : 'Agencia principal');
     $primaryOfficeAgents = collect($primaryOfficeAgents ?? []);
+    $rich = static fn (?string $html, ?string $fallback = null): string => \App\Support\RichTextSanitizer::sanitize($html, $fallback);
 @endphp
 
 @section('title', $pageTitle)
@@ -152,9 +153,9 @@
                     <h1 class="mt-6 text-4xl sm:text-5xl lg:text-6xl font-black leading-tight text-white">
                         {{ $txt('about_who_heading', 'Real estate con visión moderna', 'Real estate with modern vision') }}
                     </h1>
-                    <p class="mt-6 text-lg sm:text-xl max-w-3xl" style="color: rgba(255,255,255,0.82);">
-                        {{ $whoSubtitle }}
-                    </p>
+                    <div class="mt-6 text-lg sm:text-xl max-w-3xl rich-content" style="color: rgba(255,255,255,0.82);">
+                        {!! $rich($whoSubtitle) !!}
+                    </div>
                 </div>
 
                 <div class="lg:col-span-4">
@@ -178,7 +179,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <article class="rounded-3xl border p-8 lg:p-10 shadow-soft" style="border-color: #e2e8f0; background: linear-gradient(130deg, rgba(255,255,255,1), rgba(248,250,252,1));">
                 <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style="background: rgba(209,160,84,0.15); color: #9a7035;">{{ $historyTitle }}</span>
-                <p class="mt-5 text-lg leading-relaxed" style="color: #334155;">{{ $historyText }}</p>
+                <div class="mt-5 text-lg leading-relaxed rich-content" style="color: #334155;">{!! $rich($historyText) !!}</div>
             </article>
         </div>
     </section>
@@ -187,7 +188,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <article class="rounded-3xl border p-8 lg:p-10 shadow-soft" style="border-color: #dbeafe; background: linear-gradient(135deg, rgba(239,246,255,1), rgba(255,255,255,1));">
                 <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style="background: rgba(59,130,246,0.12); color: #1d4ed8;">{{ $missionTitle }}</span>
-                <p class="mt-5 text-lg leading-relaxed" style="color: #1e3a8a;">{{ $missionText }}</p>
+                <div class="mt-5 text-lg leading-relaxed rich-content" style="color: #1e3a8a;">{!! $rich($missionText) !!}</div>
             </article>
         </div>
     </section>
@@ -196,7 +197,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <article class="rounded-3xl border p-8 lg:p-10 shadow-soft" style="border-color: #dcfce7; background: linear-gradient(135deg, rgba(240,253,244,1), rgba(255,255,255,1));">
                 <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style="background: rgba(34,197,94,0.14); color: #15803d;">{{ $visionTitle }}</span>
-                <p class="mt-5 text-lg leading-relaxed" style="color: #14532d;">{{ $visionText }}</p>
+                <div class="mt-5 text-lg leading-relaxed rich-content" style="color: #14532d;">{!! $rich($visionText) !!}</div>
             </article>
         </div>
     </section>
@@ -224,7 +225,7 @@
                                 <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: #9a7035;">{{ $broker['role'] }}</p>
                             @endif
                             @if(!empty($broker['bio']))
-                                <p class="mt-4 text-sm leading-relaxed" style="color: #475569;">{{ $broker['bio'] }}</p>
+                                <div class="mt-4 text-sm leading-relaxed rich-content" style="color: #475569;">{!! $rich($broker['bio']) !!}</div>
                             @endif
                         </div>
                     </article>
@@ -256,7 +257,7 @@
                                 <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: #0f766e;">{{ $member['role'] }}</p>
                             @endif
                             @if(!empty($member['bio']))
-                                <p class="mt-4 text-sm leading-relaxed" style="color: #475569;">{{ $member['bio'] }}</p>
+                                <div class="mt-4 text-sm leading-relaxed rich-content" style="color: #475569;">{!! $rich($member['bio']) !!}</div>
                             @endif
                         </div>
                     </article>
@@ -307,7 +308,7 @@
                                 @endif
 
                                 @if($agentBio !== '')
-                                    <p class="mt-3 text-sm line-clamp-2" style="color: rgba(255,255,255,0.78);">{{ $agentBio }}</p>
+                                    <div class="mt-3 text-sm rich-content" style="color: rgba(255,255,255,0.78);">{!! $rich($agentBio) !!}</div>
                                 @endif
 
                                 <div class="mt-5 flex gap-2">

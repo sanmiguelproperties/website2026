@@ -118,7 +118,7 @@
 
               <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500" x-text="member.department || texts.noDepartment"></p>
 
-              <p class="mt-3 text-sm text-slate-600 line-clamp-2" x-text="member.bio || texts.noBio"></p>
+              <div class="mt-3 text-sm text-slate-600 rich-content" x-html="memberBioHtml(member)"></div>
 
               <div class="mt-4 flex flex-wrap gap-2" x-show="Array.isArray(member.specialties) && member.specialties.length">
                 <template x-for="(specialty, index) in member.specialties.slice(0, 3)" :key="`${member.id}-specialty-${index}`">
@@ -289,6 +289,23 @@ function publicTeamPage() {
 
     sanitizePhone(phone) {
       return String(phone || '').replace(/[^0-9+]/g, '');
+    },
+
+    escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    },
+
+    memberBioHtml(member) {
+      const source = (member?.bio || '').toString().trim();
+      if (typeof window.publicSanitizeRichHtml === 'function') {
+        return window.publicSanitizeRichHtml(source, this.texts.noBio);
+      }
+      return this.escapeHtml(source || this.texts.noBio);
     },
 
     async loadDepartments() {

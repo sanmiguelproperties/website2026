@@ -1,4 +1,4 @@
-﻿@extends('layouts.public')
+@extends('layouts.public')
 
 @php
   $isEn = ($locale ?? app()->getLocale()) === 'en';
@@ -318,7 +318,7 @@
                           <h3 class="text-lg font-bold text-slate-900 truncate">${esc(name)}</h3>
                           <span class="text-xs font-semibold text-slate-500">${esc(propsCount)} ${tPublic('mls.agents.countProperties', isEnLocale ? 'properties' : 'propiedades')}</span>
                         </div>
-                        <p class="mt-1 text-sm text-slate-600 truncate">${esc(a.email || 'â€”')}</p>
+                        <p class="mt-1 text-sm text-slate-600 truncate">${esc(a.email || '—')}</p>
 
                         <div class="mt-3 flex flex-wrap gap-2">
                           <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold" style="background-color: rgba(209,160,84,0.10); color: rgb(79,70,229);">MLS #${esc(a.mls_agent_id)}</span>

@@ -1,4 +1,4 @@
-﻿@extends('layouts.public')
+@extends('layouts.public')
 
 @php
   $isEn = ($locale ?? app()->getLocale()) === 'en';
@@ -11,6 +11,7 @@
   $pageTitle = $isZoneLanding
     ? ($zonePage->metaTitle($locale ?? app()->getLocale()) ?: $zoneTitle ?: $defaultPageTitle)
     : $defaultPageTitle;
+  $rich = static fn (?string $html, ?string $fallback = null): string => \App\Support\RichTextSanitizer::sanitize($html, $fallback);
 @endphp
 
 @section('title', $pageTitle)
@@ -128,23 +129,23 @@
             <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight" style="color: var(--fe-properties-title, #1C1C1C);">
               {{ $zoneTitle ?? ($isEn ? 'Properties by zone' : 'Propiedades por zona') }}
             </h1>
-            <p class="mt-4 text-lg" style="color: var(--fe-properties-subtitle, #5B5B5B);">
-              {{ $zoneDescription ?: ($isEn ? 'Explore this area and adjust filters to compare nearby zones.' : 'Explora esta zona y ajusta filtros para comparar zonas cercanas.') }}
-            </p>
+            <div class="mt-4 text-lg rich-content" style="color: var(--fe-properties-subtitle, #5B5B5B);">
+              {!! $rich($zoneDescription, $isEn ? 'Explore this area and adjust filters to compare nearby zones.' : 'Explora esta zona y ajusta filtros para comparar zonas cercanas.') !!}
+            </div>
           @else
             <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
-              {{ $txt('page_badge', 'CatÃ¡logo', 'Catalog') }}
+              {{ $txt('page_badge', 'Catálogo', 'Catalog') }}
             </div>
 
             <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight" style="color: var(--fe-properties-title, #1C1C1C);">
               {{ $txt('page_title_prefix', 'Explora nuestras', 'Explore our') }} <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('page_title_highlight', 'propiedades', 'properties') }}</span>
             </h1>
-            <p class="mt-4 text-lg" style="color: var(--fe-properties-subtitle, #5B5B5B);">
-              {{ $txt('page_subtitle', 'Filtra por tipo y encuentra la propiedad ideal.', 'Filter by type and find the right property for you.') }}
-            </p>
+            <div class="mt-4 text-lg rich-content" style="color: var(--fe-properties-subtitle, #5B5B5B);">
+              {!! $rich($txt('page_subtitle', 'Filtra por tipo y encuentra la propiedad ideal.', 'Filter by type and find the right property for you.')) !!}
+            </div>
           @endif
         </div>
       </div>
@@ -340,7 +341,7 @@
                   </div>
                 </div>
 
-                {{-- {{ $txt('operation_type_label', 'Tipo de operacion', 'Operation type') }} (dinÃƒÂ¡mico) --}}
+                {{-- {{ $txt('operation_type_label', 'Tipo de operacion', 'Operation type') }} (dinámico) --}}
                 <div x-show="operationTypes.length > 0">
                   <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('operation_type_label', 'Tipo de operacion', 'Operation type') }}</label>
                   <div class="flex flex-wrap gap-2">
@@ -390,11 +391,11 @@
                   </div>
                 </div>
 
-                {{-- {{ $txt('features_label', 'Caracteristicas', 'Features') }} (dinÃƒÂ¡micas) --}}
+                {{-- {{ $txt('features_label', 'Caracteristicas', 'Features') }} (dinámicas) --}}
                 <div x-show="availableBedrooms.length > 0 || availableBathrooms.length > 0 || availableParking.length > 0">
                   <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('features_label', 'Caracteristicas', 'Features') }}</label>
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {{-- RecÃƒÂ¡maras --}}
+                    {{-- Recámaras --}}
                     <div x-show="availableBedrooms.length > 0">
                       <label class="block text-xs mb-2" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('bedrooms_label', 'Recamaras', 'Bedrooms') }}</label>
                       <div class="flex items-center gap-1 flex-wrap">
@@ -407,7 +408,7 @@
                         </template>
                       </div>
                     </div>
-                    {{-- BaÃƒÂ±os --}}
+                    {{-- Baños --}}
                     <div x-show="availableBathrooms.length > 0">
                       <label class="block text-xs mb-2" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('bathrooms_label', 'Banos', 'Bathrooms') }}</label>
                       <div class="flex items-center gap-1 flex-wrap">
@@ -436,7 +437,7 @@
                   </div>
                 </div>
 
-                {{-- TamaÃƒÂ±o --}}
+                {{-- Tamaño --}}
                 <div>
                   <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('size_label', 'Tamano (m2)', 'Size (m2)') }}</label>
                   <div class="grid grid-cols-2 gap-3">
@@ -461,7 +462,7 @@
                   </div>
                 </div>
 
-                {{-- {{ $txt('location_label', 'Ubicacion', 'Location') }} (dinÃƒÂ¡mica con selects) --}}
+                {{-- {{ $txt('location_label', 'Ubicacion', 'Location') }} (dinámica con selects) --}}
                 <div x-show="availableRegions.length > 0 || availableCities.length > 0 || availableCityAreas.length > 0">
                   <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('location_label', 'Ubicacion', 'Location') }}</label>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -581,7 +582,7 @@
         // Estado del modal
         showFiltersModal: false,
         
-        // Opciones dinÃƒÂ¡micas de filtro (se cargan desde la API)
+        // Opciones dinámicas de filtro (se cargan desde la API)
         propertyTypes: [],
         operationTypes: [],
         availableCities: [],
@@ -618,7 +619,7 @@
         pagination: null,
 
         init() {
-          // Cargar opciones de filtro dinÃƒÂ¡micas desde la API
+          // Cargar opciones de filtro dinámicas desde la API
           this.loadFilterOptions();
           // Leer filtros desde la URL al inicializar
           this.loadFiltersFromUrl();
@@ -629,7 +630,7 @@
               this.showFiltersModal = false;
             }
           });
-          // Escuchar cambios en el historial (navegaciÃƒÂ³n adelante/atrÃƒÂ¡s)
+          // Escuchar cambios en el historial (navegación adelante/atrás)
           window.addEventListener('popstate', () => {
             this.loadFiltersFromUrl();
             this.loadProperties();
@@ -656,23 +657,31 @@
             }
           } catch (e) {
             console.error('Error loading filter options:', e);
-            // Fallback: dejar arrays vacÃƒÂ­os, la UI mostrarÃƒÂ¡ solo "Todos"
+            // Fallback: dejar arrays vacíos, la UI mostrará solo "Todos"
           }
         },
 
-        // Helper para obtener label de operaciÃƒÂ³n
+        // Helper para obtener label de operación
         getOperationLabel(type) {
           const labels = { sale: tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta'), rental: tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta'), lease: tPublic('properties.operationLease', isEnLocale ? 'Lease' : 'Arrendamiento'), rent: tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta'), venta: tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta'), renta: tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta') };
           return labels[type] || type;
         },
 
-        // Helper para obtener emoji de operaciÃƒÂ³n
+        // Helper para obtener emoji de operación
         getOperationEmoji(type) {
-          const emojis = { sale: 'Ã°Å¸ÂÂ·Ã¯Â¸Â', rental: 'Ã°Å¸â€â€˜', lease: 'Ã°Å¸â€œâ€¹' };
-          return emojis[type] || 'Ã°Å¸â€œÅ’';
+          const normalized = String(type || '').toLowerCase();
+          const emojis = {
+            sale: '\uD83C\uDFF7\uFE0F',
+            venta: '\uD83C\uDFF7\uFE0F',
+            rental: '\uD83D\uDD11',
+            rent: '\uD83D\uDD11',
+            renta: '\uD83D\uDD11',
+            lease: '\uD83D\uDCCB'
+          };
+          return emojis[normalized] || '\uD83D\uDCCC';
         },
 
-        // Cargar filtros desde los parÃƒÂ¡metros de la URL
+        // Cargar filtros desde los parámetros de la URL
         loadFiltersFromUrl() {
           const urlParams = new URLSearchParams(window.location.search);
           
@@ -686,7 +695,7 @@
           filterKeys.forEach(key => {
             if (urlParams.has(key)) {
               const value = urlParams.get(key);
-              // Convertir a nÃƒÂºmero si es necesario
+              // Convertir a número si es necesario
               if (['min_price', 'max_price', 'bedrooms', 'bathrooms', 'parking_spaces',
                    'min_construction_size', 'min_lot_size', 'per_page', 'page'].includes(key)) {
                 this.filters[key] = value ? parseInt(value, 10) || value : '';
@@ -710,7 +719,7 @@
           // Solo agregar filtros que tengan valor y no sean los valores por defecto
           Object.keys(this.filters).forEach(key => {
             const value = this.filters[key];
-            // Excluir valores vacÃƒÂ­os y valores por defecto
+            // Excluir valores vacíos y valores por defecto
             if (value !== null && value !== undefined && value !== '') {
               // Excluir valores por defecto
               if (key === 'order' && value === 'updated_at') return;
@@ -727,7 +736,7 @@
             ? `${window.location.pathname}?${params.toString()}`
             : window.location.pathname;
           
-          // Actualizar la URL sin recargar la pÃƒÂ¡gina (usar null en lugar del objeto filters)
+          // Actualizar la URL sin recargar la página (usar null en lugar del objeto filters)
           window.history.pushState(null, '', newUrl);
         },
 
@@ -893,6 +902,14 @@
               const price = firstOperation?.formatted_amount || fallbackAmount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
               const op = p.operations?.[0]?.operation_type || '';
               const location = [p.location?.city, p.location?.city_area].filter(Boolean).join(', ') || tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible');
+              const bedroomsShort = tPublic('home.property.bedroomsShort', isEnLocale ? 'Beds' : 'Rec.');
+              const bathroomsShort = tPublic('home.property.bathroomsShort', isEnLocale ? 'Baths' : 'Banos');
+              const areaUnit = tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2');
+              const constructionArea = Number(p.construction_size);
+              const lotArea = Number(p.lot_size);
+              const areaSize = Number.isFinite(constructionArea) && constructionArea > 0
+                ? p.construction_size
+                : (Number.isFinite(lotArea) && lotArea > 0 ? p.lot_size : null);
 
               return `
                 <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
@@ -934,6 +951,35 @@
 
                     <div class="text-2xl font-extrabold text-transparent bg-clip-text mb-4" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                       ${price}
+                    </div>
+
+                    <div class="flex items-center gap-4 text-sm border-t pt-4 mb-5" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
+                      ${p.bedrooms != null ? `
+                      <div class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        ${p.bedrooms} ${bedroomsShort}
+                      </div>
+                      ` : ''}
+
+                      ${p.bathrooms != null ? `
+                      <div class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        ${p.bathrooms} ${bathroomsShort}
+                      </div>
+                      ` : ''}
+
+                      ${areaSize != null && areaSize !== '' ? `
+                      <div class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                        </svg>
+                        ${areaSize} ${areaUnit}
+                      </div>
+                      ` : ''}
                     </div>
 
                     <a href="/propiedades/${p.id}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
