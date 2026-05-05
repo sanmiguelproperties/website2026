@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MediaAsset;
+use App\Support\Rbac;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -16,6 +17,10 @@ class MediaAssetController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'documents.view')) {
+            return $this->apiForbidden('No tienes permisos para ver documentos', 'DOCUMENTS_VIEW_FORBIDDEN');
+        }
+
         $query = MediaAsset::query();
         if ($request->boolean('only_trashed')) {
             $query->onlyTrashed();
@@ -60,6 +65,10 @@ class MediaAssetController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'documents.create')) {
+            return $this->apiForbidden('No tienes permisos para subir documentos', 'DOCUMENTS_CREATE_FORBIDDEN');
+        }
+
         $validator = Validator::make($request->all(), [
             'file' => 'required_without:url|file|max:204800',
             'url' => 'required_without:file|url',
@@ -136,7 +145,7 @@ class MediaAssetController extends Controller
                 return $this->apiValidationError(['file' => ['Tipo de archivo no permitido']]);
             }
 
-            $userId = 1; // Usuario por defecto
+            $userId = $request->user('api')?->getAuthIdentifier() ?? 1;
             $year   = trim(now()->format('Y'));
             $month  = trim(now()->format('m'));
 
@@ -184,6 +193,10 @@ class MediaAssetController extends Controller
      */
     public function show(Request $request, $id): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'documents.view')) {
+            return $this->apiForbidden('No tienes permisos para ver documentos', 'DOCUMENTS_VIEW_FORBIDDEN');
+        }
+
         $query = MediaAsset::where('id', $id);
         if ($request->boolean('only_trashed')) {
             $query->onlyTrashed();
@@ -204,6 +217,10 @@ class MediaAssetController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'documents.edit')) {
+            return $this->apiForbidden('No tienes permisos para editar documentos', 'DOCUMENTS_EDIT_FORBIDDEN');
+        }
+
         $query = MediaAsset::where('id', $id);
         if ($request->boolean('only_trashed')) {
             $query->onlyTrashed();
@@ -258,7 +275,7 @@ class MediaAssetController extends Controller
                 Storage::disk('public')->delete($media->path);
             }
 
-            $userId = 1;
+            $userId = $request->user('api')?->getAuthIdentifier() ?? 1;
             $year   = trim(now()->format('Y'));
             $month  = trim(now()->format('m'));
 
@@ -332,6 +349,10 @@ class MediaAssetController extends Controller
      */
     public function destroy(Request $request, $id): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'documents.delete')) {
+            return $this->apiForbidden('No tienes permisos para eliminar documentos', 'DOCUMENTS_DELETE_FORBIDDEN');
+        }
+
         $query = MediaAsset::where('id', $id);
 
         $media = $query->first();

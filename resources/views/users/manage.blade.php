@@ -83,6 +83,11 @@
           <input type="email" id="user-email" name="email" class="w-full px-3 py-2 bg-[var(--c-elev)] border border-[var(--c-border)] rounded-lg focus:ring-2 focus:ring-[var(--c-primary)] focus:border-transparent" required>
         </div>
 
+        <label class="flex items-center gap-3 rounded-lg border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2">
+          <input type="checkbox" id="user-is-active" name="is_active" class="rounded border-[var(--c-border)]" checked>
+          <span class="text-sm text-[var(--c-text)]">Usuario activo</span>
+        </label>
+
         <!-- Password -->
         <div>
           <label for="user-password" class="block text-sm font-medium text-[var(--c-text)] mb-1">Contraseña</label>
@@ -184,12 +189,15 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="flex items-center gap-4">
           ${profileImageHtml}
           <div>
-            <h3 class="font-medium text-[var(--c-text)]">${user.name}</h3>
+            <div class="flex items-center gap-2">
+              <h3 class="font-medium text-[var(--c-text)]">${user.name}</h3>
+              <span class="text-xs px-2 py-0.5 rounded-full ${user.is_active === false ? 'bg-red-500/20 text-red-300' : 'bg-emerald-500/20 text-emerald-300'}">${user.is_active === false ? 'Inactivo' : 'Activo'}</span>
+            </div>
             <p class="text-sm text-[var(--c-muted)]">${user.email}</p>
           </div>
         </div>
         <div class="flex gap-2">
-          <button class="edit-user-btn px-3 py-1 text-sm bg-[var(--c-primary)] text-[var(--c-primary-ink)] rounded-lg hover:opacity-95 transition" data-id="${user.id}" data-name="${user.name}" data-email="${user.email}" data-profile-image-id="${user.profile_image_id || ''}">Editar</button>
+          <button class="edit-user-btn px-3 py-1 text-sm bg-[var(--c-primary)] text-[var(--c-primary-ink)] rounded-lg hover:opacity-95 transition" data-id="${user.id}" data-name="${user.name}" data-email="${user.email}" data-profile-image-id="${user.profile_image_id || ''}" data-is-active="${user.is_active === false ? '0' : '1'}">Editar</button>
           <button class="delete-user-btn px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition" data-id="${user.id}">Eliminar</button>
         </div>
       `;
@@ -203,7 +211,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const name = e.target.dataset.name;
         const email = e.target.dataset.email;
         const profileImageId = e.target.dataset.profileImageId;
-        openUserModal(id, name, email, profileImageId);
+        const isActive = e.target.dataset.isActive !== '0';
+        openUserModal(id, name, email, profileImageId, isActive);
       });
     });
 
@@ -242,13 +251,14 @@ document.addEventListener('DOMContentLoaded', function() {
     container.appendChild(nextBtn);
   }
 
-  function openUserModal(id = null, name = '', email = '', profileImageId = '') {
+  function openUserModal(id = null, name = '', email = '', profileImageId = '', isActive = true) {
     const modal = document.getElementById('user-modal');
     const title = document.getElementById('user-modal-title');
     const idField = document.getElementById('user-id');
     const nameField = document.getElementById('user-name');
     const emailField = document.getElementById('user-email');
     const passwordField = document.getElementById('user-password');
+    const isActiveField = document.getElementById('user-is-active');
     const passwordConfirmContainer = document.getElementById('password-confirm-container');
 
     if (id) {
@@ -258,6 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
       emailField.value = email;
       passwordField.required = false;
       passwordField.placeholder = 'Dejar vacío para mantener la contraseña actual';
+      isActiveField.checked = isActive;
       passwordConfirmContainer.style.display = 'none';
       document.getElementById('user-password-confirm').required = false;
     } else {
@@ -267,6 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
       emailField.value = '';
       passwordField.required = true;
       passwordField.placeholder = '';
+      isActiveField.checked = true;
       passwordConfirmContainer.style.display = 'block';
       document.getElementById('user-password-confirm').required = true;
     }
@@ -296,6 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const email = document.getElementById('user-email').value;
     const password = document.getElementById('user-password').value;
     const profileImageId = document.querySelector('input[name="profile_image_id"]').value;
+    const isActive = document.getElementById('user-is-active').checked;
 
     const method = id ? 'PUT' : 'POST';
     const url = id ? `${API_BASE}/users/${id}` : `${API_BASE}/users`;
@@ -303,7 +316,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const formData = {
       name,
       email,
-      profile_image_id: profileImageId || null
+      profile_image_id: profileImageId || null,
+      is_active: isActive
     };
 
     if (password) {

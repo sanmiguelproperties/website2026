@@ -33,6 +33,7 @@ class User extends Authenticatable
         'email',
         'password',
         'profile_image_id',
+        'is_active',
         'color_theme_id',
 
         // Perfil de agente (nullable; se usa cuando el user tiene rol `agent`)
@@ -65,6 +66,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 

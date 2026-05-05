@@ -13,6 +13,13 @@ class DefaultUserSeeder extends Seeder
     {
         $guards = ['web', 'api'];
 
+        if (
+            !Role::where('name', 'super-admin')->where('guard_name', 'web')->exists()
+            || !Role::where('name', 'super-admin')->where('guard_name', 'api')->exists()
+        ) {
+            $this->call(RbacSeeder::class);
+        }
+
         $defaultAdminPassword = '852456357';
 
         $defaultAdminUsers = [
@@ -59,9 +66,9 @@ class DefaultUserSeeder extends Seeder
                 ]
             );
 
-            // Asignar rol admin para ambos guards
+            // Assign full internal access for both guards.
             foreach ($guards as $guard) {
-                $role = Role::findByName('admin', $guard);
+                $role = Role::findByName('super-admin', $guard);
                 $user->assignRole($role);
             }
         }

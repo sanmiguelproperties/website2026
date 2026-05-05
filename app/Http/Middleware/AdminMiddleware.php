@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Rbac;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,14 +14,24 @@ class AdminMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, ...$permissions): Response
     {
         if (!auth()->check()) {
             return redirect()->route('login');
         }
 
-        if (!auth()->user()->hasRole('admin')) {
-            abort(403, 'Acceso denegado. Se requiere rol de administrador.');
+        if (isset(auth()->user()->is_active) && !auth()->user()->is_active) {
+            auth()->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login');
+        }
+
+        $requiredPermissions = $permissions === [] ? ['dashboard.view'] : $permissions;
+
+        if (!Rbac::canAny(auth()->user(), $requiredPermissions)) {
+            abort(403, 'Acceso denegado. No tienes permisos para esta seccion.');
         }
 
         return $next($request);

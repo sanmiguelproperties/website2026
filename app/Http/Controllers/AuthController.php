@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Passport\Token;
 
 class AuthController extends Controller
 {
@@ -16,13 +15,13 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email'    => ['required','email'],
-            'password' => ['required','min:6'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'min:6'],
         ], [
             'email.required' => 'Ingresa tu correo.',
-            'email.email'    => 'Formato de correo inválido.',
-            'password.required' => 'Ingresa tu contraseña.',
-            'password.min'      => 'La contraseña debe tener al menos 6 caracteres.',
+            'email.email' => 'Formato de correo invalido.',
+            'password.required' => 'Ingresa tu contrasena.',
+            'password.min' => 'La contrasena debe tener al menos 6 caracteres.',
         ]);
 
         $remember = $request->boolean('remember');
@@ -32,24 +31,31 @@ class AuthController extends Controller
 
             $user = Auth::user();
 
-            // Gestionar tokens: mantener máximo 2 tokens por usuario
+            if (isset($user->is_active) && !$user->is_active) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()
+                    ->withErrors(['email' => 'Tu usuario esta desactivado.'])
+                    ->onlyInput('email');
+            }
+
+            // Keep a maximum of two active API tokens per user.
             $tokens = $user->tokens()->orderBy('created_at', 'desc')->get();
             if ($tokens->count() >= 2) {
-                // Borrar el más antiguo (el último en la lista ordenada desc)
                 $tokens->last()->delete();
             }
 
-            // Crear nuevo token
             $token = $user->createToken('API Token')->accessToken;
 
-            // Guardar token en sesión
             $request->session()->put('passport_token', $token);
 
             return redirect()->intended('/admin/funnel');
         }
 
         return back()
-            ->withErrors(['email' => 'Credenciales inválidas.'])
+            ->withErrors(['email' => 'Credenciales invalidas.'])
             ->onlyInput('email');
     }
 
@@ -58,34 +64,41 @@ class AuthController extends Controller
         $user = Auth::user();
 
         if ($user) {
-            // Revocar todos los tokens del usuario al cerrar sesión
             $user->tokens()->delete();
         }
 
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 
     public function apiLogin(Request $request)
     {
         $credentials = $request->validate([
-            'email'    => ['required','email'],
-            'password' => ['required','min:6'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'min:6'],
         ]);
 
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
 
-            // Gestionar tokens: mantener máximo 2 tokens por usuario
+            if (isset($user->is_active) && !$user->is_active) {
+                Auth::logout();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tu usuario esta desactivado.',
+                ], 403);
+            }
+
+            // Keep a maximum of two active API tokens per user.
             $tokens = $user->tokens()->orderBy('created_at', 'desc')->get();
             if ($tokens->count() >= 2) {
-                // Borrar el más antiguo
                 $tokens->last()->delete();
             }
 
-            // Crear nuevo token
             $token = $user->createToken('API Token')->accessToken;
 
             return response()->json([
@@ -98,7 +111,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => false,
-            'message' => 'Credenciales inválidas.',
+            'message' => 'Credenciales invalidas.',
         ], 401);
     }
 }

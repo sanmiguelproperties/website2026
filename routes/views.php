@@ -236,86 +236,86 @@ Route::middleware('auth')->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    Route::prefix('admin')->middleware('admin')->group(function () {
+    Route::prefix('admin')->group(function () {
         Route::get('/funnel', function () {
             return view('funnel');
-        })->name('funnel');
+        })->name('funnel')->middleware('admin:leads.view|pipelines.view');
 
         Route::get('/users', function () {
             return view('users.manage');
-        })->name('users');
+        })->name('users')->middleware('admin:users.view');
 
         Route::get('/rbac', function () {
             return view('rbac.manage');
-        })->name('rbac');
+        })->name('rbac')->middleware('admin:rbac.manage');
 
         Route::get('/currencies', function () {
             return view('currencies.manage');
-        })->name('currencies');
+        })->name('currencies')->middleware('admin:catalogs.manage');
 
         Route::get('/properties', function () {
             return view('properties.manage');
-        })->name('properties');
+        })->name('properties')->middleware('admin:properties.view');
 
         Route::get('/zones', function () {
             return view('zones.manage');
-        })->name('zones');
+        })->name('zones')->middleware('admin:settings.manage');
 
         Route::get('/team-members', function () {
             return view('team.manage');
-        })->name('team-members');
+        })->name('team-members')->middleware('admin:users.view');
 
         Route::get('/agencies', function () {
             return view('agencies.manage');
-        })->name('agencies');
+        })->name('agencies')->middleware('admin:catalogs.manage');
 
         Route::get('/color-themes', function () {
             return view('color-themes.manage');
-        })->name('color-themes');
+        })->name('color-themes')->middleware('admin:settings.manage');
 
         Route::get('/frontend-colors', function () {
             return view('frontend-colors.manage');
-        })->name('frontend-colors');
+        })->name('frontend-colors')->middleware('admin:settings.manage');
 
         Route::get('/easybroker', function () {
             return view('easybroker.sync');
-        })->name('easybroker');
+        })->name('easybroker')->middleware('admin:integrations.manage');
 
         Route::get('/easybroker/mls-export', function () {
             return view('easybroker.mls-export');
-        })->name('easybroker.mls-export');
+        })->name('easybroker.mls-export')->middleware('admin:integrations.manage');
 
         Route::get('/mls', function () {
             return view('mls.sync');
-        })->name('mls');
+        })->name('mls')->middleware('admin:integrations.manage');
 
         Route::get('/mls-agents', function () {
             return view('mls-agents.manage');
-        })->name('mls-agents');
+        })->name('mls-agents')->middleware('admin:catalogs.manage');
 
         Route::get('/mls-offices', function () {
             return view('mls-offices.manage');
-        })->name('mls-offices');
+        })->name('mls-offices')->middleware('admin:catalogs.manage');
 
         Route::get('/corporate-email', function () {
             return view('emails.manage');
-        })->name('corporate-email');
+        })->name('corporate-email')->middleware('admin:integrations.manage');
 
         // CMS
         Route::get('/cms/pages', function () {
             return view('cms.pages.manage');
-        })->name('cms.pages');
+        })->name('cms.pages')->middleware('admin:settings.manage');
 
         Route::get('/cms/posts', function () {
             return view('cms.posts.manage');
-        })->name('cms.posts');
+        })->name('cms.posts')->middleware('admin:settings.manage');
 
         Route::get('/cms/menus', function () {
             return view('cms.menus.manage');
-        })->name('cms.menus');
+        })->name('cms.menus')->middleware('admin:settings.manage');
 
         Route::get('/cms/settings', function () {
             return view('cms.settings.manage');
-        })->name('cms.settings');
+        })->name('cms.settings')->middleware('admin:settings.manage');
     });
 });

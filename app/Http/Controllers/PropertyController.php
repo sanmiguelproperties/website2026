@@ -7,6 +7,7 @@ use App\Models\Property;
 use App\Models\PropertyLocation;
 use App\Models\PropertyOperation;
 use App\Services\LocationTaxonomyService;
+use App\Support\Rbac;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -205,6 +206,8 @@ class PropertyController extends Controller
             'coverMediaAsset',
         ]);
 
+        $this->scopeInternalProperties($query, $request->user('api'));
+
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             $query->where(function ($q) use ($search) {
@@ -259,6 +262,10 @@ class PropertyController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'properties.create')) {
+            return $this->apiForbidden('No tienes permisos para crear propiedades', 'PROPERTIES_CREATE_FORBIDDEN');
+        }
+
         $locationCatalogIdRule = $this->locationCatalogIdRule();
 
         $validator = Validator::make($request->all(), [
@@ -391,6 +398,12 @@ class PropertyController extends Controller
         }
 
         $data = $validator->validated();
+
+        if ($forbidden = $this->rejectRestrictedPropertyMutation($request)) {
+            return $forbidden;
+        }
+
+        $this->normalizePropertyMutationForRole($data, $request->user('api'), true);
         
         // Asignar source por defecto si no se especifica
         if (!isset($data['source'])) {
@@ -511,6 +524,10 @@ class PropertyController extends Controller
      */
     public function show(Request $request, Property $property): JsonResponse
     {
+        if (!$this->canViewInternalProperty($request->user('api'), $property)) {
+            return $this->apiForbidden('No tienes permisos para ver esta propiedad', 'PROPERTY_VIEW_FORBIDDEN');
+        }
+
         $property->load(['agency', 'agentUser.profileImage', 'mlsAgents.photoMediaAsset', 'coverMediaAsset', 'location', 'operations', 'features', 'tags', 'mediaAssets']);
         return $this->apiSuccess('Propiedad obtenida', 'PROPERTY_SHOWN', $property);
     }
@@ -520,6 +537,10 @@ class PropertyController extends Controller
      */
     public function update(Request $request, Property $property): JsonResponse
     {
+        if (!$this->canEditInternalProperty($request->user('api'), $property)) {
+            return $this->apiForbidden('No tienes permisos para editar esta propiedad', 'PROPERTY_EDIT_FORBIDDEN');
+        }
+
         $locationCatalogIdRule = $this->locationCatalogIdRule();
 
         $validator = Validator::make($request->all(), [
@@ -654,6 +675,12 @@ class PropertyController extends Controller
         $data = $validator->validated();
 
         // ValidaciÃ³n de unique solo si hay easybroker_public_id
+        if ($forbidden = $this->rejectRestrictedPropertyMutation($request)) {
+            return $forbidden;
+        }
+
+        $this->normalizePropertyMutationForRole($data, $request->user('api'), false);
+
         $agencyId = $data['agency_id'] ?? $property->agency_id;
         $publicId = $data['easybroker_public_id'] ?? $property->easybroker_public_id;
         if (!empty($publicId)) {
@@ -758,6 +785,10 @@ class PropertyController extends Controller
      */
     public function destroy(Request $request, Property $property): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'properties.delete')) {
+            return $this->apiForbidden('No tienes permisos para eliminar propiedades', 'PROPERTY_DELETE_FORBIDDEN');
+        }
+
         $property->delete();
         return $this->apiSuccess('Propiedad eliminada', 'PROPERTY_DELETED', null);
     }
@@ -929,6 +960,88 @@ class PropertyController extends Controller
             ],
             'total_properties' => $totalCount,
         ]);
+    }
+
+    private function scopeInternalProperties($query, $user): void
+    {
+        if (Rbac::canAny($user, 'properties.view.all')) {
+            return;
+        }
+
+        if (Rbac::canAny($user, ['properties.view.own', 'properties.view.team'])) {
+            Rbac::scopeOwned($query, $user);
+            return;
+        }
+
+        $query->whereRaw('1 = 0');
+    }
+
+    private function canViewInternalProperty($user, Property $property): bool
+    {
+        if (Rbac::canAny($user, 'properties.view.all')) {
+            return true;
+        }
+
+        return Rbac::canAny($user, ['properties.view.own', 'properties.view.team'])
+            && $this->isPropertyOwnedBy($property, $user);
+    }
+
+    private function canEditInternalProperty($user, Property $property): bool
+    {
+        if (Rbac::canAny($user, 'properties.edit')) {
+            return true;
+        }
+
+        return Rbac::canAny($user, 'properties.edit.own')
+            && $this->isPropertyOwnedBy($property, $user);
+    }
+
+    private function isPropertyOwnedBy(Property $property, $user): bool
+    {
+        return $user !== null
+            && $property->agent_user_id !== null
+            && (int) $property->agent_user_id === (int) $user->getAuthIdentifier();
+    }
+
+    private function rejectRestrictedPropertyMutation(Request $request): ?JsonResponse
+    {
+        $user = $request->user('api');
+
+        $restrictedFields = [
+            'published' => ['properties.publish', 'No tienes permisos para publicar propiedades', 'PROPERTY_PUBLISH_FORBIDDEN'],
+            'is_approved' => ['properties.approve', 'No tienes permisos para aprobar propiedades', 'PROPERTY_APPROVE_FORBIDDEN'],
+            'status' => ['properties.status.update', 'No tienes permisos para cambiar estatus de propiedades', 'PROPERTY_STATUS_FORBIDDEN'],
+            'agent_user_id' => ['properties.assign', 'No tienes permisos para reasignar propiedades', 'PROPERTY_ASSIGN_FORBIDDEN'],
+            'allow_integration' => ['integrations.manage', 'No tienes permisos para cambiar integraciones de propiedades', 'PROPERTY_INTEGRATION_FORBIDDEN'],
+            'selling_office_commission' => ['commissions.edit', 'No tienes permisos para modificar comisiones', 'PROPERTY_COMMISSION_FORBIDDEN'],
+        ];
+
+        foreach ($restrictedFields as $field => [$permission, $message, $code]) {
+            if ($request->exists($field) && !Rbac::canAny($user, $permission)) {
+                return $this->apiForbidden($message, $code);
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizePropertyMutationForRole(array &$data, $user, bool $isCreate): void
+    {
+        if (!Rbac::canAny($user, 'properties.assign') && ($isCreate || array_key_exists('agent_user_id', $data))) {
+            $data['agent_user_id'] = $user?->getAuthIdentifier();
+        }
+
+        if ($isCreate && !Rbac::canAny($user, 'properties.publish')) {
+            $data['published'] = false;
+        }
+
+        if ($isCreate && !Rbac::canAny($user, 'properties.approve')) {
+            $data['is_approved'] = false;
+        }
+
+        if ($isCreate && !Rbac::canAny($user, 'integrations.manage')) {
+            $data['allow_integration'] = false;
+        }
     }
 
     private function locationCatalogIdRule(): string

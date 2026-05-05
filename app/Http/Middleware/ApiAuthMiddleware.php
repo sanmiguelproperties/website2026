@@ -70,6 +70,18 @@ class ApiAuthMiddleware
             ], 401);
         }
 
+        if (isset($user->is_active) && !$user->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuario desactivado',
+                'code' => 'USER_INACTIVE',
+                'data' => null,
+                'errors' => [
+                    'auth' => ['El usuario esta desactivado']
+                ]
+            ], 403);
+        }
+
         return $next($request);
     }
 }

@@ -11,10 +11,10 @@ class RbacGrantAdminAllCommand extends Command
 {
     protected $signature = 'rbac:grant-admin-all
                             {--dry-run : Solo muestra lo que se haria, sin aplicar cambios}
-                            {--replace-existing : Reemplaza todos los roles por admin(web/api)}
+                            {--replace-existing : Reemplaza todos los roles por super-admin(web/api)}
                             {--chunk=200 : Tamano de lote para procesar usuarios}';
 
-    protected $description = 'Asigna rol admin (web y api) a todos los usuarios existentes';
+    protected $description = 'Asigna rol super-admin (web y api) a todos los usuarios existentes';
 
     public function handle(): int
     {
@@ -23,12 +23,12 @@ class RbacGrantAdminAllCommand extends Command
         $chunkSize = max(1, (int) $this->option('chunk'));
 
         $adminWeb = Role::firstOrCreate([
-            'name' => 'admin',
+            'name' => 'super-admin',
             'guard_name' => 'web',
         ]);
 
         $adminApi = Role::firstOrCreate([
-            'name' => 'admin',
+            'name' => 'super-admin',
             'guard_name' => 'api',
         ]);
 
@@ -38,10 +38,10 @@ class RbacGrantAdminAllCommand extends Command
             return self::SUCCESS;
         }
 
-        $this->info('Iniciando asignacion masiva de admin...');
+        $this->info('Iniciando asignacion masiva de super-admin...');
         $this->line("- usuarios totales: {$totalUsers}");
         $this->line("- modo: ".($dryRun ? 'dry-run' : 'ejecucion real'));
-        $this->line('- estrategia: '.($replaceExisting ? 'reemplazar roles existentes' : 'agregar admin sin eliminar roles'));
+        $this->line('- estrategia: '.($replaceExisting ? 'reemplazar roles existentes' : 'agregar super-admin sin eliminar roles'));
 
         $processed = 0;
         $updated = 0;
@@ -101,8 +101,8 @@ class RbacGrantAdminAllCommand extends Command
 
         $this->info('Resumen:');
         $this->line("- procesados: {$processed}");
-        $this->line("- faltaba admin web antes: {$missingWebBefore}");
-        $this->line("- faltaba admin api antes: {$missingApiBefore}");
+        $this->line("- faltaba super-admin web antes: {$missingWebBefore}");
+        $this->line("- faltaba super-admin api antes: {$missingApiBefore}");
         $this->line("- usuarios ya completos: {$alreadyComplete}");
         $this->line('- usuarios '.($dryRun ? 'a actualizar' : 'actualizados').": {$updated}");
 

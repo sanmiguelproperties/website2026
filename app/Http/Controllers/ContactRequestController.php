@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ContactRequest;
+use App\Support\Rbac;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -16,6 +17,8 @@ class ContactRequestController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = ContactRequest::query()->with(['agency', 'property']);
+
+        $this->scopeInternalLeads($query, $request->user('api'));
 
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
@@ -56,6 +59,10 @@ class ContactRequestController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'leads.create')) {
+            return $this->apiForbidden('No tienes permisos para crear leads', 'LEADS_CREATE_FORBIDDEN');
+        }
+
         $validator = Validator::make($request->all(), [
             'agency_id' => 'nullable|exists:agencies,id',
             'property_id' => 'nullable|exists:properties,id',
@@ -87,6 +94,10 @@ class ContactRequestController extends Controller
      */
     public function show(Request $request, ContactRequest $contactRequest): JsonResponse
     {
+        if (!$this->canViewInternalLead($request->user('api'), $contactRequest)) {
+            return $this->apiForbidden('No tienes permisos para ver este lead', 'LEAD_VIEW_FORBIDDEN');
+        }
+
         $contactRequest->load(['agency', 'property']);
         return $this->apiSuccess('Lead obtenido', 'CONTACT_REQUEST_SHOWN', $contactRequest);
     }
@@ -96,6 +107,18 @@ class ContactRequestController extends Controller
      */
     public function update(Request $request, ContactRequest $contactRequest): JsonResponse
     {
+        if (!$this->canEditInternalLead($request->user('api'), $contactRequest)) {
+            return $this->apiForbidden('No tienes permisos para editar este lead', 'LEAD_EDIT_FORBIDDEN');
+        }
+
+        if ($request->exists('status') && !Rbac::canAny($request->user('api'), 'leads.status.update')) {
+            return $this->apiForbidden('No tienes permisos para cambiar estatus de leads', 'LEAD_STATUS_FORBIDDEN');
+        }
+
+        if ($request->exists('property_id') && !Rbac::canAny($request->user('api'), 'leads.assign')) {
+            return $this->apiForbidden('No tienes permisos para reasignar leads', 'LEAD_ASSIGN_FORBIDDEN');
+        }
+
         $validator = Validator::make($request->all(), [
             'agency_id' => 'sometimes|nullable|exists:agencies,id',
             'property_id' => 'sometimes|nullable|exists:properties,id',
@@ -127,8 +150,61 @@ class ContactRequestController extends Controller
      */
     public function destroy(Request $request, ContactRequest $contactRequest): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'leads.delete')) {
+            return $this->apiForbidden('No tienes permisos para eliminar leads', 'LEAD_DELETE_FORBIDDEN');
+        }
+
         $contactRequest->delete();
         return $this->apiSuccess('Lead eliminado', 'CONTACT_REQUEST_DELETED', null);
+    }
+
+    private function scopeInternalLeads($query, $user): void
+    {
+        if (Rbac::canAny($user, 'leads.view.all')) {
+            return;
+        }
+
+        if (Rbac::canAny($user, ['leads.view.own', 'leads.view.team'])) {
+            $query->whereHas('property', function ($propertyQuery) use ($user) {
+                Rbac::scopeOwned($propertyQuery, $user);
+            });
+            return;
+        }
+
+        $query->whereRaw('1 = 0');
+    }
+
+    private function canViewInternalLead($user, ContactRequest $lead): bool
+    {
+        if (Rbac::canAny($user, 'leads.view.all')) {
+            return true;
+        }
+
+        return Rbac::canAny($user, ['leads.view.own', 'leads.view.team'])
+            && $this->isLeadOwnedBy($lead, $user);
+    }
+
+    private function canEditInternalLead($user, ContactRequest $lead): bool
+    {
+        if (Rbac::canAny($user, 'leads.edit')) {
+            return true;
+        }
+
+        return Rbac::canAny($user, ['leads.edit.own', 'leads.edit.assigned'])
+            && $this->isLeadOwnedBy($lead, $user);
+    }
+
+    private function isLeadOwnedBy(ContactRequest $lead, $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        $lead->loadMissing('property');
+
+        return $lead->property !== null
+            && $lead->property->agent_user_id !== null
+            && (int) $lead->property->agent_user_id === (int) $user->getAuthIdentifier();
     }
 }
 

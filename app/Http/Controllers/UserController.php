@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\Rbac;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -47,11 +48,16 @@ class UserController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'users.create')) {
+            return $this->apiForbidden('No tienes permisos para crear usuarios', 'USERS_CREATE_FORBIDDEN');
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'profile_image_id' => 'nullable|exists:media_assets,id',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -63,6 +69,7 @@ class UserController extends Controller
             'email' => $request->input('email'),
             'password' => Hash::make($request->input('password')),
             'profile_image_id' => $request->input('profile_image_id'),
+            'is_active' => $request->boolean('is_active', true),
         ];
 
         $user = User::create($userData);
@@ -92,6 +99,10 @@ class UserController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'users.edit')) {
+            return $this->apiForbidden('No tienes permisos para editar usuarios', 'USERS_EDIT_FORBIDDEN');
+        }
+
         $user = User::find($id);
 
         if (!$user) {
@@ -103,6 +114,7 @@ class UserController extends Controller
             'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($id)],
             'password' => 'sometimes|nullable|string|min:8',
             'profile_image_id' => 'nullable|exists:media_assets,id',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -110,6 +122,20 @@ class UserController extends Controller
         }
 
         $updateData = $validator->validated();
+
+        if (array_key_exists('is_active', $updateData) && !Rbac::canAny($request->user('api'), 'users.deactivate')) {
+            return $this->apiForbidden('No tienes permisos para activar o desactivar usuarios', 'USERS_DEACTIVATE_FORBIDDEN');
+        }
+
+        $currentUser = $request->user('api') ?? auth()->user();
+        if (
+            array_key_exists('is_active', $updateData)
+            && !$updateData['is_active']
+            && $currentUser
+            && (int) $currentUser->id === (int) $user->id
+        ) {
+            return $this->apiForbidden('No puedes desactivar tu propio usuario', 'SELF_DEACTIVATE_FORBIDDEN');
+        }
 
         // Hash password if provided
         if (isset($updateData['password']) && !empty($updateData['password'])) {
@@ -131,6 +157,10 @@ class UserController extends Controller
      */
     public function destroy(Request $request, $id): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'users.delete')) {
+            return $this->apiForbidden('No tienes permisos para eliminar usuarios', 'USERS_DELETE_FORBIDDEN');
+        }
+
         $user = User::find($id);
 
         if (!$user) {
@@ -138,7 +168,8 @@ class UserController extends Controller
         }
 
         // No permitir eliminar al usuario actual (si está autenticado)
-        if (auth()->check() && auth()->id() === $user->id) {
+        $currentUser = $request->user('api') ?? auth()->user();
+        if ($currentUser && (int) $currentUser->id === (int) $user->id) {
             return $this->apiForbidden('No puedes eliminar tu propio usuario', 'SELF_DELETE_FORBIDDEN');
         }
 
@@ -184,6 +215,10 @@ class UserController extends Controller
      */
     public function assignRoles(Request $request, $userId): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'rbac.manage')) {
+            return $this->apiForbidden('No tienes permisos para administrar roles', 'RBAC_MANAGE_FORBIDDEN');
+        }
+
         $user = User::find($userId);
 
         if (!$user) {
@@ -210,6 +245,10 @@ class UserController extends Controller
      */
     public function revokeRoles(Request $request, $userId): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'rbac.manage')) {
+            return $this->apiForbidden('No tienes permisos para administrar roles', 'RBAC_MANAGE_FORBIDDEN');
+        }
+
         $user = User::find($userId);
 
         if (!$user) {

@@ -46,7 +46,9 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::post('/login', [AuthController::class, 'apiLogin']);
 
 // Media Manager routes
-Route::apiResource('media', MediaAssetController::class);
+Route::middleware(['auth.api', 'admin.api:documents.view'])->group(function () {
+    Route::apiResource('media', MediaAssetController::class);
+});
 
 // Rutas públicas para el portal inmobiliario (sin autenticación)
   Route::prefix('public')->group(function () {
@@ -71,7 +73,7 @@ Route::apiResource('media', MediaAssetController::class);
   });
 
 // User Management routes protegidas con autenticación Passport
-Route::middleware(['auth.api', 'admin.api'])->group(function () {
+Route::middleware(['auth.api', 'admin.api:users.view'])->group(function () {
     Route::apiResource('users', UserController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 
     Route::get('users/{userId}/roles', [UserController::class, 'getUserRoles']);
@@ -81,29 +83,35 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
 });
 
 // Currency routes protegidas con autenticación Passport
-Route::middleware(['auth.api', 'admin.api'])->group(function () {
+Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () {
     Route::apiResource('currencies', CurrencyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 });
 
 // EasyBroker / Inventario routes (protegidas con autenticación Passport)
-  Route::middleware(['auth.api', 'admin.api'])->group(function () {
+  Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () {
     Route::patch('agencies/{agency}/primary', [AgencyController::class, 'setPrimary']);
     Route::apiResource('agencies', AgencyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::apiResource('properties', PropertyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('features', FeatureController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('tags', TagController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('locations-catalog', LocationCatalogController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    Route::apiResource('contact-requests', ContactRequestController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
   });
 
-Route::middleware(['auth.api', 'admin.api'])->group(function () {
+Route::middleware(['auth.api', 'admin.api:properties.view'])->group(function () {
+    Route::apiResource('properties', PropertyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+});
+
+Route::middleware(['auth.api', 'admin.api:leads.view'])->group(function () {
+    Route::apiResource('contact-requests', ContactRequestController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+});
+
+Route::middleware(['auth.api', 'admin.api:settings.manage'])->group(function () {
     Route::get('zone-pages', [ZonePageController::class, 'index']);
     Route::post('zone-pages/sync', [ZonePageController::class, 'sync']);
     Route::get('zone-pages/{zonePage}', [ZonePageController::class, 'show'])->where('zonePage', '[0-9]+');
     Route::put('zone-pages/{zonePage}', [ZonePageController::class, 'update'])->where('zonePage', '[0-9]+');
 });
 
-Route::middleware(['auth.api', 'admin.api'])->group(function () {
+Route::middleware(['auth.api', 'admin.api:users.view'])->group(function () {
     Route::get('team-members/departments', [AgencyTeamMemberController::class, 'departments']);
     Route::get('team-members', [AgencyTeamMemberController::class, 'index']);
     Route::post('team-members', [AgencyTeamMemberController::class, 'store']);
@@ -114,7 +122,7 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
 });
 
 // RBAC routes protegidas con autenticación Passport
-Route::middleware(['auth.api', 'admin.api'])->prefix('rbac')->group(function () {
+Route::middleware(['auth.api', 'admin.api:rbac.manage'])->prefix('rbac')->group(function () {
     Route::apiResource('roles', RoleController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('permissions', PermissionController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 
@@ -125,7 +133,7 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('rbac')->group(function () 
 });
 
 // Color Theme routes protegidas con autenticación Passport (Dashboard)
-Route::middleware(['auth.api', 'admin.api'])->group(function () {
+Route::middleware(['auth.api', 'admin.api:settings.manage'])->group(function () {
     Route::apiResource('color-themes', ColorThemeController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('color-themes/{id}/activate', [ColorThemeController::class, 'activate']);
     Route::get('color-themes/active', [ColorThemeController::class, 'active']);
@@ -151,7 +159,7 @@ Route::prefix('frontend-colors')->group(function () {
 });
 
 // Rutas protegidas para administración de colores del frontend
-Route::middleware(['auth.api', 'admin.api'])->prefix('frontend-colors')->group(function () {
+Route::middleware(['auth.api', 'admin.api:settings.manage'])->prefix('frontend-colors')->group(function () {
     // Listado y creación
     Route::get('/', [FrontendColorController::class, 'index']);
     Route::post('/', [FrontendColorController::class, 'store']);
@@ -182,7 +190,7 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('frontend-colors')->group(f
 });
 
 // EasyBroker Sync routes (protegidas con autenticación Passport)
-Route::middleware(['auth.api', 'admin.api'])->prefix('easybroker')->group(function () {
+Route::middleware(['auth.api', 'admin.api:integrations.manage'])->prefix('easybroker')->group(function () {
     // Estado de configuración
     Route::get('status', [EasyBrokerSyncController::class, 'status']);
     
@@ -207,7 +215,7 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('easybroker')->group(functi
 });
 
 // MLS AMPI San Miguel de Allende Sync routes (protegidas con autenticación Passport)
-Route::middleware(['auth.api', 'admin.api'])->prefix('mls')->group(function () {
+Route::middleware(['auth.api', 'admin.api:integrations.manage'])->prefix('mls')->group(function () {
     // Estado de configuración
     Route::get('status', [MLSSyncController::class, 'status']);
     
@@ -276,7 +284,7 @@ Route::middleware(['auth.api', 'admin.api'])->prefix('mls')->group(function () {
 });
 
 // MLS Agents routes (protegidas con autenticación Passport)
-Route::middleware(['auth.api', 'admin.api'])->group(function () {
+Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () {
     // CRUD de agentes MLS
     Route::apiResource('mls-agents', MLSAgentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     
@@ -296,7 +304,7 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
 });
 
 // MLS Offices routes (protegidas con autenticación Passport)
-Route::middleware(['auth.api', 'admin.api'])->group(function () {
+Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () {
     // CRUD de offices MLS (tabla mls_offices)
     Route::apiResource('mls-offices', MLSOfficeController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 
@@ -314,7 +322,7 @@ Route::middleware(['auth.api', 'admin.api'])->group(function () {
 
 
 // Corporate Email routes (protegidas con autenticacion Passport)
-Route::middleware(['auth.api', 'admin.api'])->prefix('corporate-email')->group(function () {
+Route::middleware(['auth.api', 'admin.api:integrations.manage'])->prefix('corporate-email')->group(function () {
     // Cuentas de correo
     Route::get('accounts', [CorporateEmailController::class, 'accountsIndex']);
     Route::post('accounts', [CorporateEmailController::class, 'storeAccount']);
@@ -364,7 +372,7 @@ Route::prefix('public/cms')->group(function () {
 });
 
 // Rutas protegidas del CMS (admin)
-Route::middleware(['auth.api', 'admin.api'])->prefix('cms')->group(function () {
+Route::middleware(['auth.api', 'admin.api:settings.manage'])->prefix('cms')->group(function () {
     // -- Páginas --
     Route::apiResource('pages', CmsPageController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 

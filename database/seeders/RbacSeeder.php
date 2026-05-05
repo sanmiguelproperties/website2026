@@ -11,55 +11,51 @@ class RbacSeeder extends Seeder
 {
     public function run(): void
     {
-        // Limpia la caché de permisos/roles
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Guards a usar
-        $guards = ['web', 'api'];
+        $guards = config('rbac.guards', ['web', 'api']);
+        $permissions = config('rbac.permissions', []);
+        $roles = config('rbac.roles', []);
+        $roleNames = array_keys($roles);
 
-        // Permisos de ejemplo
-        $permissions = [
-            'users.view',
-            'users.create',
-            'users.edit',
-            'users.delete',
-            'posts.view',
-            'posts.create',
-            'posts.edit',
-            'posts.delete',
-            'settings.manage',
-            'view.all.media',
-        ];
-
-        // Crear permisos para cada guard
         foreach ($guards as $guard) {
+            Role::where('guard_name', $guard)
+                ->whereNotIn('name', $roleNames)
+                ->get()
+                ->each(fn (Role $role) => $role->delete());
+
+            Permission::where('guard_name', $guard)
+                ->whereNotIn('name', $permissions)
+                ->get()
+                ->each(fn (Permission $permission) => $permission->delete());
+
             foreach ($permissions as $name) {
                 Permission::firstOrCreate([
-                    'name'       => $name,
+                    'name' => $name,
                     'guard_name' => $guard,
                 ]);
             }
         }
 
-        // Crear roles para cada guard
         foreach ($guards as $guard) {
-            $admin  = Role::firstOrCreate(['name' => 'admin',  'guard_name' => $guard]);
-            $editor = Role::firstOrCreate(['name' => 'editor', 'guard_name' => $guard]);
-            $viewer = Role::firstOrCreate(['name' => 'viewer', 'guard_name' => $guard]);
+            $allGuardPermissions = Permission::where('guard_name', $guard)->get();
 
-            // Relaciones rol-permisos para este guard
-            $admin->syncPermissions(Permission::where('guard_name', $guard)->get());
+            foreach ($roles as $name => $definition) {
+                $role = Role::firstOrCreate([
+                    'name' => $name,
+                    'guard_name' => $guard,
+                ]);
 
-            $editor->syncPermissions(Permission::where('guard_name', $guard)->whereIn('name', [
-                'posts.view', 'posts.create', 'posts.edit',
-            ])->get());
+                $rolePermissions = ($definition['permissions'] ?? []) === '*'
+                    ? $allGuardPermissions
+                    : Permission::where('guard_name', $guard)
+                        ->whereIn('name', $definition['permissions'] ?? [])
+                        ->get();
 
-            $viewer->syncPermissions(Permission::where('guard_name', $guard)->whereIn('name', [
-                'posts.view', 'users.view',
-            ])->get());
+                $role->syncPermissions($rolePermissions);
+            }
         }
 
-        // Limpia caché nuevamente por seguridad
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }
