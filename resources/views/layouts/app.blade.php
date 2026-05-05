@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-theme="dark">
+<html lang="es" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -44,20 +44,21 @@
           --c-{{ $key }}: {{ $value }};
         @endforeach
       @else
-        /* Fallback por defecto (oscuro) */
-        --c-bg: oklch(0.17 0.02 255);
-        --c-surface: oklch(0.21 0.02 255);
-        --c-elev: oklch(0.25 0.02 255);
-        --c-text: oklch(0.93 0.02 255);
-        --c-muted: oklch(0.74 0.02 255);
-        --c-border: oklch(0.35 0.02 255);
-        --c-primary: oklch(0.72 0.14 260);
-        --c-primary-ink: oklch(0.12 0.02 260);
-        --c-accent: oklch(0.75 0.13 170);
-        --c-danger: oklch(0.68 0.21 25);
+        /* Fallback por defecto SMP */
+        --c-bg: #ffffff;
+        --c-surface: #ffffff;
+        --c-elev: #f7f4ee;
+        --c-text: #111111;
+        --c-muted: #6f675d;
+        --c-border: #e6dfd2;
+        --c-primary: #c9a646;
+        --c-primary-ink: #111111;
+        --c-accent: #111111;
+        --c-accent-ink: #ffffff;
+        --c-danger: #b42318;
       @endif
       --radius: 14px;
-      color-scheme: dark; /* hint al navegador */
+      color-scheme: light; /* hint al navegador */
     }
 
     /* Scrollbar sutil */
@@ -78,6 +79,11 @@
 
     /* will-change sólo durante animación del sidebar */
     #dash-sidebar.animating { will-change: transform; }
+
+    .smp-logo-mark {
+      letter-spacing: .08em;
+      font-weight: 800;
+    }
 
     /* Pintar sólo lo visible dentro de los paneles del acordeón */
     @supports (content-visibility: auto) {
@@ -112,17 +118,8 @@
       <div class="h-full flex flex-col">
         <!-- Branding -->
         <div class="flex items-center gap-3 px-5 py-4 border-b border-[var(--c-border)]">
-          <div class="size-10 rounded-2xl grid place-items-center bg-[var(--c-primary)] text-[var(--c-primary-ink)] shadow-soft">
-            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 21h18"/>
-              <path d="M6 21V7a2 2 0 0 1 2-2h3"/>
-              <path d="M11 21V11a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v10"/>
-              <path d="M9 9h2"/>
-              <path d="M9 13h2"/>
-              <path d="M9 17h2"/>
-              <path d="M15 13h2"/>
-              <path d="M15 17h2"/>
-            </svg>
+          <div class="size-10 rounded-xl grid place-items-center bg-[var(--c-primary)] text-[var(--c-primary-ink)] shadow-soft ring-1 ring-black/10">
+            <span class="smp-logo-mark text-sm">SMP</span>
           </div>
           <div>
             <h1 class="text-base font-semibold leading-tight">San Miguel Properties</h1>

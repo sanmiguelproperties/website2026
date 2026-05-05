@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\ContactRequest;
+use App\Models\Property;
+use App\Notifications\LeadRoutedNotification;
 use App\Support\Rbac;
+use App\Support\RbacNotifications;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -16,7 +19,13 @@ class ContactRequestController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = ContactRequest::query()->with(['agency', 'property']);
+        $query = ContactRequest::query()->with(['agency', 'property', 'owner']);
+
+        if ($request->boolean('only_trashed')) {
+            $query->onlyTrashed();
+        } elseif ($request->boolean('with_trashed')) {
+            $query->withTrashed();
+        }
 
         $this->scopeInternalLeads($query, $request->user('api'));
 
@@ -37,6 +46,10 @@ class ContactRequestController extends Controller
 
         if ($request->filled('property_id')) {
             $query->where('property_id', (int) $request->input('property_id'));
+        }
+
+        if ($request->filled('assignment_status')) {
+            $query->where('assignment_status', (string) $request->input('assignment_status'));
         }
 
         $sort = $request->input('sort', 'desc');
@@ -66,6 +79,7 @@ class ContactRequestController extends Controller
         $validator = Validator::make($request->all(), [
             'agency_id' => 'nullable|exists:agencies,id',
             'property_id' => 'nullable|exists:properties,id',
+            'owner_id' => 'nullable|exists:users,id',
             'property_public_id' => 'required|string|max:50',
             'remote_id' => 'required|string|max:100|unique:contact_requests,remote_id',
             'source' => 'nullable|string|max:100',
@@ -75,6 +89,7 @@ class ContactRequestController extends Controller
             'message' => 'required|string',
             'happened_at' => 'nullable|date',
             'status' => 'nullable|string|max:50',
+            'assignment_status' => 'nullable|string|max:50',
             'sent_to_easybroker_at' => 'nullable|date',
             'raw_payload' => 'nullable|array',
         ]);
@@ -83,8 +98,17 @@ class ContactRequestController extends Controller
             return $this->apiValidationError($validator->errors()->toArray());
         }
 
-        $lead = ContactRequest::create($validator->validated());
-        $lead->load(['agency', 'property']);
+        $data = $validator->validated();
+
+        if (!empty($data['owner_id']) && !Rbac::canAny($request->user('api'), 'leads.assign')) {
+            return $this->apiForbidden('No tienes permisos para asignar leads', 'LEAD_ASSIGN_FORBIDDEN');
+        }
+
+        $this->applyLeadAssignmentDefaults($data);
+
+        $lead = ContactRequest::create($data);
+        $lead->load(['agency', 'property', 'owner']);
+        $this->notifyLeadRouting($lead);
 
         return $this->apiCreated('Lead creado', 'CONTACT_REQUEST_CREATED', $lead);
     }
@@ -98,7 +122,7 @@ class ContactRequestController extends Controller
             return $this->apiForbidden('No tienes permisos para ver este lead', 'LEAD_VIEW_FORBIDDEN');
         }
 
-        $contactRequest->load(['agency', 'property']);
+        $contactRequest->load(['agency', 'property', 'owner']);
         return $this->apiSuccess('Lead obtenido', 'CONTACT_REQUEST_SHOWN', $contactRequest);
     }
 
@@ -115,13 +139,14 @@ class ContactRequestController extends Controller
             return $this->apiForbidden('No tienes permisos para cambiar estatus de leads', 'LEAD_STATUS_FORBIDDEN');
         }
 
-        if ($request->exists('property_id') && !Rbac::canAny($request->user('api'), 'leads.assign')) {
+        if (($request->exists('property_id') || $request->exists('owner_id')) && !Rbac::canAny($request->user('api'), 'leads.assign')) {
             return $this->apiForbidden('No tienes permisos para reasignar leads', 'LEAD_ASSIGN_FORBIDDEN');
         }
 
         $validator = Validator::make($request->all(), [
             'agency_id' => 'sometimes|nullable|exists:agencies,id',
             'property_id' => 'sometimes|nullable|exists:properties,id',
+            'owner_id' => 'sometimes|nullable|exists:users,id',
             'property_public_id' => 'sometimes|required|string|max:50',
             'remote_id' => ['sometimes', 'required', 'string', 'max:100', Rule::unique('contact_requests', 'remote_id')->ignore($contactRequest->id)],
             'source' => 'sometimes|nullable|string|max:100',
@@ -131,6 +156,7 @@ class ContactRequestController extends Controller
             'message' => 'sometimes|required|string',
             'happened_at' => 'sometimes|nullable|date',
             'status' => 'sometimes|nullable|string|max:50',
+            'assignment_status' => 'sometimes|nullable|string|max:50',
             'sent_to_easybroker_at' => 'sometimes|nullable|date',
             'raw_payload' => 'sometimes|nullable|array',
         ]);
@@ -139,8 +165,15 @@ class ContactRequestController extends Controller
             return $this->apiValidationError($validator->errors()->toArray());
         }
 
-        $contactRequest->update($validator->validated());
-        $contactRequest->load(['agency', 'property']);
+        $data = $validator->validated();
+
+        if (array_key_exists('owner_id', $data)) {
+            $data['assigned_at'] = $data['owner_id'] ? now() : null;
+            $data['assignment_status'] = $data['owner_id'] ? 'assigned' : 'pending_assignment';
+        }
+
+        $contactRequest->update($data);
+        $contactRequest->load(['agency', 'property', 'owner']);
 
         return $this->apiSuccess('Lead actualizado', 'CONTACT_REQUEST_UPDATED', $contactRequest);
     }
@@ -150,12 +183,38 @@ class ContactRequestController extends Controller
      */
     public function destroy(Request $request, ContactRequest $contactRequest): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'leads.delete')) {
+        if (!$this->canDeleteInternalLead($request->user('api'), $contactRequest)) {
             return $this->apiForbidden('No tienes permisos para eliminar leads', 'LEAD_DELETE_FORBIDDEN');
         }
 
+        if ($request->boolean('force')) {
+            if (!Rbac::canAny($request->user('api'), 'records.delete.critical')) {
+                return $this->apiForbidden('Solo Administrador puede eliminar permanentemente', 'FORCE_DELETE_FORBIDDEN');
+            }
+
+            $contactRequest->forceDelete();
+            return $this->apiSuccess('Lead eliminado permanentemente', 'CONTACT_REQUEST_FORCE_DELETED', null);
+        }
+
         $contactRequest->delete();
-        return $this->apiSuccess('Lead eliminado', 'CONTACT_REQUEST_DELETED', null);
+        return $this->apiSuccess('Lead enviado a papelera', 'CONTACT_REQUEST_TRASHED', null);
+    }
+
+    public function restore(Request $request, int $contactRequestId): JsonResponse
+    {
+        $lead = ContactRequest::withTrashed()->find($contactRequestId);
+
+        if (!$lead) {
+            return $this->apiNotFound('Lead no encontrado', 'CONTACT_REQUEST_NOT_FOUND');
+        }
+
+        if (!$this->canViewInternalLead($request->user('api'), $lead) || !Rbac::canAny($request->user('api'), 'leads.restore')) {
+            return $this->apiForbidden('No tienes permisos para restaurar este lead', 'LEAD_RESTORE_FORBIDDEN');
+        }
+
+        $lead->restore();
+
+        return $this->apiSuccess('Lead restaurado', 'CONTACT_REQUEST_RESTORED', $lead->fresh(['agency', 'property', 'owner']));
     }
 
     private function scopeInternalLeads($query, $user): void
@@ -164,9 +223,12 @@ class ContactRequestController extends Controller
             return;
         }
 
-        if (Rbac::canAny($user, ['leads.view.own', 'leads.view.team'])) {
-            $query->whereHas('property', function ($propertyQuery) use ($user) {
-                Rbac::scopeOwned($propertyQuery, $user);
+        if (Rbac::canAny($user, 'leads.view.own')) {
+            $query->where(function ($leadQuery) use ($user) {
+                $leadQuery->where('owner_id', $user->getAuthIdentifier())
+                    ->orWhereHas('property', function ($propertyQuery) use ($user) {
+                        Rbac::scopeOwned($propertyQuery, $user);
+                    });
             });
             return;
         }
@@ -180,7 +242,7 @@ class ContactRequestController extends Controller
             return true;
         }
 
-        return Rbac::canAny($user, ['leads.view.own', 'leads.view.team'])
+        return Rbac::canAny($user, 'leads.view.own')
             && $this->isLeadOwnedBy($lead, $user);
     }
 
@@ -190,7 +252,17 @@ class ContactRequestController extends Controller
             return true;
         }
 
-        return Rbac::canAny($user, ['leads.edit.own', 'leads.edit.assigned'])
+        return Rbac::canAny($user, 'leads.edit.own')
+            && $this->isLeadOwnedBy($lead, $user);
+    }
+
+    private function canDeleteInternalLead($user, ContactRequest $lead): bool
+    {
+        if (Rbac::canAny($user, 'leads.delete')) {
+            return true;
+        }
+
+        return Rbac::canAny($user, 'leads.delete.own')
             && $this->isLeadOwnedBy($lead, $user);
     }
 
@@ -200,11 +272,105 @@ class ContactRequestController extends Controller
             return false;
         }
 
+        if ($lead->owner_id !== null && (int) $lead->owner_id === (int) $user->getAuthIdentifier()) {
+            return true;
+        }
+
         $lead->loadMissing('property');
 
         return $lead->property !== null
             && $lead->property->agent_user_id !== null
             && (int) $lead->property->agent_user_id === (int) $user->getAuthIdentifier();
+    }
+
+    private function applyLeadAssignmentDefaults(array &$data): void
+    {
+        $property = $this->resolveLeadProperty($data);
+
+        if ($property) {
+            $data['property_id'] = $property->id;
+            $data['agency_id'] = $data['agency_id'] ?? $property->agency_id;
+        }
+
+        if (
+            $property
+            && $this->isAgencyProperty($property)
+            && $property->agent_user_id
+        ) {
+            $data['owner_id'] = $data['owner_id'] ?? $property->agent_user_id;
+            $data['assignment_status'] = 'assigned';
+            $data['assigned_at'] = now();
+            return;
+        }
+
+        if (!empty($data['owner_id'])) {
+            $data['assignment_status'] = 'assigned';
+            $data['assigned_at'] = now();
+            return;
+        }
+
+        $data['owner_id'] = $data['owner_id'] ?? null;
+        $data['assignment_status'] = 'pending_assignment';
+        $data['status'] = $data['status'] ?? 'pending_assignment';
+        $data['assigned_at'] = null;
+    }
+
+    private function resolveLeadProperty(array $data): ?Property
+    {
+        if (!empty($data['property_id'])) {
+            return Property::query()
+                ->with(['agency', 'mlsOffice'])
+                ->find((int) $data['property_id']);
+        }
+
+        if (empty($data['property_public_id'])) {
+            return null;
+        }
+
+        $publicId = (string) $data['property_public_id'];
+
+        return Property::query()
+            ->with(['agency', 'mlsOffice'])
+            ->where('easybroker_public_id', $publicId)
+            ->orWhere('mls_public_id', $publicId)
+            ->first();
+    }
+
+    private function isAgencyProperty(Property $property): bool
+    {
+        $property->loadMissing(['agency', 'mlsOffice']);
+
+        if ($property->agent_user_id) {
+            return true;
+        }
+
+        if ($property->agency && $property->agency->is_primary) {
+            return true;
+        }
+
+        return $property->mlsOffice && $property->mlsOffice->is_primary;
+    }
+
+    private function notifyLeadRouting(ContactRequest $lead): void
+    {
+        if ($lead->assignment_status === 'assigned') {
+            RbacNotifications::notifyUsers(
+                $lead->owner ? [$lead->owner] : [],
+                new LeadRoutedNotification($lead, 'assigned')
+            );
+
+            RbacNotifications::notifyRoles(
+                ['manager'],
+                new LeadRoutedNotification($lead, 'assigned')
+            );
+
+            return;
+        }
+
+        RbacNotifications::notifyRoles(
+            ['super-admin', 'manager'],
+            new LeadRoutedNotification($lead, 'pending_assignment')
+        );
     }
 }
 

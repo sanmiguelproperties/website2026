@@ -6,7 +6,7 @@
   /* Base: NO ocupa layout ni pinta ni anima */
   .preloader-overlay {
     position: fixed; inset: 0; width: 100%; height: 100%;
-    background: #000; display: none; /* <- antes usabas visibility:hidden */
+    background: #ffffff; display: none; /* <- antes usabas visibility:hidden */
     align-items: center; justify-content: center;
     z-index: 9999;
   }
@@ -15,9 +15,9 @@
 
   .preloader-spinner {
     width: 64px; height: 64px;
-    border: 4px solid rgba(255,255,255,0.3);
+    border: 4px solid #e6dfd2;
     border-radius: 50%;
-    border-top-color: #fff;
+    border-top-color: #c9a646;
     animation: preloader-spin 1s ease-in-out infinite;
     /* Si el overlay NO es visible, pausa la animación (defensa extra si cambias display por visibility) */
     animation-play-state: running;

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\ColorTheme;
+use Illuminate\Support\Facades\Cache;
 
 class ColorThemeSeeder extends Seeder
 {
@@ -16,18 +17,19 @@ class ColorThemeSeeder extends Seeder
         $themes = [
             [
                 'name' => 'Default',
-                'description' => 'Tema por defecto del sistema',
+                'description' => 'Tema por defecto SMP: fondo blanco, botones dorados y negros',
                 'colors' => [
-                    'bg' => 'oklch(0.17 0.02 255)',
-                    'surface' => 'oklch(0.21 0.02 255)',
-                    'elev' => 'oklch(0.25 0.02 255)',
-                    'text' => 'oklch(0.93 0.02 255)',
-                    'muted' => 'oklch(0.74 0.02 255)',
-                    'border' => 'oklch(0.35 0.02 255)',
-                    'primary' => 'oklch(0.72 0.14 260)',
-                    'primary-ink' => 'oklch(0.12 0.02 260)',
-                    'accent' => 'oklch(0.75 0.13 170)',
-                    'danger' => 'oklch(0.68 0.21 25)',
+                    'bg' => '#ffffff',
+                    'surface' => '#ffffff',
+                    'elev' => '#f7f4ee',
+                    'text' => '#111111',
+                    'muted' => '#6f675d',
+                    'border' => '#e6dfd2',
+                    'primary' => '#c9a646',
+                    'primary-ink' => '#111111',
+                    'accent' => '#111111',
+                    'accent-ink' => '#ffffff',
+                    'danger' => '#b42318',
                 ],
                 'is_active' => true,
                 'is_default' => true,
@@ -88,8 +90,18 @@ class ColorThemeSeeder extends Seeder
             ],
         ];
 
+        ColorTheme::query()->update([
+            'is_active' => false,
+            'is_default' => false,
+        ]);
+
         foreach ($themes as $theme) {
-            ColorTheme::create($theme);
+            ColorTheme::updateOrCreate(
+                ['name' => $theme['name']],
+                $theme
+            );
         }
+
+        Cache::forget('active_color_theme');
     }
 }

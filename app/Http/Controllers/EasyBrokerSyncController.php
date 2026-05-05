@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\EasyBrokerConfig;
+use App\Notifications\SyncIssueNotification;
 use App\Services\EasyBrokerSyncService;
+use App\Support\Rbac;
+use App\Support\RbacNotifications;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -65,6 +68,10 @@ class EasyBrokerSyncController extends Controller
      */
     public function updateConfig(Request $request): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'integrations.config.edit')) {
+            return $this->apiForbidden('No tienes permisos para editar credenciales de EasyBroker', 'INTEGRATION_CONFIG_FORBIDDEN');
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
             'api_key' => 'sometimes|nullable|string|max:500',
@@ -128,6 +135,7 @@ class EasyBrokerSyncController extends Controller
 
         // Ejecutar sincronización
         $result = $this->syncService->sync();
+        $this->notifySyncIssueIfNeeded($result);
 
         if ($result['success']) {
             return $this->apiSuccess(
@@ -149,6 +157,29 @@ class EasyBrokerSyncController extends Controller
             ],
             null,
             500
+        );
+    }
+
+    private function notifySyncIssueIfNeeded(array $result): void
+    {
+        $stats = $result['stats'] ?? [];
+        $errors = (int) ($stats['errors'] ?? $result['errors'] ?? 0);
+
+        if (($result['success'] ?? false) && $errors === 0) {
+            return;
+        }
+
+        RbacNotifications::notifyRoles(
+            ['super-admin', 'assistant'],
+            new SyncIssueNotification(
+                'EasyBroker',
+                $result['message'] ?? 'La sincronizacion de EasyBroker requiere revision.',
+                [
+                    'stats' => $stats,
+                    'errors' => $errors,
+                    'log_summary' => $this->summarizeLog($result['log'] ?? []),
+                ]
+            )
         );
     }
 
@@ -243,6 +274,10 @@ class EasyBrokerSyncController extends Controller
      */
     public function deleteApiKey(): JsonResponse
     {
+        if (!Rbac::canAny(request()->user('api'), 'integrations.config.edit')) {
+            return $this->apiForbidden('No tienes permisos para eliminar credenciales de EasyBroker', 'INTEGRATION_CONFIG_FORBIDDEN');
+        }
+
         $config = EasyBrokerConfig::getOrCreateDefault();
         $config->update(['api_key' => null]);
 

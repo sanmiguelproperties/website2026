@@ -18,6 +18,7 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\LocationCatalogController;
 use App\Http\Controllers\ZonePageController;
 use App\Http\Controllers\ContactRequestController;
+use App\Http\Controllers\ContactNoteController;
 use App\Http\Controllers\FrontendColorController;
 use App\Http\Controllers\EasyBrokerSyncController;
 use App\Http\Controllers\EasyBrokerMlsExportController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\MLSAgentController;
 use App\Http\Controllers\MLSOfficeController;
 use App\Http\Controllers\CorporateEmailController;
 use App\Http\Controllers\AgencyTeamMemberController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +46,12 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 // Rutas de autenticación API
 Route::post('/login', [AuthController::class, 'apiLogin']);
+
+Route::middleware(['auth.api', 'admin.api:dashboard.view'])->prefix('notifications')->group(function () {
+    Route::get('/', [NotificationController::class, 'index']);
+    Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::patch('/{notification}', [NotificationController::class, 'markAsRead']);
+});
 
 // Media Manager routes
 Route::middleware(['auth.api', 'admin.api:documents.view'])->group(function () {
@@ -83,7 +91,7 @@ Route::middleware(['auth.api', 'admin.api:users.view'])->group(function () {
 });
 
 // Currency routes protegidas con autenticación Passport
-Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () {
+Route::middleware(['auth.api', 'admin.api:settings.manage'])->group(function () {
     Route::apiResource('currencies', CurrencyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 });
 
@@ -97,11 +105,22 @@ Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () 
   });
 
 Route::middleware(['auth.api', 'admin.api:properties.view'])->group(function () {
-    Route::apiResource('properties', PropertyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::post('properties/{property}/restore', [PropertyController::class, 'restore'])->where('property', '[0-9]+');
+    Route::apiResource('properties', PropertyController::class)
+        ->only(['index', 'store', 'show', 'update', 'destroy'])
+        ->withTrashed(['show', 'update', 'destroy']);
 });
 
-Route::middleware(['auth.api', 'admin.api:leads.view'])->group(function () {
-    Route::apiResource('contact-requests', ContactRequestController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::middleware(['auth.api', 'admin.api:leads.view|leads.create'])->group(function () {
+    Route::post('contact-requests/{contactRequest}/restore', [ContactRequestController::class, 'restore'])->where('contactRequest', '[0-9]+');
+    Route::apiResource('contact-requests', ContactRequestController::class)
+        ->only(['index', 'store', 'show', 'update', 'destroy'])
+        ->withTrashed(['show', 'update', 'destroy']);
+    Route::get('contact-requests/{contactRequest}/notes', [ContactNoteController::class, 'index'])->where('contactRequest', '[0-9]+');
+    Route::post('contact-requests/{contactRequest}/notes', [ContactNoteController::class, 'store'])->where('contactRequest', '[0-9]+');
+    Route::put('contact-notes/{contactNote}', [ContactNoteController::class, 'update'])->where('contactNote', '[0-9]+');
+    Route::patch('contact-notes/{contactNote}', [ContactNoteController::class, 'update'])->where('contactNote', '[0-9]+');
+    Route::delete('contact-notes/{contactNote}', [ContactNoteController::class, 'destroy'])->where('contactNote', '[0-9]+');
 });
 
 Route::middleware(['auth.api', 'admin.api:settings.manage'])->group(function () {
@@ -190,7 +209,7 @@ Route::middleware(['auth.api', 'admin.api:settings.manage'])->prefix('frontend-c
 });
 
 // EasyBroker Sync routes (protegidas con autenticación Passport)
-Route::middleware(['auth.api', 'admin.api:integrations.manage'])->prefix('easybroker')->group(function () {
+Route::middleware(['auth.api', 'admin.api:integrations.view|integrations.logs.view|integrations.sync|integrations.config.edit'])->prefix('easybroker')->group(function () {
     // Estado de configuración
     Route::get('status', [EasyBrokerSyncController::class, 'status']);
     
@@ -215,7 +234,7 @@ Route::middleware(['auth.api', 'admin.api:integrations.manage'])->prefix('easybr
 });
 
 // MLS AMPI San Miguel de Allende Sync routes (protegidas con autenticación Passport)
-Route::middleware(['auth.api', 'admin.api:integrations.manage'])->prefix('mls')->group(function () {
+Route::middleware(['auth.api', 'admin.api:integrations.view|integrations.logs.view|integrations.sync|integrations.config.edit'])->prefix('mls')->group(function () {
     // Estado de configuración
     Route::get('status', [MLSSyncController::class, 'status']);
     
@@ -372,42 +391,62 @@ Route::prefix('public/cms')->group(function () {
 });
 
 // Rutas protegidas del CMS (admin)
-Route::middleware(['auth.api', 'admin.api:settings.manage'])->prefix('cms')->group(function () {
+Route::middleware(['auth.api', 'admin.api:cms.view|cms.manage'])->prefix('cms')->group(function () {
     // -- Páginas --
-    Route::apiResource('pages', CmsPageController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::get('pages', [CmsPageController::class, 'index']);
+    Route::get('pages/{page}', [CmsPageController::class, 'show'])->where('page', '[0-9]+');
+    Route::post('pages', [CmsPageController::class, 'store'])->middleware('admin.api:cms.manage');
+    Route::put('pages/{page}', [CmsPageController::class, 'update'])->where('page', '[0-9]+')->middleware('admin.api:cms.manage');
+    Route::patch('pages/{page}', [CmsPageController::class, 'update'])->where('page', '[0-9]+')->middleware('admin.api:cms.manage');
+    Route::delete('pages/{page}', [CmsPageController::class, 'destroy'])->where('page', '[0-9]+')->middleware('admin.api:cms.manage');
 
     // -- Posts --
-    Route::apiResource('posts', CmsPostController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::get('posts', [CmsPostController::class, 'index']);
+    Route::get('posts/{post}', [CmsPostController::class, 'show'])->where('post', '[0-9]+');
+    Route::post('posts', [CmsPostController::class, 'store'])->middleware('admin.api:cms.manage');
+    Route::put('posts/{post}', [CmsPostController::class, 'update'])->where('post', '[0-9]+')->middleware('admin.api:cms.manage');
+    Route::patch('posts/{post}', [CmsPostController::class, 'update'])->where('post', '[0-9]+')->middleware('admin.api:cms.manage');
+    Route::delete('posts/{post}', [CmsPostController::class, 'destroy'])->where('post', '[0-9]+')->middleware('admin.api:cms.manage');
 
     // -- Field Groups --
-    Route::apiResource('field-groups', CmsFieldGroupController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::get('field-groups', [CmsFieldGroupController::class, 'index']);
+    Route::get('field-groups/{fieldGroup}', [CmsFieldGroupController::class, 'show'])->where('fieldGroup', '[0-9]+');
+    Route::post('field-groups', [CmsFieldGroupController::class, 'store'])->middleware('admin.api:cms.manage');
+    Route::put('field-groups/{fieldGroup}', [CmsFieldGroupController::class, 'update'])->where('fieldGroup', '[0-9]+')->middleware('admin.api:cms.manage');
+    Route::patch('field-groups/{fieldGroup}', [CmsFieldGroupController::class, 'update'])->where('fieldGroup', '[0-9]+')->middleware('admin.api:cms.manage');
+    Route::delete('field-groups/{fieldGroup}', [CmsFieldGroupController::class, 'destroy'])->where('fieldGroup', '[0-9]+')->middleware('admin.api:cms.manage');
 
     // -- Field Definitions (dentro del controlador de field groups) --
-    Route::post('field-definitions', [CmsFieldGroupController::class, 'storeField']);
-    Route::put('field-definitions/{id}', [CmsFieldGroupController::class, 'updateField']);
-    Route::delete('field-definitions/{id}', [CmsFieldGroupController::class, 'destroyField']);
-    Route::post('field-definitions/reorder', [CmsFieldGroupController::class, 'reorderFields']);
+    Route::post('field-definitions', [CmsFieldGroupController::class, 'storeField'])->middleware('admin.api:cms.manage');
+    Route::put('field-definitions/{id}', [CmsFieldGroupController::class, 'updateField'])->middleware('admin.api:cms.manage');
+    Route::delete('field-definitions/{id}', [CmsFieldGroupController::class, 'destroyField'])->middleware('admin.api:cms.manage');
+    Route::post('field-definitions/reorder', [CmsFieldGroupController::class, 'reorderFields'])->middleware('admin.api:cms.manage');
 
     // -- Field Values --
     Route::get('field-values/{entityType}/{entityId}', [CmsFieldValueController::class, 'index']);
-    Route::put('field-values/{entityType}/{entityId}', [CmsFieldValueController::class, 'update']);
-    Route::post('field-values/repeater-row', [CmsFieldValueController::class, 'addRepeaterRow']);
-    Route::delete('field-values/repeater-row/{id}', [CmsFieldValueController::class, 'deleteRepeaterRow']);
+    Route::put('field-values/{entityType}/{entityId}', [CmsFieldValueController::class, 'update'])->middleware('admin.api:cms.manage');
+    Route::post('field-values/repeater-row', [CmsFieldValueController::class, 'addRepeaterRow'])->middleware('admin.api:cms.manage');
+    Route::delete('field-values/repeater-row/{id}', [CmsFieldValueController::class, 'deleteRepeaterRow'])->middleware('admin.api:cms.manage');
 
     // -- Menús --
-    Route::apiResource('menus', CmsMenuController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::get('menus', [CmsMenuController::class, 'index']);
+    Route::get('menus/{menu}', [CmsMenuController::class, 'show'])->where('menu', '[0-9]+');
+    Route::post('menus', [CmsMenuController::class, 'store'])->middleware('admin.api:cms.manage');
+    Route::put('menus/{menu}', [CmsMenuController::class, 'update'])->where('menu', '[0-9]+')->middleware('admin.api:cms.manage');
+    Route::patch('menus/{menu}', [CmsMenuController::class, 'update'])->where('menu', '[0-9]+')->middleware('admin.api:cms.manage');
+    Route::delete('menus/{menu}', [CmsMenuController::class, 'destroy'])->where('menu', '[0-9]+')->middleware('admin.api:cms.manage');
 
     // -- Menu Items --
-    Route::post('menu-items', [CmsMenuController::class, 'storeItem']);
-    Route::put('menu-items/{id}', [CmsMenuController::class, 'updateItem']);
-    Route::delete('menu-items/{id}', [CmsMenuController::class, 'destroyItem']);
-    Route::post('menu-items/reorder', [CmsMenuController::class, 'reorderItems']);
+    Route::post('menu-items', [CmsMenuController::class, 'storeItem'])->middleware('admin.api:cms.manage');
+    Route::put('menu-items/{id}', [CmsMenuController::class, 'updateItem'])->middleware('admin.api:cms.manage');
+    Route::delete('menu-items/{id}', [CmsMenuController::class, 'destroyItem'])->middleware('admin.api:cms.manage');
+    Route::post('menu-items/reorder', [CmsMenuController::class, 'reorderItems'])->middleware('admin.api:cms.manage');
 
     // -- Site Settings --
     Route::get('settings', [CmsSiteSettingController::class, 'index']);
     Route::get('settings/group/{group}', [CmsSiteSettingController::class, 'byGroup']);
-    Route::post('settings', [CmsSiteSettingController::class, 'store']);
-    Route::put('settings/bulk', [CmsSiteSettingController::class, 'bulkUpdate']);
-    Route::put('settings/{key}', [CmsSiteSettingController::class, 'updateByKey']);
-    Route::delete('settings/{id}', [CmsSiteSettingController::class, 'destroy'])->where('id', '[0-9]+');
+    Route::post('settings', [CmsSiteSettingController::class, 'store'])->middleware('admin.api:cms.manage');
+    Route::put('settings/bulk', [CmsSiteSettingController::class, 'bulkUpdate'])->middleware('admin.api:cms.manage');
+    Route::put('settings/{key}', [CmsSiteSettingController::class, 'updateByKey'])->middleware('admin.api:cms.manage');
+    Route::delete('settings/{id}', [CmsSiteSettingController::class, 'destroy'])->where('id', '[0-9]+')->middleware('admin.api:cms.manage');
 });

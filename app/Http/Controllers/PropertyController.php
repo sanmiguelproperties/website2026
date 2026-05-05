@@ -206,6 +206,12 @@ class PropertyController extends Controller
             'coverMediaAsset',
         ]);
 
+        if ($request->boolean('only_trashed')) {
+            $query->onlyTrashed();
+        } elseif ($request->boolean('with_trashed')) {
+            $query->withTrashed();
+        }
+
         $this->scopeInternalProperties($query, $request->user('api'));
 
         if ($request->filled('search')) {
@@ -785,12 +791,42 @@ class PropertyController extends Controller
      */
     public function destroy(Request $request, Property $property): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'properties.delete')) {
+        if (!$this->canDeleteInternalProperty($request->user('api'), $property)) {
             return $this->apiForbidden('No tienes permisos para eliminar propiedades', 'PROPERTY_DELETE_FORBIDDEN');
         }
 
+        if ($request->boolean('force')) {
+            if (!Rbac::canAny($request->user('api'), 'records.delete.critical')) {
+                return $this->apiForbidden('Solo Administrador puede eliminar permanentemente', 'FORCE_DELETE_FORBIDDEN');
+            }
+
+            $property->forceDelete();
+            return $this->apiSuccess('Propiedad eliminada permanentemente', 'PROPERTY_FORCE_DELETED', null);
+        }
+
         $property->delete();
-        return $this->apiSuccess('Propiedad eliminada', 'PROPERTY_DELETED', null);
+        return $this->apiSuccess('Propiedad enviada a papelera', 'PROPERTY_TRASHED', null);
+    }
+
+    public function restore(Request $request, int $propertyId): JsonResponse
+    {
+        $property = Property::withTrashed()->find($propertyId);
+
+        if (!$property) {
+            return $this->apiNotFound('Propiedad no encontrada', 'PROPERTY_NOT_FOUND');
+        }
+
+        if (!$this->canViewInternalProperty($request->user('api'), $property) || !Rbac::canAny($request->user('api'), 'properties.restore')) {
+            return $this->apiForbidden('No tienes permisos para restaurar esta propiedad', 'PROPERTY_RESTORE_FORBIDDEN');
+        }
+
+        $property->restore();
+
+        return $this->apiSuccess(
+            'Propiedad restaurada',
+            'PROPERTY_RESTORED',
+            $property->fresh(['agency', 'agentUser.profileImage', 'coverMediaAsset', 'location', 'operations'])
+        );
     }
 
     /**
@@ -993,6 +1029,16 @@ class PropertyController extends Controller
         }
 
         return Rbac::canAny($user, 'properties.edit.own')
+            && $this->isPropertyOwnedBy($property, $user);
+    }
+
+    private function canDeleteInternalProperty($user, Property $property): bool
+    {
+        if (Rbac::canAny($user, 'properties.delete')) {
+            return true;
+        }
+
+        return Rbac::canAny($user, 'properties.delete.own')
             && $this->isPropertyOwnedBy($property, $user);
     }
 

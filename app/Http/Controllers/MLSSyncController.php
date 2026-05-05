@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\MLSConfig;
 use App\Models\Property;
+use App\Notifications\SyncIssueNotification;
 use App\Services\MLSSyncService;
+use App\Support\Rbac;
+use App\Support\RbacNotifications;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -67,6 +70,10 @@ class MLSSyncController extends Controller
      */
     public function updateConfig(Request $request): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'integrations.config.edit')) {
+            return $this->apiForbidden('No tienes permisos para editar credenciales del MLS', 'INTEGRATION_CONFIG_FORBIDDEN');
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
             'api_key' => 'sometimes|nullable|string|max:500',
@@ -147,6 +154,7 @@ class MLSSyncController extends Controller
 
         // Ejecutar sincronización
         $result = $this->syncService->sync($options);
+        $this->notifySyncIssueIfNeeded($result);
 
         if ($result['success']) {
             return $this->apiSuccess(
@@ -223,6 +231,8 @@ class MLSSyncController extends Controller
         $result = $this->syncService->sync($options);
 
         // Sincronizar imágenes adicionales
+        $this->notifySyncIssueIfNeeded($result);
+
         $imagesSynced = 0;
         if ($result['success']) {
             $imagesResult = $this->syncService->syncExistingPropertyImages((int) ($options['limit'] ?? 50));
@@ -296,6 +306,18 @@ class MLSSyncController extends Controller
             ->count();
 
         $result = $this->syncService->syncExistingPropertyImages($limit, $force, $offset);
+        $this->notifySyncIssueIfNeeded([
+            'success' => ((int) ($result['errors'] ?? 0)) === 0,
+            'message' => 'Sincronizacion de imagenes MLS completada con incidencias.',
+            'errors' => (int) ($result['errors'] ?? 0),
+            'stats' => [
+                'processed' => $result['processed'] ?? 0,
+                'linked' => $result['linked'] ?? 0,
+                'dispatched' => $result['dispatched'] ?? 0,
+                'skipped' => $result['skipped'] ?? 0,
+                'errors' => $result['errors'] ?? 0,
+            ],
+        ]);
 
         return $this->apiSuccess(
             'Sincronización de imágenes completada',
@@ -356,6 +378,18 @@ class MLSSyncController extends Controller
         $offset = isset($options['offset']) ? (int) $options['offset'] : null;
 
         $result = $this->syncService->syncImagesProgressive($batchSize, $force, $offset);
+        $this->notifySyncIssueIfNeeded([
+            'success' => ($result['success'] ?? false) && ((int) ($result['errors'] ?? 0)) === 0,
+            'message' => 'Sincronizacion progresiva de imagenes MLS requiere revision.',
+            'errors' => (int) ($result['errors'] ?? 0),
+            'stats' => [
+                'processed' => $result['processed'] ?? 0,
+                'linked' => $result['linked'] ?? 0,
+                'dispatched' => $result['dispatched'] ?? 0,
+                'errors' => $result['errors'] ?? 0,
+                'completed' => $result['completed'] ?? false,
+            ],
+        ]);
 
         if ($result['success']) {
             return $this->apiSuccess(
@@ -524,6 +558,10 @@ class MLSSyncController extends Controller
      */
     public function deleteApiKey(): JsonResponse
     {
+        if (!Rbac::canAny(request()->user('api'), 'integrations.config.edit')) {
+            return $this->apiForbidden('No tienes permisos para eliminar credenciales del MLS', 'INTEGRATION_CONFIG_FORBIDDEN');
+        }
+
         $config = MLSConfig::getOrCreateDefault();
         $config->update(['api_key' => null]);
 
@@ -544,6 +582,10 @@ class MLSSyncController extends Controller
      */
     public function deleteAllMLSProperties(Request $request): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'integrations.config.edit')) {
+            return $this->apiForbidden('No tienes permisos para eliminar inventario MLS masivamente', 'INTEGRATION_CONFIG_FORBIDDEN');
+        }
+
         $validator = Validator::make($request->all(), [
             'confirm' => 'required|boolean|accepted',
         ]);
@@ -802,6 +844,10 @@ class MLSSyncController extends Controller
      */
     public function resetCircuitBreaker(): JsonResponse
     {
+        if (!Rbac::canAny(request()->user('api'), 'integrations.config.edit')) {
+            return $this->apiForbidden('No tienes permisos para reiniciar controles tecnicos del MLS', 'INTEGRATION_CONFIG_FORBIDDEN');
+        }
+
         // Nota: Este método requiere acceso a un método público en el servicio
         // Por ahora, vamos a recargar la configuración que reinicia el circuit breaker
         $this->syncService->reloadConfiguration();
@@ -852,6 +898,10 @@ class MLSSyncController extends Controller
      */
     public function clearCheckpoint(): JsonResponse
     {
+        if (!Rbac::canAny(request()->user('api'), 'integrations.config.edit')) {
+            return $this->apiForbidden('No tienes permisos para limpiar checkpoints del MLS', 'INTEGRATION_CONFIG_FORBIDDEN');
+        }
+
         // Nota: Este método requiere acceso a un método público en el servicio
         // Por ahora, vamos a informar que esta funcionalidad está disponible
         return $this->apiSuccess(
@@ -999,6 +1049,19 @@ class MLSSyncController extends Controller
                 $offset,
                 $mode
             );
+            $this->notifySyncIssueIfNeeded([
+                'success' => ($result['success'] ?? false) && ((int) ($result['errors'] ?? 0)) === 0,
+                'message' => $result['message'] ?? 'Sincronizacion progresiva MLS requiere revision.',
+                'errors' => (int) ($result['errors'] ?? 0),
+                'stats' => [
+                    'processed' => $result['processed'] ?? 0,
+                    'created' => $result['created'] ?? 0,
+                    'updated' => $result['updated'] ?? 0,
+                    'unpublished' => $result['unpublished'] ?? 0,
+                    'errors' => $result['errors'] ?? 0,
+                    'completed' => $result['completed'] ?? false,
+                ],
+            ]);
 
             if ($result['success']) {
                 return $this->apiSuccess(
@@ -1089,6 +1152,10 @@ class MLSSyncController extends Controller
      */
     public function forceUnlock(Request $request): JsonResponse
     {
+        if (!Rbac::canAny($request->user('api'), 'integrations.config.edit')) {
+            return $this->apiForbidden('No tienes permisos para desbloquear sincronizaciones manualmente', 'INTEGRATION_CONFIG_FORBIDDEN');
+        }
+
         $validator = Validator::make($request->all(), [
             'force' => 'sometimes|boolean',
         ]);
@@ -1120,7 +1187,34 @@ class MLSSyncController extends Controller
     }
 
     /**
-     * Genera un resumen del log de sincronización.
+     * Notifica errores o incidencias de sincronizacion.
+     */
+    private function notifySyncIssueIfNeeded(array $result): void
+    {
+        $stats = $result['stats'] ?? [];
+        $errors = (int) ($stats['errors'] ?? $result['errors'] ?? 0);
+
+        if (($result['success'] ?? false) && $errors === 0) {
+            return;
+        }
+
+        RbacNotifications::notifyRoles(
+            ['super-admin', 'assistant'],
+            new SyncIssueNotification(
+                'MLS',
+                $result['message'] ?? 'La sincronizacion MLS requiere revision.',
+                [
+                    'stats' => $stats,
+                    'errors' => $errors,
+                    'log_summary' => $this->summarizeLog($result['log'] ?? []),
+                    'failed_properties' => $result['failed_properties'] ?? [],
+                ]
+            )
+        );
+    }
+
+    /**
+     * Genera un resumen del log de sincronizacion.
      */
     protected function summarizeLog(array $log): array
     {

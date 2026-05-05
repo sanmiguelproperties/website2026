@@ -3,12 +3,6 @@
 return [
     'guards' => ['web', 'api'],
 
-    /*
-     * Permission grammar:
-     * - {module}.view / create / edit / approve / delete / export
-     * - {module}.view.own, {module}.view.team, {module}.view.all
-     * - {module}.edit.own, {module}.edit.assigned
-     */
     'permissions' => [
         'dashboard.view',
 
@@ -25,7 +19,6 @@ return [
 
         'properties.view',
         'properties.view.own',
-        'properties.view.team',
         'properties.view.all',
         'properties.create',
         'properties.edit',
@@ -35,65 +28,64 @@ return [
         'properties.assign',
         'properties.status.update',
         'properties.delete',
+        'properties.delete.own',
+        'properties.restore',
         'properties.export',
 
         'leads.view',
         'leads.view.own',
-        'leads.view.team',
         'leads.view.all',
         'leads.create',
         'leads.edit',
         'leads.edit.own',
-        'leads.edit.assigned',
-        'leads.approve',
         'leads.assign',
         'leads.status.update',
         'leads.delete',
+        'leads.delete.own',
+        'leads.restore',
         'leads.export',
 
         'clients.view',
         'clients.view.own',
-        'clients.view.team',
         'clients.view.all',
         'clients.create',
         'clients.edit',
         'clients.edit.own',
-        'clients.edit.assigned',
-        'clients.approve',
         'clients.delete',
+        'clients.restore',
         'clients.export',
+
+        'crm.notes.view.own',
+        'crm.notes.view.all',
+        'crm.notes.create',
+        'crm.notes.edit',
+        'crm.notes.edit.own',
+        'crm.notes.delete',
+        'crm.notes.delete.own',
 
         'closings.view',
         'closings.view.own',
-        'closings.view.team',
         'closings.view.all',
         'closings.create',
         'closings.edit',
         'closings.edit.own',
-        'closings.edit.assigned',
         'closings.approve',
         'closings.delete',
         'closings.export',
 
         'documents.view',
         'documents.view.own',
-        'documents.view.team',
         'documents.view.all',
         'documents.create',
         'documents.edit',
         'documents.edit.own',
-        'documents.edit.assigned',
-        'documents.approve',
         'documents.delete',
+        'documents.restore',
         'documents.export',
 
         'reports.view',
-        'reports.view.operational',
-        'reports.view.commercial',
         'reports.view.global',
         'reports.export',
-        'reports.export.operational',
-        'reports.export.commercial',
 
         'commissions.view',
         'commissions.view.own',
@@ -104,19 +96,18 @@ return [
 
         'pipelines.view',
         'pipelines.view.own',
-        'pipelines.view.team',
         'pipelines.view.all',
         'pipelines.edit',
         'pipelines.edit.own',
 
         'calendar.view',
         'calendar.view.own',
-        'calendar.view.assigned',
+        'calendar.view.all',
         'calendar.edit',
         'calendar.edit.own',
-        'calendar.edit.assigned',
 
-        'marketing.view',
+        'cms.view',
+        'cms.manage',
 
         'catalogs.view',
         'catalogs.manage',
@@ -125,8 +116,13 @@ return [
         'settings.manage',
 
         'integrations.view',
+        'integrations.logs.view',
+        'integrations.sync',
+        'integrations.config.view',
+        'integrations.config.edit',
         'integrations.manage',
 
+        'marketing.view',
         'sensitive.view',
         'financial.view',
         'records.delete.critical',
@@ -134,12 +130,12 @@ return [
 
     'roles' => [
         'super-admin' => [
-            'label' => 'Super Admin',
+            'label' => 'Administrador',
             'permissions' => '*',
         ],
 
-        'broker' => [
-            'label' => 'Direccion / Broker',
+        'manager' => [
+            'label' => 'Manager',
             'permissions' => [
                 'dashboard.view',
 
@@ -151,70 +147,8 @@ return [
                 'properties.publish',
                 'properties.assign',
                 'properties.status.update',
-                'properties.export',
-
-                'leads.view',
-                'leads.view.all',
-                'leads.edit',
-                'leads.approve',
-                'leads.assign',
-                'leads.status.update',
-                'leads.export',
-
-                'clients.view',
-                'clients.view.all',
-                'clients.edit',
-                'clients.approve',
-                'clients.export',
-
-                'closings.view',
-                'closings.view.all',
-                'closings.edit',
-                'closings.approve',
-                'closings.export',
-
-                'documents.view',
-                'documents.view.all',
-                'documents.create',
-                'documents.edit',
-                'documents.approve',
-                'documents.export',
-
-                'reports.view',
-                'reports.view.commercial',
-                'reports.view.global',
-                'reports.export.commercial',
-
-                'commissions.view',
-                'commissions.view.all',
-                'commissions.export',
-
-                'pipelines.view',
-                'pipelines.view.all',
-                'pipelines.edit',
-
-                'calendar.view',
-                'calendar.edit',
-
-                'catalogs.view',
-                'catalogs.manage',
-
-                'sensitive.view',
-                'financial.view',
-            ],
-        ],
-
-        'operations-admin' => [
-            'label' => 'Admin / Operaciones',
-            'permissions' => [
-                'dashboard.view',
-
-                'properties.view',
-                'properties.view.all',
-                'properties.create',
-                'properties.edit',
-                'properties.status.update',
-                'properties.assign',
+                'properties.delete',
+                'properties.restore',
                 'properties.export',
 
                 'leads.view',
@@ -223,36 +157,89 @@ return [
                 'leads.edit',
                 'leads.assign',
                 'leads.status.update',
+                'leads.delete',
+                'leads.restore',
+                'leads.export',
 
                 'clients.view',
                 'clients.view.all',
                 'clients.create',
                 'clients.edit',
+                'clients.delete',
+                'clients.restore',
+
+                'crm.notes.view.all',
+                'crm.notes.create',
 
                 'closings.view',
                 'closings.view.all',
                 'closings.create',
                 'closings.edit',
+                'closings.approve',
+                'closings.delete',
+                'closings.export',
 
                 'documents.view',
                 'documents.view.all',
                 'documents.create',
                 'documents.edit',
-                'documents.approve',
+                'documents.delete',
+                'documents.restore',
 
                 'reports.view',
-                'reports.view.operational',
-                'reports.export.operational',
+                'reports.view.global',
+
+                'commissions.view',
+                'commissions.view.all',
 
                 'pipelines.view',
                 'pipelines.view.all',
                 'pipelines.edit',
 
                 'calendar.view',
+                'calendar.view.all',
                 'calendar.edit',
 
+                'cms.view',
+                'catalogs.view',
+                'integrations.view',
+                'integrations.logs.view',
+                'integrations.sync',
+                'marketing.view',
+                'sensitive.view',
+                'financial.view',
+            ],
+        ],
+
+        'assistant' => [
+            'label' => 'Asistente',
+            'permissions' => [
+                'dashboard.view',
+
+                'properties.view',
+                'properties.view.all',
+                'properties.create',
+                'properties.edit',
+                'properties.status.update',
+                'properties.delete',
+                'properties.restore',
+                'properties.export',
+
+                'documents.view',
+                'documents.view.all',
+                'documents.create',
+                'documents.edit',
+                'documents.delete',
+                'documents.restore',
+
+                'cms.view',
+                'cms.manage',
                 'catalogs.view',
                 'catalogs.manage',
+
+                'integrations.view',
+                'integrations.logs.view',
+                'integrations.sync',
             ],
         ],
 
@@ -262,20 +249,29 @@ return [
                 'dashboard.view',
 
                 'properties.view',
-                'properties.view.own',
+                'properties.view.all',
                 'properties.create',
                 'properties.edit.own',
+                'properties.delete.own',
+                'properties.restore',
 
                 'leads.view',
                 'leads.view.own',
                 'leads.create',
                 'leads.edit.own',
                 'leads.status.update',
+                'leads.delete.own',
+                'leads.restore',
 
                 'clients.view',
                 'clients.view.own',
                 'clients.create',
                 'clients.edit.own',
+
+                'crm.notes.view.own',
+                'crm.notes.create',
+                'crm.notes.edit.own',
+                'crm.notes.delete.own',
 
                 'closings.view',
                 'closings.view.own',
@@ -294,43 +290,8 @@ return [
                 'calendar.view.own',
                 'calendar.edit.own',
 
-                'marketing.view',
                 'commissions.view.own',
-            ],
-        ],
-
-        'assistant' => [
-            'label' => 'Asistente / Soporte',
-            'permissions' => [
-                'dashboard.view',
-
-                'properties.view',
-                'properties.view.own',
-                'properties.edit.own',
-
-                'leads.view',
-                'leads.view.own',
-                'leads.edit.assigned',
-
-                'clients.view',
-                'clients.view.own',
-                'clients.edit.assigned',
-
-                'closings.view',
-                'closings.view.own',
-                'closings.edit.assigned',
-
-                'documents.view',
-                'documents.view.own',
-                'documents.create',
-                'documents.edit.assigned',
-
-                'calendar.view',
-                'calendar.view.assigned',
-                'calendar.edit.assigned',
-
-                'pipelines.view',
-                'pipelines.view.own',
+                'marketing.view',
             ],
         ],
     ],

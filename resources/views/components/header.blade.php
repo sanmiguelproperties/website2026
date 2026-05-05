@@ -2,7 +2,7 @@
 <header id="dash-header" class="bg-[var(--c-bg)]/80 backdrop-blur border-b border-[var(--c-border)] flex items-center">
   <div class="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 w-full">
     <!-- Botón hamburguesa (móvil) -->
-    <button id="dash-menu-btn" class="lg:hidden inline-flex items-center gap-2 px-3 py-2 rounded-xl ring-1 ring-[var(--c-border)]">
+    <button id="dash-menu-btn" class="lg:hidden inline-flex items-center gap-2 px-3 py-2 rounded-xl ring-1 ring-[var(--c-border)] hover:bg-[var(--c-accent)] hover:text-[var(--c-accent-ink)]">
       <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg>
       <span class="text-sm">Menú</span>
     </button>
@@ -69,16 +69,16 @@
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
           Nueva propiedad
         </button>
-        <button class="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-xl ring-1 ring-[var(--c-border)] hover:ring-[var(--c-primary)]">
+        <button class="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-xl bg-[var(--c-accent)] text-[var(--c-accent-ink)] ring-1 ring-[var(--c-accent)] hover:opacity-90">
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h2"/><path d="M12 14h2"/></svg>
           Agendar visita
         </button>
       </div>
 
-      <button id="dash-bell" class="inline-flex size-10 items-center justify-center rounded-xl ring-1 ring-[var(--c-border)] hover:ring-[var(--c-primary)]">
+      <button id="dash-bell" class="inline-flex size-10 items-center justify-center rounded-xl ring-1 ring-[var(--c-border)] hover:bg-[var(--c-primary)] hover:text-[var(--c-primary-ink)]">
         <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.7 1.7 0 0 0 3.4 0"/></svg>
       </button>
-      <button id="dash-avatar" class="inline-flex items-center gap-3 px-2 py-1 rounded-xl ring-1 ring-[var(--c-border)] hover:ring-[var(--c-primary)]">
+      <button id="dash-avatar" class="inline-flex items-center gap-3 px-2 py-1 rounded-xl ring-1 ring-[var(--c-border)] hover:bg-[var(--c-elev)]">
         @php
           $user = auth()->user()->load('profileImage');
         @endphp

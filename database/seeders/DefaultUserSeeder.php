@@ -23,6 +23,11 @@ class DefaultUserSeeder extends Seeder
         $defaultAdminPassword = '852456357';
 
         $defaultAdminUsers = [
+            [
+                'email' => 'superadmin@sanmiguelproperties.com',
+                'name'  => 'Super Admin SMP',
+            ],
+
             // existentes
             [
                 'email' => 'gusgusnoriega@gmail.com',
