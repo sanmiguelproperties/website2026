@@ -122,6 +122,7 @@
                 <div class="font-semibold text-[var(--c-text)]">{{ $client->name }}</div>
                 <div class="mt-1 text-xs text-[var(--c-muted)]">{{ $client->email ?: 'Sin email' }}</div>
                 <div class="text-xs text-[var(--c-muted)]">{{ $client->phone ?: 'Sin telefono' }}</div>
+                <div class="mt-2 text-xs text-[var(--c-muted)]">{{ $client->comments_count }} comentarios - {{ $client->visits_count }} visitas</div>
               </td>
               <td class="px-5 py-4">
                 <div class="font-semibold text-[var(--c-text)]">{{ $client->property?->title ?: data_get($client->raw_payload, 'property_name', 'Sin propiedad') }}</div>
@@ -148,6 +149,7 @@
               </td>
               <td class="px-5 py-4">
                 <div class="flex flex-col gap-2">
+                  <a href="{{ route('clients.show', $client) }}" class="inline-flex items-center justify-center rounded-xl bg-[var(--c-primary)] px-3 py-2 text-xs font-semibold text-[var(--c-primary-ink)] hover:opacity-95 transition">Gestionar</a>
                   @if($client->contactRequest)
                     <a href="{{ route('property-contact-requests', ['search' => $client->contactRequest->id]) }}" class="inline-flex items-center justify-center rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-xs font-semibold hover:bg-[var(--c-surface)] transition">Ver solicitud</a>
                   @endif
@@ -183,6 +185,7 @@
           <div class="mt-3 space-y-1 text-sm text-[var(--c-muted)]">
             <p>{{ $client->email ?: 'Sin email' }}</p>
             <p>{{ $client->phone ?: 'Sin telefono' }}</p>
+            <p>{{ $client->comments_count }} comentarios - {{ $client->visits_count }} visitas</p>
           </div>
 
           <div class="mt-4 rounded-xl border border-[var(--c-border)] bg-[var(--c-surface)] p-3">
@@ -195,9 +198,12 @@
             <p class="mt-1 font-semibold text-[var(--c-text)]">{{ $assignedUser?->name ?: 'Sin usuario asignado' }}</p>
           </div>
 
-          @if($client->contactRequest)
-            <a href="{{ route('property-contact-requests', ['search' => $client->contactRequest->id]) }}" class="mt-4 inline-flex w-full items-center justify-center rounded-xl border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-2 text-xs font-semibold transition">Ver solicitud</a>
-          @endif
+          <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <a href="{{ route('clients.show', $client) }}" class="inline-flex w-full items-center justify-center rounded-xl bg-[var(--c-primary)] px-3 py-2 text-xs font-semibold text-[var(--c-primary-ink)] transition">Gestionar</a>
+            @if($client->contactRequest)
+              <a href="{{ route('property-contact-requests', ['search' => $client->contactRequest->id]) }}" class="inline-flex w-full items-center justify-center rounded-xl border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-2 text-xs font-semibold transition">Ver solicitud</a>
+            @endif
+          </div>
         </article>
       @empty
         <div class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)] p-8 text-center">

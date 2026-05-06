@@ -250,10 +250,6 @@ return [
 
                 'properties.view',
                 'properties.view.all',
-                'properties.create',
-                'properties.edit.own',
-                'properties.delete.own',
-                'properties.restore',
 
                 'leads.view',
                 'leads.view.own',

@@ -2,6 +2,15 @@
 
 @section('title', 'Administrar Propiedades')
 
+@php
+  $propertyUser = auth()->user();
+  $canCreateProperties = \App\Support\Rbac::canAny($propertyUser, 'properties.create');
+  $canEditProperties = \App\Support\Rbac::canAny($propertyUser, ['properties.edit', 'properties.edit.own']);
+  $canDeleteProperties = \App\Support\Rbac::canAny($propertyUser, ['properties.delete', 'properties.delete.own']);
+  $canLoadPropertyCatalogs = \App\Support\Rbac::canAny($propertyUser, 'catalogs.manage');
+  $canLoadPropertySettings = \App\Support\Rbac::canAny($propertyUser, 'settings.manage');
+@endphp
+
 @section('content')
 <div class="space-y-6">
   <!-- Header -->
@@ -12,7 +21,7 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
-      <button id="btn-create-property" class="inline-flex items-center gap-2 px-4 py-2 bg-[var(--c-primary)] text-[var(--c-primary-ink)] rounded-xl hover:opacity-95 transition shadow-soft">
+      <button id="btn-create-property" class="@unless($canCreateProperties) hidden @endunless inline-flex items-center gap-2 px-4 py-2 bg-[var(--c-primary)] text-[var(--c-primary-ink)] rounded-xl hover:opacity-95 transition shadow-soft">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
         </svg>
@@ -788,9 +797,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const API_BASE = '/api';
   const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
   const API_TOKEN = document.querySelector('meta[name="api-token"]')?.getAttribute('content') || '';
+  const PROPERTY_ACCESS = {
+    canCreate: @json($canCreateProperties),
+    canEdit: @json($canEditProperties),
+    canDelete: @json($canDeleteProperties),
+    canLoadCatalogs: @json($canLoadPropertyCatalogs),
+    canLoadSettings: @json($canLoadPropertySettings),
+  };
 
   // Permite que el botón global del header (layouts/app) ejecute esta acción.
-  window.dashNewAction = () => openDrawerForCreate();
+  window.dashNewAction = PROPERTY_ACCESS.canCreate ? () => openDrawerForCreate() : null;
 
   if (!API_TOKEN) {
     window.dispatchEvent(new CustomEvent('api:response', {
@@ -1007,6 +1023,30 @@ document.addEventListener('DOMContentLoaded', () => {
     previewBtn.href = canPreview ? publicPropertyUrl(property.id) : '#';
   }
 
+  function canSaveCurrentProperty() {
+    return $('#property-id').value ? PROPERTY_ACCESS.canEdit : PROPERTY_ACCESS.canCreate;
+  }
+
+  function setDrawerReadOnly(readOnly) {
+    const form = $('#property-form');
+    $$('input, select, textarea, button', form).forEach((el) => {
+      el.disabled = readOnly;
+    });
+
+    form.classList.toggle('opacity-75', readOnly);
+    $('#property-drawer-footnote').textContent = readOnly
+      ? 'Vista de solo lectura. Tu rol puede consultar los datos internos, sin editar ni eliminar.'
+      : 'Los cambios se aplican usando el API (Passport).';
+  }
+
+  function syncDrawerActions(isEdit) {
+    const canSave = isEdit ? PROPERTY_ACCESS.canEdit : PROPERTY_ACCESS.canCreate;
+
+    $('#btn-property-save').classList.toggle('hidden', !canSave);
+    $('#btn-property-delete').classList.toggle('hidden', !(isEdit && PROPERTY_ACCESS.canDelete));
+    setDrawerReadOnly(!canSave);
+  }
+
   function renderProperties(paginated) {
     const tbody = $('#properties-tbody');
     const empty = $('#properties-empty');
@@ -1035,6 +1075,10 @@ document.addEventListener('DOMContentLoaded', () => {
         `<div class="size-10 rounded-xl grid place-items-center bg-[var(--c-elev)] border border-[var(--c-border)]">
           <svg class="size-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M6 21V9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12"/><path d="M9 21v-6h6v6"/></svg>
         </div>`;
+      const actionButtons = `
+        <button class="btn-edit-prop px-3 py-1.5 text-xs rounded-lg bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 transition" data-id="${p.id}">${PROPERTY_ACCESS.canEdit ? 'Editar' : 'Ver'}</button>
+        ${PROPERTY_ACCESS.canDelete ? `<button class="btn-del-prop px-3 py-1.5 text-xs rounded-lg bg-[var(--c-danger)] text-white hover:opacity-90 transition" data-id="${p.id}">Eliminar</button>` : ''}
+      `;
 
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-[var(--c-elev)]/50 transition';
@@ -1055,8 +1099,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="py-3 pr-3 text-[var(--c-muted)]">${escapeHtml(fmtDate(updated))}</td>
         <td class="py-3 text-right">
           <div class="inline-flex items-center gap-2">
-            <button class="btn-edit-prop px-3 py-1.5 text-xs rounded-lg bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 transition" data-id="${p.id}">Editar</button>
-            <button class="btn-del-prop px-3 py-1.5 text-xs rounded-lg bg-[var(--c-danger)] text-white hover:opacity-90 transition" data-id="${p.id}">Eliminar</button>
+            ${actionButtons}
           </div>
         </td>
       `;
@@ -1113,7 +1156,29 @@ document.addEventListener('DOMContentLoaded', () => {
   // ----------------------
   // Refs (agencies, currencies)
   // ----------------------
+  function ensureSelectOption(selectEl, value, label) {
+    if (!selectEl || value === null || value === undefined || value === '') {
+      return;
+    }
+
+    const stringValue = String(value);
+    let option = Array.from(selectEl.options).find(opt => opt.value === stringValue);
+    if (!option) {
+      option = document.createElement('option');
+      option.value = stringValue;
+      selectEl.appendChild(option);
+    }
+
+    option.textContent = label || `#${stringValue}`;
+    selectEl.value = stringValue;
+  }
+
   async function loadAgenciesInto(selectEl) {
+    if (!PROPERTY_ACCESS.canLoadCatalogs) {
+      selectEl.disabled = true;
+      return;
+    }
+
     const payload = await apiFetch(`${API_BASE}/agencies?per_page=100&order=updated_at&sort=desc`);
     const rows = payload?.data?.data || [];
     state.refs.agencies = rows;
@@ -1134,6 +1199,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadCurrencies() {
+    if (!PROPERTY_ACCESS.canLoadSettings) {
+      return;
+    }
+
     const payload = await apiFetch(`${API_BASE}/currencies?per_page=100&order=created_at&sort=desc`);
     const rows = payload?.data?.data || [];
     state.refs.currencies = rows;
@@ -1293,6 +1362,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function setMetaSearchEnabled(enabled) {
+    ['#features-search', '#features-refresh', '#features-prev', '#features-next', '#tags-search', '#tags-refresh', '#tags-prev', '#tags-next'].forEach((selector) => {
+      const el = $(selector);
+      if (el) el.disabled = !enabled;
+    });
+  }
+
   function renderMetaList({ type, paginated }) {
     const list = type === 'features' ? $('#features-list') : $('#tags-list');
     const pageEl = type === 'features' ? $('#features-page') : $('#tags-page');
@@ -1353,6 +1429,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadFeatures(page = 1) {
+    if (!PROPERTY_ACCESS.canLoadCatalogs) {
+      return;
+    }
+
     state.meta.features.page = page;
     const q = $('#features-search').value.trim();
     const p = new URLSearchParams({
@@ -1369,6 +1449,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadTags(page = 1) {
+    if (!PROPERTY_ACCESS.canLoadCatalogs) {
+      return;
+    }
+
     state.meta.tags.page = page;
     const q = $('#tags-search').value.trim();
     const p = new URLSearchParams({
@@ -1514,6 +1598,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.meta.selectedTagIds = new Set();
     state.meta.selectedTagMap = new Map();
     renderSelectedMeta();
+    syncDrawerActions(false);
   }
 
   function dtLocalValue(iso) {
@@ -1533,13 +1618,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function fillFromProperty(p) {
     $('#property-id').value = p.id;
 
-    $('#property-drawer-title').textContent = `Editar propiedad #${p.id}`;
+    $('#property-drawer-title').textContent = `${PROPERTY_ACCESS.canEdit ? 'Editar' : 'Detalle de'} propiedad #${p.id}`;
     const subtitleId = p.source === 'mls'
       ? (p.mls_id || p.mls_public_id || '—')
       : (p.easybroker_public_id || '—');
     $('#property-drawer-subtitle').textContent = `${subtitleId} • ${p.title || '(Sin título)'}`;
 
-    $('#btn-property-delete').classList.remove('hidden');
+    $('#btn-property-delete').classList.toggle('hidden', !PROPERTY_ACCESS.canDelete);
     setPreviewButton(p);
 
     // Source + Agency + Agent + Published
@@ -1551,6 +1636,10 @@ document.addEventListener('DOMContentLoaded', () => {
       $('#agent-preview').textContent = `${p.agent_user.name || 'Usuario'} (${p.agent_user.email || '—'})`;
     } else {
       $('#agent-preview').textContent = '—';
+    }
+
+    if (!PROPERTY_ACCESS.canLoadCatalogs) {
+      ensureSelectOption($('#field-agency-id'), p.agency_id, p.agency?.name ? `${p.agency.name} (#${p.agency_id})` : `Agencia #${p.agency_id}`);
     }
 
     $('#field-published').checked = !!p.published;
@@ -1670,12 +1759,25 @@ document.addEventListener('DOMContentLoaded', () => {
     state.meta.selectedTagMap = new Map((p.tags || []).map(t => [String(t.id), t.name || ('Tag #' + t.id)]));
 
     renderSelectedMeta();
+    setMetaSearchEnabled(PROPERTY_ACCESS.canLoadCatalogs);
 
     // Raw
     $('#field-raw-payload').value = p.raw_payload ? JSON.stringify(p.raw_payload, null, 2) : '';
+    syncDrawerActions(true);
   }
 
   async function openDrawerForCreate() {
+    if (!PROPERTY_ACCESS.canCreate) {
+      window.dispatchEvent(new CustomEvent('api:response', {
+        detail: {
+          success: false,
+          message: 'Tu rol solo puede consultar propiedades.',
+          code: 'PROPERTY_CREATE_FORBIDDEN'
+        }
+      }));
+      return;
+    }
+
     await ensureRefsLoaded();
     resetForm();
     setActiveTab('general');
@@ -1686,7 +1788,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function openDrawerForEdit(id) {
-    await ensureRefsLoaded();
+    if (PROPERTY_ACCESS.canEdit) {
+      await ensureRefsLoaded();
+    }
+
     resetForm();
     setActiveTab('general');
     openDrawer();
@@ -1694,7 +1799,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const payload = await apiFetch(`${API_BASE}/properties/${id}`);
     if (payload?.success) {
       fillFromProperty(payload.data);
-      await Promise.all([loadFeatures(1), loadTags(1)]);
+      if (PROPERTY_ACCESS.canLoadCatalogs) {
+        await Promise.all([loadFeatures(1), loadTags(1)]);
+      }
+      syncDrawerActions(true);
     } else {
       window.dispatchEvent(new CustomEvent('api:response', { detail: payload }));
     }
@@ -1702,13 +1810,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function ensureRefsLoaded() {
     // Agencies
-    if (!state.refs.agencies.length) {
+    if (PROPERTY_ACCESS.canLoadCatalogs && !state.refs.agencies.length) {
       await loadAgenciesInto($('#filter-agency'));
     }
-    await loadAgenciesInto($('#field-agency-id'));
+    if (PROPERTY_ACCESS.canLoadCatalogs) {
+      await loadAgenciesInto($('#field-agency-id'));
+    }
 
     // Currencies
-    if (!state.refs.currencies.length) {
+    if (PROPERTY_ACCESS.canLoadSettings && !state.refs.currencies.length) {
       await loadCurrencies();
     }
   }
@@ -1863,6 +1973,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function saveProperty() {
+    if (!canSaveCurrentProperty()) {
+      window.dispatchEvent(new CustomEvent('api:response', {
+        detail: {
+          success: false,
+          message: 'Tu rol solo puede consultar propiedades.',
+          code: 'PROPERTY_SAVE_FORBIDDEN'
+        }
+      }));
+      return;
+    }
+
     const id = $('#property-id').value;
 
     let payload;
@@ -1906,6 +2027,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function deleteProperty(id) {
+    if (!PROPERTY_ACCESS.canDelete) {
+      window.dispatchEvent(new CustomEvent('api:response', {
+        detail: {
+          success: false,
+          message: 'Tu rol no puede eliminar propiedades.',
+          code: 'PROPERTY_DELETE_FORBIDDEN'
+        }
+      }));
+      return;
+    }
+
     if (!confirm('¿Eliminar esta propiedad? Esta acción no se puede deshacer.')) return;
 
     const res = await apiFetch(`${API_BASE}/properties/${id}`, { method: 'DELETE' });
@@ -1937,7 +2069,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ----------------------
   // Events
   // ----------------------
-  $('#btn-create-property').addEventListener('click', openDrawerForCreate);
+  $('#btn-create-property')?.addEventListener('click', openDrawerForCreate);
   $('#btn-refresh-properties').addEventListener('click', () => loadProperties(1));
 
   // Pagination
@@ -2019,7 +2151,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Init
   (async () => {
-    await loadAgenciesInto($('#filter-agency'));
+    if (PROPERTY_ACCESS.canLoadCatalogs) {
+      await loadAgenciesInto($('#filter-agency'));
+    } else {
+      $('#filter-agency').disabled = true;
+    }
     await loadProperties(1);
   })();
 });

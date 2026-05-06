@@ -251,7 +251,7 @@
                 @endif
 
                 @if($dashCanMenuItem('calendar'))
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                <a href="{{ route('calendar') }}" data-route="calendar" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h2"/><path d="M12 14h2"/><path d="M16 14h2"/></svg>
                   </span>
@@ -611,7 +611,9 @@
         'team-members': 1,
         'agencies': 1,
         'clients': 6,
+        'clients.show': 6,
         'property-contact-requests': 6,
+        'calendar': 6,
         'users': 2,
         'currencies': 2,
         'color-themes': 2,
@@ -750,7 +752,7 @@
       const links = document.querySelectorAll('#dash-accordion a[data-route]');
       links.forEach(link => {
         const route = link.getAttribute('data-route');
-        if(route === currentRoute){
+        if(route === currentRoute || (route === 'clients' && currentRoute.startsWith('clients.'))){
           link.classList.add('active');
         }
       });

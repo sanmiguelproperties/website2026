@@ -16,7 +16,7 @@ class AdminMenu
         'property-contact-requests' => 'leads.view',
         'calendar' => 'calendar.view',
 
-        'users' => 'users.view',
+        'users' => 'super-admin',
         'currencies' => 'settings.manage',
         'color-themes' => 'settings.manage',
         'frontend-colors' => 'settings.manage',
@@ -57,7 +57,9 @@ class AdminMenu
         'team-members' => 'team-members',
         'agencies' => 'agencies',
         'clients' => 'clients',
+        'clients.show' => 'clients',
         'property-contact-requests' => 'property-contact-requests',
+        'calendar' => 'calendar',
 
         'users' => 'users',
         'currencies' => 'currencies',

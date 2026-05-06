@@ -54,7 +54,7 @@
       <div class="px-6 py-4 border-b border-[var(--c-border)]">
         <h3 id="user-modal-title" class="text-lg font-semibold text-[var(--c-text)]">Crear Usuario</h3>
       </div>
-      <form id="user-form" class="p-6">
+      <form id="user-form" class="p-6 space-y-4">
         <input type="hidden" id="user-id" name="id">
 
         <!-- Profile Image -->
@@ -88,6 +88,14 @@
           <span class="text-sm text-[var(--c-text)]">Usuario activo</span>
         </label>
 
+        <!-- Roles -->
+        <div>
+          <label class="block text-sm font-medium text-[var(--c-text)] mb-2">Roles</label>
+          <div id="user-roles-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg border border-[var(--c-border)] bg-[var(--c-elev)] p-3">
+            <p class="text-sm text-[var(--c-muted)]">Cargando roles...</p>
+          </div>
+        </div>
+
         <!-- Password -->
         <div>
           <label for="user-password" class="block text-sm font-medium text-[var(--c-text)] mb-1">Contraseña</label>
@@ -114,8 +122,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const API_BASE = '/api';
+  const RBAC_API_BASE = '/api/rbac';
   const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
   const API_TOKEN = document.querySelector('meta[name="api-token"]')?.getAttribute('content') || null;
+  let availableRoles = [];
+  let usersById = new Map();
+  let currentPage = 1;
 
   // Verificar token antes de cargar datos
   if (!API_TOKEN) {
@@ -124,12 +136,13 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Load initial data
+  loadRoles();
   loadUsers();
 
   // Event listeners
   document.getElementById('btn-create-user').addEventListener('click', () => openUserModal());
-  document.getElementById('btn-refresh-users').addEventListener('click', loadUsers);
-  document.getElementById('search-users').addEventListener('input', debounce(loadUsers, 300));
+  document.getElementById('btn-refresh-users').addEventListener('click', () => loadUsers(currentPage));
+  document.getElementById('search-users').addEventListener('input', debounce(() => loadUsers(), 300));
 
   // Form submissions
   document.getElementById('user-form').addEventListener('submit', saveUser);
@@ -138,22 +151,71 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('btn-cancel-user').addEventListener('click', () => closeUserModal());
 
   // Functions
+  function authHeaders(json = false) {
+    const headers = {
+      'Authorization': `Bearer ${API_TOKEN}`,
+      'X-CSRF-TOKEN': CSRF_TOKEN,
+      'Accept': 'application/json'
+    };
+
+    if (json) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    return headers;
+  }
+
+  async function readJson(response) {
+    const text = await response.text();
+
+    if (!text) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Respuesta invalida del servidor',
+        code: 'INVALID_JSON_RESPONSE',
+        raw: text
+      };
+    }
+  }
+
+  async function loadRoles() {
+    try {
+      const response = await fetch(`${RBAC_API_BASE}/roles?per_page=100&guard=web&sort=name&order=asc`, {
+        headers: authHeaders()
+      });
+      const data = await readJson(response);
+
+      if (response.ok && data?.success) {
+        availableRoles = data.data || [];
+        const currentUserId = document.getElementById('user-id')?.value;
+        renderRoleCheckboxes(roleNamesFromUser(currentUserId ? usersById.get(String(currentUserId)) : null));
+      } else {
+        showApiError('Error al cargar roles', data);
+      }
+    } catch (error) {
+      showError('Error de conexion', 'No se pudieron cargar los roles.');
+    }
+  }
+
   async function loadUsers(page = 1) {
     const search = document.getElementById('search-users').value;
     const url = `${API_BASE}/users?page=${page}&per_page=15&search=${encodeURIComponent(search)}`;
 
     try {
       const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${API_TOKEN}`,
-          'X-CSRF-TOKEN': CSRF_TOKEN,
-          'Accept': 'application/json'
-        }
+        headers: authHeaders()
       });
 
-      const data = await response.json();
+      const data = await readJson(response);
 
-      if (response.ok && data.success) {
+      if (response.ok && data?.success) {
+        currentPage = data.data.current_page || page;
         renderUsers(data.data);
         renderPagination(data.data);
       } else {
@@ -167,6 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function renderUsers(usersData) {
     const container = document.getElementById('users-list');
     container.innerHTML = '';
+    usersById = new Map();
 
     if (usersData.data.length === 0) {
       container.innerHTML = '<p class="text-[var(--c-muted)] text-center py-8">No se encontraron usuarios</p>';
@@ -174,31 +237,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     usersData.data.forEach(user => {
+      usersById.set(String(user.id), user);
+
       const userEl = document.createElement('div');
-      userEl.className = 'flex items-center justify-between p-4 bg-[var(--c-elev)] rounded-xl border border-[var(--c-border)]';
+      userEl.className = 'flex flex-col gap-4 p-4 bg-[var(--c-elev)] rounded-xl border border-[var(--c-border)] sm:flex-row sm:items-center sm:justify-between';
 
       // Profile image
       let profileImageHtml = '';
-      if (user.profile_image) {
-        profileImageHtml = `<img src="${user.profile_image.serving_url || user.profile_image.url}" alt="${user.profile_image.alt || user.name}" class="w-10 h-10 rounded-full object-cover">`;
+      const imageUrl = user.profile_image?.serving_url || user.profile_image?.url;
+      if (imageUrl) {
+        profileImageHtml = `<img src="${escapeAttr(imageUrl)}" alt="${escapeAttr(user.profile_image?.alt || user.name || 'Usuario')}" class="w-10 h-10 rounded-full object-cover">`;
       } else {
-        profileImageHtml = `<div class="w-10 h-10 rounded-full bg-[var(--c-primary)] flex items-center justify-center text-white font-bold text-lg">${user.name.charAt(0).toUpperCase()}</div>`;
+        const initial = (user.name || '?').charAt(0).toUpperCase();
+        profileImageHtml = `<div class="w-10 h-10 rounded-full bg-[var(--c-primary)] flex items-center justify-center text-white font-bold text-lg">${escapeHtml(initial)}</div>`;
       }
 
       userEl.innerHTML = `
-        <div class="flex items-center gap-4">
+        <div class="flex items-start gap-4 min-w-0">
           ${profileImageHtml}
-          <div>
-            <div class="flex items-center gap-2">
-              <h3 class="font-medium text-[var(--c-text)]">${user.name}</h3>
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="font-medium text-[var(--c-text)]">${escapeHtml(user.name || 'Usuario')}</h3>
               <span class="text-xs px-2 py-0.5 rounded-full ${user.is_active === false ? 'bg-red-500/20 text-red-300' : 'bg-emerald-500/20 text-emerald-300'}">${user.is_active === false ? 'Inactivo' : 'Activo'}</span>
             </div>
-            <p class="text-sm text-[var(--c-muted)]">${user.email}</p>
+            <p class="text-sm text-[var(--c-muted)] break-all">${escapeHtml(user.email || '')}</p>
+            <div class="mt-2 flex flex-wrap gap-1.5">${renderRoleBadges(user)}</div>
           </div>
         </div>
-        <div class="flex gap-2">
-          <button class="edit-user-btn px-3 py-1 text-sm bg-[var(--c-primary)] text-[var(--c-primary-ink)] rounded-lg hover:opacity-95 transition" data-id="${user.id}" data-name="${user.name}" data-email="${user.email}" data-profile-image-id="${user.profile_image_id || ''}" data-is-active="${user.is_active === false ? '0' : '1'}">Editar</button>
-          <button class="delete-user-btn px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition" data-id="${user.id}">Eliminar</button>
+        <div class="flex gap-2 shrink-0">
+          <button class="edit-user-btn px-3 py-1 text-sm bg-[var(--c-primary)] text-[var(--c-primary-ink)] rounded-lg hover:opacity-95 transition" data-id="${escapeAttr(user.id)}">Editar</button>
+          <button class="delete-user-btn px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition" data-id="${escapeAttr(user.id)}">Eliminar</button>
         </div>
       `;
       container.appendChild(userEl);
@@ -207,18 +275,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners
     container.querySelectorAll('.edit-user-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const id = e.target.dataset.id;
-        const name = e.target.dataset.name;
-        const email = e.target.dataset.email;
-        const profileImageId = e.target.dataset.profileImageId;
-        const isActive = e.target.dataset.isActive !== '0';
-        openUserModal(id, name, email, profileImageId, isActive);
+        const id = e.currentTarget.dataset.id;
+        openUserModal(usersById.get(String(id)));
       });
     });
 
     container.querySelectorAll('.delete-user-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const id = e.target.dataset.id;
+        const id = e.currentTarget.dataset.id;
         deleteUser(id);
       });
     });
@@ -251,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
     container.appendChild(nextBtn);
   }
 
-  function openUserModal(id = null, name = '', email = '', profileImageId = '', isActive = true) {
+  function openUserModal(user = null) {
     const modal = document.getElementById('user-modal');
     const title = document.getElementById('user-modal-title');
     const idField = document.getElementById('user-id');
@@ -260,33 +324,41 @@ document.addEventListener('DOMContentLoaded', function() {
     const passwordField = document.getElementById('user-password');
     const isActiveField = document.getElementById('user-is-active');
     const passwordConfirmContainer = document.getElementById('password-confirm-container');
+    const passwordConfirmField = document.getElementById('user-password-confirm');
+    const id = user?.id || null;
 
     if (id) {
       title.textContent = 'Editar Usuario';
       idField.value = id;
-      nameField.value = name;
-      emailField.value = email;
+      nameField.value = user.name || '';
+      emailField.value = user.email || '';
+      passwordField.value = '';
       passwordField.required = false;
       passwordField.placeholder = 'Dejar vacío para mantener la contraseña actual';
-      isActiveField.checked = isActive;
+      isActiveField.checked = user.is_active !== false;
       passwordConfirmContainer.style.display = 'none';
-      document.getElementById('user-password-confirm').required = false;
+      passwordConfirmField.required = false;
+      passwordConfirmField.value = '';
     } else {
       title.textContent = 'Crear Usuario';
       idField.value = '';
       nameField.value = '';
       emailField.value = '';
+      passwordField.value = '';
       passwordField.required = true;
       passwordField.placeholder = '';
       isActiveField.checked = true;
       passwordConfirmContainer.style.display = 'block';
-      document.getElementById('user-password-confirm').required = true;
+      passwordConfirmField.required = true;
+      passwordConfirmField.value = '';
     }
+
+    renderRoleCheckboxes(roleNamesFromUser(user));
 
     // Set profile image value
     const mediaInput = modal.querySelector('input[name="profile_image_id"]');
     if (mediaInput) {
-      mediaInput.value = profileImageId;
+      mediaInput.value = user?.profile_image_id || '';
       // Trigger preview update if needed
       setTimeout(() => {
         mediaInput.dispatchEvent(new Event('change', { bubbles: true }));
@@ -309,6 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const password = document.getElementById('user-password').value;
     const profileImageId = document.querySelector('input[name="profile_image_id"]').value;
     const isActive = document.getElementById('user-is-active').checked;
+    const roleIds = selectedRoleIds();
 
     const method = id ? 'PUT' : 'POST';
     const url = id ? `${API_BASE}/users/${id}` : `${API_BASE}/users`;
@@ -327,24 +400,22 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const response = await fetch(url, {
         method: method,
-        headers: {
-          'Authorization': `Bearer ${API_TOKEN}`,
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': CSRF_TOKEN,
-          'Accept': 'application/json'
-        },
+        headers: authHeaders(true),
         body: JSON.stringify(formData)
       });
 
-      const data = await response.json();
+      const data = await readJson(response);
 
-      if (response.ok && data.success) {
+      if (response.ok && data?.success) {
+        const savedUserId = data.data?.id || id;
+        const rolesData = await saveUserRoles(savedUserId, roleIds);
+        if (!rolesData) {
+          return;
+        }
+
         closeUserModal();
-        loadUsers();
-        // Mostrar respuesta exitosa en el modal JSON
-        // Mostrar respuesta exitosa en el modal JSON
-        // Mostrar respuesta exitosa en el modal JSON
-        window.dispatchEvent(new CustomEvent('api:response', { detail: data }));
+        loadUsers(currentPage);
+        window.dispatchEvent(new CustomEvent('api:response', { detail: rolesData }));
       } else {
         showApiError('Error al guardar usuario', data);
       }
@@ -353,23 +424,41 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  async function saveUserRoles(userId, roleIds) {
+    if (!userId) {
+      showError('Error al guardar roles', 'No se pudo identificar el usuario.');
+      return null;
+    }
+
+    const response = await fetch(`${API_BASE}/users/${userId}/roles/assign`, {
+      method: 'POST',
+      headers: authHeaders(true),
+      body: JSON.stringify({ roles: roleIds })
+    });
+
+    const data = await readJson(response);
+
+    if (response.ok && data?.success) {
+      return data;
+    }
+
+    showApiError('Error al guardar roles', data);
+    return null;
+  }
+
   async function deleteUser(id) {
     if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return;
 
     try {
       const response = await fetch(`${API_BASE}/users/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${API_TOKEN}`,
-          'X-CSRF-TOKEN': CSRF_TOKEN,
-          'Accept': 'application/json'
-        }
+        headers: authHeaders()
       });
 
-      const data = await response.json();
+      const data = await readJson(response);
 
-      if (response.ok && data.success) {
-        loadUsers();
+      if (response.ok && data?.success) {
+        loadUsers(currentPage);
         window.dispatchEvent(new CustomEvent('api:response', { detail: data }));
       } else {
         showApiError('Error al eliminar usuario', data);
@@ -377,6 +466,79 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
       showError('Error de conexión', 'No se pudo eliminar el usuario. Verifica tu conexión a internet.');
     }
+  }
+
+  function renderRoleCheckboxes(selectedRoleNames = []) {
+    const container = document.getElementById('user-roles-list');
+    const selected = new Set(selectedRoleNames);
+    container.innerHTML = '';
+
+    if (availableRoles.length === 0) {
+      container.innerHTML = '<p class="text-sm text-[var(--c-muted)]">No hay roles disponibles</p>';
+      return;
+    }
+
+    availableRoles.forEach(role => {
+      const label = document.createElement('label');
+      label.className = 'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-[var(--c-text)] hover:bg-[var(--c-surface)]';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = role.id;
+      checkbox.checked = selected.has(role.name);
+      checkbox.className = 'rounded border-[var(--c-border)] text-[var(--c-primary)]';
+
+      const text = document.createElement('span');
+      text.textContent = role.name;
+
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      container.appendChild(label);
+    });
+  }
+
+  function selectedRoleIds() {
+    return Array.from(document.querySelectorAll('#user-roles-list input[type="checkbox"]:checked'))
+      .map(checkbox => Number(checkbox.value))
+      .filter(Number.isFinite);
+  }
+
+  function roleNamesFromUser(user) {
+    const roles = Array.isArray(user?.roles) ? user.roles : [];
+    const webRoles = roles.filter(role => role.guard_name === 'web');
+    const source = webRoles.length > 0 ? webRoles : roles;
+
+    return Array.from(new Set(
+      source
+        .map(role => role.name)
+        .filter(Boolean)
+    )).sort((a, b) => a.localeCompare(b));
+  }
+
+  function renderRoleBadges(user) {
+    const names = roleNamesFromUser(user);
+
+    if (names.length === 0) {
+      return '<span class="text-xs px-2 py-0.5 rounded-full bg-[var(--c-surface)] text-[var(--c-muted)] border border-[var(--c-border)]">Sin roles</span>';
+    }
+
+    return names.map(name => (
+      `<span class="text-xs px-2 py-0.5 rounded-full bg-[var(--c-surface)] text-[var(--c-text)] border border-[var(--c-border)]">${escapeHtml(name)}</span>`
+    )).join('');
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[char]));
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value);
   }
 
   function showError(title, message) {
@@ -392,15 +554,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function showApiError(title, apiResponse) {
     console.error('API Error:', apiResponse);
+    const response = apiResponse || {};
 
     window.dispatchEvent(new CustomEvent('api:response', {
       detail: {
         success: false,
-        message: apiResponse.message || 'Error desconocido',
-        code: apiResponse.code || 'UNKNOWN_ERROR',
-        errors: apiResponse.errors || null,
-        status: apiResponse.status || null,
-        raw: apiResponse
+        message: response.message || 'Error desconocido',
+        code: response.code || 'UNKNOWN_ERROR',
+        errors: response.errors || null,
+        status: response.status || null,
+        raw: response
       }
     }));
   }

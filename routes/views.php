@@ -7,7 +7,9 @@ use App\Models\ZonePage;
 use App\Models\MLSOffice;
 use App\Models\MLSAgent;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\PropertyLookupController;
 use App\Http\Controllers\PropertyContactRequestController;
+use App\Http\Controllers\VisitCalendarController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -245,7 +247,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/users', function () {
             return view('users.manage');
-        })->name('users')->middleware('admin:users.view');
+        })->name('users')->middleware('admin:super-admin');
 
         Route::get('/rbac', function () {
             return view('rbac.manage');
@@ -258,6 +260,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/properties', function () {
             return view('properties.manage');
         })->name('properties')->middleware('admin:properties.view');
+        Route::get('/properties/search', [PropertyLookupController::class, 'search'])
+            ->name('properties.search')
+            ->middleware('admin:clients.view|calendar.view|properties.view');
 
         Route::get('/property-contact-requests', [PropertyContactRequestController::class, 'index'])
             ->name('property-contact-requests')
@@ -268,6 +273,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/property-contact-requests/{contactRequest}/convert-client', [PropertyContactRequestController::class, 'convertToClient'])
             ->name('property-contact-requests.convert-client')
             ->middleware('admin:leads.view');
+        Route::get('/calendar', [VisitCalendarController::class, 'index'])
+            ->name('calendar')
+            ->middleware('admin:calendar.view');
+        Route::patch('/calendar/visits/{visit}', [VisitCalendarController::class, 'update'])
+            ->where('visit', '[0-9]+')
+            ->name('calendar.visits.update')
+            ->middleware('admin:calendar.view');
 
         Route::get('/zones', function () {
             return view('zones.manage');
@@ -284,6 +296,38 @@ Route::middleware('auth')->group(function () {
         Route::get('/clients', [ClientController::class, 'index'])
             ->name('clients')
             ->middleware('admin:clients.view');
+        Route::get('/clients/{client}', [ClientController::class, 'show'])
+            ->where('client', '[0-9]+')
+            ->name('clients.show')
+            ->middleware('admin:clients.view');
+        Route::patch('/clients/{client}', [ClientController::class, 'update'])
+            ->where('client', '[0-9]+')
+            ->name('clients.update')
+            ->middleware('admin:clients.edit|clients.edit.own');
+        Route::post('/clients/{client}/comments', [ClientController::class, 'storeComment'])
+            ->where('client', '[0-9]+')
+            ->name('clients.comments.store')
+            ->middleware('admin:clients.edit|clients.edit.own');
+        Route::patch('/clients/{client}/comments/{comment}', [ClientController::class, 'updateComment'])
+            ->where(['client' => '[0-9]+', 'comment' => '[0-9]+'])
+            ->name('clients.comments.update')
+            ->middleware('admin:clients.edit|clients.edit.own');
+        Route::delete('/clients/{client}/comments/{comment}', [ClientController::class, 'destroyComment'])
+            ->where(['client' => '[0-9]+', 'comment' => '[0-9]+'])
+            ->name('clients.comments.destroy')
+            ->middleware('admin:clients.edit|clients.edit.own');
+        Route::post('/clients/{client}/visits', [ClientController::class, 'storeVisit'])
+            ->where('client', '[0-9]+')
+            ->name('clients.visits.store')
+            ->middleware('admin:clients.edit|clients.edit.own');
+        Route::patch('/clients/{client}/visits/{visit}', [ClientController::class, 'updateVisit'])
+            ->where(['client' => '[0-9]+', 'visit' => '[0-9]+'])
+            ->name('clients.visits.update')
+            ->middleware('admin:clients.edit|clients.edit.own');
+        Route::delete('/clients/{client}/visits/{visit}', [ClientController::class, 'destroyVisit'])
+            ->where(['client' => '[0-9]+', 'visit' => '[0-9]+'])
+            ->name('clients.visits.destroy')
+            ->middleware('admin:clients.edit|clients.edit.own');
 
         Route::get('/color-themes', function () {
             return view('color-themes.manage');

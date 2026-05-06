@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\RbacMirror;
 use App\Support\Rbac;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -17,7 +19,7 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = User::with('profileImage');
+        $query = User::with(['profileImage', 'roles:id,name,guard_name']);
 
         if ($request->filled('search')) {
             $search = trim((string)$request->input('search'));
@@ -75,7 +77,7 @@ class UserController extends Controller
         $user = User::create($userData);
 
         // Cargar la relación de imagen de perfil
-        $user->load('profileImage');
+        $user->load(['profileImage', 'roles:id,name,guard_name']);
 
         return $this->apiCreated('Usuario creado exitosamente', 'USER_CREATED', $user);
     }
@@ -85,7 +87,7 @@ class UserController extends Controller
      */
     public function show(Request $request, $id): JsonResponse
     {
-        $user = User::with('profileImage')->find($id);
+        $user = User::with(['profileImage', 'roles:id,name,guard_name'])->find($id);
 
         if (!$user) {
             return $this->apiNotFound('Usuario no encontrado', 'USER_NOT_FOUND');
@@ -147,7 +149,7 @@ class UserController extends Controller
         $user->update($updateData);
 
         // Cargar la relación de imagen de perfil
-        $user->load('profileImage');
+        $user->load(['profileImage', 'roles:id,name,guard_name']);
 
         return $this->apiSuccess('Usuario actualizado', 'USER_UPDATED', $user);
     }
@@ -183,13 +185,15 @@ class UserController extends Controller
      */
     public function getUserRoles($userId): JsonResponse
     {
-        $user = User::find($userId);
+        $user = User::with('roles')->find($userId);
 
         if (!$user) {
             return $this->apiNotFound('Usuario no encontrado', 'USER_NOT_FOUND');
         }
 
-        $roles = $user->roles;
+        $roles = $user->roles
+            ->sortBy([['guard_name', 'asc'], ['name', 'asc']])
+            ->values();
 
         return $this->apiSuccess('Roles del usuario obtenidos', 'USER_ROLES', $roles);
     }
@@ -226,16 +230,37 @@ class UserController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'roles' => 'required|array',
-            'roles.*' => 'exists:roles,id',
+            'roles' => 'present|array',
+            'roles.*' => 'integer|exists:roles,id',
         ]);
 
         if ($validator->fails()) {
             return $this->apiValidationError($validator->errors()->toArray());
         }
 
-        $roleIds = $request->input('roles');
-        $user->roles()->sync($roleIds);
+        $roleIds = collect($validator->validated()['roles'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+        $roleNames = Role::whereIn('id', $roleIds)
+            ->pluck('name')
+            ->unique()
+            ->values()
+            ->all();
+
+        $currentUser = $request->user('api') ?? auth()->user();
+        if (
+            $currentUser
+            && (int) $currentUser->id === (int) $user->id
+            && Rbac::isSuperAdmin($user)
+            && !in_array(Rbac::SUPER_ADMIN, $roleNames, true)
+        ) {
+            return $this->apiForbidden('No puedes quitarte tu propio rol super-admin', 'SELF_SUPER_ADMIN_ROLE_FORBIDDEN');
+        }
+
+        app(RbacMirror::class)->syncUserRolesBothGuardsByNames($user, $roleNames);
+
+        $user->load(['roles' => fn ($query) => $query->orderBy('guard_name')->orderBy('name')]);
 
         return $this->apiSuccess('Roles asignados al usuario', 'USER_ROLES_ASSIGNED', $user->roles);
     }

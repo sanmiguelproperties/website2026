@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Client extends Model
@@ -43,6 +44,16 @@ class Client extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(ClientComment::class);
+    }
+
+    public function visits(): HasMany
+    {
+        return $this->hasMany(ClientVisit::class);
     }
 
     public function scopeActive($query)
