@@ -137,8 +137,14 @@
         </div>
 
         <!-- Menú (Acordeón modular) -->
+        @php
+          $dashMenuUser = auth()->user();
+          $dashCanMenuItem = static fn (string $item): bool => \App\Support\AdminMenu::canAccessItem($dashMenuUser, $item);
+          $dashCanMenuGroup = static fn (int $group): bool => \App\Support\AdminMenu::groupVisible($dashMenuUser, $group);
+        @endphp
         <nav id="dash-accordion" class="flex-1 overflow-y-auto p-2 space-y-2">
           <!-- Grupo 1: Inmobiliaria -->
+          @if($dashCanMenuGroup(1))
           <section class="rounded-2xl overflow-hidden ring-1 ring-[var(--c-border)]">
             <button id="dash-acc-btn-1" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[var(--c-elev)] hover:bg-[var(--c-elev)]/80 transition" aria-controls="dash-acc-panel-1" aria-expanded="true">
               <span class="flex items-center gap-3">
@@ -153,20 +159,25 @@
             </button>
             <div id="dash-acc-panel-1" class="hidden cv-auto">
               <div class="p-2 bg-[var(--c-surface)] min-h-0">
+                @if($dashCanMenuItem('dashboard'))
                 <a href="{{ route('dashboard') }}" data-route="dashboard" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14v4"/><path d="M11 10v8"/><path d="M15 6v12"/></svg>
                   </span>
                   Dashboard
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('properties'))
                 <a href="{{ route('properties') }}" data-route="properties" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M6 21V9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12"/><path d="M9 21v-6h6v6"/></svg>
                   </span>
                   Propiedades
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('zones'))
                 <a href="{{ route('zones') }}" data-route="zones" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -177,7 +188,9 @@
                   </span>
                   Zonas SEO
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('team-members'))
                 <a href="{{ route('team-members') }}" data-route="team-members" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -189,39 +202,68 @@
                   </span>
                   Equipo
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('agencies'))
                 <a href="{{ route('agencies') }}" data-route="agencies" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M7 21V8"/><path d="M17 21V8"/><path d="M7 8l5-5 5 5"/></svg>
                   </span>
                   Agencias
                 </a>
+                @endif
 
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+              </div>
+            </div>
+          </section>
+
+          <!-- Grupo 2: Administración -->
+          @endif
+
+          <!-- Grupo 6: CRM -->
+          @if($dashCanMenuGroup(6))
+          <section class="rounded-2xl overflow-hidden ring-1 ring-[var(--c-border)]">
+            <button id="dash-acc-btn-6" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[var(--c-elev)] hover:bg-[var(--c-elev)]/80 transition" aria-controls="dash-acc-panel-6" aria-expanded="false">
+              <span class="flex items-center gap-3">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg>
+                <span class="text-sm font-medium">CRM</span>
+              </span>
+              <svg class="size-4 -rotate-90 transition-transform" id="dash-acc-icon-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div id="dash-acc-panel-6" class="hidden cv-auto">
+              <div class="p-2 bg-[var(--c-surface)] min-h-0">
+                @if($dashCanMenuItem('clients'))
+                <a href="{{ route('clients') }}" data-route="clients" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   </span>
                   Clientes
                 </a>
+                @endif
 
-                <a href="{{ route('funnel') }}" data-route="funnel" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                @if($dashCanMenuItem('property-contact-requests'))
+                <a href="{{ route('property-contact-requests') }}" data-route="property-contact-requests" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18l-7 8v7l-4 2v-9L3 4z"/></svg>
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg>
                   </span>
-                  Leads / Funnel
+                  Solicitudes
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('calendar'))
                 <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h2"/><path d="M12 14h2"/><path d="M16 14h2"/></svg>
                   </span>
                   Agenda de visitas
                 </a>
+                @endif
               </div>
             </div>
           </section>
+          @endif
 
-          <!-- Grupo 2: Administración -->
+          @if($dashCanMenuGroup(2))
           <section class="rounded-2xl overflow-hidden ring-1 ring-[var(--c-border)]">
             <button id="dash-acc-btn-2" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[var(--c-elev)] hover:bg-[var(--c-elev)]/80 transition" aria-controls="dash-acc-panel-2" aria-expanded="false">
               <span class="flex items-center gap-3">
@@ -232,86 +274,157 @@
             </button>
             <div id="dash-acc-panel-2" class="hidden cv-auto">
               <div class="p-2 bg-[var(--c-surface)] min-h-0">
+                @if($dashCanMenuItem('users'))
                 <a href="{{ route('users') }}" data-route="users" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                   </span>
                   Usuarios
                 </a>
+                @endif
 
-                <a href="{{ route('corporate-email') }}" data-route="corporate-email" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
-                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="m22 6-10 7L2 6"/></svg>
-                  </span>
-                  Correos Corporativos
-                </a>
+                @if($dashCanMenuItem('currencies'))
                 <a href="{{ route('currencies') }}" data-route="currencies" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
                   </span>
                   Monedas
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('color-themes'))
                 <a href="{{ route('color-themes') }}" data-route="color-themes" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="17" r="2"/><circle cx="6" cy="17" r="3"/><path d="M9 17a4 4 0 0 1 7 0"/><path d="M15 8.5a6.5 6.5 0 0 1 4 6"/></svg>
                   </span>
                   Temas de Color
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('frontend-colors'))
                 <a href="{{ route('frontend-colors') }}" data-route="frontend-colors" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 7.76 2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>
                   </span>
                   Colores Frontend
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('rbac'))
                 <a href="{{ route('rbac') }}" data-route="rbac" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"/><path d="M9 12l2 2 4-4"/></svg>
                   </span>
                   Roles & Permisos
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('easybroker'))
                 <a href="{{ route('easybroker') }}" data-route="easybroker" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                   </span>
                   EasyBroker Sync
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('easybroker.mls-export'))
                 <a href="{{ route('easybroker.mls-export') }}" data-route="easybroker.mls-export" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="m9 9 6 6"/><path d="m15 9-6 6"/></svg>
                   </span>
                   MLS -> EasyBroker
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('mls'))
                 <a href="{{ route('mls') }}" data-route="mls" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M9 8h1"/><path d="M9 12h1"/><path d="M9 16h1"/><path d="M14 8h1"/><path d="M14 12h1"/><path d="M14 16h1"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>
                   </span>
                   MLS AMPI Sync
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('mls-agents'))
                 <a href="{{ route('mls-agents') }}" data-route="mls-agents" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                   </span>
                   Agentes MLS
                 </a>
+                @endif
 
+                @if($dashCanMenuItem('mls-offices'))
                 <a href="{{ route('mls-offices') }}" data-route="mls-offices" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9h1"/><path d="M9 13h1"/><path d="M9 17h1"/></svg>
                   </span>
                   Agencias MLS
                 </a>
+                @endif
+              </div>
+            </div>
+          </section>
+
+          <!-- Grupo 5: Correos -->
+          @endif
+
+          @if($dashCanMenuGroup(5))
+          <section class="rounded-2xl overflow-hidden ring-1 ring-[var(--c-border)]">
+            <button id="dash-acc-btn-5" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[var(--c-elev)] hover:bg-[var(--c-elev)]/80 transition" aria-controls="dash-acc-panel-5" aria-expanded="false">
+              <span class="flex items-center gap-3">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+                <span class="text-sm font-medium">Correos</span>
+              </span>
+              <svg class="size-4 -rotate-90 transition-transform" id="dash-acc-icon-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div id="dash-acc-panel-5" class="hidden cv-auto">
+              <div class="p-2 bg-[var(--c-surface)] min-h-0">
+                @if($dashCanMenuItem('corporate-email.configuration'))
+                <a href="{{ route('corporate-email.configuration') }}" data-route="corporate-email.configuration" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  </span>
+                  Configuracion
+                </a>
+                @endif
+
+                @if($dashCanMenuItem('corporate-email.inbox'))
+                <a href="{{ route('corporate-email.inbox') }}" data-route="corporate-email.inbox" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="14" x="3" y="5" rx="2"/><path d="M3 13h5l2 3h4l2-3h5"/></svg>
+                  </span>
+                  Bandeja de entrada
+                </a>
+                @endif
+
+                @if($dashCanMenuItem('corporate-email.outbox'))
+                <a href="{{ route('corporate-email.outbox') }}" data-route="corporate-email.outbox" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="14" x="3" y="5" rx="2"/><path d="M3 9l9 6 9-6"/><path d="m16 3 3 3-3 3"/></svg>
+                  </span>
+                  Bandeja de salida
+                </a>
+                @endif
+
+                @if($dashCanMenuItem('corporate-email.compose'))
+                <a href="{{ route('corporate-email.compose') }}" data-route="corporate-email.compose" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/><path d="m3 7 7 5 7-5"/></svg>
+                  </span>
+                  Redactar
+                </a>
+                @endif
+
               </div>
             </div>
           </section>
 
           <!-- Grupo 4: CMS (Contenido Administrable) -->
+          @endif
+
+          @if($dashCanMenuGroup(4))
           <section class="rounded-2xl overflow-hidden ring-1 ring-[var(--c-border)]">
             <button id="dash-acc-btn-4" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[var(--c-elev)] hover:bg-[var(--c-elev)]/80 transition" aria-controls="dash-acc-panel-4" aria-expanded="false">
               <span class="flex items-center gap-3">
@@ -322,6 +435,7 @@
             </button>
             <div id="dash-acc-panel-4" class="hidden cv-auto">
               <div class="p-2 bg-[var(--c-surface)] min-h-0">
+                @if($dashCanMenuItem('cms.pages'))
                 <a href="{{ route('cms.pages') }}" data-route="cms.pages" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -329,6 +443,9 @@
                   Páginas
                 </a>
 
+                @endif
+
+                @if($dashCanMenuItem('cms.posts'))
                 <a href="{{ route('cms.posts') }}" data-route="cms.posts" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -336,6 +453,9 @@
                   Blog / Posts
                 </a>
 
+                @endif
+
+                @if($dashCanMenuItem('cms.menus'))
                 <a href="{{ route('cms.menus') }}" data-route="cms.menus" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -343,17 +463,24 @@
                   Menús
                 </a>
 
+                @endif
+
+                @if($dashCanMenuItem('cms.settings'))
                 <a href="{{ route('cms.settings') }}" data-route="cms.settings" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                   </span>
                   Configuración
                 </a>
+                @endif
               </div>
             </div>
           </section>
 
           <!-- Grupo 3: Ajustes -->
+          @endif
+
+          @if($dashCanMenuGroup(3))
           <section class="rounded-2xl overflow-hidden ring-1 ring-[var(--c-border)]">
             <button id="dash-acc-btn-3" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[var(--c-elev)] hover:bg-[var(--c-elev)]/80 transition" aria-controls="dash-acc-panel-3" aria-expanded="false">
               <span class="flex items-center gap-3">
@@ -364,21 +491,26 @@
             </button>
             <div id="dash-acc-panel-3" class="hidden cv-auto">
               <div class="p-2 bg-[var(--c-surface)] min-h-0">
+                @if($dashCanMenuItem('preferences'))
                 <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v4"/><path d="M3 12h4"/><path d="M17 12h4"/><path d="M12 17v4"/><path d="M5.6 5.6l2.8 2.8"/><path d="M15.6 15.6l2.8 2.8"/><path d="M18.4 5.6l-2.8 2.8"/><path d="M8.4 15.6l-2.8 2.8"/><circle cx="12" cy="12" r="3"/></svg>
                   </span>
                   Preferencias
                 </a>
+                @endif
+                @if($dashCanMenuItem('notifications'))
                 <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.3 21a1.7 1.7 0 0 0 3.4 0"/></svg>
                   </span>
                   Notificaciones
                 </a>
+                @endif
               </div>
             </div>
           </section>
+          @endif
         </nav>
 
         <!-- Footer del sidebar -->
@@ -474,13 +606,13 @@
       // --- Mapa de rutas a grupos ---
       const routeToGroup = {
         'dashboard': 1,
-        'funnel': 1,
         'properties': 1,
         'zones': 1,
         'team-members': 1,
         'agencies': 1,
+        'clients': 6,
+        'property-contact-requests': 6,
         'users': 2,
-        'corporate-email': 2,
         'currencies': 2,
         'color-themes': 2,
         'frontend-colors': 2,
@@ -490,6 +622,10 @@
         'mls': 2,
         'mls-agents': 2,
         'mls-offices': 2,
+        'corporate-email.configuration': 5,
+        'corporate-email.inbox': 5,
+        'corporate-email.outbox': 5,
+        'corporate-email.compose': 5,
         'cms.pages': 4,
         'cms.posts': 4,
         'cms.menus': 4,
@@ -536,7 +672,9 @@
       const currentGroup = routeToGroup[currentRoute] || 1;
       const accordionItems = [
         { btn: 'dash-acc-btn-1', panel: 'dash-acc-panel-1', icon: 'dash-acc-icon-1', defaultOpen: currentGroup === 1 },
+        { btn: 'dash-acc-btn-6', panel: 'dash-acc-panel-6', icon: 'dash-acc-icon-6', defaultOpen: currentGroup === 6 },
         { btn: 'dash-acc-btn-2', panel: 'dash-acc-panel-2', icon: 'dash-acc-icon-2', defaultOpen: currentGroup === 2 },
+        { btn: 'dash-acc-btn-5', panel: 'dash-acc-panel-5', icon: 'dash-acc-icon-5', defaultOpen: currentGroup === 5 },
         { btn: 'dash-acc-btn-4', panel: 'dash-acc-panel-4', icon: 'dash-acc-icon-4', defaultOpen: currentGroup === 4 },
         { btn: 'dash-acc-btn-3', panel: 'dash-acc-panel-3', icon: 'dash-acc-icon-3', defaultOpen: currentGroup === 3 },
       ];

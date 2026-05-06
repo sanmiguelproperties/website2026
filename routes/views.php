@@ -6,6 +6,8 @@ use App\Services\ZonePageService;
 use App\Models\ZonePage;
 use App\Models\MLSOffice;
 use App\Models\MLSAgent;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\PropertyContactRequestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -234,7 +236,7 @@ Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])-
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
-    })->name('dashboard');
+    })->name('dashboard')->middleware('admin:dashboard.view');
 
     Route::prefix('admin')->group(function () {
         Route::get('/funnel', function () {
@@ -257,6 +259,16 @@ Route::middleware('auth')->group(function () {
             return view('properties.manage');
         })->name('properties')->middleware('admin:properties.view');
 
+        Route::get('/property-contact-requests', [PropertyContactRequestController::class, 'index'])
+            ->name('property-contact-requests')
+            ->middleware('admin:leads.view');
+        Route::patch('/property-contact-requests/{contactRequest}', [PropertyContactRequestController::class, 'update'])
+            ->name('property-contact-requests.update')
+            ->middleware('admin:leads.view');
+        Route::post('/property-contact-requests/{contactRequest}/convert-client', [PropertyContactRequestController::class, 'convertToClient'])
+            ->name('property-contact-requests.convert-client')
+            ->middleware('admin:leads.view');
+
         Route::get('/zones', function () {
             return view('zones.manage');
         })->name('zones')->middleware('admin:settings.manage');
@@ -268,6 +280,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/agencies', function () {
             return view('agencies.manage');
         })->name('agencies')->middleware('admin:catalogs.manage');
+
+        Route::get('/clients', [ClientController::class, 'index'])
+            ->name('clients')
+            ->middleware('admin:clients.view');
 
         Route::get('/color-themes', function () {
             return view('color-themes.manage');
@@ -297,9 +313,21 @@ Route::middleware('auth')->group(function () {
             return view('mls-offices.manage');
         })->name('mls-offices')->middleware('admin:catalogs.manage');
 
-        Route::get('/corporate-email', function () {
-            return view('emails.manage');
-        })->name('corporate-email')->middleware('admin:integrations.config.edit');
+        Route::get('/correos/configuracion', function () {
+            return view('emails.configuration');
+        })->name('corporate-email.configuration')->middleware('admin:super-admin');
+
+        Route::get('/correos/bandeja', function () {
+            return view('emails.inbox');
+        })->name('corporate-email.inbox')->middleware('admin:dashboard.view|integrations.config.edit|integrations.manage');
+
+        Route::get('/correos/salida', function () {
+            return view('emails.outbox');
+        })->name('corporate-email.outbox')->middleware('admin:dashboard.view|integrations.config.edit|integrations.manage');
+
+        Route::get('/correos/redactar', function () {
+            return view('emails.compose');
+        })->name('corporate-email.compose')->middleware('admin:dashboard.view|integrations.config.edit|integrations.manage');
 
         // CMS
         Route::get('/cms/pages', function () {

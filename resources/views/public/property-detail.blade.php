@@ -236,6 +236,71 @@
               </div>
             </section>
 
+            {{-- Contact Interest Form --}}
+            <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6 pd-panel pd-interest-form-panel">
+              <div class="flex items-start gap-3">
+                <div class="flex size-11 shrink-0 items-center justify-center rounded-2xl pd-interest-form-icon">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 4v-4z" />
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <h3 class="text-base font-bold text-slate-900 pd-interest-form-title">{{ $txt('i18n_contact_form_title', 'Me interesa esta propiedad', 'I am interested in this property') }}</h3>
+                  <p class="mt-1 text-sm text-slate-600 pd-interest-form-subtitle">{{ $txt('i18n_contact_form_subtitle', 'Dejanos tus datos y un asesor podra contactarte.', 'Leave your details and an advisor can contact you.') }}</p>
+                </div>
+              </div>
+
+              <form id="propertyInterestForm" class="mt-5 space-y-4" action="#" method="post" novalidate>
+                <input id="interestPropertyId" type="hidden" name="property_id" value="{{ (int) ($propertyId ?? 0) }}">
+                <input id="interestPropertyName" type="hidden" name="property_name" value="">
+
+                <div>
+                  <label for="interestFullName" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 pd-interest-label">{{ $txt('i18n_contact_full_name', 'Nombre completo', 'Full name') }}</label>
+                  <div class="mt-2 relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pd-interest-input-icon">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A8.966 8.966 0 0112 15c2.21 0 4.232.8 5.793 2.129M15 9a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </span>
+                    <input id="interestFullName" name="full_name" type="text" autocomplete="name" required class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-transparent focus:ring-2 pd-interest-input" placeholder="{{ $txt('i18n_contact_full_name_placeholder', 'Tu nombre', 'Your name') }}">
+                  </div>
+                </div>
+
+                <div>
+                  <label for="interestEmail" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 pd-interest-label">{{ $txt('i18n_contact_email', 'Email', 'Email') }}</label>
+                  <div class="mt-2 relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pd-interest-input-icon">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V6a2 2 0 00-2-2H3a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </span>
+                    <input id="interestEmail" name="email" type="email" autocomplete="email" inputmode="email" required class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-transparent focus:ring-2 pd-interest-input" placeholder="{{ $txt('i18n_contact_email_placeholder', 'correo@ejemplo.com', 'email@example.com') }}">
+                  </div>
+                </div>
+
+                <div>
+                  <label for="interestPhone" class="block text-xs font-semibold uppercase tracking-wide text-slate-600 pd-interest-label">{{ $txt('i18n_contact_phone', 'Telefono', 'Phone') }}</label>
+                  <div class="mt-2 relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pd-interest-input-icon">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                    </span>
+                    <input id="interestPhone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-transparent focus:ring-2 pd-interest-input" placeholder="{{ $txt('i18n_contact_phone_placeholder', 'Tu telefono', 'Your phone') }}">
+                  </div>
+                </div>
+
+                <p id="propertyInterestFeedback" class="hidden rounded-2xl border px-4 py-3 text-sm pd-interest-feedback"></p>
+
+                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70 pd-interest-submit">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7-7l7 7-7 7" />
+                  </svg>
+                  {{ $txt('i18n_contact_send', 'Enviar solicitud', 'Send request') }}
+                </button>
+              </form>
+            </section>
+
             {{-- Agency / Agent --}}
             <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6 pd-panel pd-agent-panel">
               <h3 class="text-sm font-semibold text-slate-900 pd-subsection-title">{{ $txt('i18n_label_advisorAgency', 'Agencia de contacto', 'Contact Agency') }}</h3>
@@ -427,6 +492,71 @@
 
     .property-detail-page .pd-favorite-btn:hover {
       background-color: var(--fe-property_detail-favorite_button_hover_bg, #f8fafc);
+    }
+
+    .property-detail-page .pd-interest-form-panel {
+      background-color: var(--fe-property_detail-interest_form_bg, var(--fe-property_detail-panel_bg, #ffffff));
+      border-color: var(--fe-property_detail-interest_form_border, var(--fe-property_detail-panel_border, #e2e8f0));
+    }
+
+    .property-detail-page .pd-interest-form-icon {
+      background: linear-gradient(
+        to right,
+        var(--fe-property_detail-contact_button_from, var(--fe-primary-from, #D1A054)),
+        var(--fe-property_detail-contact_button_to, var(--fe-primary-to, #768D59))
+      );
+      color: var(--fe-property_detail-contact_button_text, #ffffff);
+    }
+
+    .property-detail-page .pd-interest-form-title {
+      color: var(--fe-property_detail-interest_form_title, var(--fe-property_detail-subsection_title, #0f172a));
+    }
+
+    .property-detail-page .pd-interest-form-subtitle {
+      color: var(--fe-property_detail-interest_form_subtitle, var(--fe-property_detail-muted_text, #475569));
+    }
+
+    .property-detail-page .pd-interest-label {
+      color: var(--fe-property_detail-interest_form_label, #475569);
+    }
+
+    .property-detail-page .pd-interest-input {
+      background-color: var(--fe-property_detail-interest_form_input_bg, #ffffff);
+      border-color: var(--fe-property_detail-interest_form_input_border, #e2e8f0);
+      color: var(--fe-property_detail-interest_form_input_text, #0f172a);
+    }
+
+    .property-detail-page .pd-interest-input:focus {
+      --tw-ring-color: var(--fe-property_detail-interest_form_focus_ring, var(--fe-primary-from, #D1A054));
+    }
+
+    .property-detail-page .pd-interest-input-icon {
+      color: var(--fe-property_detail-interest_form_input_icon, #94a3b8);
+    }
+
+    .property-detail-page .pd-interest-submit {
+      background: linear-gradient(
+        to right,
+        var(--fe-property_detail-contact_button_from, var(--fe-primary-from, #D1A054)),
+        var(--fe-property_detail-contact_button_to, var(--fe-primary-to, #768D59))
+      );
+      color: var(--fe-property_detail-contact_button_text, #ffffff);
+    }
+
+    .property-detail-page .pd-interest-submit:hover {
+      filter: brightness(.98);
+    }
+
+    .property-detail-page .pd-interest-feedback[data-state="success"] {
+      background-color: var(--fe-property_detail-interest_form_success_bg, #ecfdf5);
+      border-color: var(--fe-property_detail-interest_form_success_border, #bbf7d0);
+      color: var(--fe-property_detail-interest_form_success_text, #166534);
+    }
+
+    .property-detail-page .pd-interest-feedback[data-state="error"] {
+      background-color: var(--fe-property_detail-interest_form_error_bg, #fff1f2);
+      border-color: var(--fe-property_detail-interest_form_error_border, #fecdd3);
+      color: var(--fe-property_detail-interest_form_error_text, #9f1239);
     }
 
     .property-detail-page .pd-source-notice {
@@ -788,6 +918,8 @@
       document.title = `${title} | ${siteName}`;
       document.getElementById('propertyTitle').textContent = title;
       document.getElementById('breadcrumbTitle').textContent = title;
+      document.getElementById('interestPropertyName').value = title;
+      document.getElementById('interestPropertyId').value = String(property.id || window.__PROPERTY_ID__ || '');
       document.getElementById('propertyIdChip').textContent = `#${property.id}`;
       document.getElementById('propertyIdChip').classList.remove('hidden');
 
@@ -1092,6 +1224,64 @@
       initSwipers();
     }
 
+    function setInterestFeedback(type, message) {
+      const feedback = document.getElementById('propertyInterestFeedback');
+      if (!feedback) return;
+
+      feedback.textContent = message;
+      feedback.dataset.state = type;
+      feedback.classList.remove('hidden');
+    }
+
+    async function submitPropertyInterestForm(event) {
+      event.preventDefault();
+
+      const form = event.currentTarget;
+      const submitButton = form.querySelector('.pd-interest-submit');
+      const payload = {
+        property_id: form.property_id?.value || '',
+        property_name: form.property_name?.value || '',
+        full_name: form.full_name?.value?.trim() || '',
+        email: form.email?.value?.trim() || '',
+        phone: form.phone?.value?.trim() || '',
+      };
+
+      if (!payload.property_id || !payload.property_name || !payload.full_name || !payload.email || !payload.phone) {
+        setInterestFeedback('error', tPublic('contact.requiredFields', isEnLocale ? 'Please complete all required fields.' : 'Por favor completa todos los campos requeridos.'));
+        return;
+      }
+
+      try {
+        if (submitButton) submitButton.disabled = true;
+
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const res = await fetch('/api/public/property-contact-requests', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data?.success) {
+          setInterestFeedback('error', data?.message || tPublic('contact.submitError', isEnLocale ? 'There was an error sending your message. Please try again.' : 'Hubo un error al enviar el mensaje. Por favor intenta de nuevo.'));
+          return;
+        }
+
+        form.full_name.value = '';
+        form.email.value = '';
+        form.phone.value = '';
+        setInterestFeedback('success', tPublic('contact.submitSuccess', isEnLocale ? 'Message sent successfully. We will contact you soon.' : 'Mensaje enviado con exito. Nos pondremos en contacto contigo pronto.'));
+      } catch (_error) {
+        setInterestFeedback('error', tPublic('contact.connectionError', isEnLocale ? 'Connection error. Please check your internet and try again.' : 'Error de conexion. Por favor verifica tu internet e intenta de nuevo.'));
+      } finally {
+        if (submitButton) submitButton.disabled = false;
+      }
+    }
+
     async function loadProperty() {
       const id = window.__PROPERTY_ID__;
       if (!id) {
@@ -1120,6 +1310,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('btnRetry')?.addEventListener('click', loadProperty);
+      document.getElementById('propertyInterestForm')?.addEventListener('submit', submitPropertyInterestForm);
 
       document.getElementById('btnShare')?.addEventListener('click', async () => {
         try {

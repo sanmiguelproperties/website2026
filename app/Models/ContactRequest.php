@@ -11,10 +11,14 @@ class ContactRequest extends Model
 {
     use SoftDeletes;
 
+    public const SOURCE_PROPERTY_FORM = 'property_form';
+
     protected $fillable = [
         'agency_id',
         'property_id',
         'owner_id',
+        'mls_agent_id',
+        'converted_client_id',
         'property_public_id',
         'remote_id',
         'source',
@@ -26,6 +30,7 @@ class ContactRequest extends Model
         'status',
         'assignment_status',
         'assigned_at',
+        'converted_at',
         'sent_to_easybroker_at',
         'raw_payload',
     ];
@@ -33,6 +38,7 @@ class ContactRequest extends Model
     protected $casts = [
         'happened_at' => 'datetime',
         'assigned_at' => 'datetime',
+        'converted_at' => 'datetime',
         'sent_to_easybroker_at' => 'datetime',
         'raw_payload' => 'array',
     ];
@@ -52,9 +58,30 @@ class ContactRequest extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
+    public function assignedMlsAgent(): BelongsTo
+    {
+        return $this->belongsTo(MLSAgent::class, 'mls_agent_id');
+    }
+
+    public function convertedClient(): BelongsTo
+    {
+        return $this->belongsTo(Client::class, 'converted_client_id');
+    }
+
     public function notes(): HasMany
     {
         return $this->hasMany(ContactNote::class);
+    }
+
+    public function scopeFromPropertyForms($query)
+    {
+        return $query->where('source', self::SOURCE_PROPERTY_FORM);
+    }
+
+    public function getPropertyFormNameAttribute(): ?string
+    {
+        return $this->property?->title
+            ?: data_get($this->raw_payload, 'property_name');
     }
 }
 

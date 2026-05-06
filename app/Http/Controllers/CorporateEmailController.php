@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CorporateEmailAccount;
 use App\Models\CorporateEmailMessage;
 use App\Services\CorporateEmailService;
+use App\Support\Rbac;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -60,6 +61,252 @@ class CorporateEmailController extends Controller
             'CORP_EMAIL_ACCOUNTS_LIST',
             $query->paginate($perPage)
         );
+    }
+
+    /**
+     * GET /api/corporate-email/my/accounts
+     */
+    public function myAccounts(Request $request): JsonResponse
+    {
+        $userId = $this->currentApiUserId($request);
+
+        $query = CorporateEmailAccount::query()->with('user:id,name,email');
+
+        if (!$this->currentApiUserIsSuperAdmin($request)) {
+            $query->where('user_id', $userId);
+        }
+
+        $accounts = $query->orderBy('name')->get();
+
+        return $this->apiSuccess(
+            'Cuentas de correo del usuario autenticado',
+            'CORP_EMAIL_MY_ACCOUNTS',
+            $accounts
+        );
+    }
+
+    /**
+     * POST /api/corporate-email/my/accounts/{account}/sync
+     */
+    public function syncMyAccount(Request $request, CorporateEmailAccount $account): JsonResponse
+    {
+        $userId = $this->currentApiUserId($request);
+
+        if (!$this->currentApiUserIsSuperAdmin($request) && (int) $account->user_id !== $userId) {
+            return $this->apiNotFound('Cuenta de correo no encontrada', 'CORP_EMAIL_MY_ACCOUNT_NOT_FOUND');
+        }
+
+        return $this->syncInbox($request, $account);
+    }
+
+    /**
+     * GET /api/corporate-email/my/inbox
+     */
+    public function myInbox(Request $request): JsonResponse
+    {
+        $userId = $this->currentApiUserId($request);
+
+        $query = CorporateEmailMessage::query()
+            ->with(['account:id,name,email_address,from_name,user_id'])
+            ->where('direction', 'incoming');
+
+        if (!$this->currentApiUserIsSuperAdmin($request)) {
+            $query->whereHas('account', function ($accountQuery) use ($userId) {
+                $accountQuery->where('user_id', $userId);
+            });
+        }
+
+        if ($request->filled('corporate_email_account_id')) {
+            $accountId = (int) $request->input('corporate_email_account_id');
+            $query->where('corporate_email_account_id', $accountId);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', (string) $request->input('status'));
+        }
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('subject', 'like', "%{$search}%")
+                    ->orWhere('from_email', 'like', "%{$search}%")
+                    ->orWhere('from_name', 'like', "%{$search}%");
+            });
+        }
+
+        $query->orderByDesc('received_at')->orderByDesc('created_at');
+
+        $perPage = (int) $request->input('per_page', 20);
+        $perPage = max(1, min(100, $perPage));
+
+        return $this->apiSuccess(
+            'Bandeja de entrada del usuario autenticado',
+            'CORP_EMAIL_MY_INBOX',
+            $query->paginate($perPage)
+        );
+    }
+
+    /**
+     * GET /api/corporate-email/my/inbox/{message}
+     */
+    public function showMyInboxMessage(Request $request, CorporateEmailMessage $message): JsonResponse
+    {
+        if (!$this->messageBelongsToCurrentUserInbox($request, $message)) {
+            return $this->apiNotFound('Mensaje no encontrado', 'CORP_EMAIL_MY_MESSAGE_NOT_FOUND');
+        }
+
+        if ($message->status === 'unread') {
+            $message->markAsRead();
+        }
+
+        return $this->apiSuccess(
+            'Mensaje obtenido',
+            'CORP_EMAIL_MY_MESSAGE_SHOWN',
+            $message->fresh()->load(['account:id,name,email_address,from_name,user_id'])
+        );
+    }
+
+    /**
+     * POST /api/corporate-email/my/inbox/{message}/mark-read
+     */
+    public function markMyInboxMessageAsRead(Request $request, CorporateEmailMessage $message): JsonResponse
+    {
+        if (!$this->messageBelongsToCurrentUserInbox($request, $message)) {
+            return $this->apiNotFound('Mensaje no encontrado', 'CORP_EMAIL_MY_MESSAGE_NOT_FOUND');
+        }
+
+        $message->markAsRead();
+
+        return $this->apiSuccess(
+            'Mensaje marcado como leido',
+            'CORP_EMAIL_MY_MESSAGE_MARKED_READ',
+            $message->fresh()->load(['account:id,name,email_address,from_name,user_id'])
+        );
+    }
+
+    /**
+     * GET /api/corporate-email/my/outbox
+     */
+    public function myOutbox(Request $request): JsonResponse
+    {
+        $userId = $this->currentApiUserId($request);
+
+        $query = CorporateEmailMessage::query()
+            ->with(['account:id,name,email_address,from_name,user_id'])
+            ->where('direction', 'outgoing');
+
+        if (!$this->currentApiUserIsSuperAdmin($request)) {
+            $query->whereHas('account', function ($accountQuery) use ($userId) {
+                $accountQuery->where('user_id', $userId);
+            });
+        }
+
+        if ($request->filled('corporate_email_account_id')) {
+            $query->where('corporate_email_account_id', (int) $request->input('corporate_email_account_id'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', (string) $request->input('status'));
+        }
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('subject', 'like', "%{$search}%")
+                    ->orWhere('from_email', 'like', "%{$search}%");
+            });
+        }
+
+        $query->orderByDesc('sent_at')->orderByDesc('created_at');
+
+        $perPage = (int) $request->input('per_page', 20);
+        $perPage = max(1, min(100, $perPage));
+
+        return $this->apiSuccess(
+            'Bandeja de salida del usuario autenticado',
+            'CORP_EMAIL_MY_OUTBOX',
+            $query->paginate($perPage)
+        );
+    }
+
+    /**
+     * GET /api/corporate-email/my/outbox/{message}
+     */
+    public function showMyOutboxMessage(Request $request, CorporateEmailMessage $message): JsonResponse
+    {
+        if (!$this->messageBelongsToCurrentUserOutbox($request, $message)) {
+            return $this->apiNotFound('Mensaje no encontrado', 'CORP_EMAIL_MY_MESSAGE_NOT_FOUND');
+        }
+
+        return $this->apiSuccess(
+            'Mensaje obtenido',
+            'CORP_EMAIL_MY_OUTBOX_MESSAGE_SHOWN',
+            $message->fresh()->load(['account:id,name,email_address,from_name,user_id'])
+        );
+    }
+
+    /**
+     * POST /api/corporate-email/my/send
+     */
+    public function sendMyMessage(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'corporate_email_account_id' => 'required|exists:corporate_email_accounts,id',
+            'to' => 'required',
+            'cc' => 'sometimes|nullable',
+            'bcc' => 'sometimes|nullable',
+            'subject' => 'sometimes|nullable|string|max:255',
+            'body_text' => 'sometimes|nullable|string',
+            'body_html' => 'sometimes|nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->apiValidationError($validator->errors()->toArray());
+        }
+
+        $data = $validator->validated();
+
+        if (($data['body_text'] ?? null) === null && ($data['body_html'] ?? null) === null) {
+            return $this->apiValidationError([
+                'body' => ['Debes enviar body_text o body_html.'],
+            ]);
+        }
+
+        $userId = $this->currentApiUserId($request);
+        $accountQuery = CorporateEmailAccount::query()
+            ->whereKey((int) $data['corporate_email_account_id']);
+
+        if (!$this->currentApiUserIsSuperAdmin($request)) {
+            $accountQuery->where('user_id', $userId);
+        }
+
+        $account = $accountQuery->first();
+
+        if (!$account) {
+            return $this->apiNotFound('Cuenta de correo no encontrada para tu usuario', 'CORP_EMAIL_MY_ACCOUNT_NOT_FOUND');
+        }
+
+        try {
+            $message = $this->emailService->sendMessage($account, $data);
+
+            return $this->apiCreated(
+                'Correo enviado correctamente',
+                'CORP_EMAIL_MY_SENT',
+                $message->load(['account:id,name,email_address,from_name,user_id'])
+            );
+        } catch (InvalidArgumentException $e) {
+            return $this->apiValidationError([
+                'send' => [$e->getMessage()],
+            ]);
+        } catch (\Throwable $e) {
+            return $this->apiError(
+                'No fue posible enviar el correo: ' . $e->getMessage(),
+                'CORP_EMAIL_MY_SEND_FAILED',
+                null,
+                null,
+                500
+            );
+        }
     }
 
     /**
@@ -361,5 +608,57 @@ class CorporateEmailController extends Controller
             'is_active' => $required . '|boolean',
             'notes' => $required . '|nullable|string|max:2000',
         ];
+    }
+
+    protected function messageBelongsToCurrentUserInbox(Request $request, CorporateEmailMessage $message): bool
+    {
+        if ($message->direction !== 'incoming') {
+            return false;
+        }
+
+        $userId = $this->currentApiUserId($request);
+
+        $query = CorporateEmailMessage::query()
+            ->whereKey($message->getKey())
+            ->where('direction', 'incoming');
+
+        if (!$this->currentApiUserIsSuperAdmin($request)) {
+            $query->whereHas('account', function ($accountQuery) use ($userId) {
+                $accountQuery->where('user_id', $userId);
+            });
+        }
+
+        return $query->exists();
+    }
+
+    protected function messageBelongsToCurrentUserOutbox(Request $request, CorporateEmailMessage $message): bool
+    {
+        if ($message->direction !== 'outgoing') {
+            return false;
+        }
+
+        $userId = $this->currentApiUserId($request);
+
+        $query = CorporateEmailMessage::query()
+            ->whereKey($message->getKey())
+            ->where('direction', 'outgoing');
+
+        if (!$this->currentApiUserIsSuperAdmin($request)) {
+            $query->whereHas('account', function ($accountQuery) use ($userId) {
+                $accountQuery->where('user_id', $userId);
+            });
+        }
+
+        return $query->exists();
+    }
+
+    protected function currentApiUserId(Request $request): int
+    {
+        return (int) $request->user('api')?->getAuthIdentifier();
+    }
+
+    protected function currentApiUserIsSuperAdmin(Request $request): bool
+    {
+        return Rbac::isSuperAdmin($request->user('api'));
     }
 }

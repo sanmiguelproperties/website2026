@@ -1,0 +1,360 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\ContactRequest;
+use App\Models\Client;
+use App\Models\Property;
+use App\Models\User;
+use App\Support\Rbac;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\View\View;
+
+class PropertyContactRequestController extends Controller
+{
+    public function index(Request $request): View
+    {
+        $baseQuery = ContactRequest::query()
+            ->fromPropertyForms()
+            ->with(['property', 'agency', 'owner', 'convertedClient'])
+            ->latest();
+
+        $this->scopeVisibleLeads($baseQuery, $request->user());
+
+        $statsQuery = clone $baseQuery;
+        $query = clone $baseQuery;
+
+        $filters = [
+            'search' => trim((string) $request->query('search', '')),
+            'status' => trim((string) $request->query('status', '')),
+            'assignment_status' => trim((string) $request->query('assignment_status', '')),
+            'date_from' => trim((string) $request->query('date_from', '')),
+            'date_to' => trim((string) $request->query('date_to', '')),
+        ];
+
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('id', $search)
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('property_public_id', 'like', "%{$search}%")
+                    ->orWhere('raw_payload', 'like', "%{$search}%")
+                    ->orWhereHas('property', function ($propertyQuery) use ($search) {
+                        $propertyQuery->where('title', 'like', "%{$search}%")
+                            ->orWhere('easybroker_public_id', 'like', "%{$search}%")
+                            ->orWhere('mls_public_id', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($filters['status'] !== '') {
+            $query->where('status', $filters['status']);
+        }
+
+        if ($filters['assignment_status'] !== '') {
+            $query->where('assignment_status', $filters['assignment_status']);
+        }
+
+        if ($filters['date_from'] !== '') {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+
+        if ($filters['date_to'] !== '') {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        $perPage = (int) $request->query('per_page', 15);
+        $perPage = max(5, min(100, $perPage));
+
+        $leads = $query
+            ->orderByDesc('created_at')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $stats = [
+            'total' => (clone $statsQuery)->count(),
+            'today' => (clone $statsQuery)->whereDate('created_at', now()->toDateString())->count(),
+            'assigned' => (clone $statsQuery)->where('assignment_status', 'assigned')->count(),
+            'pending_assignment' => (clone $statsQuery)->where('assignment_status', 'pending_assignment')->count(),
+        ];
+
+        $assignableUsers = User::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->orderBy('email')
+            ->get(['id', 'name', 'email']);
+
+        return view('contact-requests.property-index', [
+            'leads' => $leads,
+            'filters' => $filters,
+            'stats' => $stats,
+            'assignableUsers' => $assignableUsers,
+            'canManageLeads' => Rbac::canAny($request->user(), ['leads.edit', 'leads.edit.own']),
+            'canConvertLeads' => Rbac::canAny($request->user(), 'clients.create'),
+            'statusOptions' => [
+                'new' => 'Nuevo',
+                'pending_assignment' => 'Pendiente',
+                'contacted' => 'Contactado',
+                'qualified' => 'Calificado',
+                'converted' => 'Convertido',
+                'closed' => 'Cerrado',
+            ],
+            'assignmentOptions' => [
+                'pending_assignment' => 'Pendiente de asignacion',
+                'assigned' => 'Asignado',
+            ],
+        ]);
+    }
+
+    public function update(Request $request, ContactRequest $contactRequest): RedirectResponse
+    {
+        $this->abortUnlessPropertyLead($contactRequest);
+
+        if (!$this->canEditLead($request->user(), $contactRequest)) {
+            abort(403, 'No tienes permisos para editar esta solicitud.');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['required', 'string', 'max:50'],
+            'status' => ['required', 'string', 'max:50', 'in:new,pending_assignment,contacted,qualified,converted,closed'],
+            'owner_id' => [
+                'nullable',
+                'integer',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($value === null || $value === '' || !is_numeric($value)) {
+                        return;
+                    }
+
+                    $userExists = User::query()
+                        ->where('is_active', true)
+                        ->whereKey((int) $value)
+                        ->exists();
+
+                    if (!$userExists) {
+                        $fail('El usuario asignado no esta activo o no existe.');
+                    }
+                },
+            ],
+            'message' => ['nullable', 'string'],
+        ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('editing_lead_id', $contactRequest->id);
+        }
+
+        $data = $validator->validated();
+        $ownerId = $data['owner_id'] ?? null;
+
+        $contactRequest->update([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'status' => $data['status'],
+            'message' => $data['message'] ?: $contactRequest->message,
+            'owner_id' => $ownerId,
+            'assignment_status' => $ownerId ? 'assigned' : 'pending_assignment',
+            'assigned_at' => $ownerId
+                ? ($contactRequest->assigned_at ?: now())
+                : null,
+        ]);
+
+        if ($contactRequest->convertedClient) {
+            $contactRequest->convertedClient->update([
+                'owner_id' => $ownerId,
+            ]);
+        }
+
+        return back()->with('status', 'Solicitud actualizada correctamente.');
+    }
+
+    public function convertToClient(Request $request, ContactRequest $contactRequest): RedirectResponse
+    {
+        $this->abortUnlessPropertyLead($contactRequest);
+
+        if (!Rbac::canAny($request->user(), 'clients.create') || !$this->canViewLead($request->user(), $contactRequest)) {
+            abort(403, 'No tienes permisos para convertir esta solicitud en cliente.');
+        }
+
+        $missing = $this->missingClientFields($contactRequest);
+        if ($missing !== []) {
+            return back()->with('error', 'No se puede convertir en cliente. Faltan datos: ' . implode(', ', $missing) . '.');
+        }
+
+        if ($contactRequest->converted_client_id) {
+            return back()->with('status', 'Esta solicitud ya fue convertida en cliente.');
+        }
+
+        DB::transaction(function () use ($contactRequest) {
+            $client = Client::create([
+                'contact_request_id' => $contactRequest->id,
+                'property_id' => $contactRequest->property_id,
+                'owner_id' => $contactRequest->owner_id,
+                'name' => (string) $contactRequest->name,
+                'email' => (string) $contactRequest->email,
+                'phone' => (string) $contactRequest->phone,
+                'source' => Client::SOURCE_PROPERTY_FORM,
+                'status' => 'active',
+                'notes' => 'Cliente convertido desde una solicitud de propiedad.',
+                'raw_payload' => [
+                    'contact_request_id' => $contactRequest->id,
+                    'property_public_id' => $contactRequest->property_public_id,
+                    'property_name' => $contactRequest->property_form_name,
+                    'lead_raw_payload' => $contactRequest->raw_payload,
+                ],
+            ]);
+
+            $contactRequest->update([
+                'converted_client_id' => $client->id,
+                'converted_at' => now(),
+                'status' => 'converted',
+            ]);
+        });
+
+        return back()->with('status', 'Solicitud convertida en cliente correctamente.');
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'property_id' => ['required', 'integer', 'exists:properties,id'],
+            'property_name' => ['required', 'string', 'max:255'],
+            'full_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['required', 'string', 'max:50'],
+        ]);
+
+        if ($validator->fails()) {
+            return $this->apiValidationError($validator->errors()->toArray());
+        }
+
+        $data = $validator->validated();
+        $property = Property::query()
+            ->with(['agency'])
+            ->findOrFail((int) $data['property_id']);
+
+        $ownerId = $property->agent_user_id ?: null;
+        $assignmentStatus = $ownerId ? 'assigned' : 'pending_assignment';
+        $propertyPublicId = $property->easybroker_public_id
+            ?: $property->mls_public_id
+            ?: (string) $property->id;
+
+        $lead = ContactRequest::create([
+            'agency_id' => $property->agency_id,
+            'property_id' => $property->id,
+            'owner_id' => $ownerId,
+            'property_public_id' => $propertyPublicId,
+            'remote_id' => 'property-form-' . (string) Str::uuid(),
+            'source' => ContactRequest::SOURCE_PROPERTY_FORM,
+            'name' => $data['full_name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'message' => 'Solicitud generada desde el formulario publico de propiedad.',
+            'happened_at' => now(),
+            'status' => 'new',
+            'assignment_status' => $assignmentStatus,
+            'assigned_at' => $ownerId ? now() : null,
+            'raw_payload' => [
+                'property_id' => $property->id,
+                'property_name' => $data['property_name'],
+                'submitted_from' => $request->headers->get('referer'),
+                'user_agent' => $request->userAgent(),
+            ],
+        ]);
+
+        $lead->load(['property', 'agency', 'owner']);
+
+        return $this->apiCreated('Solicitud registrada', 'PROPERTY_CONTACT_REQUEST_CREATED', [
+            'id' => $lead->id,
+        ]);
+    }
+
+    private function abortUnlessPropertyLead(ContactRequest $contactRequest): void
+    {
+        abort_unless($contactRequest->source === ContactRequest::SOURCE_PROPERTY_FORM, 404);
+    }
+
+    private function canViewLead($user, ContactRequest $lead): bool
+    {
+        if (Rbac::canAny($user, 'leads.view.all')) {
+            return true;
+        }
+
+        return Rbac::canAny($user, 'leads.view.own')
+            && $this->isLeadOwnedBy($lead, $user);
+    }
+
+    private function canEditLead($user, ContactRequest $lead): bool
+    {
+        if (Rbac::canAny($user, 'leads.edit')) {
+            return true;
+        }
+
+        return Rbac::canAny($user, 'leads.edit.own')
+            && $this->isLeadOwnedBy($lead, $user);
+    }
+
+    private function isLeadOwnedBy(ContactRequest $lead, $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        return $lead->owner_id !== null
+            && (int) $lead->owner_id === (int) $user->getAuthIdentifier();
+    }
+
+    private function missingClientFields(ContactRequest $lead): array
+    {
+        $fields = [];
+
+        if (blank($lead->name)) {
+            $fields[] = 'nombre';
+        }
+
+        if (blank($lead->email)) {
+            $fields[] = 'email';
+        }
+
+        if (blank($lead->phone)) {
+            $fields[] = 'telefono';
+        }
+
+        if (blank($lead->property_id)) {
+            $fields[] = 'propiedad';
+        }
+
+        if (blank($lead->owner_id)) {
+            $fields[] = 'usuario asignado';
+        }
+
+        return $fields;
+    }
+
+    private function scopeVisibleLeads($query, $user): void
+    {
+        if (Rbac::canAny($user, 'leads.view.all')) {
+            return;
+        }
+
+        if (Rbac::canAny($user, 'leads.view.own')) {
+            $query->where(function ($leadQuery) use ($user) {
+                $leadQuery->where('owner_id', $user->getAuthIdentifier());
+            });
+            return;
+        }
+
+        $query->whereRaw('1 = 0');
+    }
+}

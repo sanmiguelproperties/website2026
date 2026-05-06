@@ -30,6 +30,14 @@ class AdminMiddleware
 
         $requiredPermissions = $permissions === [] ? ['dashboard.view'] : $permissions;
 
+        if (in_array('super-admin', $requiredPermissions, true)) {
+            if (!Rbac::isSuperAdmin(auth()->user())) {
+                abort(403, 'Acceso denegado. Esta seccion es solo para administradores.');
+            }
+
+            return $next($request);
+        }
+
         if (!Rbac::canAny(auth()->user(), $requiredPermissions)) {
             abort(403, 'Acceso denegado. No tienes permisos para esta seccion.');
         }

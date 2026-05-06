@@ -145,7 +145,11 @@
           <h3 id="property-drawer-title" class="text-lg font-semibold truncate">Nueva propiedad</h3>
           <p id="property-drawer-subtitle" class="text-xs text-[var(--c-muted)]">Completa la información por secciones</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <a id="btn-property-preview" href="#" target="_blank" rel="noopener noreferrer" class="hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] hover:bg-[var(--c-surface)] transition">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            Previsualizar
+          </a>
           <button id="btn-property-save" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 transition">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
             Guardar
@@ -991,6 +995,18 @@ document.addEventListener('DOMContentLoaded', () => {
     </span>`;
   }
 
+  function publicPropertyUrl(id) {
+    return `/propiedades/${encodeURIComponent(String(id))}`;
+  }
+
+  function setPreviewButton(property) {
+    const previewBtn = $('#btn-property-preview');
+    const canPreview = !!property?.id && !!property?.published;
+
+    previewBtn.classList.toggle('hidden', !canPreview);
+    previewBtn.href = canPreview ? publicPropertyUrl(property.id) : '#';
+  }
+
   function renderProperties(paginated) {
     const tbody = $('#properties-tbody');
     const empty = $('#properties-empty');
@@ -1378,6 +1394,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#property-drawer-subtitle').textContent = 'Completa la información por secciones';
 
     $('#btn-property-delete').classList.add('hidden');
+    setPreviewButton(null);
 
     // Source + Agency + Agent + Published
     $('#field-source').value = 'manual';
@@ -1523,6 +1540,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#property-drawer-subtitle').textContent = `${subtitleId} • ${p.title || '(Sin título)'}`;
 
     $('#btn-property-delete').classList.remove('hidden');
+    setPreviewButton(p);
 
     // Source + Agency + Agent + Published
     $('#field-source').value = p.source || 'manual';

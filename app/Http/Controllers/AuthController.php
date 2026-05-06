@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\AdminMenu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -51,7 +52,9 @@ class AuthController extends Controller
 
             $request->session()->put('passport_token', $token);
 
-            return redirect()->intended('/admin/funnel');
+            $defaultRoute = AdminMenu::firstAccessibleRoute($user) ?? 'dashboard';
+
+            return redirect()->intended(route($defaultRoute));
         }
 
         return back()

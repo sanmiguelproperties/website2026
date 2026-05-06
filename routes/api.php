@@ -18,6 +18,7 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\LocationCatalogController;
 use App\Http\Controllers\ZonePageController;
 use App\Http\Controllers\ContactRequestController;
+use App\Http\Controllers\PropertyContactRequestController;
 use App\Http\Controllers\ContactNoteController;
 use App\Http\Controllers\FrontendColorController;
 use App\Http\Controllers\EasyBrokerSyncController;
@@ -74,6 +75,7 @@ Route::middleware(['auth.api', 'admin.api:documents.view'])->group(function () {
     Route::get('properties/filter-options', [PropertyController::class, 'filterOptions']);
     Route::get('properties', [PropertyController::class, 'indexPublic']);
     Route::get('properties/{property}', [PropertyController::class, 'showPublic']);
+    Route::post('property-contact-requests', [PropertyContactRequestController::class, 'store']);
 
     // Equipo de trabajo (pÃºblico)
     Route::get('team-members', [AgencyTeamMemberController::class, 'indexPublic']);
@@ -340,8 +342,21 @@ Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () 
 });
 
 
-// Corporate Email routes (protegidas con autenticacion Passport)
-Route::middleware(['auth.api', 'admin.api:integrations.manage'])->prefix('corporate-email')->group(function () {
+// Corporate Email routes propias del usuario autenticado
+Route::middleware(['auth.api', 'admin.api:dashboard.view|integrations.config.edit|integrations.manage'])->prefix('corporate-email')->group(function () {
+    // Bandeja propia del usuario autenticado
+    Route::get('my/accounts', [CorporateEmailController::class, 'myAccounts']);
+    Route::post('my/accounts/{account}/sync', [CorporateEmailController::class, 'syncMyAccount']);
+    Route::get('my/inbox', [CorporateEmailController::class, 'myInbox']);
+    Route::get('my/inbox/{message}', [CorporateEmailController::class, 'showMyInboxMessage']);
+    Route::post('my/inbox/{message}/mark-read', [CorporateEmailController::class, 'markMyInboxMessageAsRead']);
+    Route::get('my/outbox', [CorporateEmailController::class, 'myOutbox']);
+    Route::get('my/outbox/{message}', [CorporateEmailController::class, 'showMyOutboxMessage']);
+    Route::post('my/send', [CorporateEmailController::class, 'sendMyMessage']);
+});
+
+// Corporate Email routes administrativas (solo rol administrador / super-admin)
+Route::middleware(['auth.api', 'admin.api:super-admin'])->prefix('corporate-email')->group(function () {
     // Cuentas de correo
     Route::get('accounts', [CorporateEmailController::class, 'accountsIndex']);
     Route::post('accounts', [CorporateEmailController::class, 'storeAccount']);
