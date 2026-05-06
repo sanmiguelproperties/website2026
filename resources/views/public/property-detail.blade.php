@@ -500,12 +500,10 @@
     }
 
     .property-detail-page .pd-interest-form-icon {
-      background: linear-gradient(
-        to right,
-        var(--fe-property_detail-contact_button_from, var(--fe-primary-from, #D1A054)),
-        var(--fe-property_detail-contact_button_to, var(--fe-primary-to, #768D59))
-      );
-      color: var(--fe-property_detail-contact_button_text, #ffffff);
+      background: none;
+      background-color: var(--fe-buttons-primary_bg, #D1A054);
+      border: 1px solid var(--fe-buttons-primary_border, var(--fe-buttons-primary_bg, #D1A054));
+      color: var(--fe-buttons-primary_text, #ffffff) !important;
     }
 
     .property-detail-page .pd-interest-form-title {
@@ -527,24 +525,23 @@
     }
 
     .property-detail-page .pd-interest-input:focus {
-      --tw-ring-color: var(--fe-property_detail-interest_form_focus_ring, var(--fe-primary-from, #D1A054));
+      --tw-ring-color: var(--fe-property_detail-interest_form_focus_ring, var(--fe-buttons-primary_bg, #D1A054));
     }
 
     .property-detail-page .pd-interest-input-icon {
-      color: var(--fe-property_detail-interest_form_input_icon, #94a3b8);
+      color: var(--fe-property_detail-interest_form_input_icon, var(--fe-buttons-primary_bg, #D1A054));
     }
 
     .property-detail-page .pd-interest-submit {
-      background: linear-gradient(
-        to right,
-        var(--fe-property_detail-contact_button_from, var(--fe-primary-from, #D1A054)),
-        var(--fe-property_detail-contact_button_to, var(--fe-primary-to, #768D59))
-      );
-      color: var(--fe-property_detail-contact_button_text, #ffffff);
+      background: none;
+      background-color: var(--fe-buttons-primary_bg, #D1A054);
+      border: 1px solid var(--fe-buttons-primary_border, var(--fe-buttons-primary_bg, #D1A054));
+      color: var(--fe-buttons-primary_text, #ffffff) !important;
     }
 
     .property-detail-page .pd-interest-submit:hover {
-      filter: brightness(.98);
+      background-color: var(--fe-buttons-primary_hover_bg, var(--fe-buttons-primary_bg, #D1A054));
+      filter: none;
     }
 
     .property-detail-page .pd-interest-feedback[data-state="success"] {
