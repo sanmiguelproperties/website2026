@@ -31,6 +31,7 @@ class ClientController extends Controller
             'search' => trim((string) $request->query('search', '')),
             'status' => trim((string) $request->query('status', '')),
             'source' => trim((string) $request->query('source', '')),
+            'contact_type' => trim((string) $request->query('contact_type', '')),
             'date_from' => trim((string) $request->query('date_from', '')),
             'date_to' => trim((string) $request->query('date_to', '')),
         ];
@@ -40,6 +41,7 @@ class ClientController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('contact_type', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhereHas('property', function ($propertyQuery) use ($search) {
                         $propertyQuery->where('title', 'like', "%{$search}%")
@@ -65,6 +67,10 @@ class ClientController extends Controller
             $query->where('source', $filters['source']);
         }
 
+        if ($filters['contact_type'] !== '') {
+            $query->where('contact_type', $filters['contact_type']);
+        }
+
         if ($filters['date_from'] !== '') {
             $query->whereDate('created_at', '>=', $filters['date_from']);
         }
@@ -86,6 +92,9 @@ class ClientController extends Controller
             'total' => (clone $statsQuery)->count(),
             'active' => (clone $statsQuery)->where('status', Client::STATUS_ACTIVE)->count(),
             'from_property_forms' => (clone $statsQuery)->where('source', Client::SOURCE_PROPERTY_FORM)->count(),
+            'buyers' => (clone $statsQuery)->where('contact_type', Client::CONTACT_TYPE_BUYER)->count(),
+            'sellers' => (clone $statsQuery)->where('contact_type', Client::CONTACT_TYPE_SELLER)->count(),
+            'buyer_sellers' => (clone $statsQuery)->where('contact_type', Client::CONTACT_TYPE_BUYER_SELLER)->count(),
             'this_month' => (clone $statsQuery)->whereDate('created_at', '>=', now()->startOfMonth()->toDateString())->count(),
         ];
 
@@ -100,8 +109,11 @@ class ClientController extends Controller
             ],
             'sourceOptions' => [
                 Client::SOURCE_PROPERTY_FORM => 'Formulario de propiedad',
+                Client::SOURCE_SELLER_FORM => 'Vende con nosotros',
+                Client::SOURCE_CONTACT_FORM => 'Formulario de contacto',
                 'manual' => 'Manual',
             ],
+            'contactTypeOptions' => Client::contactTypeLabels(),
         ]);
     }
 
@@ -137,6 +149,7 @@ class ClientController extends Controller
             'canEditClient' => $this->canEditClient($request->user(), $client),
             'statusOptions' => $this->statusOptions(),
             'sourceOptions' => $this->sourceOptions(),
+            'contactTypeOptions' => Client::contactTypeLabels(),
             'visitStatusOptions' => $this->visitStatusOptions(),
         ]);
     }
@@ -151,6 +164,7 @@ class ClientController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
+            'contact_type' => ['required', 'string', 'in:' . implode(',', array_keys(Client::contactTypeLabels()))],
             'status' => ['required', 'string', 'in:' . implode(',', array_keys($this->statusOptions()))],
             'owner_id' => [
                 'nullable',
@@ -186,6 +200,7 @@ class ClientController extends Controller
             'name' => $data['name'],
             'email' => $data['email'] ?? null,
             'phone' => $data['phone'] ?? null,
+            'contact_type' => $data['contact_type'],
             'status' => $data['status'],
             'owner_id' => $data['owner_id'] ?? null,
             'notes' => $data['notes'] ?? null,
@@ -473,6 +488,8 @@ class ClientController extends Controller
     {
         return [
             Client::SOURCE_PROPERTY_FORM => 'Formulario de propiedad',
+            Client::SOURCE_SELLER_FORM => 'Vende con nosotros',
+            Client::SOURCE_CONTACT_FORM => 'Formulario de contacto',
             'manual' => 'Manual',
         ];
     }

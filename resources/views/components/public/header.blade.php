@@ -237,35 +237,28 @@
 
         return trim($locale === 'en' ? $parts[1] : $parts[0]);
     };
-    $buildAboutSubmenuItems = static function ($item) use ($resolveMenuLink, $currentLocale, $localizedMenuLabel, $labels): array {
+    $buildAboutSubmenuItems = static function ($item) use ($resolveMenuLink, $currentLocale, $localizedMenuLabel): array {
         $submenuItems = [];
         $children = $item->children ?? collect();
 
         foreach ($children as $child) {
             $childLink = $resolveMenuLink($child);
-            $submenuItems[] = [
+            $entry = [
                 'label' => $localizedMenuLabel($child->label($currentLocale), $currentLocale),
                 'href' => $childLink['href'],
                 'target' => $childLink['target'],
             ];
-        }
 
-        $hasTeamLink = collect($submenuItems)->contains(function (array $entry): bool {
             $label = Str::lower(trim((string) ($entry['label'] ?? '')));
             $href = Str::lower(trim((string) ($entry['href'] ?? '')));
-
-            return str_contains($label, 'equipo')
+            $isTeamLink = str_contains($label, 'equipo')
                 || str_contains($label, 'team')
                 || str_contains($href, '/equipo')
                 || str_ends_with($href, '/team');
-        });
 
-        if (!$hasTeamLink) {
-            $submenuItems[] = [
-                'label' => $labels['team'],
-                'href' => route('public.team'),
-                'target' => '_self',
-            ];
+            if (!$isTeamLink) {
+                $submenuItems[] = $entry;
+            }
         }
 
         return collect($submenuItems)
@@ -630,35 +623,7 @@
                     @if($showMlsAgents)
                         <a href="{{ route('public.mls-agents.index') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['agents'] }}</a>
                     @endif
-                    <div x-data="{ open: false }"
-                         class="relative"
-                         @mouseenter="open = true"
-                         @mouseleave="open = false"
-                         @click.outside="open = false"
-                         @keydown.escape.window="open = false">
-                        <a href="{{ route('about') }}"
-                           :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }"
-                           class="header-nav-link relative inline-flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">
-                            {{ $labels['about'] }}
-                            <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-
-                        <div x-show="open"
-                             x-cloak
-                             x-transition:enter="transition ease-out duration-150"
-                             x-transition:enter-start="opacity-0 -translate-y-2"
-                             x-transition:enter-end="opacity-100 translate-y-0"
-                             x-transition:leave="transition ease-in duration-100"
-                             x-transition:leave-start="opacity-100 translate-y-0"
-                             x-transition:leave-end="opacity-0 -translate-y-2"
-                             class="header-dropdown-panel absolute left-0 top-full z-40 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl">
-                            <a href="{{ route('public.team') }}" class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
-                                {{ $labels['team'] }}
-                            </a>
-                        </div>
-                    </div>
+                    <a href="{{ route('about') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['about'] }}</a>
                     <a href="{{ route('public.contact') }}" :class="{ 'text-slate-700': scrolled, 'text-white/90 hover:text-white': !scrolled }" class="header-nav-link relative px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-slate-900/5 nav-link-hover">{{ $labels['contact'] }}</a>
                 @endif
             </div>
@@ -913,31 +878,7 @@
                     @if($showMlsAgents)
                         <a href="{{ route('public.mls-agents.index') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['agents'] }}</a>
                     @endif
-                    <div x-data="{ open: false }" class="header-mobile-section rounded-xl border border-slate-100 bg-slate-50/60">
-                        <button type="button"
-                                @click="open = !open"
-                                class="flex w-full items-center justify-between px-4 py-3 text-left text-slate-700 font-medium rounded-xl transition-colors hover:bg-slate-100/70">
-                            <span>{{ $labels['about'] }}</span>
-                            <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        <div x-show="open"
-                             x-cloak
-                             x-transition:enter="transition ease-out duration-150"
-                             x-transition:enter-start="opacity-0 -translate-y-2"
-                             x-transition:enter-end="opacity-100 translate-y-0"
-                             x-transition:leave="transition ease-in duration-100"
-                             x-transition:leave-start="opacity-100 translate-y-0"
-                             x-transition:leave-end="opacity-0 -translate-y-2"
-                             class="space-y-1 px-3 pb-3">
-                            <a href="{{ route('public.team') }}"
-                               @click="mobileMenuOpen = false; open = false"
-                               class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
-                                {{ $labels['team'] }}
-                            </a>
-                        </div>
-                    </div>
+                    <a href="{{ route('about') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['about'] }}</a>
                     <a href="{{ route('public.contact') }}" @click="mobileMenuOpen = false" class="header-mobile-link flex items-center gap-3 px-4 py-3 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors">{{ $labels['contact'] }}</a>
                 @endif
 

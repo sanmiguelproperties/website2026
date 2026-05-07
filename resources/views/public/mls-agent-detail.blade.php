@@ -14,7 +14,6 @@
     'license' => $txt('i18n_label_license', 'Licencia', 'License'),
     'contact' => $txt('i18n_label_contact', 'Contacto', 'Contact'),
     'sendEmail' => $txt('i18n_label_sendEmail', 'Enviar correo', 'Send email'),
-    'call' => $txt('i18n_label_call', 'Llamar', 'Call'),
     'viewAgency' => $txt('i18n_label_viewAgency', 'Ver agencia', 'View agency'),
     'propertiesTitle' => $txt('properties_title', 'Propiedades del agente', 'Agent properties'),
     'propertiesSubtitle' => $txt('properties_subtitle', 'Busca y navega propiedades vinculadas a este agente.', 'Search and browse properties linked to this agent.'),
@@ -54,9 +53,9 @@
 
       <div class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
         <section class="lg:col-span-8 rounded-3xl border border-slate-200 bg-white shadow-soft overflow-hidden">
-          <div class="relative h-72 sm:h-80 bg-slate-100">
+          <div class="relative h-96 sm:h-[28rem] lg:h-[34rem] bg-slate-100">
             <template x-if="coverUrl">
-              <img :src="coverUrl" :alt="agent?.full_name || labels.agent" class="w-full h-full object-cover" loading="lazy" x-on:error="coverUrl = fallbackCover" />
+              <img :src="coverUrl" :alt="agent?.full_name || labels.agent" class="w-full h-full object-cover" style="object-position: center 20%;" loading="lazy" x-on:error="coverUrl = fallbackCover" />
             </template>
             <template x-if="!coverUrl">
               <div class="h-full w-full skeleton"></div>
@@ -125,11 +124,6 @@
                  :class="agent?.email ? '' : 'opacity-50 pointer-events-none'"
                  style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));"
                  x-text="labels.sendEmail"></a>
-
-              <a class="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold border border-slate-200 bg-white hover:bg-slate-50 transition"
-                 :href="(agent?.mobile || agent?.phone) ? ('tel:' + (agent.mobile || agent.phone)) : '#'"
-                 :class="(agent?.mobile || agent?.phone) ? '' : 'opacity-50 pointer-events-none'"
-                 x-text="labels.call"></a>
             </div>
           </section>
 

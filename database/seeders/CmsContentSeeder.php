@@ -22,7 +22,7 @@ class CmsContentSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command->info('ðŸ�'± Sembrando contenido CMS...');
+        $this->command->info('Sembrando contenido CMS...');
 
         $this->seedPages();
         $this->seedHomeFieldGroups();
@@ -32,7 +32,7 @@ class CmsContentSeeder extends Seeder
         $this->seedMenus();
         $this->seedSiteSettings();
 
-        $this->command->info('â�"�?� Contenido CMS sembrado correctamente.');
+        $this->command->info('Contenido CMS sembrado correctamente.');
     }
 
     // â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�
@@ -41,7 +41,7 @@ class CmsContentSeeder extends Seeder
 
     protected function seedPages(): void
     {
-        $this->command->info('  ðŸ�?o�?z Creando p�f¡ginas...');
+        $this->command->info('  Creando paginas...');
 
         CmsPage::updateOrCreate(['slug' => 'home'], [
             'title_es' => 'Inicio',
@@ -167,7 +167,7 @@ class CmsContentSeeder extends Seeder
 
     protected function seedHomeFieldGroups(): void
     {
-        $this->command->info('  ðŸ  Creando campos del Home...');
+        $this->command->info('  Creando campos del Home...');
         $page = CmsPage::where('slug', 'home')->first();
 
         // â�?��,�â�?��,� Hero Section â�?��,�â�?��,�
@@ -313,7 +313,7 @@ class CmsContentSeeder extends Seeder
 
     protected function seedAboutFieldGroups(): void
     {
-        $this->command->info('  ðŸ�?o�?z Creando campos de Nosotros...');
+        $this->command->info('  Creando campos de Nosotros...');
         $page = CmsPage::where('slug', 'about')->first();
 
         // â�?��,�â�?��,� Hero â�?��,�â�?��,�
@@ -414,7 +414,7 @@ class CmsContentSeeder extends Seeder
 
     protected function seedContactFieldGroups(): void
     {
-        $this->command->info('  ðŸ�?ož Creando campos de Contacto...');
+        $this->command->info('  Creando campos de Contacto...');
         $page = CmsPage::where('slug', 'contact')->first();
 
         $heroGroup = $this->createFieldGroup('contact-hero', 'Hero Contacto', 'page', 'contact', 1);
@@ -427,7 +427,7 @@ class CmsContentSeeder extends Seeder
 
     protected function seedPublicFrontendFieldGroups(): void
     {
-        $this->command->info('  ðŸ�' Creando campos de vistas p�fºblicas...');
+        $this->command->info('  Creando campos de vistas publicas...');
 
         $commonLabels = [
             ['field_key' => 'i18n_common_details', 'type' => 'text', 'label_es' => 'Texto: Ver detalles', 'value_es' => 'Ver detalles', 'value_en' => 'View details'],
@@ -493,7 +493,7 @@ class CmsContentSeeder extends Seeder
 
     protected function seedMenus(): void
     {
-        $this->command->info('  ðŸ§­ Creando men�fºs...');
+        $this->command->info('  Creando menus...');
 
         // â�?��,�â�?��,� Header Principal â�?��,�â�?��,�
         $header = CmsMenu::updateOrCreate(['slug' => 'main-header'], [
@@ -506,11 +506,28 @@ class CmsContentSeeder extends Seeder
             ['label_es' => 'Inicio', 'label_en' => 'Home', 'route_name' => 'home', 'sort_order' => 1],
             ['label_es' => 'Propiedades', 'label_en' => 'Properties', 'route_name' => 'public.properties.index', 'sort_order' => 2],
             ['label_es' => 'Agencias', 'label_en' => 'Agencies', 'route_name' => 'public.mls-offices.index', 'sort_order' => 3],
-            ['label_es' => 'Agentes', 'label_en' => 'Agents', 'route_name' => 'public.mls-agents.index', 'sort_order' => 4],
+            ['label_es' => 'Vendedores', 'label_en' => 'Sellers', 'route_name' => 'public.sell-with-us', 'sort_order' => 4],
             ['label_es' => 'Nosotros', 'label_en' => 'About Us', 'route_name' => 'about', 'sort_order' => 5],
             ['label_es' => 'Contacto', 'label_en' => 'Contact', 'route_name' => 'public.contact', 'sort_order' => 6],
         ];
         foreach ($headerItems as $item) {
+            if ($item['route_name'] === 'public.sell-with-us') {
+                $sellerItem = CmsMenuItem::query()
+                    ->where('menu_id', $header->id)
+                    ->where(function ($query): void {
+                        $query->whereIn('label_es', ['Agentes', 'Vendedores'])
+                            ->orWhere('route_name', 'public.mls-agents.index');
+                    })
+                    ->orderBy('sort_order')
+                    ->orderBy('id')
+                    ->first();
+
+                if ($sellerItem) {
+                    $sellerItem->update(array_merge($item, ['menu_id' => $header->id, 'is_active' => true]));
+                    continue;
+                }
+            }
+
             CmsMenuItem::updateOrCreate(
                 ['menu_id' => $header->id, 'label_es' => $item['label_es']],
                 array_merge($item, ['menu_id' => $header->id, 'is_active' => true])
@@ -563,7 +580,7 @@ class CmsContentSeeder extends Seeder
 
     protected function seedSiteSettings(): void
     {
-        $this->command->info('  âš�"�ï¸ Creando site settings...');
+        $this->command->info('  Creando site settings...');
 
         $settings = [
             // â�?��,�â�?��,� Contacto â�?��,�â�?��,�

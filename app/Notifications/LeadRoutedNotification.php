@@ -32,7 +32,9 @@ class LeadRoutedNotification extends Notification
             ->subject($subject)
             ->line($this->message())
             ->line('Lead: ' . ($this->lead->name ?: 'Sin nombre'))
-            ->line('Propiedad: ' . ($this->lead->property_public_id ?: 'Sin propiedad'))
+            ->line('Tipo: ' . ($this->lead->contact_type_label ?: $this->lead->lead_type_label))
+            ->line('Origen: ' . $this->lead->source_label)
+            ->line('Propiedad/contexto: ' . ($this->lead->property_form_name ?: $this->lead->property_context_label))
             ->action('Abrir panel', url('/admin'));
     }
 
@@ -45,6 +47,9 @@ class LeadRoutedNotification extends Notification
             'lead_id' => $this->lead->id,
             'lead_name' => $this->lead->name,
             'lead_email' => $this->lead->email,
+            'contact_type' => $this->lead->contact_type,
+            'lead_type' => $this->lead->lead_type,
+            'source' => $this->lead->source,
             'property_id' => $this->lead->property_id,
             'property_public_id' => $this->lead->property_public_id,
             'owner_id' => $this->lead->owner_id,
@@ -55,9 +60,9 @@ class LeadRoutedNotification extends Notification
     private function message(): string
     {
         if ($this->routing === 'assigned') {
-            return 'Entro un lead por una propiedad de la agencia y fue asignado al agente propietario.';
+            return 'Entro un lead publico y fue asignado al usuario responsable.';
         }
 
-        return 'Entro un lead por una propiedad externa y requiere asignacion manual.';
+        return 'Entro un lead publico y requiere asignacion manual.';
     }
 }

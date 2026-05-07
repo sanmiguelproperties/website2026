@@ -216,16 +216,13 @@
                             ?: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=900&q=80';
                     @endphp
                     <article class="group rounded-3xl overflow-hidden border shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style="border-color: #e2e8f0; background-color: #ffffff;">
-                        <div class="h-64 overflow-hidden">
-                            <img src="{{ $brokerImage }}" alt="{{ $broker['name'] }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                        <div class="h-72 sm:h-80 lg:h-96 overflow-hidden">
+                            <img src="{{ $brokerImage }}" alt="{{ $broker['name'] }}" class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                         </div>
                         <div class="p-6">
                             <h3 class="text-2xl font-extrabold" style="color: #0f172a;">{{ $broker['name'] }}</h3>
                             @if(!empty($broker['role']))
                                 <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: #9a7035;">{{ $broker['role'] }}</p>
-                            @endif
-                            @if(!empty($broker['bio']))
-                                <div class="mt-4 text-sm leading-relaxed rich-content" style="color: #475569;">{!! $rich($broker['bio']) !!}</div>
                             @endif
                         </div>
                     </article>
@@ -248,16 +245,13 @@
                             ?: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&q=80';
                     @endphp
                     <article class="group rounded-3xl overflow-hidden border shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style="border-color: #e2e8f0; background-color: #ffffff;">
-                        <div class="h-56 overflow-hidden">
-                            <img src="{{ $memberImage }}" alt="{{ $member['name'] }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                        <div class="h-72 sm:h-80 lg:h-96 overflow-hidden">
+                            <img src="{{ $memberImage }}" alt="{{ $member['name'] }}" class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                         </div>
                         <div class="p-6">
                             <h3 class="text-2xl font-extrabold" style="color: #0f172a;">{{ $member['name'] }}</h3>
                             @if(!empty($member['role']))
                                 <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: #0f766e;">{{ $member['role'] }}</p>
-                            @endif
-                            @if(!empty($member['bio']))
-                                <div class="mt-4 text-sm leading-relaxed rich-content" style="color: #475569;">{!! $rich($member['bio']) !!}</div>
                             @endif
                         </div>
                     </article>
@@ -290,15 +284,12 @@
                     @foreach($primaryOfficeAgents as $agent)
                         @php
                             $agentName = $agent->full_name ?: ($agent->name ?? (($isEn ? 'Agent' : 'Agente') . ' #' . $agent->mls_agent_id));
-                            $agentBio = trim((string) ($agent->bioForLocale($locale) ?? ''));
                             $agentImage = $agent->photo ?: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=900&q=80';
-                            $agentPhone = trim((string) ($agent->phone ?? $agent->mobile ?? ''));
-                            $agentPhoneHref = preg_replace('/[^0-9+]/', '', $agentPhone);
                         @endphp
 
                         <article class="rounded-3xl overflow-hidden border" style="border-color: rgba(255,255,255,0.2); background: rgba(15,23,42,0.45); backdrop-filter: blur(8px);">
-                            <div class="h-56 overflow-hidden">
-                                <img src="{{ $agentImage }}" alt="{{ $agentName }}" class="w-full h-full object-cover" loading="lazy" />
+                            <div class="h-72 sm:h-80 lg:h-96 overflow-hidden">
+                                <img src="{{ $agentImage }}" alt="{{ $agentName }}" class="w-full h-full object-cover object-top" loading="lazy" />
                             </div>
                             <div class="p-6">
                                 <h3 class="text-xl font-extrabold text-white">{{ $agentName }}</h3>
@@ -307,19 +298,10 @@
                                     <p class="mt-2 text-sm" style="color: rgba(255,255,255,0.74);">{{ $agent->email }}</p>
                                 @endif
 
-                                @if($agentBio !== '')
-                                    <div class="mt-3 text-sm rich-content" style="color: rgba(255,255,255,0.78);">{!! $rich($agentBio) !!}</div>
-                                @endif
-
                                 <div class="mt-5 flex gap-2">
                                     <a href="{{ route('public.mls-agents.show', ['mlsAgentId' => (int) $agent->mls_agent_id]) }}" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                                         {{ $isEn ? 'View profile' : 'Ver perfil' }}
                                     </a>
-                                    @if(!empty($agentPhoneHref))
-                                        <a href="tel:{{ $agentPhoneHref }}" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border" style="border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.9);">
-                                            {{ $isEn ? 'Call' : 'Llamar' }}
-                                        </a>
-                                    @endif
                                 </div>
                             </div>
                         </article>

@@ -109,12 +109,13 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 text-center">
                 <h3 class="text-2xl sm:text-3xl font-bold mb-3">{{ $newsletterTitle }}</h3>
                 <p class="footer-text-secondary text-slate-400 mb-7 max-w-2xl mx-auto">{{ $newsletterText }}</p>
-                <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                    <input type="email" placeholder="{{ $txt('footer_newsletter_placeholder', 'tu@correo.com', 'you@email.com') }}" class="footer-input w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none" />
+                <form id="publicNewsletterForm" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto" novalidate>
+                    <input name="email" type="email" required placeholder="{{ $txt('footer_newsletter_placeholder', 'tu@correo.com', 'you@email.com') }}" class="footer-input w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none" />
                     <button type="submit" class="px-6 py-3.5 rounded-xl font-semibold text-white hover:shadow-lg transition-all duration-300 hover:scale-105" style="background: linear-gradient(to right, var(--fe-footer-newsletter_button_from, #D1A054), var(--fe-footer-newsletter_button_to, #768D59));">
                         {{ $newsletterButton }}
                     </button>
                 </form>
+                <p id="publicNewsletterFeedback" class="hidden mx-auto mt-4 max-w-md rounded-xl border px-4 py-3 text-sm"></p>
             </div>
         </div>
 
@@ -235,6 +236,72 @@
         </div>
     </div>
 </footer>
+
+@once
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('publicNewsletterForm');
+    const feedback = document.getElementById('publicNewsletterFeedback');
+    if (!form || !feedback) return;
+
+    function showNewsletterFeedback(type, message) {
+        feedback.textContent = message;
+        feedback.classList.remove('hidden', 'border-emerald-500/30', 'bg-emerald-500/10', 'text-emerald-100', 'border-rose-500/30', 'bg-rose-500/10', 'text-rose-100');
+        if (type === 'success') {
+            feedback.classList.add('border-emerald-500/30', 'bg-emerald-500/10', 'text-emerald-100');
+        } else {
+            feedback.classList.add('border-rose-500/30', 'bg-rose-500/10', 'text-rose-100');
+        }
+    }
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const email = form.elements.namedItem('email')?.value?.trim() || '';
+        if (!email) {
+            showNewsletterFeedback('error', window.publicT('contact.requiredFields', 'Por favor completa todos los campos requeridos.'));
+            return;
+        }
+
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        try {
+            if (submitButton) submitButton.disabled = true;
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const response = await fetch('/api/public/contact-requests', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+                },
+                body: JSON.stringify({
+                    email,
+                    source: 'footer_newsletter',
+                    lead_type: 'newsletter',
+                    ...((window.publicLeadTrackingPayload && window.publicLeadTrackingPayload()) || {}),
+                }),
+            });
+            const data = await response.json().catch(() => null);
+
+            if (!response.ok || !data?.success) {
+                showNewsletterFeedback('error', data?.message || window.publicT('contact.submitError', 'Hubo un error al enviar el mensaje. Por favor intenta de nuevo.'));
+                return;
+            }
+
+            form.reset();
+            showNewsletterFeedback('success', window.publicT('contact.submitSuccess', 'Mensaje enviado con exito. Nos pondremos en contacto contigo pronto.'));
+        } catch (_error) {
+            showNewsletterFeedback('error', window.publicT('contact.connectionError', 'Error de conexion. Por favor verifica tu internet e intenta de nuevo.'));
+        } finally {
+            if (submitButton) submitButton.disabled = false;
+        }
+    });
+});
+</script>
+@endpush
+@endonce
 
 <style>
     .smp-public-footer .footer-divider {

@@ -4,15 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\ContactRequest;
 use App\Models\Client;
-use App\Models\Property;
 use App\Models\User;
+use App\Services\PublicLeadCaptureService;
 use App\Support\Rbac;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class PropertyContactRequestController extends Controller
@@ -20,7 +20,7 @@ class PropertyContactRequestController extends Controller
     public function index(Request $request): View
     {
         $baseQuery = ContactRequest::query()
-            ->fromPropertyForms()
+            ->fromPublicForms()
             ->with(['property', 'agency', 'owner', 'convertedClient'])
             ->latest();
 
@@ -33,6 +33,9 @@ class PropertyContactRequestController extends Controller
             'search' => trim((string) $request->query('search', '')),
             'status' => trim((string) $request->query('status', '')),
             'assignment_status' => trim((string) $request->query('assignment_status', '')),
+            'lead_type' => trim((string) $request->query('lead_type', '')),
+            'contact_type' => trim((string) $request->query('contact_type', '')),
+            'source' => trim((string) $request->query('source', '')),
             'date_from' => trim((string) $request->query('date_from', '')),
             'date_to' => trim((string) $request->query('date_to', '')),
         ];
@@ -45,6 +48,12 @@ class PropertyContactRequestController extends Controller
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhere('property_public_id', 'like', "%{$search}%")
+                    ->orWhere('property_address', 'like', "%{$search}%")
+                    ->orWhere('source', 'like', "%{$search}%")
+                    ->orWhere('lead_type', 'like', "%{$search}%")
+                    ->orWhere('contact_type', 'like', "%{$search}%")
+                    ->orWhere('source_url', 'like', "%{$search}%")
+                    ->orWhere('referrer_url', 'like', "%{$search}%")
                     ->orWhere('raw_payload', 'like', "%{$search}%")
                     ->orWhereHas('property', function ($propertyQuery) use ($search) {
                         $propertyQuery->where('title', 'like', "%{$search}%")
@@ -60,6 +69,18 @@ class PropertyContactRequestController extends Controller
 
         if ($filters['assignment_status'] !== '') {
             $query->where('assignment_status', $filters['assignment_status']);
+        }
+
+        if ($filters['lead_type'] !== '') {
+            $query->where('lead_type', $filters['lead_type']);
+        }
+
+        if ($filters['contact_type'] !== '') {
+            $query->where('contact_type', $filters['contact_type']);
+        }
+
+        if ($filters['source'] !== '') {
+            $query->where('source', $filters['source']);
         }
 
         if ($filters['date_from'] !== '') {
@@ -83,6 +104,9 @@ class PropertyContactRequestController extends Controller
             'today' => (clone $statsQuery)->whereDate('created_at', now()->toDateString())->count(),
             'assigned' => (clone $statsQuery)->where('assignment_status', 'assigned')->count(),
             'pending_assignment' => (clone $statsQuery)->where('assignment_status', 'pending_assignment')->count(),
+            'buyers' => (clone $statsQuery)->where('contact_type', ContactRequest::CONTACT_TYPE_BUYER)->count(),
+            'sellers' => (clone $statsQuery)->where('contact_type', ContactRequest::CONTACT_TYPE_SELLER)->count(),
+            'buyer_sellers' => (clone $statsQuery)->where('contact_type', ContactRequest::CONTACT_TYPE_BUYER_SELLER)->count(),
         ];
 
         $assignableUsers = User::query()
@@ -98,6 +122,10 @@ class PropertyContactRequestController extends Controller
             'assignableUsers' => $assignableUsers,
             'canManageLeads' => Rbac::canAny($request->user(), ['leads.edit', 'leads.edit.own']),
             'canConvertLeads' => Rbac::canAny($request->user(), 'clients.create'),
+            'leadTypeOptions' => ContactRequest::leadTypeLabels(),
+            'contactTypeOptions' => ContactRequest::contactTypeLabels(),
+            'sourceOptions' => ContactRequest::sourceLabels(),
+            'propertyContextOptions' => ContactRequest::propertyContextLabels(),
             'statusOptions' => [
                 'new' => 'Nuevo',
                 'pending_assignment' => 'Pendiente',
@@ -125,6 +153,7 @@ class PropertyContactRequestController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
+            'contact_type' => ['required', 'string', Rule::in(array_keys(ContactRequest::contactTypeLabels()))],
             'status' => ['required', 'string', 'max:50', 'in:new,pending_assignment,contacted,qualified,converted,closed'],
             'owner_id' => [
                 'nullable',
@@ -161,6 +190,7 @@ class PropertyContactRequestController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'],
+            'contact_type' => $data['contact_type'],
             'status' => $data['status'],
             'message' => $data['message'] ?: $contactRequest->message,
             'owner_id' => $ownerId,
@@ -204,13 +234,17 @@ class PropertyContactRequestController extends Controller
                 'name' => (string) $contactRequest->name,
                 'email' => (string) $contactRequest->email,
                 'phone' => (string) $contactRequest->phone,
-                'source' => Client::SOURCE_PROPERTY_FORM,
+                'source' => $contactRequest->source ?: Client::SOURCE_PROPERTY_FORM,
+                'contact_type' => $contactRequest->contact_type ?: Client::CONTACT_TYPE_BUYER,
                 'status' => 'active',
-                'notes' => 'Cliente convertido desde una solicitud de propiedad.',
+                'notes' => 'Cliente convertido desde una solicitud publica.',
                 'raw_payload' => [
                     'contact_request_id' => $contactRequest->id,
                     'property_public_id' => $contactRequest->property_public_id,
                     'property_name' => $contactRequest->property_form_name,
+                    'lead_type' => $contactRequest->lead_type,
+                    'contact_type' => $contactRequest->contact_type,
+                    'source' => $contactRequest->source,
                     'lead_raw_payload' => $contactRequest->raw_payload,
                 ],
             ]);
@@ -225,7 +259,7 @@ class PropertyContactRequestController extends Controller
         return back()->with('status', 'Solicitud convertida en cliente correctamente.');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, PublicLeadCaptureService $leadCapture): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'property_id' => ['required', 'integer', 'exists:properties,id'],
@@ -233,47 +267,28 @@ class PropertyContactRequestController extends Controller
             'full_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
+            'privacy' => ['accepted'],
+            'lead_type' => ['nullable', 'string', Rule::in(array_keys(ContactRequest::leadTypeLabels()))],
+            'contact_type' => ['nullable', 'string', Rule::in(array_keys(ContactRequest::contactTypeLabels()))],
+            'interest' => ['nullable', 'string', 'max:100'],
+            'source_url' => ['nullable', 'string', 'max:2048'],
+            'referrer_url' => ['nullable', 'string', 'max:2048'],
+            'locale' => ['nullable', 'string', 'max:10'],
+            'utm_source' => ['nullable', 'string', 'max:255'],
+            'utm_medium' => ['nullable', 'string', 'max:255'],
+            'utm_campaign' => ['nullable', 'string', 'max:255'],
+            'utm_term' => ['nullable', 'string', 'max:255'],
+            'utm_content' => ['nullable', 'string', 'max:255'],
         ]);
 
         if ($validator->fails()) {
             return $this->apiValidationError($validator->errors()->toArray());
         }
 
-        $data = $validator->validated();
-        $property = Property::query()
-            ->with(['agency'])
-            ->findOrFail((int) $data['property_id']);
-
-        $ownerId = $property->agent_user_id ?: null;
-        $assignmentStatus = $ownerId ? 'assigned' : 'pending_assignment';
-        $propertyPublicId = $property->easybroker_public_id
-            ?: $property->mls_public_id
-            ?: (string) $property->id;
-
-        $lead = ContactRequest::create([
-            'agency_id' => $property->agency_id,
-            'property_id' => $property->id,
-            'owner_id' => $ownerId,
-            'property_public_id' => $propertyPublicId,
-            'remote_id' => 'property-form-' . (string) Str::uuid(),
-            'source' => ContactRequest::SOURCE_PROPERTY_FORM,
-            'name' => $data['full_name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'message' => 'Solicitud generada desde el formulario publico de propiedad.',
-            'happened_at' => now(),
-            'status' => 'new',
-            'assignment_status' => $assignmentStatus,
-            'assigned_at' => $ownerId ? now() : null,
-            'raw_payload' => [
-                'property_id' => $property->id,
-                'property_name' => $data['property_name'],
-                'submitted_from' => $request->headers->get('referer'),
-                'user_agent' => $request->userAgent(),
-            ],
-        ]);
-
-        $lead->load(['property', 'agency', 'owner']);
+        $lead = $leadCapture->capture(array_merge($validator->validated(), [
+            'source' => ContactRequest::SOURCE_PROPERTY_DETAIL_FORM,
+            'property_context' => ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING,
+        ]), $request);
 
         return $this->apiCreated('Solicitud registrada', 'PROPERTY_CONTACT_REQUEST_CREATED', [
             'id' => $lead->id,
@@ -282,7 +297,7 @@ class PropertyContactRequestController extends Controller
 
     private function abortUnlessPropertyLead(ContactRequest $contactRequest): void
     {
-        abort_unless($contactRequest->source === ContactRequest::SOURCE_PROPERTY_FORM, 404);
+        abort_unless($contactRequest->isPublicFormLead(), 404);
     }
 
     private function canViewLead($user, ContactRequest $lead): bool
@@ -331,7 +346,7 @@ class PropertyContactRequestController extends Controller
             $fields[] = 'telefono';
         }
 
-        if (blank($lead->property_id)) {
+        if ($lead->property_context === ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING && blank($lead->property_id)) {
             $fields[] = 'propiedad';
         }
 

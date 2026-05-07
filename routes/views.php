@@ -3,6 +3,8 @@
 use App\Services\PublicLocationMenuService;
 use App\Services\CmsService;
 use App\Services\ZonePageService;
+use App\Http\Controllers\SellerLeadController;
+use App\Models\CmsPage;
 use App\Models\ZonePage;
 use App\Models\MLSOffice;
 use App\Models\MLSAgent;
@@ -185,6 +187,23 @@ Route::get('/contacto', function () use ($publicContext) {
     $context = $publicContext('contact');
     return view('public.contact', $context);
 })->name('public.contact');
+
+Route::get('/vendedores/vende-con-nosotros', function () use ($publicContext) {
+    $context = $publicContext('sell-with-us');
+    return view('public.sell-with-us', $context);
+})->name('public.sell-with-us');
+
+Route::get('/vende-con-nosotros', function () {
+    return redirect()->route('public.sell-with-us', [], 301);
+})->name('public.sell-with-us.short');
+
+Route::get('/sell-with-us', function () {
+    return redirect()->route('public.sell-with-us', [], 301);
+})->name('public.sell-with-us.en');
+
+Route::post('/vendedores/vende-con-nosotros/leads', [SellerLeadController::class, 'store'])
+    ->middleware('throttle:6,1')
+    ->name('public.sell-with-us.leads.store');
 
 Route::get('/nosotros', function () use ($publicContext) {
     $primaryOffice = MLSOffice::query()
@@ -389,5 +408,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/cms/settings', function () {
             return view('cms.settings.manage');
         })->name('cms.settings')->middleware('admin:cms.view');
+
     });
 });

@@ -647,6 +647,24 @@
             return fallback;
         };
 
+        window.publicLeadTrackingPayload = function (extra = {}) {
+            const params = new URLSearchParams(window.location.search || '');
+            const tracking = {
+                source_url: window.location.href,
+                referrer_url: document.referrer || '',
+                locale: window.__PUBLIC_LOCALE__ || 'es',
+            };
+
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach((key) => {
+                const value = params.get(key);
+                if (value) {
+                    tracking[key] = value;
+                }
+            });
+
+            return { ...tracking, ...extra };
+        };
+
         (function () {
             const ALLOWED_TAGS = new Set([
                 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's',

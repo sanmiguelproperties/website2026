@@ -29,6 +29,7 @@ use App\Http\Controllers\MLSOfficeController;
 use App\Http\Controllers\CorporateEmailController;
 use App\Http\Controllers\AgencyTeamMemberController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PublicLeadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,7 +76,10 @@ Route::middleware(['auth.api', 'admin.api:documents.view'])->group(function () {
     Route::get('properties/filter-options', [PropertyController::class, 'filterOptions']);
     Route::get('properties', [PropertyController::class, 'indexPublic']);
     Route::get('properties/{property}', [PropertyController::class, 'showPublic']);
-    Route::post('property-contact-requests', [PropertyContactRequestController::class, 'store']);
+    Route::post('contact-requests', [PublicLeadController::class, 'store'])
+        ->middleware('throttle:10,1');
+    Route::post('property-contact-requests', [PropertyContactRequestController::class, 'store'])
+        ->middleware('throttle:10,1');
 
     // Equipo de trabajo (pÃºblico)
     Route::get('team-members', [AgencyTeamMemberController::class, 'indexPublic']);

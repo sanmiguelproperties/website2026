@@ -6,6 +6,7 @@
 @php
   $sourceLabel = static fn (?string $value): string => $sourceOptions[$value ?? ''] ?? ($value ? ucfirst(str_replace('_', ' ', $value)) : 'Sin origen');
   $statusLabel = static fn (?string $value): string => $statusOptions[$value ?? ''] ?? ($value ? ucfirst(str_replace('_', ' ', $value)) : 'Sin estado');
+  $contactTypeLabel = static fn (?string $value): string => $contactTypeOptions[$value ?? ''] ?? ($value ? ucfirst(str_replace('_', ' ', $value)) : 'Sin tipo');
   $visitStatusLabel = static fn (?string $value): string => $visitStatusOptions[$value ?? ''] ?? ($value ? ucfirst(str_replace('_', ' ', $value)) : 'Sin estado');
   $statusBadge = static function (?string $value): string {
       return match ($value) {
@@ -69,10 +70,14 @@
     </div>
   @endif
 
-  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
     <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
       <p class="text-sm text-[var(--c-muted)]">Estado</p>
       <span class="mt-3 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold {{ $statusBadge($client->status) }}">{{ $statusLabel($client->status) }}</span>
+    </article>
+    <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
+      <p class="text-sm text-[var(--c-muted)]">Tipo</p>
+      <p class="mt-2 font-semibold text-[var(--c-text)]">{{ $contactTypeLabel($client->contact_type) }}</p>
     </article>
     <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
       <p class="text-sm text-[var(--c-muted)]">Origen</p>
@@ -116,6 +121,14 @@
               <input name="phone" type="text" value="{{ $clientValue('phone', $client->phone) }}" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
             </div>
             <div>
+              <label class="mb-1 block text-xs text-[var(--c-muted)]">Tipo</label>
+              <select name="contact_type" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+                @foreach($contactTypeOptions as $value => $label)
+                  <option value="{{ $value }}" @selected($clientValue('contact_type', $client->contact_type) === $value)>{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div>
               <label class="mb-1 block text-xs text-[var(--c-muted)]">Estado</label>
               <select name="status" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
                 @foreach($statusOptions as $value => $label)
@@ -148,6 +161,10 @@
             <div>
               <p class="text-xs text-[var(--c-muted)]">Telefono</p>
               <p class="mt-1 font-semibold text-[var(--c-text)]">{{ $client->phone ?: 'Sin telefono' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-[var(--c-muted)]">Tipo</p>
+              <p class="mt-1 font-semibold text-[var(--c-text)]">{{ $contactTypeLabel($client->contact_type) }}</p>
             </div>
             <div>
               <p class="text-xs text-[var(--c-muted)]">Usuario asignado</p>

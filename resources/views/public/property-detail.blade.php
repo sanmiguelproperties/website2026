@@ -287,6 +287,11 @@
                   </div>
                 </div>
 
+                <label class="flex items-start gap-3 text-sm leading-relaxed text-slate-600 pd-interest-privacy">
+                  <input id="interestPrivacy" name="privacy" type="checkbox" required class="mt-1 h-4 w-4 rounded border-slate-300" style="accent-color: var(--fe-primary-to, #768D59);">
+                  <span>{{ $txt('i18n_contact_privacy_short', 'Acepto que San Miguel Properties me contacte sobre esta solicitud.', 'I agree that San Miguel Properties may contact me about this request.') }}</span>
+                </label>
+
                 <p id="propertyInterestFeedback" class="hidden rounded-2xl border px-4 py-3 text-sm pd-interest-feedback"></p>
 
                 <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70 pd-interest-submit">
@@ -1324,16 +1329,22 @@
       event.preventDefault();
 
       const form = event.currentTarget;
+      const fields = form.elements;
       const submitButton = form.querySelector('.pd-interest-submit');
       const payload = {
-        property_id: form.property_id?.value || '',
-        property_name: form.property_name?.value || '',
-        full_name: form.full_name?.value?.trim() || '',
-        email: form.email?.value?.trim() || '',
-        phone: form.phone?.value?.trim() || '',
+        property_id: fields.namedItem('property_id')?.value || '',
+        property_name: fields.namedItem('property_name')?.value || '',
+        full_name: fields.namedItem('full_name')?.value?.trim() || '',
+        email: fields.namedItem('email')?.value?.trim() || '',
+        phone: fields.namedItem('phone')?.value?.trim() || '',
+        privacy: Boolean(fields.namedItem('privacy')?.checked),
+        source: 'property_detail_form',
+        property_context: 'existing_listing',
+        contact_type: 'buyer',
+        ...((window.publicLeadTrackingPayload && window.publicLeadTrackingPayload()) || {}),
       };
 
-      if (!payload.property_id || !payload.property_name || !payload.full_name || !payload.email || !payload.phone) {
+      if (!payload.property_id || !payload.property_name || !payload.full_name || !payload.email || !payload.phone || !payload.privacy) {
         setInterestFeedback('error', tPublic('contact.requiredFields', isEnLocale ? 'Please complete all required fields.' : 'Por favor completa todos los campos requeridos.'));
         return;
       }
@@ -1358,9 +1369,10 @@
           return;
         }
 
-        form.full_name.value = '';
-        form.email.value = '';
-        form.phone.value = '';
+        fields.namedItem('full_name').value = '';
+        fields.namedItem('email').value = '';
+        fields.namedItem('phone').value = '';
+        fields.namedItem('privacy').checked = false;
         setInterestFeedback('success', tPublic('contact.submitSuccess', isEnLocale ? 'Message sent successfully. We will contact you soon.' : 'Mensaje enviado con exito. Nos pondremos en contacto contigo pronto.'));
       } catch (_error) {
         setInterestFeedback('error', tPublic('contact.connectionError', isEnLocale ? 'Connection error. Please check your internet and try again.' : 'Error de conexion. Por favor verifica tu internet e intenta de nuevo.'));

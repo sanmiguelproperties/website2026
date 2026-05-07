@@ -931,7 +931,7 @@
 
             {{-- Contact Form --}}
             <div class="rounded-3xl p-8 lg:p-10 border shadow-lg" style="background: linear-gradient(to bottom right, var(--fe-contact-form_bg_from, #f8fafc), var(--fe-contact-form_bg_to, #ffffff)); border-color: var(--fe-contact-form_border, #f1f5f9);">
-                <form class="space-y-6">
+                <form id="homeContactForm" class="space-y-6" novalidate>
                     <div class="grid sm:grid-cols-2 gap-6">
                         <div>
                             <label for="contact_name" class="block text-sm font-medium mb-2" style="color: var(--fe-contact-label, #334155);">{{ $txt('home_contact_form_name_label', 'Nombre completo', 'Full name') }}</label>
@@ -966,6 +966,7 @@
                             <option value="comprar">{{ $txt('home_contact_form_interest_buy', 'Comprar una propiedad', 'Buy a property') }}</option>
                             <option value="rentar">{{ $txt('home_contact_form_interest_rent', 'Rentar una propiedad', 'Rent a property') }}</option>
                             <option value="vender">{{ $txt('home_contact_form_interest_sell', 'Vender mi propiedad', 'Sell my property') }}</option>
+                            <option value="buyer_seller">{{ $txt('home_contact_form_interest_buy_sell', 'Comprar y vender', 'Buy and sell') }}</option>
                             <option value="inversion">{{ $txt('home_contact_form_interest_invest', 'Invertir en bienes raíces', 'Invest in real estate') }}</option>
                             <option value="otro">{{ $txt('home_contact_form_interest_other', 'Otro', 'Other') }}</option>
                         </select>
@@ -987,6 +988,8 @@
                             {{ $txt('home_contact_form_privacy', 'Acepto la política de privacidad y autorizo el tratamiento de mis datos.', 'I accept the privacy policy and authorize data processing.') }}
                         </label>
                     </div>
+
+                    <p id="homeContactFeedback" class="hidden rounded-xl border px-4 py-3 text-sm"></p>
 
                     <button type="submit"
                             class="w-full px-8 py-4 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
@@ -1047,6 +1050,80 @@ const propertyIconUrls = {
     lot: @json(asset('iconos-base/area.svg')),
     construction: @json(asset('iconos-base/construccion.svg')),
 };
+
+function setHomeContactFeedback(type, message) {
+    const feedback = document.getElementById('homeContactFeedback');
+    if (!feedback) return;
+
+    feedback.textContent = message;
+    feedback.classList.remove('hidden', 'border-emerald-200', 'bg-emerald-50', 'text-emerald-800', 'border-rose-200', 'bg-rose-50', 'text-rose-800');
+
+    if (type === 'success') {
+        feedback.classList.add('border-emerald-200', 'bg-emerald-50', 'text-emerald-800');
+    } else {
+        feedback.classList.add('border-rose-200', 'bg-rose-50', 'text-rose-800');
+    }
+}
+
+async function submitHomeContactForm(event) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const fields = form.elements;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const interest = fields.namedItem('interest')?.value || '';
+    const contactType = interest === 'vender'
+        ? 'seller'
+        : (interest === 'buyer_seller' ? 'buyer_seller' : 'buyer');
+    const payload = {
+        name: fields.namedItem('name')?.value?.trim() || '',
+        phone: fields.namedItem('phone')?.value?.trim() || '',
+        email: fields.namedItem('email')?.value?.trim() || '',
+        interest,
+        contact_type: contactType,
+        message: fields.namedItem('message')?.value?.trim() || '',
+        privacy: Boolean(fields.namedItem('privacy')?.checked),
+        source: 'home_contact_form',
+        ...((window.publicLeadTrackingPayload && window.publicLeadTrackingPayload()) || {}),
+    };
+
+    if (!payload.name || !payload.phone || !payload.email || !payload.privacy) {
+        setHomeContactFeedback('error', tPublic('contact.requiredFields', isEnLocale ? 'Please complete all required fields.' : 'Por favor completa todos los campos requeridos.'));
+        return;
+    }
+
+    try {
+        if (submitButton) submitButton.disabled = true;
+
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const response = await fetch('/api/public/contact-requests', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+            },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok || !data?.success) {
+            setHomeContactFeedback('error', data?.message || tPublic('contact.submitError', isEnLocale ? 'There was an error sending your message. Please try again.' : 'Hubo un error al enviar el mensaje. Por favor intenta de nuevo.'));
+            return;
+        }
+
+        form.reset();
+        setHomeContactFeedback('success', tPublic('contact.submitSuccess', isEnLocale ? 'Message sent successfully. We will contact you soon.' : 'Mensaje enviado con exito. Nos pondremos en contacto contigo pronto.'));
+    } catch (_error) {
+        setHomeContactFeedback('error', tPublic('contact.connectionError', isEnLocale ? 'Connection error. Please check your internet and try again.' : 'Error de conexion. Por favor verifica tu internet e intenta de nuevo.'));
+    } finally {
+        if (submitButton) submitButton.disabled = false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('homeContactForm')?.addEventListener('submit', submitHomeContactForm);
+});
 
 function propertyIcon(name, className = 'w-5 h-5') {
     const src = propertyIconUrls[name];

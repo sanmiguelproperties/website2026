@@ -12,7 +12,13 @@ class Client extends Model
     use SoftDeletes;
 
     public const SOURCE_PROPERTY_FORM = 'property_form';
+    public const SOURCE_SELLER_FORM = 'seller_form';
+    public const SOURCE_CONTACT_FORM = 'contact_form';
     public const STATUS_ACTIVE = 'active';
+
+    public const CONTACT_TYPE_BUYER = 'buyer';
+    public const CONTACT_TYPE_SELLER = 'seller';
+    public const CONTACT_TYPE_BUYER_SELLER = 'buyer_seller';
 
     protected $fillable = [
         'contact_request_id',
@@ -22,6 +28,7 @@ class Client extends Model
         'email',
         'phone',
         'source',
+        'contact_type',
         'status',
         'notes',
         'raw_payload',
@@ -59,5 +66,19 @@ class Client extends Model
     public function scopeActive($query)
     {
         return $query->where('status', self::STATUS_ACTIVE);
+    }
+
+    public static function contactTypeLabels(): array
+    {
+        return [
+            self::CONTACT_TYPE_BUYER => 'Comprador',
+            self::CONTACT_TYPE_SELLER => 'Vendedor',
+            self::CONTACT_TYPE_BUYER_SELLER => 'Comprador y vendedor',
+        ];
+    }
+
+    public function getContactTypeLabelAttribute(): string
+    {
+        return self::contactTypeLabels()[$this->contact_type] ?? ($this->contact_type ? ucfirst(str_replace('_', ' ', $this->contact_type)) : 'Sin tipo');
     }
 }

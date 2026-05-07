@@ -6,6 +6,7 @@
 @php
   $statusLabel = static fn (?string $value): string => $statusOptions[$value ?? ''] ?? ($value ? ucfirst(str_replace('_', ' ', $value)) : 'Sin estado');
   $sourceLabel = static fn (?string $value): string => $sourceOptions[$value ?? ''] ?? ($value ? ucfirst(str_replace('_', ' ', $value)) : 'Sin origen');
+  $contactTypeLabel = static fn (?string $value): string => $contactTypeOptions[$value ?? ''] ?? ($value ? ucfirst(str_replace('_', ' ', $value)) : 'Sin tipo');
   $statusBadge = static function (?string $value): string {
       return match ($value) {
           'active' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -34,7 +35,7 @@
     </a>
   </div>
 
-  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-7">
     <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
       <p class="text-sm text-[var(--c-muted)]">Total clientes</p>
       <p class="mt-2 text-3xl font-bold text-[var(--c-text)]">{{ number_format($stats['total']) }}</p>
@@ -48,6 +49,18 @@
       <p class="mt-2 text-3xl font-bold text-[var(--c-text)]">{{ number_format($stats['from_property_forms']) }}</p>
     </article>
     <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
+      <p class="text-sm text-[var(--c-muted)]">Compradores</p>
+      <p class="mt-2 text-3xl font-bold text-[var(--c-text)]">{{ number_format($stats['buyers']) }}</p>
+    </article>
+    <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
+      <p class="text-sm text-[var(--c-muted)]">Vendedores</p>
+      <p class="mt-2 text-3xl font-bold text-[var(--c-text)]">{{ number_format($stats['sellers']) }}</p>
+    </article>
+    <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
+      <p class="text-sm text-[var(--c-muted)]">Ambos</p>
+      <p class="mt-2 text-3xl font-bold text-[var(--c-text)]">{{ number_format($stats['buyer_sellers']) }}</p>
+    </article>
+    <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
       <p class="text-sm text-[var(--c-muted)]">Este mes</p>
       <p class="mt-2 text-3xl font-bold text-[var(--c-text)]">{{ number_format($stats['this_month']) }}</p>
     </article>
@@ -56,9 +69,18 @@
   <section class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] overflow-hidden">
     <form method="GET" action="{{ route('clients') }}" class="border-b border-[var(--c-border)] p-5">
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-12">
-        <div class="lg:col-span-4">
+        <div class="lg:col-span-3">
           <label for="filter-search" class="block text-xs text-[var(--c-muted)] mb-1">Buscar</label>
           <input id="filter-search" name="search" type="search" value="{{ $filters['search'] }}" placeholder="Nombre, email, telefono, propiedad o usuario" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--c-primary)]">
+        </div>
+        <div class="lg:col-span-2">
+          <label for="filter-contact-type" class="block text-xs text-[var(--c-muted)] mb-1">Tipo</label>
+          <select id="filter-contact-type" name="contact_type" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+            <option value="">Todos</option>
+            @foreach($contactTypeOptions as $value => $label)
+              <option value="{{ $value }}" @selected($filters['contact_type'] === $value)>{{ $label }}</option>
+            @endforeach
+          </select>
         </div>
         <div class="lg:col-span-2">
           <label for="filter-status" class="block text-xs text-[var(--c-muted)] mb-1">Estado</label>
@@ -69,7 +91,7 @@
             @endforeach
           </select>
         </div>
-        <div class="lg:col-span-2">
+        <div class="lg:col-span-3">
           <label for="filter-source" class="block text-xs text-[var(--c-muted)] mb-1">Origen</label>
           <select id="filter-source" name="source" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
             <option value="">Todos</option>
@@ -104,6 +126,7 @@
         <thead class="bg-[var(--c-elev)] text-left text-xs uppercase text-[var(--c-muted)]">
           <tr>
             <th class="px-5 py-3">Cliente</th>
+            <th class="px-5 py-3">Tipo</th>
             <th class="px-5 py-3">Propiedad</th>
             <th class="px-5 py-3">Usuario asignado</th>
             <th class="px-5 py-3">Estado</th>
@@ -124,6 +147,7 @@
                 <div class="text-xs text-[var(--c-muted)]">{{ $client->phone ?: 'Sin telefono' }}</div>
                 <div class="mt-2 text-xs text-[var(--c-muted)]">{{ $client->comments_count }} comentarios - {{ $client->visits_count }} visitas</div>
               </td>
+              <td class="px-5 py-4 text-[var(--c-muted)]">{{ $contactTypeLabel($client->contact_type) }}</td>
               <td class="px-5 py-4">
                 <div class="font-semibold text-[var(--c-text)]">{{ $client->property?->title ?: data_get($client->raw_payload, 'property_name', 'Sin propiedad') }}</div>
                 @if($client->property)
@@ -158,7 +182,7 @@
             </tr>
           @empty
             <tr>
-              <td colspan="7" class="px-5 py-12 text-center">
+              <td colspan="8" class="px-5 py-12 text-center">
                 <p class="font-semibold text-[var(--c-text)]">Aun no hay clientes registrados</p>
                 <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando conviertas una solicitud en cliente, aparecera aqui.</p>
               </td>
@@ -185,6 +209,7 @@
           <div class="mt-3 space-y-1 text-sm text-[var(--c-muted)]">
             <p>{{ $client->email ?: 'Sin email' }}</p>
             <p>{{ $client->phone ?: 'Sin telefono' }}</p>
+            <p>Tipo: {{ $contactTypeLabel($client->contact_type) }}</p>
             <p>{{ $client->comments_count }} comentarios - {{ $client->visits_count }} visitas</p>
           </div>
 

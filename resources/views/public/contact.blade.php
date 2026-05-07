@@ -189,6 +189,7 @@
                             <option value="buy">{{ $txt('contact_form_interest_buy', 'Comprar una propiedad', 'Buy a property') }}</option>
                             <option value="rent">{{ $txt('contact_form_interest_rent', 'Rentar una propiedad', 'Rent a property') }}</option>
                             <option value="sell">{{ $txt('contact_form_interest_sell', 'Vender mi propiedad', 'Sell my property') }}</option>
+                            <option value="buyer_seller">{{ $txt('contact_form_interest_buy_sell', 'Comprar y vender', 'Buy and sell') }}</option>
                             <option value="investment">{{ $txt('contact_form_interest_invest', 'Inversion inmobiliaria', 'Real estate investment') }}</option>
                             <option value="other">{{ $txt('contact_form_interest_other', 'Otro', 'Other') }}</option>
                         </select>
@@ -285,7 +286,7 @@ function contactForm() {
             this.success = false;
 
             try {
-                const response = await fetch('/api/contact-requests', {
+                const response = await fetch('/api/public/contact-requests', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -296,9 +297,12 @@ function contactForm() {
                         name: this.form.name,
                         phone: this.form.phone,
                         email: this.form.email,
+                        interest: this.form.interest,
+                        contact_type: this.form.interest === 'sell' ? 'seller' : (this.form.interest === 'buyer_seller' ? 'buyer_seller' : 'buyer'),
                         message: this.form.interest ? `[${this.form.interest}] ${this.form.message}` : this.form.message,
-                        source: 'website_contact_form',
-                        locale: window.__PUBLIC_LOCALE__ || 'es',
+                        source: 'contact_page_form',
+                        privacy: this.form.privacy,
+                        ...((window.publicLeadTrackingPayload && window.publicLeadTrackingPayload()) || {}),
                     })
                 });
 
