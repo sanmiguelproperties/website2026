@@ -46,10 +46,7 @@
 
           <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
             <div class="inline-flex items-center gap-2 text-slate-600 pd-meta-row">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <img src="{{ asset('iconos-base/ubicacion.svg') }}" alt="" aria-hidden="true" class="w-5 h-5 object-contain opacity-75">
               <span id="propertyLocation" class="truncate">—</span>
             </div>
 
@@ -750,10 +747,79 @@
     const tPublic = (key, fallback = '') => (window.publicT ? window.publicT(key, fallback) : fallback);
     const isEnLocale = (window.__PUBLIC_LOCALE__ || 'es') === 'en';
     const publicContact = window.__PUBLIC_CONTACT__ || {};
+    const propertyIconUrls = {
+      location: @json(asset('iconos-base/ubicacion.svg')),
+      bedrooms: @json(asset('iconos-base/recamaras.svg')),
+      bathrooms: @json(asset('iconos-base/banos.svg')),
+      halfBathrooms: @json(asset('iconos-base/medio-bano.svg')),
+      parking: @json(asset('iconos-base/estacionamiento.svg')),
+      construction: @json(asset('iconos-base/construccion.svg')),
+      lot: @json(asset('iconos-base/area.svg')),
+      floors: @json(asset('iconos-base/propiedades.svg')),
+      age: @json(asset('iconos-base/construccion.svg')),
+      furnished: @json(asset('iconos-base/amueblado.svg')),
+      unfurnished: @json(asset('iconos-base/no-amueblado.svg')),
+      pool: @json(asset('iconos-base/alberca.svg')),
+      yard: @json(asset('iconos-base/jardin.svg')),
+      terrace: @json(asset('iconos-base/terraza.svg')),
+      roofGarden: @json(asset('iconos-base/roof-garden.svg')),
+      pets: @json(asset('iconos-base/mascotas.svg')),
+      property: @json(asset('iconos-base/propiedades.svg')),
+    };
 
     const contactPhoneDisplay = (publicContact.phone || '+52 55 1234 5678').toString();
     const contactPhone = contactPhoneDisplay.replace(/[^\d+]/g, '') || '+525512345678';
     const contactWhatsapp = (publicContact.whatsapp || '525512345678').toString().replace(/\D/g, '') || '525512345678';
+
+    function normalizeIconText(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    }
+
+    function propertyIcon(name, className = 'w-6 h-6') {
+      const src = propertyIconUrls[name];
+      return src ? `<img src="${src}" alt="" aria-hidden="true" class="${className} inline-block object-contain opacity-75">` : '';
+    }
+
+    function iconForFeatureLabel(label) {
+      const text = normalizeIconText(label);
+      if (text.includes('no amuebl') || text.includes('sin amuebl') || text.includes('sin muebl') || text.includes('unfurnished')) return 'unfurnished';
+      if (text.includes('amuebl') || text.includes('amobl') || text.includes('furnished')) return 'furnished';
+      if (text.includes('alberca') || text.includes('piscina') || text.includes('pool')) return 'pool';
+      if (text.includes('jardin') || text.includes('yard') || text.includes('garden')) return 'yard';
+      if (text.includes('roof') || text.includes('azotea')) return 'roofGarden';
+      if (text.includes('terraza') || text.includes('terrace') || text.includes('patio') || text.includes('balcon') || text.includes('balcony')) return 'terrace';
+      if (text.includes('mascota') || text.includes('pet')) return 'pets';
+      if (text.includes('garage') || text.includes('cochera') || text.includes('estacionamiento') || text.includes('parking')) return 'parking';
+      if (text.includes('bano') || text.includes('bath')) return 'bathrooms';
+      if (text.includes('recamara') || text.includes('habitacion') || text.includes('dormitorio') || text.includes('bedroom')) return 'bedrooms';
+      if (text.includes('terreno') || text.includes('lote') || text.includes('lot')) return 'lot';
+      if (text.includes('construccion') || text.includes('construction')) return 'construction';
+      if (text.includes('casita') || text.includes('casa') || text.includes('house')) return 'property';
+      return null;
+    }
+
+    function formatFurnishedValue(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return null;
+      const text = normalizeIconText(raw);
+      if (['0', 'false', 'no', 'none'].includes(text) || text.includes('sin amuebl') || text.includes('unfurnished')) {
+        return tPublic('property.unfurnished', isEnLocale ? 'Unfurnished' : 'Sin amueblar');
+      }
+      if (text.includes('semi')) {
+        return tPublic('property.semiFurnished', isEnLocale ? 'Semi-furnished' : 'Semi amueblado');
+      }
+      return tPublic('property.furnishedValue', isEnLocale ? 'Furnished' : 'Amueblado');
+    }
+
+    function furnishedIcon(value) {
+      const text = normalizeIconText(value);
+      return (['0', 'false', 'no', 'none'].includes(text) || text.includes('sin amuebl') || text.includes('unfurnished'))
+        ? 'unfurnished'
+        : 'furnished';
+    }
 
     function safeText(v, fallback = '—') {
       const s = (v ?? '').toString().trim();
@@ -977,14 +1043,21 @@
         }).join('');
       }
 
+      const yesLabel = tPublic('common.yes', isEnLocale ? 'Yes' : 'Si');
+      const furnishedValue = formatFurnishedValue(property.furnished);
       const highlights = [
-        { label: tPublic('property.bedrooms', isEnLocale ? 'Bedrooms' : 'Recamaras'), value: property.bedrooms },
-        { label: tPublic('property.bathrooms', isEnLocale ? 'Bathrooms' : 'Banos'), value: property.bathrooms },
-        { label: tPublic('property.parking', isEnLocale ? 'Parking' : 'Estacionamientos'), value: property.parking_spaces },
-        { label: tPublic('property.construction', isEnLocale ? 'Construction' : 'Construccion'), value: property.construction_size ? `${property.construction_size} m²` : null },
-        { label: tPublic('property.lot', isEnLocale ? 'Lot' : 'Lote'), value: property.lot_size ? `${property.lot_size} m²` : null },
-        { label: tPublic('property.floors', isEnLocale ? 'Floors' : 'Pisos'), value: property.floors ?? property.floor },
-        { label: tPublic('property.age', isEnLocale ? 'Age' : 'Edad'), value: property.age },
+        { icon: 'bedrooms', label: tPublic('property.bedrooms', isEnLocale ? 'Bedrooms' : 'Recamaras'), value: Number(property.bedrooms) > 0 ? property.bedrooms : null },
+        { icon: 'bathrooms', label: tPublic('property.bathrooms', isEnLocale ? 'Bathrooms' : 'Banos'), value: Number(property.bathrooms) > 0 ? property.bathrooms : null },
+        { icon: 'halfBathrooms', label: tPublic('property.halfBathrooms', isEnLocale ? 'Half bathrooms' : 'Medios banos'), value: Number(property.half_bathrooms) > 0 ? property.half_bathrooms : null },
+        { icon: 'parking', label: tPublic('property.parking', isEnLocale ? 'Parking' : 'Estacionamientos'), value: Number(property.parking_spaces) > 0 ? property.parking_spaces : null },
+        { icon: 'construction', label: tPublic('property.construction', isEnLocale ? 'Construction' : 'Construccion'), value: property.construction_size ? `${property.construction_size} m²` : null },
+        { icon: 'lot', label: tPublic('property.lot', isEnLocale ? 'Lot' : 'Lote'), value: property.lot_size ? `${property.lot_size} m²` : null },
+        { icon: 'floors', label: tPublic('property.floors', isEnLocale ? 'Floors' : 'Pisos'), value: property.floors ?? property.floor },
+        { icon: 'age', label: tPublic('property.age', isEnLocale ? 'Age' : 'Edad'), value: property.age },
+        { icon: furnishedValue ? furnishedIcon(property.furnished) : 'furnished', label: tPublic('property.furnished', isEnLocale ? 'Furnished' : 'Amueblado'), value: furnishedValue },
+        { icon: 'yard', label: tPublic('property.yard', isEnLocale ? 'Garden' : 'Jardin'), value: property.with_yard ? yesLabel : null },
+        { icon: 'pool', label: tPublic('property.pool', isEnLocale ? 'Pool' : 'Alberca'), value: property.pool ? yesLabel : null },
+        { icon: 'property', label: tPublic('property.casita', isEnLocale ? 'Casita' : 'Casita'), value: property.casita ? yesLabel : null },
       ].filter((x) => x.value !== null && x.value !== undefined && String(x.value).trim() !== '');
 
       const highlightsGrid = document.getElementById('highlightsGrid');
@@ -997,8 +1070,15 @@
       } else {
         highlightsGrid.innerHTML = highlights.map((h) => `
           <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <p class="text-xs font-semibold text-slate-600">${escapeHtml(h.label)}</p>
-            <p class="mt-1 text-lg font-extrabold text-slate-900">${escapeHtml(String(h.value))}</p>
+            <div class="flex items-start gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-white">
+                ${propertyIcon(h.icon)}
+              </span>
+              <span class="min-w-0">
+                <span class="block text-xs font-semibold text-slate-600">${escapeHtml(h.label)}</span>
+                <span class="mt-1 block text-lg font-extrabold text-slate-900">${escapeHtml(String(h.value))}</span>
+              </span>
+            </div>
           </div>
         `).join('');
       }
@@ -1017,22 +1097,32 @@
       const features = Array.isArray(property.features) ? property.features : [];
       const featureFallbackPrefix = tPublic('property.featureFallbackPrefix', isEnLocale ? 'Feature #' : 'Caracteristica #');
       featuresWrap.innerHTML = features.length
-        ? features.map((f) => `
-            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold pd-feature-tag" style="background-color: var(--fe-property_detail-feature_tag_bg, var(--fe-properties-tag_inactive_bg, #f1f5f9)); color: var(--fe-property_detail-feature_tag_text, var(--fe-properties-tag_inactive_text, #475569));">
-              ${escapeHtml(f.name || f.slug || (featureFallbackPrefix + f.id))}
+        ? features.map((f) => {
+          const label = f.name || f.slug || (featureFallbackPrefix + f.id);
+          const iconName = iconForFeatureLabel(label);
+          return `
+            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold pd-feature-tag" style="background-color: var(--fe-property_detail-feature_tag_bg, var(--fe-properties-tag_inactive_bg, #f1f5f9)); color: var(--fe-property_detail-feature_tag_text, var(--fe-properties-tag_inactive_text, #475569));">
+              ${iconName ? propertyIcon(iconName, 'w-3.5 h-3.5') : ''}
+              <span>${escapeHtml(label)}</span>
             </span>
-          `).join('')
+          `;
+        }).join('')
         : `<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600 pd-feature-tag">${tPublic('property.noFeatures', isEnLocale ? 'No features' : 'Sin caracteristicas')}</span>`;
 
       const tagsWrap = document.getElementById('tagsWrap');
       const tags = Array.isArray(property.tags) ? property.tags : [];
       const tagFallbackPrefix = tPublic('property.tagFallbackPrefix', isEnLocale ? 'Tag #' : 'Etiqueta #');
       tagsWrap.innerHTML = tags.length
-        ? tags.map((t) => `
-            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold pd-feature-tag" style="background-color: var(--fe-property_detail-feature_tag_bg, var(--fe-properties-tag_inactive_bg, #f1f5f9)); color: var(--fe-property_detail-feature_tag_text, var(--fe-properties-tag_inactive_text, #475569));">
-              ${escapeHtml(t.name || t.slug || (tagFallbackPrefix + t.id))}
+        ? tags.map((t) => {
+          const label = t.name || t.slug || (tagFallbackPrefix + t.id);
+          const iconName = iconForFeatureLabel(label);
+          return `
+            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold pd-feature-tag" style="background-color: var(--fe-property_detail-feature_tag_bg, var(--fe-properties-tag_inactive_bg, #f1f5f9)); color: var(--fe-property_detail-feature_tag_text, var(--fe-properties-tag_inactive_text, #475569));">
+              ${iconName ? propertyIcon(iconName, 'w-3.5 h-3.5') : ''}
+              <span>${escapeHtml(label)}</span>
             </span>
-          `).join('')
+          `;
+        }).join('')
         : `<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-600 pd-feature-tag">${tPublic('property.noTags', isEnLocale ? 'No tags' : 'Sin etiquetas')}</span>`;
 
       const street = property.location?.street;

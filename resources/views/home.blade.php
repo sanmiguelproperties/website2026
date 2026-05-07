@@ -1029,11 +1029,50 @@ const homeI18n = {
     saleLabel: tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta'),
     rentLabel: tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta'),
     cardTitleFallback: tPublic('home.property.cardTitleFallback', isEnLocale ? 'Available property' : 'Propiedad disponible'),
-    bedroomsShort: tPublic('home.property.bedroomsShort', isEnLocale ? 'Beds' : 'Rec.'),
-    bathroomsShort: tPublic('home.property.bathroomsShort', isEnLocale ? 'Baths' : 'Banos'),
+    notAvailable: tPublic('common.notAvailable', isEnLocale ? 'N/A' : 'N/D'),
+    lotSizeLabel: tPublic('property.lotSize', isEnLocale ? 'Lot size' : 'M2 de terreno'),
+    constructionSizeLabel: tPublic('property.constructionSize', isEnLocale ? 'Construction size' : 'M2 de construccion'),
+    roomsLabel: tPublic('property.rooms', isEnLocale ? 'Rooms' : 'Cuartos'),
+    bathroomsLabel: tPublic('property.bathrooms', isEnLocale ? 'Baths' : 'Banos'),
+    halfBathroomsLabel: tPublic('property.halfBathrooms', isEnLocale ? 'Half baths' : 'Medios banos'),
     detailsCta: tPublic('common.details', isEnLocale ? 'View details' : 'Ver detalles'),
     areaUnit: tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2'),
 };
+
+const propertyIconUrls = {
+    location: @json(asset('iconos-base/ubicacion.svg')),
+    bedrooms: @json(asset('iconos-base/recamaras.svg')),
+    bathrooms: @json(asset('iconos-base/banos.svg')),
+    halfBathrooms: @json(asset('iconos-base/medio-bano.svg')),
+    lot: @json(asset('iconos-base/area.svg')),
+    construction: @json(asset('iconos-base/construccion.svg')),
+};
+
+function propertyIcon(name, className = 'w-5 h-5') {
+    const src = propertyIconUrls[name];
+    return src ? `<img src="${src}" alt="" aria-hidden="true" class="${className} inline-block object-contain opacity-75">` : '';
+}
+
+const wholeNumberFormatter = new Intl.NumberFormat(isEnLocale ? 'en-US' : 'es-MX', {
+    maximumFractionDigits: 0,
+});
+
+function cardNumberValue(value) {
+    const text = String(value ?? '').trim();
+    if (text === '') return homeI18n.notAvailable;
+    const number = Number(text);
+    return Number.isFinite(number) ? wholeNumberFormatter.format(Math.trunc(number)) : homeI18n.notAvailable;
+}
+
+function cardAreaValue(value) {
+    const number = Number(value);
+    return Number.isFinite(number) && number > 0 ? `${wholeNumberFormatter.format(number)} ${homeI18n.areaUnit}` : homeI18n.notAvailable;
+}
+
+function cardPriceValue(value) {
+    const text = String(value ?? '').trim();
+    return text ? text.replace(/([.,]\d{1,2})(?=\s*(?:[A-Z]{3})?$)/, '') : homeI18n.priceFallback;
+}
 
 const heroFallbackImage = 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80';
 const normalizeHeroSourceType = (value) => String(value || '').toLowerCase() === 'images' ? 'images' : 'properties';
@@ -1341,14 +1380,18 @@ function propertiesFilter() {
             const fallbackAmount = (typeof window.formatDisplayPrice === 'function')
                 ? window.formatDisplayPrice(firstOperation?.amount, firstOperation?.currency?.code || firstOperation?.currency_code)
                 : '';
-            const price = firstOperation?.formatted_amount || fallbackAmount || homeI18n.priceFallback;
+            const price = cardPriceValue(firstOperation?.formatted_amount || fallbackAmount || homeI18n.priceFallback);
             const operationType = property.operations?.[0]?.operation_type || '';
-            const location = [property.location?.city, property.location?.city_area].filter(Boolean).join(', ') || homeI18n.locationFallback;
-            const constructionArea = Number(property.construction_size);
-            const lotArea = Number(property.lot_size);
-            const areaSize = Number.isFinite(constructionArea) && constructionArea > 0
-                ? property.construction_size
-                : (Number.isFinite(lotArea) && lotArea > 0 ? property.lot_size : null);
+            const location = [property.location?.city_area, property.location?.region].filter(Boolean).join(', ')
+                || [property.location?.city, property.location?.region].filter(Boolean).join(', ')
+                || homeI18n.locationFallback;
+            const cardDetails = [
+                { icon: 'lot', label: homeI18n.lotSizeLabel, value: cardAreaValue(property.lot_size) },
+                { icon: 'construction', label: homeI18n.constructionSizeLabel, value: cardAreaValue(property.construction_size) },
+                { icon: 'bedrooms', label: homeI18n.roomsLabel, value: cardNumberValue(property.bedrooms) },
+                { icon: 'bathrooms', label: homeI18n.bathroomsLabel, value: cardNumberValue(property.bathrooms) },
+                { icon: 'halfBathrooms', label: homeI18n.halfBathroomsLabel, value: cardNumberValue(property.half_bathrooms) },
+            ];
 
             return `
                 <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
@@ -1377,49 +1420,26 @@ function propertiesFilter() {
                     </div>
                     
                     <div class="p-6">
-                        <div class="flex items-center gap-2 text-sm mb-2" style="color: var(--fe-properties-card_location, #5B5B5B);">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            ${location}
-                        </div>
-                        
                         <h3 class="text-lg font-bold mb-3 line-clamp-2 transition-colors" style="color: var(--fe-properties-card_title, #1C1C1C);">
                             ${property.title || homeI18n.cardTitleFallback}
                         </h3>
-                        
-                        <div class="text-2xl font-bold text-transparent bg-clip-text mb-4" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-                            ${price}
+
+                        <div class="flex items-center gap-2 text-sm mb-3" style="color: var(--fe-properties-card_location, #5B5B5B);">
+                            ${propertyIcon('location')}
+                            <span class="truncate">${location}</span>
                         </div>
                         
-                        <div class="flex items-center gap-4 text-sm border-t pt-4" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
-                            ${property.bedrooms != null ? `
-                            <div class="flex items-center gap-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                                </svg>
-                                ${property.bedrooms} ${homeI18n.bedroomsShort}
+                        <div class="text-2xl font-extrabold text-transparent bg-clip-text mb-4" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
+                            ${price}
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-x-3 gap-y-3 text-sm border-t pt-4" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
+                            ${cardDetails.map((item) => `
+                            <div class="flex min-w-0 items-center gap-1.5" title="${item.label}" aria-label="${item.label}: ${item.value}">
+                                ${propertyIcon(item.icon, 'w-4 h-4')}
+                                <span class="truncate font-semibold" style="color: var(--fe-properties-card_title, #1C1C1C);">${item.value}</span>
                             </div>
-                            ` : ''}
-                            
-                            ${property.bathrooms != null ? `
-                            <div class="flex items-center gap-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                ${property.bathrooms} ${homeI18n.bathroomsShort}
-                            </div>
-                            ` : ''}
-                            
-                            ${areaSize != null && areaSize !== '' ? `
-                            <div class="flex items-center gap-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                                </svg>
-                                ${areaSize} ${homeI18n.areaUnit}
-                            </div>
-                            ` : ''}
+                            `).join('')}
                         </div>
 
                         <div class="mt-5">

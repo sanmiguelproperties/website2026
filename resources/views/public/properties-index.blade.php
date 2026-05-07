@@ -116,7 +116,7 @@
       </div>
 
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div class="max-w-3xl">
+        <div class="{{ $isZoneLanding ? 'max-w-6xl' : 'max-w-3xl' }}">
           @if($isZoneLanding)
             <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -577,6 +577,51 @@
     const tPublic = (key, fallback = '') => (window.publicT ? window.publicT(key, fallback) : fallback);
     const isEnLocale = (window.__PUBLIC_LOCALE__ || 'es') === 'en';
     const zoneBaseFilters = @json($zoneInitialFilters ?? []);
+    const propertyCardI18n = {
+      notAvailable: tPublic('common.notAvailable', isEnLocale ? 'N/A' : 'N/D'),
+      locationFallback: tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible'),
+      lotSizeLabel: tPublic('property.lotSize', isEnLocale ? 'Lot size' : 'M2 de terreno'),
+      constructionSizeLabel: tPublic('property.constructionSize', isEnLocale ? 'Construction size' : 'M2 de construccion'),
+      roomsLabel: tPublic('property.rooms', isEnLocale ? 'Rooms' : 'Cuartos'),
+      bathroomsLabel: tPublic('property.bathrooms', isEnLocale ? 'Baths' : 'Banos'),
+      halfBathroomsLabel: tPublic('property.halfBathrooms', isEnLocale ? 'Half baths' : 'Medios banos'),
+      areaUnit: tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2'),
+    };
+    const propertyIconUrls = {
+      location: @json(asset('iconos-base/ubicacion.svg')),
+      bedrooms: @json(asset('iconos-base/recamaras.svg')),
+      bathrooms: @json(asset('iconos-base/banos.svg')),
+      halfBathrooms: @json(asset('iconos-base/medio-bano.svg')),
+      lot: @json(asset('iconos-base/area.svg')),
+      construction: @json(asset('iconos-base/construccion.svg')),
+    };
+
+    function propertyIcon(name, className = 'w-5 h-5') {
+      const src = propertyIconUrls[name];
+      return src ? `<img src="${src}" alt="" aria-hidden="true" class="${className} inline-block object-contain opacity-75">` : '';
+    }
+
+    const wholeNumberFormatter = new Intl.NumberFormat(isEnLocale ? 'en-US' : 'es-MX', {
+      maximumFractionDigits: 0,
+    });
+
+    function cardNumberValue(value) {
+      const text = String(value ?? '').trim();
+      if (text === '') return propertyCardI18n.notAvailable;
+      const number = Number(text);
+      return Number.isFinite(number) ? wholeNumberFormatter.format(Math.trunc(number)) : propertyCardI18n.notAvailable;
+    }
+
+    function cardAreaValue(value) {
+      const number = Number(value);
+      return Number.isFinite(number) && number > 0 ? `${wholeNumberFormatter.format(number)} ${propertyCardI18n.areaUnit}` : propertyCardI18n.notAvailable;
+    }
+
+    function cardPriceValue(value) {
+      const text = String(value ?? '').trim();
+      return text ? text.replace(/([.,]\d{1,2})(?=\s*(?:[A-Z]{3})?$)/, '') : tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
+    }
+
     function propertiesFilter() {
       return {
         // Estado del modal
@@ -899,17 +944,18 @@
               const fallbackAmount = (typeof window.formatDisplayPrice === 'function')
                 ? window.formatDisplayPrice(firstOperation?.amount, firstOperation?.currency?.code || firstOperation?.currency_code)
                 : '';
-              const price = firstOperation?.formatted_amount || fallbackAmount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
+              const price = cardPriceValue(firstOperation?.formatted_amount || fallbackAmount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio'));
               const op = p.operations?.[0]?.operation_type || '';
-              const location = [p.location?.city, p.location?.city_area].filter(Boolean).join(', ') || tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible');
-              const bedroomsShort = tPublic('home.property.bedroomsShort', isEnLocale ? 'Beds' : 'Rec.');
-              const bathroomsShort = tPublic('home.property.bathroomsShort', isEnLocale ? 'Baths' : 'Banos');
-              const areaUnit = tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2');
-              const constructionArea = Number(p.construction_size);
-              const lotArea = Number(p.lot_size);
-              const areaSize = Number.isFinite(constructionArea) && constructionArea > 0
-                ? p.construction_size
-                : (Number.isFinite(lotArea) && lotArea > 0 ? p.lot_size : null);
+              const location = [p.location?.city_area, p.location?.region].filter(Boolean).join(', ')
+                || [p.location?.city, p.location?.region].filter(Boolean).join(', ')
+                || propertyCardI18n.locationFallback;
+              const cardDetails = [
+                { icon: 'lot', label: propertyCardI18n.lotSizeLabel, value: cardAreaValue(p.lot_size) },
+                { icon: 'construction', label: propertyCardI18n.constructionSizeLabel, value: cardAreaValue(p.construction_size) },
+                { icon: 'bedrooms', label: propertyCardI18n.roomsLabel, value: cardNumberValue(p.bedrooms) },
+                { icon: 'bathrooms', label: propertyCardI18n.bathroomsLabel, value: cardNumberValue(p.bathrooms) },
+                { icon: 'halfBathrooms', label: propertyCardI18n.halfBathroomsLabel, value: cardNumberValue(p.half_bathrooms) },
+              ];
 
               return `
                 <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
@@ -937,49 +983,26 @@
                   </div>
 
                   <div class="p-6">
-                    <div class="flex items-center gap-2 text-sm mb-2" style="color: var(--fe-properties-card_location, #64748b);">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      ${location}
-                    </div>
-
                     <h3 class="text-lg font-bold mb-3 line-clamp-2" style="color: var(--fe-properties-card_title, #1C1C1C);">
                       ${p.title || tPublic('common.available', isEnLocale ? 'Available property' : 'Propiedad disponible')}
                     </h3>
+
+                    <div class="flex items-center gap-2 text-sm mb-3" style="color: var(--fe-properties-card_location, #64748b);">
+                      ${propertyIcon('location')}
+                      <span class="truncate">${location}</span>
+                    </div>
 
                     <div class="text-2xl font-extrabold text-transparent bg-clip-text mb-4" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                       ${price}
                     </div>
 
-                    <div class="flex items-center gap-4 text-sm border-t pt-4 mb-5" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
-                      ${p.bedrooms != null ? `
-                      <div class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                        </svg>
-                        ${p.bedrooms} ${bedroomsShort}
+                    <div class="grid grid-cols-3 gap-x-3 gap-y-3 text-sm border-t pt-4 mb-5" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
+                      ${cardDetails.map((item) => `
+                      <div class="flex min-w-0 items-center gap-1.5" title="${item.label}" aria-label="${item.label}: ${item.value}">
+                        ${propertyIcon(item.icon, 'w-4 h-4')}
+                        <span class="truncate font-semibold" style="color: var(--fe-properties-card_title, #1C1C1C);">${item.value}</span>
                       </div>
-                      ` : ''}
-
-                      ${p.bathrooms != null ? `
-                      <div class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        ${p.bathrooms} ${bathroomsShort}
-                      </div>
-                      ` : ''}
-
-                      ${areaSize != null && areaSize !== '' ? `
-                      <div class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                        </svg>
-                        ${areaSize} ${areaUnit}
-                      </div>
-                      ` : ''}
+                      `).join('')}
                     </div>
 
                     <a href="/propiedades/${p.id}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
