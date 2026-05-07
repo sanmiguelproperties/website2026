@@ -298,8 +298,6 @@
 
             grid.innerHTML = this.agents.map((a) => {
               const name = a.full_name || a.name || `${tPublic('mls.agents.fallbackName', isEnLocale ? 'Agent' : 'Agente')} #${a.mls_agent_id}`;
-              const office = a.office?.name || a.office_name || '';
-              const officeId = a.mls_office_id || a.office?.mls_office_id || null;
               const img = a.photo || null;
               const propsCount = a.properties_count ?? 0;
 
@@ -322,7 +320,6 @@
 
                         <div class="mt-3 flex flex-wrap gap-2">
                           <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold" style="background-color: rgba(209,160,84,0.10); color: rgb(79,70,229);">MLS #${esc(a.mls_agent_id)}</span>
-                          ${officeId ? `<a href="/agencias/${esc(officeId)}" class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold hover:underline" style="background-color: rgba(118,141,89,0.12); color: rgb(5,150,105);">${tPublic('mls.agents.labelAgency', isEnLocale ? 'Agency' : 'Agencia')}: ${esc(office || ('#' + officeId))}</a>` : (office ? `<span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold" style="background-color: rgba(118,141,89,0.12); color: rgb(5,150,105);">${tPublic('mls.agents.labelAgency', isEnLocale ? 'Agency' : 'Agencia')}: ${esc(office)}</span>` : '')}
                         </div>
 
                         <div class="mt-5">
