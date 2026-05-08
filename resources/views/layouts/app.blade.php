@@ -328,6 +328,23 @@
                 </a>
                 @endif
 
+              </div>
+            </div>
+          </section>
+          @endif
+
+          <!-- Grupo 7: MLS -->
+          @if($dashCanMenuGroup(7))
+          <section class="rounded-2xl overflow-hidden ring-1 ring-[var(--c-border)]">
+            <button id="dash-acc-btn-7" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[var(--c-elev)] hover:bg-[var(--c-elev)]/80 transition" aria-controls="dash-acc-panel-7" aria-expanded="false">
+              <span class="flex items-center gap-3">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M7 21V5l10-2v18"/><path d="M17 7h3v14"/><path d="M9 9h1"/><path d="M9 13h1"/><path d="M9 17h1"/><path d="M14 9h1"/><path d="M14 13h1"/><path d="M14 17h1"/></svg>
+                <span class="text-sm font-medium">MLS</span>
+              </span>
+              <svg class="size-4 -rotate-90 transition-transform" id="dash-acc-icon-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div id="dash-acc-panel-7" class="hidden cv-auto">
+              <div class="p-2 bg-[var(--c-surface)] min-h-0">
                 @if($dashCanMenuItem('easybroker.mls-export'))
                 <a href="{{ route('easybroker.mls-export') }}" data-route="easybroker.mls-export" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
@@ -366,10 +383,9 @@
               </div>
             </div>
           </section>
-
-          <!-- Grupo 5: Correos -->
           @endif
 
+          <!-- Grupo 5: Correos -->
           @if($dashCanMenuGroup(5))
           <section class="rounded-2xl overflow-hidden ring-1 ring-[var(--c-border)]">
             <button id="dash-acc-btn-5" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[var(--c-elev)] hover:bg-[var(--c-elev)]/80 transition" aria-controls="dash-acc-panel-5" aria-expanded="false">
@@ -620,10 +636,10 @@
         'frontend-colors': 2,
         'rbac': 2,
         'easybroker': 2,
-        'easybroker.mls-export': 2,
-        'mls': 2,
-        'mls-agents': 2,
-        'mls-offices': 2,
+        'easybroker.mls-export': 7,
+        'mls': 7,
+        'mls-agents': 7,
+        'mls-offices': 7,
         'corporate-email.configuration': 5,
         'corporate-email.inbox': 5,
         'corporate-email.outbox': 5,
@@ -676,6 +692,7 @@
         { btn: 'dash-acc-btn-1', panel: 'dash-acc-panel-1', icon: 'dash-acc-icon-1', defaultOpen: currentGroup === 1 },
         { btn: 'dash-acc-btn-6', panel: 'dash-acc-panel-6', icon: 'dash-acc-icon-6', defaultOpen: currentGroup === 6 },
         { btn: 'dash-acc-btn-2', panel: 'dash-acc-panel-2', icon: 'dash-acc-icon-2', defaultOpen: currentGroup === 2 },
+        { btn: 'dash-acc-btn-7', panel: 'dash-acc-panel-7', icon: 'dash-acc-icon-7', defaultOpen: currentGroup === 7 },
         { btn: 'dash-acc-btn-5', panel: 'dash-acc-panel-5', icon: 'dash-acc-icon-5', defaultOpen: currentGroup === 5 },
         { btn: 'dash-acc-btn-4', panel: 'dash-acc-panel-4', icon: 'dash-acc-icon-4', defaultOpen: currentGroup === 4 },
         { btn: 'dash-acc-btn-3', panel: 'dash-acc-panel-3', icon: 'dash-acc-icon-3', defaultOpen: currentGroup === 3 },

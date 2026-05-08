@@ -17,6 +17,7 @@ class AdminMenuTest extends TestCase
         $this->assertTrue(AdminMenu::groupVisible($user, 1));
         $this->assertFalse(AdminMenu::groupVisible($user, 2));
         $this->assertFalse(AdminMenu::groupVisible($user, 6));
+        $this->assertFalse(AdminMenu::groupVisible($user, 7));
     }
 
     public function test_crm_group_contains_clients_leads_and_calendar_items(): void
@@ -39,6 +40,29 @@ class AdminMenuTest extends TestCase
         $user = new AdminMenuUser(['integrations.view']);
 
         $this->assertSame('easybroker', AdminMenu::firstAccessibleRoute($user));
+    }
+
+    public function test_mls_items_live_in_their_own_menu_group(): void
+    {
+        $integrationUser = new AdminMenuUser(['integrations.view']);
+        $syncUser = new AdminMenuUser(['integrations.sync']);
+        $catalogUser = new AdminMenuUser(['catalogs.manage']);
+        $adminUser = new AdminMenuUser(['settings.manage']);
+
+        $this->assertTrue(AdminMenu::canAccessItem($integrationUser, 'mls'));
+        $this->assertTrue(AdminMenu::groupVisible($integrationUser, 7));
+        $this->assertTrue(AdminMenu::groupVisible($integrationUser, 2));
+
+        $this->assertTrue(AdminMenu::canAccessItem($syncUser, 'easybroker.mls-export'));
+        $this->assertTrue(AdminMenu::groupVisible($syncUser, 7));
+        $this->assertFalse(AdminMenu::groupVisible($syncUser, 2));
+
+        $this->assertTrue(AdminMenu::canAccessItem($catalogUser, 'mls-agents'));
+        $this->assertTrue(AdminMenu::canAccessItem($catalogUser, 'mls-offices'));
+        $this->assertTrue(AdminMenu::groupVisible($catalogUser, 7));
+
+        $this->assertFalse(AdminMenu::canAccessItem($adminUser, 'mls'));
+        $this->assertFalse(AdminMenu::groupVisible($adminUser, 7));
     }
 
     public function test_corporate_email_configuration_requires_super_admin(): void
