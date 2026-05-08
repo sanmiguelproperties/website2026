@@ -66,6 +66,11 @@ class FrontendColorSetting extends Model
                 'description' => 'Colores para la página about',
                 'groups' => ['about_page'],
             ],
+            'sell-with-us' => [
+                'name' => 'Vende con nosotros',
+                'description' => 'Colores para la página de vendedores',
+                'groups' => ['sell_page'],
+            ],
             'mls-offices' => [
                 'name' => 'Agencias MLS',
                 'description' => 'Colores para la página de agencias y detalle de agencia',
@@ -1021,6 +1026,55 @@ class FrontendColorSetting extends Model
                 'value_icon_1' => '#D1A054',
                 'value_icon_2' => '#768D59',
                 'value_icon_3' => '#A52A2A',
+            ],
+
+            // === COLORES DE VENDE CON NOSOTROS ===
+            'sell_page' => [
+                'page_bg' => '#ffffff',
+                'hero_overlay_bg' => 'rgba(15,23,42,0.70)',
+                'hero_overlay_from' => 'rgba(15,23,42,0.88)',
+                'hero_overlay_mid' => 'rgba(15,23,42,0.70)',
+                'hero_overlay_to' => 'rgba(118,141,89,0.42)',
+                'hero_badge_bg' => 'rgba(255,255,255,0.10)',
+                'hero_badge_border' => 'rgba(255,255,255,0.20)',
+                'hero_badge_text' => 'rgba(255,255,255,0.90)',
+                'hero_title' => '#ffffff',
+                'hero_text' => 'rgba(255,255,255,0.82)',
+
+                'form_bg' => '#ffffff',
+                'form_border' => 'rgba(255,255,255,0.18)',
+                'eyebrow' => '#9a7035',
+                'title' => '#0f172a',
+                'body_text' => '#334155',
+                'muted_text' => '#475569',
+                'input_bg' => '#ffffff',
+                'input_border' => '#cbd5e1',
+                'input_text' => '#0f172a',
+                'input_focus' => '#D1A054',
+                'input_focus_ring' => 'rgba(209,160,84,0.20)',
+                'checkbox_accent' => '#768D59',
+
+                'alert_success_bg' => '#ecfdf5',
+                'alert_success_border' => '#bbf7d0',
+                'alert_success_text' => '#166534',
+                'alert_error_bg' => '#fef2f2',
+                'alert_error_border' => '#fecaca',
+                'alert_error_text' => '#991b1b',
+
+                'intro_bg_from' => '#ffffff',
+                'intro_bg_to' => '#f8fafc',
+                'intro_border' => '#D1A054',
+                'guide_bg' => '#0f172a',
+                'guide_eyebrow' => '#D1A054',
+                'guide_title' => '#ffffff',
+                'guide_text' => 'rgba(255,255,255,0.75)',
+                'guide_pending_border' => 'rgba(255,255,255,0.20)',
+                'guide_pending_text' => 'rgba(255,255,255,0.70)',
+
+                'testimonials_bg' => '#f8fafc',
+                'testimonial_card_bg' => '#ffffff',
+                'testimonial_card_border' => '#e2e8f0',
+                'testimonial_divider' => '#f1f5f9',
             ],
         ];
     }

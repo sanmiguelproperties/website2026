@@ -35,82 +35,241 @@
 
 @section('title', $pageTitle)
 
+@push('styles')
+<style>
+    .sell-with-us-page {
+        background-color: var(--fe-sell_page-page_bg, #ffffff);
+        color: var(--fe-sell_page-body_text, var(--fe-ui-body_text, #0f172a));
+    }
+
+    .sell-with-us-page .sell-hero-overlay-base {
+        background-color: var(--fe-sell_page-hero_overlay_bg, rgba(15,23,42,0.70));
+    }
+
+    .sell-with-us-page .sell-hero-overlay-gradient {
+        background: linear-gradient(
+            110deg,
+            var(--fe-sell_page-hero_overlay_from, rgba(15,23,42,0.88)) 0%,
+            var(--fe-sell_page-hero_overlay_mid, rgba(15,23,42,0.70)) 45%,
+            var(--fe-sell_page-hero_overlay_to, rgba(118,141,89,0.42)) 100%
+        );
+    }
+
+    .sell-with-us-page .sell-hero-badge {
+        background-color: var(--fe-sell_page-hero_badge_bg, rgba(255,255,255,0.10));
+        border-color: var(--fe-sell_page-hero_badge_border, rgba(255,255,255,0.20));
+        color: var(--fe-sell_page-hero_badge_text, rgba(255,255,255,0.90)) !important;
+    }
+
+    .sell-with-us-page .sell-hero-title {
+        color: var(--fe-sell_page-hero_title, #ffffff) !important;
+    }
+
+    .sell-with-us-page .sell-hero-text {
+        color: var(--fe-sell_page-hero_text, rgba(255,255,255,0.82));
+    }
+
+    .sell-with-us-page .sell-btn-primary,
+    .sell-with-us-page .sell-btn-secondary {
+        border: 1px solid transparent;
+        transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .sell-with-us-page .sell-btn-primary {
+        background: none !important;
+        background-color: var(--fe-buttons-primary_bg, #D1A054) !important;
+        border-color: var(--fe-buttons-primary_border, var(--fe-buttons-primary_bg, #D1A054)) !important;
+        color: var(--fe-buttons-primary_text, #ffffff) !important;
+    }
+
+    .sell-with-us-page .sell-btn-primary:hover {
+        background-color: var(--fe-buttons-primary_hover_bg, var(--fe-buttons-primary_bg, #D1A054)) !important;
+    }
+
+    .sell-with-us-page .sell-btn-secondary {
+        background: none !important;
+        background-color: var(--fe-buttons-secondary_bg, #768D59) !important;
+        border-color: var(--fe-buttons-secondary_border, var(--fe-buttons-secondary_bg, #768D59)) !important;
+        color: var(--fe-buttons-secondary_text, #ffffff) !important;
+    }
+
+    .sell-with-us-page .sell-btn-secondary:hover {
+        background-color: var(--fe-buttons-secondary_hover_bg, var(--fe-buttons-secondary_bg, #768D59)) !important;
+    }
+
+    .sell-with-us-page .sell-form-card {
+        background-color: var(--fe-sell_page-form_bg, #ffffff);
+        border-color: var(--fe-sell_page-form_border, rgba(255,255,255,0.18));
+    }
+
+    .sell-with-us-page .sell-eyebrow {
+        color: var(--fe-sell_page-eyebrow, #9a7035);
+    }
+
+    .sell-with-us-page .sell-heading {
+        color: var(--fe-sell_page-title, #0f172a) !important;
+    }
+
+    .sell-with-us-page .sell-body {
+        color: var(--fe-sell_page-body_text, #334155);
+    }
+
+    .sell-with-us-page .sell-muted {
+        color: var(--fe-sell_page-muted_text, #475569);
+    }
+
+    .sell-with-us-page .sell-alert-success {
+        background-color: var(--fe-sell_page-alert_success_bg, #ecfdf5);
+        border-color: var(--fe-sell_page-alert_success_border, #bbf7d0);
+        color: var(--fe-sell_page-alert_success_text, #166534);
+    }
+
+    .sell-with-us-page .sell-alert-error {
+        background-color: var(--fe-sell_page-alert_error_bg, #fef2f2);
+        border-color: var(--fe-sell_page-alert_error_border, #fecaca);
+        color: var(--fe-sell_page-alert_error_text, #991b1b);
+    }
+
+    .sell-with-us-page .sell-label {
+        color: var(--fe-sell_page-body_text, #334155);
+    }
+
+    .sell-with-us-page .sell-input {
+        background-color: var(--fe-sell_page-input_bg, #ffffff);
+        border-color: var(--fe-sell_page-input_border, #cbd5e1);
+        color: var(--fe-sell_page-input_text, #0f172a);
+    }
+
+    .sell-with-us-page .sell-input:focus {
+        border-color: var(--fe-sell_page-input_focus, var(--fe-buttons-primary_bg, #D1A054));
+        --tw-ring-color: var(--fe-sell_page-input_focus_ring, rgba(209,160,84,0.20));
+    }
+
+    .sell-with-us-page .sell-checkbox {
+        accent-color: var(--fe-sell_page-checkbox_accent, var(--fe-buttons-secondary_bg, #768D59));
+        border-color: var(--fe-sell_page-input_border, #cbd5e1);
+    }
+
+    .sell-with-us-page .sell-intro-section {
+        background: linear-gradient(180deg, var(--fe-sell_page-intro_bg_from, #ffffff), var(--fe-sell_page-intro_bg_to, #f8fafc));
+    }
+
+    .sell-with-us-page .sell-article {
+        border-color: var(--fe-sell_page-intro_border, var(--fe-buttons-primary_bg, #D1A054));
+    }
+
+    .sell-with-us-page .sell-guide-section {
+        background-color: var(--fe-sell_page-guide_bg, #0f172a);
+    }
+
+    .sell-with-us-page .sell-guide-eyebrow {
+        color: var(--fe-sell_page-guide_eyebrow, var(--fe-buttons-primary_bg, #D1A054));
+    }
+
+    .sell-with-us-page .sell-guide-title {
+        color: var(--fe-sell_page-guide_title, #ffffff) !important;
+    }
+
+    .sell-with-us-page .sell-guide-text {
+        color: var(--fe-sell_page-guide_text, rgba(255,255,255,0.75));
+    }
+
+    .sell-with-us-page .sell-btn-disabled {
+        border-color: var(--fe-sell_page-guide_pending_border, rgba(255,255,255,0.20));
+        color: var(--fe-sell_page-guide_pending_text, rgba(255,255,255,0.70)) !important;
+    }
+
+    .sell-with-us-page .sell-testimonials-section {
+        background-color: var(--fe-sell_page-testimonials_bg, #f8fafc);
+    }
+
+    .sell-with-us-page .sell-testimonial-card {
+        background-color: var(--fe-sell_page-testimonial_card_bg, #ffffff);
+        border-color: var(--fe-sell_page-testimonial_card_border, #e2e8f0);
+    }
+
+    .sell-with-us-page .sell-testimonial-divider {
+        border-color: var(--fe-sell_page-testimonial_divider, #f1f5f9);
+    }
+</style>
+@endpush
+
 @section('content')
-<div class="pt-24 bg-white">
+<div class="sell-with-us-page pt-24">
     <section class="relative min-h-[calc(100vh-6rem)] overflow-hidden">
         <div class="absolute inset-0">
             <img src="{{ $heroImage }}" alt="{{ $pageTitle }}" class="h-full w-full object-cover" />
-            <div class="absolute inset-0 bg-slate-950/70"></div>
-            <div class="absolute inset-0" style="background: linear-gradient(110deg, rgba(15,23,42,.88) 0%, rgba(15,23,42,.70) 45%, rgba(118,141,89,.42) 100%);"></div>
+            <div class="sell-hero-overlay-base absolute inset-0"></div>
+            <div class="sell-hero-overlay-gradient absolute inset-0"></div>
         </div>
 
         <div class="relative mx-auto grid min-h-[calc(100vh-6rem)] max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8">
             <div class="max-w-3xl">
-                <span class="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90 backdrop-blur">
+                <span class="sell-hero-badge inline-flex rounded-full border px-4 py-2 text-sm font-semibold backdrop-blur">
                     {{ $txt('seller_hero_badge', 'Vendedores', 'Sellers') }}
                 </span>
-                <h1 class="mt-6 text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
+                <h1 class="sell-hero-title mt-6 text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
                     {{ $txt('seller_hero_title', 'Vende tu propiedad con estrategia local', 'Sell your home with local strategy') }}
                 </h1>
-                <div class="mt-6 max-w-2xl text-lg leading-relaxed text-white/82 rich-content">
+                <div class="sell-hero-text mt-6 max-w-2xl text-lg leading-relaxed rich-content">
                     {!! $rich($pageData?->field('seller_hero_subtitle'), $isEn
                         ? 'Selling your home in San Miguel de Allende is a major decision, and choosing the right representation matters.'
                         : 'Vender tu propiedad en San Miguel de Allende es una decision importante, y contar con la representacion adecuada hace toda la diferencia.') !!}
                 </div>
 
                 <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <a href="#sellerLeadForm" class="inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5" style="background: linear-gradient(135deg, #D1A054, #768D59);">
+                    <a href="#sellerLeadForm" class="sell-btn-primary inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-bold shadow-lg hover:-translate-y-0.5">
                         {{ $txt('seller_hero_form_cta', 'Solicitar asesoria', 'Request a consultation') }}
                     </a>
                     @if($guideUrl !== '')
-                        <a href="{{ $guideUrl }}" download class="inline-flex items-center justify-center rounded-lg border border-white/35 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/18">
+                        <a href="{{ $guideUrl }}" download class="sell-btn-secondary inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-bold shadow-lg hover:-translate-y-0.5">
                             {{ $txt('seller_guide_button', 'Descargar manual', 'Download guide') }}
                         </a>
                     @endif
                 </div>
             </div>
 
-            <div id="sellerLeadForm" class="rounded-xl border border-white/18 bg-white p-6 shadow-2xl sm:p-8">
+            <div id="sellerLeadForm" class="sell-form-card rounded-xl border p-6 shadow-2xl sm:p-8">
                 <div>
-                    <p class="text-sm font-semibold uppercase tracking-wide" style="color: #9a7035;">
+                    <p class="sell-eyebrow text-sm font-semibold uppercase tracking-wide">
                         {{ $txt('seller_form_badge', 'Captura de datos', 'Lead capture') }}
                     </p>
-                    <h2 class="mt-2 text-2xl font-black text-slate-950">
+                    <h2 class="sell-heading mt-2 text-2xl font-black">
                         {{ $txt('seller_form_title', 'Cuéntanos sobre tu propiedad', 'Tell us about your property') }}
                     </h2>
-                    <p class="mt-2 text-sm leading-relaxed text-slate-600">
+                    <p class="sell-muted mt-2 text-sm leading-relaxed">
                         {{ $txt('seller_form_subtitle', 'Completa el formulario y un broker de San Miguel Properties te contactara.', 'Complete the form and a San Miguel Properties broker will contact you.') }}
                     </p>
                 </div>
 
                 <form id="sellerForm" class="mt-6 space-y-4" x-data="sellerLeadForm()">
-                    <div x-show="success" x-cloak class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800" x-text="successMessage"></div>
-                    <div x-show="error" x-cloak class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800" x-text="errorMessage"></div>
+                    <div x-show="success" x-cloak class="sell-alert-success rounded-lg border px-4 py-3 text-sm font-medium" x-text="successMessage"></div>
+                    <div x-show="error" x-cloak class="sell-alert-error rounded-lg border px-4 py-3 text-sm font-medium" x-text="errorMessage"></div>
 
                     <div>
-                        <label for="seller-full-name" class="mb-1 block text-sm font-semibold text-slate-700">{{ $isEn ? 'Full name' : 'Nombre completo' }} *</label>
-                        <input id="seller-full-name" type="text" x-model="form.full_name" required class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-[#D1A054] focus:ring-2 focus:ring-[#D1A054]/20" autocomplete="name">
+                        <label for="seller-full-name" class="sell-label mb-1 block text-sm font-semibold">{{ $isEn ? 'Full name' : 'Nombre completo' }} *</label>
+                        <input id="seller-full-name" type="text" x-model="form.full_name" required class="sell-input w-full rounded-lg border px-4 py-3 text-sm outline-none transition focus:ring-2" autocomplete="name">
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
-                            <label for="seller-email" class="mb-1 block text-sm font-semibold text-slate-700">{{ $isEn ? 'Email' : 'Correo' }} *</label>
-                            <input id="seller-email" type="email" x-model="form.email" required class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-[#D1A054] focus:ring-2 focus:ring-[#D1A054]/20" autocomplete="email">
+                            <label for="seller-email" class="sell-label mb-1 block text-sm font-semibold">{{ $isEn ? 'Email' : 'Correo' }} *</label>
+                            <input id="seller-email" type="email" x-model="form.email" required class="sell-input w-full rounded-lg border px-4 py-3 text-sm outline-none transition focus:ring-2" autocomplete="email">
                         </div>
                         <div>
-                            <label for="seller-phone" class="mb-1 block text-sm font-semibold text-slate-700">{{ $isEn ? 'Phone' : 'Telefono' }} *</label>
-                            <input id="seller-phone" type="tel" x-model="form.phone" required class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-[#D1A054] focus:ring-2 focus:ring-[#D1A054]/20" autocomplete="tel">
+                            <label for="seller-phone" class="sell-label mb-1 block text-sm font-semibold">{{ $isEn ? 'Phone' : 'Telefono' }} *</label>
+                            <input id="seller-phone" type="tel" x-model="form.phone" required class="sell-input w-full rounded-lg border px-4 py-3 text-sm outline-none transition focus:ring-2" autocomplete="tel">
                         </div>
                     </div>
 
                     <div>
-                        <label for="seller-property-address" class="mb-1 block text-sm font-semibold text-slate-700">{{ $isEn ? 'Property address or neighborhood' : 'Direccion o colonia de la propiedad' }}</label>
-                        <input id="seller-property-address" type="text" x-model="form.property_address" class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-[#D1A054] focus:ring-2 focus:ring-[#D1A054]/20">
+                        <label for="seller-property-address" class="sell-label mb-1 block text-sm font-semibold">{{ $isEn ? 'Property address or neighborhood' : 'Direccion o colonia de la propiedad' }}</label>
+                        <input id="seller-property-address" type="text" x-model="form.property_address" class="sell-input w-full rounded-lg border px-4 py-3 text-sm outline-none transition focus:ring-2">
                     </div>
 
                     <div>
-                        <label for="seller-timeframe" class="mb-1 block text-sm font-semibold text-slate-700">{{ $isEn ? 'When would you like to sell?' : 'Cuando quieres vender?' }}</label>
-                        <select id="seller-timeframe" x-model="form.timeframe" class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-[#D1A054] focus:ring-2 focus:ring-[#D1A054]/20">
+                        <label for="seller-timeframe" class="sell-label mb-1 block text-sm font-semibold">{{ $isEn ? 'When would you like to sell?' : 'Cuando quieres vender?' }}</label>
+                        <select id="seller-timeframe" x-model="form.timeframe" class="sell-input w-full rounded-lg border px-4 py-3 text-sm outline-none transition focus:ring-2">
                             <option value="">{{ $isEn ? 'Select an option' : 'Selecciona una opcion' }}</option>
                             <option value="now">{{ $isEn ? 'As soon as possible' : 'Lo antes posible' }}</option>
                             <option value="1-3 months">{{ $isEn ? 'In 1 to 3 months' : 'En 1 a 3 meses' }}</option>
@@ -120,16 +279,16 @@
                     </div>
 
                     <div>
-                        <label for="seller-message" class="mb-1 block text-sm font-semibold text-slate-700">{{ $isEn ? 'Message' : 'Mensaje' }}</label>
-                        <textarea id="seller-message" x-model="form.message" rows="4" class="w-full resize-none rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-[#D1A054] focus:ring-2 focus:ring-[#D1A054]/20"></textarea>
+                        <label for="seller-message" class="sell-label mb-1 block text-sm font-semibold">{{ $isEn ? 'Message' : 'Mensaje' }}</label>
+                        <textarea id="seller-message" x-model="form.message" rows="4" class="sell-input w-full resize-none rounded-lg border px-4 py-3 text-sm outline-none transition focus:ring-2"></textarea>
                     </div>
 
-                    <label class="flex items-start gap-3 text-sm leading-relaxed text-slate-600">
-                        <input type="checkbox" x-model="form.privacy" required class="mt-1 h-4 w-4 rounded border-slate-300" style="accent-color: #768D59;">
+                    <label class="sell-muted flex items-start gap-3 text-sm leading-relaxed">
+                        <input type="checkbox" x-model="form.privacy" required class="sell-checkbox mt-1 h-4 w-4 rounded border">
                         <span>{{ $txt('seller_form_privacy', 'Acepto que San Miguel Properties me contacte sobre mi solicitud.', 'I agree that San Miguel Properties may contact me about my request.') }}</span>
                     </label>
 
-                    <button type="submit" :disabled="loading" class="w-full rounded-lg px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0" style="background: linear-gradient(135deg, #D1A054, #768D59);">
+                    <button type="submit" :disabled="loading" class="sell-btn-primary w-full rounded-lg px-6 py-3 text-sm font-bold shadow-lg hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0">
                         <span x-text="loading ? labels.sending : labels.submit"></span>
                     </button>
                 </form>
@@ -137,12 +296,12 @@
         </div>
     </section>
 
-    <section class="py-16 lg:py-20" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);">
+    <section class="sell-intro-section py-16 lg:py-20">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
                 <div class="sticky top-28 hidden lg:block">
-                    <p class="text-sm font-semibold uppercase tracking-wide" style="color: #9a7035;">San Miguel Properties</p>
-                    <h2 class="mt-3 text-3xl font-black text-slate-950">
+                    <p class="sell-eyebrow text-sm font-semibold uppercase tracking-wide">San Miguel Properties</p>
+                    <h2 class="sell-heading mt-3 text-3xl font-black">
                         {{ $txt('seller_intro_title', 'Representacion local para vender bien', 'Local representation to sell well') }}
                     </h2>
                 </div>
@@ -154,8 +313,8 @@
                         ['seller_process_body', $isEn ? 'From preparing your property for market to pricing, promotion, showings, negotiation and closing coordination, we manage each step with professionalism and care.' : 'Desde la preparacion de la propiedad para salir al mercado, hasta la estrategia de precio, promocion, visitas, negociacion y coordinacion del cierre, acompañamos cada etapa con profesionalismo y cuidado.'],
                         ['seller_final_body', $isEn ? 'When you sell with San Miguel Properties, you work with a local team that knows the market, values its reputation and treats every listing with the attention it deserves.' : 'Al vender con San Miguel Properties, trabajas con un equipo local que conoce el mercado, cuida su reputacion y trata cada propiedad con la atencion que merece.'],
                     ] as $block)
-                        <article class="border-l-4 pl-6" style="border-color: #D1A054;">
-                            <div class="rich-content text-lg leading-relaxed text-slate-700">
+                        <article class="sell-article border-l-4 pl-6">
+                            <div class="sell-body rich-content text-lg leading-relaxed">
                                 {!! $rich($pageData?->field($block[0]), $block[1]) !!}
                             </div>
                         </article>
@@ -165,26 +324,26 @@
         </div>
     </section>
 
-    <section class="py-14" style="background-color: #0f172a;">
+    <section class="sell-guide-section py-14">
         <div class="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-center lg:px-8">
             <div>
-                <p class="text-sm font-semibold uppercase tracking-wide" style="color: #D1A054;">
+                <p class="sell-guide-eyebrow text-sm font-semibold uppercase tracking-wide">
                     {{ $txt('seller_guide_eyebrow', 'Guia para vendedores', 'Seller guide') }}
                 </p>
-                <h2 class="mt-3 text-3xl font-black text-white">
+                <h2 class="sell-guide-title mt-3 text-3xl font-black">
                     {{ $txt('seller_guide_title', 'Descarga el manual para vendedores', 'Download the seller guide') }}
                 </h2>
-                <p class="mt-3 max-w-3xl text-base leading-relaxed text-white/75">
+                <p class="sell-guide-text mt-3 max-w-3xl text-base leading-relaxed">
                     {{ $txt('seller_guide_text', 'Consulta el material preparado por el equipo para entender los pasos clave antes de vender tu propiedad.', 'Review the material prepared by our team to understand the key steps before selling your property.') }}
                 </p>
             </div>
 
             @if($guideUrl !== '')
-                <a href="{{ $guideUrl }}" download class="inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5" style="background: linear-gradient(135deg, #D1A054, #768D59);">
+                <a href="{{ $guideUrl }}" download class="sell-btn-primary inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-bold shadow-lg hover:-translate-y-0.5">
                     {{ $txt('seller_guide_button', 'Descargar manual', 'Download guide') }}
                 </a>
             @else
-                <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-white/20 px-6 py-3 text-sm font-bold text-white/70">
+                <button type="button" disabled class="sell-btn-disabled inline-flex cursor-not-allowed items-center justify-center rounded-lg border px-6 py-3 text-sm font-bold">
                     {{ $txt('seller_guide_pending_button', 'Manual pendiente', 'Guide pending') }}
                 </button>
             @endif
@@ -192,28 +351,28 @@
     </section>
 
     @if(!empty($testimonials))
-        <section class="py-16 lg:py-20" style="background-color: #f8fafc;">
+        <section class="sell-testimonials-section py-16 lg:py-20">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div class="max-w-3xl">
-                    <h2 class="text-3xl font-black text-slate-950">
+                    <h2 class="sell-heading text-3xl font-black">
                         {{ $txt('seller_testimonials_title', 'Testimoniales', 'Testimonials') }}
                     </h2>
-                    <p class="mt-3 text-slate-600">
+                    <p class="sell-muted mt-3">
                         {{ $txt('seller_testimonials_intro', 'Opiniones agregadas manualmente desde el CMS.', 'Testimonials added manually from the CMS.') }}
                     </p>
                 </div>
 
                 <div class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                     @foreach($testimonials as $testimonial)
-                        <article class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                            <p class="text-base leading-relaxed text-slate-700">"{{ $testimonial['quote'] }}"</p>
+                        <article class="sell-testimonial-card rounded-lg border p-6 shadow-sm">
+                            <p class="sell-body text-base leading-relaxed">"{{ $testimonial['quote'] }}"</p>
                             @if($testimonial['name'] !== '' || $testimonial['context'] !== '')
-                                <div class="mt-5 border-t border-slate-100 pt-4">
+                                <div class="sell-testimonial-divider mt-5 border-t pt-4">
                                     @if($testimonial['name'] !== '')
-                                        <p class="font-bold text-slate-950">{{ $testimonial['name'] }}</p>
+                                        <p class="sell-heading font-bold">{{ $testimonial['name'] }}</p>
                                     @endif
                                     @if($testimonial['context'] !== '')
-                                        <p class="text-sm text-slate-500">{{ $testimonial['context'] }}</p>
+                                        <p class="sell-muted text-sm">{{ $testimonial['context'] }}</p>
                                     @endif
                                 </div>
                             @endif

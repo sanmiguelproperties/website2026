@@ -219,7 +219,8 @@ document.addEventListener('DOMContentLoaded', function() {
     'gallery': 'Galería',
     'agent_card': 'Tarjeta Agente',
     'contact_page': 'Página Contacto',
-    'about_page': 'Página Nosotros'
+    'about_page': 'Página Nosotros',
+    'sell_page': 'Vende con nosotros'
   };
 
   // Color key labels (human readable)
@@ -244,6 +245,13 @@ document.addEventListener('DOMContentLoaded', function() {
     'overlay_from': 'Overlay - inicio',
     'overlay_via': 'Overlay - medio',
     'overlay_to': 'Overlay - fin',
+    'hero_overlay_bg': 'Hero overlay - fondo',
+    'hero_overlay_from': 'Hero overlay - inicio',
+    'hero_overlay_mid': 'Hero overlay - medio',
+    'hero_overlay_to': 'Hero overlay - fin',
+    'hero_badge_border': 'Hero badge - borde',
+    'hero_title': 'Hero - titulo',
+    'hero_text': 'Hero - texto',
     'badge_bg': 'Badge - fondo',
     'badge_dot': 'Badge - punto',
     'badge_text': 'Badge - texto',
@@ -1179,33 +1187,183 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
   }
 
+  function clampNumber(value, min, max) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return min;
+    return Math.min(max, Math.max(min, parsed));
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function hexPair(value) {
+    return clampNumber(Math.round(value), 0, 255).toString(16).padStart(2, '0');
+  }
+
+  function rgbToHex(r, g, b) {
+    return `#${hexPair(r)}${hexPair(g)}${hexPair(b)}`;
+  }
+
+  function hexToRgb(hex) {
+    const value = String(hex || '').trim();
+    const match = value.match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
+    if (!match) return null;
+
+    let raw = match[1];
+    if (raw.length === 3 || raw.length === 4) {
+      raw = raw.split('').map((char) => char + char).join('');
+    }
+
+    const hasAlpha = raw.length === 8;
+    return {
+      r: parseInt(raw.slice(0, 2), 16),
+      g: parseInt(raw.slice(2, 4), 16),
+      b: parseInt(raw.slice(4, 6), 16),
+      alpha: hasAlpha ? Math.round((parseInt(raw.slice(6, 8), 16) / 255) * 100) / 100 : 1,
+    };
+  }
+
+  function parseEditableColor(value) {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+
+    if (raw.toLowerCase() === 'transparent') {
+      return { hex: '#000000', alpha: 0, format: 'rgba' };
+    }
+
+    const hex = hexToRgb(raw);
+    if (hex) {
+      return {
+        hex: rgbToHex(hex.r, hex.g, hex.b),
+        alpha: clampNumber(hex.alpha, 0, 1),
+        format: hex.alpha < 1 ? 'rgba' : 'hex',
+      };
+    }
+
+    const rgb = raw.match(/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*([0-9.]+)\s*)?\)$/i);
+    if (!rgb) return null;
+
+    const r = clampNumber(rgb[1], 0, 255);
+    const g = clampNumber(rgb[2], 0, 255);
+    const b = clampNumber(rgb[3], 0, 255);
+    const alpha = rgb[4] === undefined ? 1 : clampNumber(rgb[4], 0, 1);
+
+    return {
+      hex: rgbToHex(r, g, b),
+      alpha,
+      format: 'rgba',
+    };
+  }
+
+  function hexPickerToRgb(hex) {
+    return hexToRgb(hex) || { r: 0, g: 0, b: 0, alpha: 1 };
+  }
+
+  function formatAlpha(alpha) {
+    const clamped = clampNumber(alpha, 0, 1);
+    return Number(clamped.toFixed(2)).toString();
+  }
+
+  function buildColorValue(hex, opacityPercent, currentValue = '') {
+    const rgb = hexPickerToRgb(hex);
+    const alpha = clampNumber(opacityPercent, 0, 100) / 100;
+    const currentFormat = parseEditableColor(currentValue)?.format;
+
+    if (alpha < 1 || currentFormat === 'rgba') {
+      return `rgba(${rgb.r},${rgb.g},${rgb.b},${formatAlpha(alpha)})`;
+    }
+
+    return rgbToHex(rgb.r, rgb.g, rgb.b);
+  }
+
+  function updateOpacityDisplay(group, key, opacityPercent) {
+    const percent = Math.round(clampNumber(opacityPercent, 0, 100));
+    const display = document.querySelector(`.color-opacity-value[data-group="${group}"][data-key="${key}"]`);
+    const number = document.querySelector(`.color-opacity-number[data-group="${group}"][data-key="${key}"]`);
+    const range = document.querySelector(`.color-opacity[data-group="${group}"][data-key="${key}"]`);
+
+    if (display) display.textContent = `${percent}%`;
+    if (number) number.value = String(percent);
+    if (range) range.value = String(percent);
+  }
+
+  function syncColorControls(group, key, value) {
+    const parsed = parseEditableColor(value);
+    if (!parsed) return;
+
+    const picker = document.querySelector(`.color-picker[data-group="${group}"][data-key="${key}"]`);
+    if (picker) picker.value = parsed.hex;
+
+    updateOpacityDisplay(group, key, Math.round(parsed.alpha * 100));
+  }
+
   function createColorField(group, key, value) {
     const label = colorKeyLabels[key] || key.replace(/_/g, ' ');
-    const isRgba = value.startsWith('rgba') || value.startsWith('rgb');
+    const parsed = parseEditableColor(value);
+    const supportsPicker = Boolean(parsed);
     const fieldId = `color-${group}-${key}`;
+    const safeValue = escapeHtml(value);
+    const pickerValue = parsed?.hex || '#888888';
+    const opacityPercent = Math.round((parsed?.alpha ?? 1) * 100);
 
     return `
       <div class="bg-[var(--c-elev)] rounded-xl p-4 border border-[var(--c-border)]">
         <label for="${fieldId}" class="block text-xs font-medium text-[var(--c-muted)] mb-2">${label}</label>
         <div class="flex items-center gap-2">
-          <input 
-            type="color" 
-            class="color-picker h-10 w-14 p-1 rounded-lg border border-[var(--c-border)] bg-[var(--c-surface)] cursor-pointer"
+          <input
+            type="color"
+            class="color-picker h-10 w-14 p-1 rounded-lg border border-[var(--c-border)] bg-[var(--c-surface)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             data-group="${group}"
             data-key="${key}"
-            value="${isRgba ? '#888888' : value}"
-            ${isRgba ? 'disabled title="Este color usa transparencia (rgba). Edita manualmente."' : ''}
+            value="${pickerValue}"
+            ${supportsPicker ? '' : 'disabled title="Valor CSS avanzado. Edita el texto manualmente."'}
           >
-          <input 
-            type="text" 
+          <input
+            type="text"
             id="${fieldId}"
             class="color-input flex-1 px-3 py-2 text-sm bg-[var(--c-surface)] border border-[var(--c-border)] rounded-lg focus:ring-2 focus:ring-[var(--c-primary)] focus:border-transparent"
             data-group="${group}"
             data-key="${key}"
-            value="${value}"
+            value="${safeValue}"
           >
         </div>
-        ${isRgba ? '<p class="text-[10px] text-[var(--c-muted)] mt-1">Formato rgba con transparencia</p>' : ''}
+        ${supportsPicker ? `
+          <div class="mt-3 rounded-lg border border-[var(--c-border)] bg-[var(--c-surface)]/70 p-3">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <span class="text-[11px] font-medium text-[var(--c-muted)]">Opacidad</span>
+              <div class="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  class="color-opacity-number w-16 rounded-md border border-[var(--c-border)] bg-[var(--c-elev)] px-2 py-1 text-xs text-[var(--c-text)]"
+                  data-group="${group}"
+                  data-key="${key}"
+                  value="${opacityPercent}"
+                >
+                <span class="color-opacity-value min-w-10 text-right text-xs font-semibold text-[var(--c-text)]" data-group="${group}" data-key="${key}">${opacityPercent}%</span>
+              </div>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              class="color-opacity w-full accent-[var(--c-primary)]"
+              data-group="${group}"
+              data-key="${key}"
+              value="${opacityPercent}"
+            >
+            <p class="mt-1 text-[10px] text-[var(--c-muted)]">0% transparente, 100% sólido. Valores menores a 100% se guardan como rgba.</p>
+          </div>
+        ` : '<p class="mt-2 text-[10px] text-[var(--c-muted)]">Valor CSS avanzado. Puedes editarlo en texto.</p>'}
       </div>
     `;
   }
@@ -1244,9 +1402,44 @@ document.addEventListener('DOMContentLoaded', function() {
         const group = e.target.dataset.group;
         const key = e.target.dataset.key;
         const input = document.querySelector(`.color-input[data-group="${group}"][data-key="${key}"]`);
+        const opacity = document.querySelector(`.color-opacity[data-group="${group}"][data-key="${key}"]`);
+
         if (input) {
-          input.value = e.target.value;
-          updateColor(group, key, e.target.value);
+          const nextValue = buildColorValue(e.target.value, opacity?.value ?? 100, input.value);
+          input.value = nextValue;
+          updateColor(group, key, nextValue);
+        }
+      });
+    });
+
+    document.querySelectorAll('.color-opacity').forEach(slider => {
+      slider.addEventListener('input', (e) => {
+        const group = e.target.dataset.group;
+        const key = e.target.dataset.key;
+        const picker = document.querySelector(`.color-picker[data-group="${group}"][data-key="${key}"]`);
+        const input = document.querySelector(`.color-input[data-group="${group}"][data-key="${key}"]`);
+
+        if (!picker || !input) return;
+
+        const percent = Math.round(clampNumber(e.target.value, 0, 100));
+        updateOpacityDisplay(group, key, percent);
+
+        const nextValue = buildColorValue(picker.value, percent, input.value);
+        input.value = nextValue;
+        updateColor(group, key, nextValue);
+      });
+    });
+
+    document.querySelectorAll('.color-opacity-number').forEach(number => {
+      number.addEventListener('input', (e) => {
+        const group = e.target.dataset.group;
+        const key = e.target.dataset.key;
+        const percent = Math.round(clampNumber(e.target.value, 0, 100));
+        const slider = document.querySelector(`.color-opacity[data-group="${group}"][data-key="${key}"]`);
+
+        if (slider) {
+          slider.value = String(percent);
+          slider.dispatchEvent(new Event('input', { bubbles: true }));
         }
       });
     });
@@ -1256,14 +1449,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const group = e.target.dataset.group;
         const key = e.target.dataset.key;
         updateColor(group, key, e.target.value);
-        
-        // Update color picker if it's a valid hex
-        if (/^#[0-9a-f]{6}$/i.test(e.target.value)) {
-          const picker = document.querySelector(`.color-picker[data-group="${group}"][data-key="${key}"]`);
-          if (picker && !picker.disabled) {
-            picker.value = e.target.value;
-          }
-        }
+        syncColorControls(group, key, e.target.value);
       });
     });
   }

@@ -422,6 +422,9 @@ class FrontendColorService
             
             // Página nosotros
             'about_page' => 'Página Nosotros',
+
+            // Página vende con nosotros
+            'sell_page' => 'Vende con nosotros',
             
             // Nota: Las vistas de mls-offices y mls-agents reutilizan los grupos
             // property_cards, filters y properties para mantener consistencia
@@ -482,6 +485,7 @@ class FrontendColorService
             'properties.show', 'property.show', 'public.properties.show' => 'property-detail',
             'contact', 'public.contact' => 'contact',
             'about', 'public.about' => 'about',
+            'public.sell-with-us' => 'sell-with-us',
             'public.mls-offices.index', 'public.mls-offices.show' => 'mls-offices',
             'public.mls-agents.index', 'public.mls-agents.show' => 'mls-agents',
             default => 'global',
