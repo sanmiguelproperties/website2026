@@ -19,16 +19,7 @@
 
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div class="max-w-3xl">
-          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 14a4 4 0 10-8 0" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12a4 4 0 100-8 4 4 0 000 8z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 21a8 8 0 10-16 0" />
-            </svg>
-            {{ $txt('page_badge', 'Agentes MLS', 'MLS Agents') }}
-          </div>
-
-          <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
+          <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
             {{ $txt('page_title_prefix', 'Conoce a nuestros', 'Meet our') }}
             <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('page_title_highlight', 'agentes', 'agents') }}</span>
           </h1>

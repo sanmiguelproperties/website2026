@@ -42,8 +42,12 @@ class LeadRoutedNotification extends Notification
     {
         return [
             'type' => 'lead_routed',
+            'event' => $this->routing === 'assigned' ? 'lead_assigned' : 'lead_pending_assignment',
+            'title' => $this->routing === 'assigned' ? 'Nuevo lead asignado' : 'Lead pendiente de asignar',
             'routing' => $this->routing,
             'message' => $this->message(),
+            'action_url' => route('property-contact-requests', ['search' => $this->lead->id]),
+            'action_label' => 'Ver lead',
             'lead_id' => $this->lead->id,
             'lead_name' => $this->lead->name,
             'lead_email' => $this->lead->email,

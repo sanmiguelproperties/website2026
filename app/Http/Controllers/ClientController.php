@@ -288,7 +288,10 @@ class ClientController extends Controller
 
         $data = $this->normalizeVisitData($validator->validated(), $request->user()?->getAuthIdentifier());
 
-        $client->visits()->create($data);
+        $visit = $client->visits()->create($data);
+        $visit->load(['client.owner', 'client.contactRequest.owner', 'property', 'assignedUser']);
+
+        app(\App\Services\CrmNotificationService::class)->visitScheduled($visit, $request->user());
 
         return back()->with('status', 'Visita registrada correctamente.');
     }
@@ -311,6 +314,8 @@ class ClientController extends Controller
         }
 
         $previousScheduledAt = $visit->scheduled_at?->copy();
+        $previousStatus = $visit->status;
+        $previousAssignedUserId = $visit->assigned_user_id;
         $data = $this->normalizeVisitData($validator->validated(), $visit->created_by, $visit->completed_at);
         $newScheduledAt = $data['scheduled_at']->copy();
 
@@ -321,6 +326,18 @@ class ClientController extends Controller
                 $this->recordRescheduleComment($visit, $request->user(), $previousScheduledAt, $newScheduledAt);
             }
         });
+
+        $notificationChanges = $this->visitNotificationChanges(
+            $previousScheduledAt,
+            $newScheduledAt,
+            $previousStatus,
+            $visit->status,
+            $previousAssignedUserId,
+            $visit->assigned_user_id
+        );
+
+        $visit->load(['client.owner', 'client.contactRequest.owner', 'property', 'assignedUser']);
+        app(\App\Services\CrmNotificationService::class)->visitUpdated($visit, $notificationChanges, $request->user());
 
         return back()->with('status', 'Visita actualizada correctamente.');
     }
@@ -501,5 +518,39 @@ class ClientController extends Controller
             ClientVisit::STATUS_COMPLETED => 'Realizada',
             ClientVisit::STATUS_CANCELLED => 'Cancelada',
         ];
+    }
+
+    private function visitNotificationChanges(
+        ?Carbon $previousScheduledAt,
+        Carbon $newScheduledAt,
+        ?string $previousStatus,
+        ?string $newStatus,
+        $previousAssignedUserId,
+        $newAssignedUserId
+    ): array {
+        $changes = [];
+
+        if (!$previousScheduledAt || !$previousScheduledAt->equalTo($newScheduledAt)) {
+            $changes['scheduled_at'] = [
+                'from' => $previousScheduledAt?->toDateTimeString(),
+                'to' => $newScheduledAt->toDateTimeString(),
+            ];
+        }
+
+        if ($previousStatus !== $newStatus) {
+            $changes['status'] = [
+                'from' => $previousStatus,
+                'to' => $newStatus,
+            ];
+        }
+
+        if ((int) $previousAssignedUserId !== (int) $newAssignedUserId) {
+            $changes['assigned_user_id'] = [
+                'from' => $previousAssignedUserId,
+                'to' => $newAssignedUserId,
+            ];
+        }
+
+        return $changes;
     }
 }

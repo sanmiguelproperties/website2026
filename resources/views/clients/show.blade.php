@@ -198,8 +198,8 @@
           </div>
           @if($client->contactRequest)
             <div>
-              <p class="text-xs text-[var(--c-muted)]">Solicitud original</p>
-              <a href="{{ route('property-contact-requests', ['search' => $client->contactRequest->id]) }}" class="mt-1 inline-flex text-sm font-semibold text-[var(--c-primary)] hover:underline">Ver solicitud #{{ $client->contactRequest->id }}</a>
+              <p class="text-xs text-[var(--c-muted)]">Lead original</p>
+              <a href="{{ route('property-contact-requests', ['search' => $client->contactRequest->id]) }}" class="mt-1 inline-flex text-sm font-semibold text-[var(--c-primary)] hover:underline">Ver lead #{{ $client->contactRequest->id }}</a>
             </div>
           @endif
         </div>

@@ -1,10 +1,14 @@
 @php
   $visit = $visit ?? null;
+  $client = $client ?? null;
   $method = $method ?? 'POST';
   $useOld = $useOld ?? false;
   $value = static fn (string $key, mixed $default = null): mixed => $useOld ? old($key, $default) : $default;
-  $propertyOptions = collect([$client->property, $visit?->property])->filter()->unique('id');
-  $selectedPropertyId = $value('property_id', $visit?->property_id ?? $client->property_id);
+  $showClientSelect = $showClientSelect ?? false;
+  $clientOptions = collect($clientOptions ?? []);
+  $selectedClientId = $value('client_id', $client?->id ?? $visit?->client_id);
+  $propertyOptions = collect([$client?->property, $visit?->property])->filter()->unique('id');
+  $selectedPropertyId = $value('property_id', $visit?->property_id ?? $client?->property_id);
   $selectedProperty = $propertyOptions->first(fn ($property) => (string) $property->id === (string) $selectedPropertyId);
   $propertyPickerId = 'property-picker-' . str_replace('.', '-', uniqid('', true));
 @endphp
@@ -13,6 +17,25 @@
   @csrf
   @if($method !== 'POST')
     @method($method)
+  @endif
+
+  @if($showClientSelect)
+    <div>
+      <label class="mb-1 block text-xs text-[var(--c-muted)]">Cliente</label>
+      <select name="client_id" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm" required>
+        <option value="">Selecciona un cliente</option>
+        @foreach($clientOptions as $clientOption)
+          <option value="{{ $clientOption->id }}" @selected((string) $selectedClientId === (string) $clientOption->id)>
+            {{ $clientOption->name }}
+            @if($clientOption->email)
+              - {{ $clientOption->email }}
+            @elseif($clientOption->phone)
+              - {{ $clientOption->phone }}
+            @endif
+          </option>
+        @endforeach
+      </select>
+    </div>
   @endif
 
   <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">

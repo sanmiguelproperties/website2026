@@ -194,6 +194,8 @@ class ContactRequestController extends Controller
         }
 
         $data = $validator->validated();
+        $previousOwnerId = $contactRequest->owner_id;
+        $previousStatus = $contactRequest->status;
 
         if (array_key_exists('owner_id', $data)) {
             $data['assigned_at'] = $data['owner_id'] ? now() : null;
@@ -202,6 +204,19 @@ class ContactRequestController extends Controller
 
         $contactRequest->update($data);
         $contactRequest->load(['agency', 'property', 'owner']);
+
+        if ($contactRequest->owner_id && (int) $contactRequest->owner_id !== (int) $previousOwnerId) {
+            app(\App\Services\CrmNotificationService::class)->leadAssigned($contactRequest, $request->user('api'));
+        }
+
+        if (array_key_exists('status', $data)) {
+            app(\App\Services\CrmNotificationService::class)->leadStatusChanged(
+                $contactRequest,
+                $previousStatus,
+                $contactRequest->status,
+                $request->user('api')
+            );
+        }
 
         return $this->apiSuccess('Lead actualizado', 'CONTACT_REQUEST_UPDATED', $contactRequest);
     }
@@ -382,13 +397,12 @@ class ContactRequestController extends Controller
     private function notifyLeadRouting(ContactRequest $lead): void
     {
         if ($lead->assignment_status === 'assigned') {
+            app(\App\Services\CrmNotificationService::class)->leadCreated($lead);
+        }
+
+        if ($lead->assignment_status === 'assigned') {
             RbacNotifications::notifyUsers(
                 $lead->owner ? [$lead->owner] : [],
-                new LeadRoutedNotification($lead, 'assigned')
-            );
-
-            RbacNotifications::notifyRoles(
-                ['manager'],
                 new LeadRoutedNotification($lead, 'assigned')
             );
 
@@ -396,7 +410,7 @@ class ContactRequestController extends Controller
         }
 
         RbacNotifications::notifyRoles(
-            ['super-admin', 'manager'],
+            ['super-admin'],
             new LeadRoutedNotification($lead, 'pending_assignment')
         );
     }

@@ -68,10 +68,6 @@
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div class="max-w-3xl mx-auto">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm text-white/90 text-sm font-medium mb-6" style="background: var(--fe-contact_page-hero_badge_bg, rgba(255,255,255,0.1));">
-                {{ $pageData?->field('contact_hero_badge') ?? ($isEn ? 'Contact Us' : 'Contáctanos') }}
-            </div>
-
             <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
                 {{ $pageData?->field('contact_hero_title') ?? ($isEn ? 'We are here to help' : 'Estamos aquí para ayudarte') }}
             </h1>

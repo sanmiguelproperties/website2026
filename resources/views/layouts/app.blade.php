@@ -127,15 +127,6 @@
           </div>
         </div>
 
-        <!-- Buscador en el sidebar -->
-        <div class="px-4 py-3 border-b border-[var(--c-border)]">
-          <label for="dash-sidebar-search" class="sr-only">Buscar</label>
-          <div class="flex items-center gap-2 rounded-2xl bg-[var(--c-elev)] px-3 py-2 ring-1 ring-[var(--c-border)] focus-within:ring-[var(--c-primary)]">
-            <svg class="size-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-            <input id="dash-sidebar-search" type="search" placeholder="Buscar…" class="bg-transparent outline-none w-full text-sm placeholder:text-[var(--c-muted)]" />
-          </div>
-        </div>
-
         <!-- Menú (Acordeón modular) -->
         @php
           $dashMenuUser = auth()->user();
@@ -246,7 +237,7 @@
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg>
                   </span>
-                  Solicitudes
+                  Leads
                 </a>
                 @endif
 
@@ -283,48 +274,12 @@
                 </a>
                 @endif
 
-                @if($dashCanMenuItem('currencies'))
-                <a href="{{ route('currencies') }}" data-route="currencies" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
-                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
-                  </span>
-                  Monedas
-                </a>
-                @endif
-
-                @if($dashCanMenuItem('color-themes'))
-                <a href="{{ route('color-themes') }}" data-route="color-themes" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
-                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="17" r="2"/><circle cx="6" cy="17" r="3"/><path d="M9 17a4 4 0 0 1 7 0"/><path d="M15 8.5a6.5 6.5 0 0 1 4 6"/></svg>
-                  </span>
-                  Temas de Color
-                </a>
-                @endif
-
-                @if($dashCanMenuItem('frontend-colors'))
-                <a href="{{ route('frontend-colors') }}" data-route="frontend-colors" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
-                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 7.76 2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>
-                  </span>
-                  Colores Frontend
-                </a>
-                @endif
-
                 @if($dashCanMenuItem('rbac'))
                 <a href="{{ route('rbac') }}" data-route="rbac" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"/><path d="M9 12l2 2 4-4"/></svg>
                   </span>
                   Roles & Permisos
-                </a>
-                @endif
-
-                @if($dashCanMenuItem('easybroker'))
-                <a href="{{ route('easybroker') }}" data-route="easybroker" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
-                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                  </span>
-                  EasyBroker Sync
                 </a>
                 @endif
 
@@ -507,16 +462,44 @@
             </button>
             <div id="dash-acc-panel-3" class="hidden cv-auto">
               <div class="p-2 bg-[var(--c-surface)] min-h-0">
-                @if($dashCanMenuItem('preferences'))
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                @if($dashCanMenuItem('currencies'))
+                <a href="{{ route('currencies') }}" data-route="currencies" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v4"/><path d="M3 12h4"/><path d="M17 12h4"/><path d="M12 17v4"/><path d="M5.6 5.6l2.8 2.8"/><path d="M15.6 15.6l2.8 2.8"/><path d="M18.4 5.6l-2.8 2.8"/><path d="M8.4 15.6l-2.8 2.8"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
                   </span>
-                  Preferencias
+                  Monedas
                 </a>
                 @endif
+
+                @if($dashCanMenuItem('color-themes'))
+                <a href="{{ route('color-themes') }}" data-route="color-themes" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="17" r="2"/><circle cx="6" cy="17" r="3"/><path d="M9 17a4 4 0 0 1 7 0"/><path d="M15 8.5a6.5 6.5 0 0 1 4 6"/></svg>
+                  </span>
+                  Temas de Color
+                </a>
+                @endif
+
+                @if($dashCanMenuItem('frontend-colors'))
+                <a href="{{ route('frontend-colors') }}" data-route="frontend-colors" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 7.76 2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>
+                  </span>
+                  Colores Frontend
+                </a>
+                @endif
+
+                @if($dashCanMenuItem('easybroker'))
+                <a href="{{ route('easybroker') }}" data-route="easybroker" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                  </span>
+                  EasyBroker Sync
+                </a>
+                @endif
+
                 @if($dashCanMenuItem('notifications'))
-                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                <a href="{{ route('notifications') }}" data-route="notifications" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10.3 21a1.7 1.7 0 0 0 3.4 0"/></svg>
                   </span>
@@ -631,11 +614,11 @@
         'property-contact-requests': 6,
         'calendar': 6,
         'users': 2,
-        'currencies': 2,
-        'color-themes': 2,
-        'frontend-colors': 2,
+        'currencies': 3,
+        'color-themes': 3,
+        'frontend-colors': 3,
         'rbac': 2,
-        'easybroker': 2,
+        'easybroker': 3,
         'easybroker.mls-export': 7,
         'mls': 7,
         'mls-agents': 7,
@@ -648,6 +631,7 @@
         'cms.posts': 4,
         'cms.menus': 4,
         'cms.settings': 4,
+        'notifications': 3,
       };
 
       // --- Año del footer ---
@@ -774,17 +758,177 @@
         }
       });
 
-      // --- Acción global "Nuevo" ---
-      // Cada vista puede definir `window.dashNewAction = () => { ... }`
-      // para reutilizar el botón del header sin romper el estándar.
-      document.getElementById('dash-action-new')?.addEventListener('click', (e)=>{
-        if (typeof window.dashNewAction === 'function') {
-          e.preventDefault();
-          window.dashNewAction();
+    })();
+
+    (function(){
+      const token = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      const root = document.getElementById('dash-notifications');
+      const bell = document.getElementById('dash-bell');
+      const badge = document.getElementById('dash-notification-badge');
+      const panel = document.getElementById('dash-notification-panel');
+      const list = document.getElementById('dash-notification-list');
+      const summary = document.getElementById('dash-notification-summary');
+      const readAll = document.getElementById('dash-notification-read-all');
+      const refresh = document.getElementById('dash-notification-refresh');
+
+      if (!token || !root || !bell || !badge || !panel || !list) {
+        return;
+      }
+
+      let isOpen = false;
+      let isLoading = false;
+
+      const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+      const request = async (url, options = {}) => {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'X-CSRF-TOKEN': csrf,
+            ...(options.headers || {}),
+          },
+        });
+
+        return response.json().catch(() => ({
+          success: false,
+          message: response.statusText || 'Error cargando notificaciones',
+        }));
+      };
+
+      const updateBadge = (count) => {
+        const unread = Number(count || 0);
+        badge.textContent = unread > 99 ? '99+' : String(unread);
+        badge.classList.toggle('hidden', unread <= 0);
+        bell.classList.toggle('text-[var(--c-primary)]', unread > 0);
+        bell.setAttribute('aria-label', unread > 0 ? `${unread} notificaciones sin leer` : 'Notificaciones');
+        if (summary) {
+          summary.textContent = unread > 0 ? `${unread} sin leer` : 'Todo al dia';
+        }
+      };
+
+      const renderNotifications = (items) => {
+        if (!items.length) {
+          list.innerHTML = '<div class="p-4 text-sm text-[var(--c-muted)]">No tienes notificaciones.</div>';
           return;
         }
-        alert('Acción: Crear nuevo registro');
+
+        list.innerHTML = items.map((item) => {
+          const unreadClass = item.read_at ? '' : 'bg-[var(--c-elev)]/70';
+          const createdAt = item.created_at_human || item.created_at || '';
+          const url = item.action_url || '#';
+
+          return `
+            <button type="button" data-notification-id="${escapeHtml(item.id)}" data-notification-url="${escapeHtml(url)}" class="dash-notification-item flex w-full gap-3 border-b border-[var(--c-border)] px-4 py-3 text-left last:border-b-0 hover:bg-[var(--c-elev)] ${unreadClass}">
+              <span class="mt-1 size-2 shrink-0 rounded-full ${item.read_at ? 'bg-[var(--c-border)]' : 'bg-[var(--c-primary)]'}"></span>
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm font-semibold text-[var(--c-text)]">${escapeHtml(item.title)}</span>
+                <span class="mt-1 block text-xs leading-5 text-[var(--c-muted)]">${escapeHtml(item.message)}</span>
+                <span class="mt-2 block text-[11px] font-semibold text-[var(--c-muted)]">${escapeHtml(createdAt)}</span>
+              </span>
+            </button>
+          `;
+        }).join('');
+      };
+
+      const loadNotifications = async () => {
+        if (isLoading) return;
+        isLoading = true;
+
+        const payload = await request('/api/notifications?per_page=8');
+        isLoading = false;
+
+        if (!payload?.success) {
+          list.innerHTML = `<div class="p-4 text-sm text-red-600">${escapeHtml(payload?.message || 'No se pudieron cargar las notificaciones.')}</div>`;
+          return;
+        }
+
+        updateBadge(payload.unread_count || 0);
+        renderNotifications(payload.data?.data || []);
+      };
+
+      const markAsRead = async (id) => {
+        if (!id) return null;
+
+        const payload = await request(`/api/notifications/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+        });
+
+        if (payload?.success) {
+          updateBadge(payload.unread_count || 0);
+        }
+
+        return payload;
+      };
+
+      const setOpen = (open) => {
+        isOpen = open;
+        panel.classList.toggle('hidden', !open);
+        bell.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+        if (open) {
+          loadNotifications();
+        }
+      };
+
+      bell.addEventListener('click', (event) => {
+        event.stopPropagation();
+        setOpen(!isOpen);
       });
+
+      panel.addEventListener('click', async (event) => {
+        const item = event.target.closest('.dash-notification-item');
+        if (!item) return;
+
+        const id = item.getAttribute('data-notification-id');
+        const url = item.getAttribute('data-notification-url') || '#';
+        await markAsRead(id);
+
+        if (url && url !== '#') {
+          window.location.href = url;
+        } else {
+          await loadNotifications();
+        }
+      });
+
+      readAll?.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        await request('/api/notifications/read-all', { method: 'PATCH' });
+        await loadNotifications();
+      });
+
+      refresh?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        loadNotifications();
+      });
+
+      document.addEventListener('click', (event) => {
+        if (isOpen && !root.contains(event.target)) {
+          setOpen(false);
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isOpen) {
+          setOpen(false);
+        }
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          loadNotifications();
+        }
+      });
+
+      loadNotifications();
+      window.setInterval(loadNotifications, 60000);
     })();
   </script>
 </body>

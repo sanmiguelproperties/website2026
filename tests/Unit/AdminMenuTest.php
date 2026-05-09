@@ -14,7 +14,10 @@ class AdminMenuTest extends TestCase
 
         $this->assertTrue(AdminMenu::canAccessItem($user, 'dashboard'));
         $this->assertFalse(AdminMenu::canAccessItem($user, 'users'));
+        $this->assertTrue(AdminMenu::canAccessItem($user, 'notifications'));
+        $this->assertTrue(AdminMenu::canAccessRoute($user, 'notifications'));
         $this->assertTrue(AdminMenu::groupVisible($user, 1));
+        $this->assertTrue(AdminMenu::groupVisible($user, 3));
         $this->assertFalse(AdminMenu::groupVisible($user, 2));
         $this->assertFalse(AdminMenu::groupVisible($user, 6));
         $this->assertFalse(AdminMenu::groupVisible($user, 7));
@@ -51,7 +54,8 @@ class AdminMenuTest extends TestCase
 
         $this->assertTrue(AdminMenu::canAccessItem($integrationUser, 'mls'));
         $this->assertTrue(AdminMenu::groupVisible($integrationUser, 7));
-        $this->assertTrue(AdminMenu::groupVisible($integrationUser, 2));
+        $this->assertTrue(AdminMenu::groupVisible($integrationUser, 3));
+        $this->assertFalse(AdminMenu::groupVisible($integrationUser, 2));
 
         $this->assertTrue(AdminMenu::canAccessItem($syncUser, 'easybroker.mls-export'));
         $this->assertTrue(AdminMenu::groupVisible($syncUser, 7));
@@ -62,6 +66,10 @@ class AdminMenuTest extends TestCase
         $this->assertTrue(AdminMenu::groupVisible($catalogUser, 7));
 
         $this->assertFalse(AdminMenu::canAccessItem($adminUser, 'mls'));
+        $this->assertTrue(AdminMenu::canAccessItem($adminUser, 'currencies'));
+        $this->assertTrue(AdminMenu::canAccessItem($adminUser, 'color-themes'));
+        $this->assertTrue(AdminMenu::canAccessItem($adminUser, 'frontend-colors'));
+        $this->assertTrue(AdminMenu::groupVisible($adminUser, 3));
         $this->assertFalse(AdminMenu::groupVisible($adminUser, 7));
     }
 
@@ -90,6 +98,8 @@ class AdminMenuTest extends TestCase
         $user = new AdminMenuUser([], true);
 
         $this->assertTrue(AdminMenu::canAccessItem($user, 'rbac'));
+        $this->assertTrue(AdminMenu::canAccessItem($user, 'notifications'));
+        $this->assertTrue(AdminMenu::canAccessRoute($user, 'notifications'));
         $this->assertTrue(AdminMenu::canAccessItem($user, 'corporate-email.configuration'));
         $this->assertTrue(AdminMenu::groupVisible($user, 4));
         $this->assertSame('dashboard', AdminMenu::firstAccessibleRoute($user));

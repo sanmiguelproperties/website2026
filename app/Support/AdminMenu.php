@@ -37,18 +37,17 @@ class AdminMenu
         'cms.menus' => 'cms.view',
         'cms.settings' => 'cms.view',
 
-        'preferences' => ['settings.view', 'settings.manage'],
         'notifications' => 'dashboard.view',
     ];
 
     private const GROUP_ITEMS = [
         1 => ['dashboard', 'properties', 'zones', 'team-members', 'agencies'],
         6 => ['clients', 'property-contact-requests', 'calendar'],
-        2 => ['users', 'currencies', 'color-themes', 'frontend-colors', 'rbac', 'easybroker'],
+        2 => ['users', 'rbac'],
         7 => ['easybroker.mls-export', 'mls', 'mls-agents', 'mls-offices'],
         5 => ['corporate-email.configuration', 'corporate-email.inbox', 'corporate-email.outbox', 'corporate-email.compose'],
         4 => ['cms.pages', 'cms.posts', 'cms.menus', 'cms.settings'],
-        3 => ['preferences', 'notifications'],
+        3 => ['currencies', 'color-themes', 'frontend-colors', 'easybroker', 'notifications'],
     ];
 
     private const ROUTE_ITEMS = [
@@ -82,6 +81,8 @@ class AdminMenu
         'cms.posts' => 'cms.posts',
         'cms.menus' => 'cms.menus',
         'cms.settings' => 'cms.settings',
+
+        'notifications' => 'notifications',
     ];
 
     public static function canAccessItem(?Authenticatable $user, string $item): bool

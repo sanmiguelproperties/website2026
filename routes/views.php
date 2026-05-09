@@ -3,6 +3,7 @@
 use App\Services\PublicLocationMenuService;
 use App\Services\CmsService;
 use App\Services\ZonePageService;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SellerLeadController;
 use App\Models\CmsPage;
 use App\Models\ZonePage;
@@ -255,9 +256,9 @@ Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])-
 
 // Protected view routes
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard')->middleware('admin:dashboard.view');
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard')
+        ->middleware('admin:dashboard.view');
 
     Route::prefix('admin')->group(function () {
         Route::get('/funnel', function () {
@@ -295,6 +296,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/calendar', [VisitCalendarController::class, 'index'])
             ->name('calendar')
             ->middleware('admin:calendar.view');
+        Route::post('/calendar/visits', [VisitCalendarController::class, 'store'])
+            ->name('calendar.visits.store')
+            ->middleware('admin:clients.edit|clients.edit.own');
         Route::patch('/calendar/visits/{visit}', [VisitCalendarController::class, 'update'])
             ->where('visit', '[0-9]+')
             ->name('calendar.visits.update')
@@ -391,6 +395,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/correos/redactar', function () {
             return view('emails.compose');
         })->name('corporate-email.compose')->middleware('admin:dashboard.view|integrations.config.edit|integrations.manage');
+
+        Route::get('/notifications', function () {
+            return view('notifications.manage');
+        })->name('notifications')->middleware('admin:dashboard.view');
 
         // CMS
         Route::get('/cms/pages', function () {

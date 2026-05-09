@@ -55,12 +55,6 @@
         );
     }
 
-    .sell-with-us-page .sell-hero-badge {
-        background-color: var(--fe-sell_page-hero_badge_bg, rgba(255,255,255,0.10));
-        border-color: var(--fe-sell_page-hero_badge_border, rgba(255,255,255,0.20));
-        color: var(--fe-sell_page-hero_badge_text, rgba(255,255,255,0.90)) !important;
-    }
-
     .sell-with-us-page .sell-hero-title {
         color: var(--fe-sell_page-hero_title, #ffffff) !important;
     }
@@ -205,10 +199,7 @@
 
         <div class="relative mx-auto grid min-h-[calc(100vh-6rem)] max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8">
             <div class="max-w-3xl">
-                <span class="sell-hero-badge inline-flex rounded-full border px-4 py-2 text-sm font-semibold backdrop-blur">
-                    {{ $txt('seller_hero_badge', 'Vendedores', 'Sellers') }}
-                </span>
-                <h1 class="sell-hero-title mt-6 text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+                <h1 class="sell-hero-title text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
                     {{ $txt('seller_hero_title', 'Vende tu propiedad con estrategia local', 'Sell your home with local strategy') }}
                 </h1>
                 <div class="sell-hero-text mt-6 max-w-2xl text-lg leading-relaxed rich-content">

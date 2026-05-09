@@ -30,6 +30,7 @@
   };
   $monthTitle = $monthNames[(int) $month->format('n')] . ' ' . $month->format('Y');
   $editingVisitId = session('editing_visit_id');
+  $showCreateVisitForm = request('action') === 'create' || session('calendar_visit_form');
 @endphp
 
 <div class="space-y-6">
@@ -45,6 +46,11 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
+      @if($canCreateVisit)
+        <a href="{{ route('calendar', ['month' => $month->format('Y-m'), 'action' => 'create']) }}#new-visit" class="inline-flex items-center justify-center rounded-xl bg-[var(--c-primary)] px-4 py-2 text-sm font-semibold text-[var(--c-primary-ink)] hover:opacity-95 transition">
+          Nueva visita
+        </a>
+      @endif
       <a href="{{ route('calendar', ['month' => $previousMonth->format('Y-m')]) }}" class="inline-flex items-center justify-center rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm hover:bg-[var(--c-surface)] transition">
         <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
       </a>
@@ -152,6 +158,34 @@
     </section>
 
     <aside id="visit-detail" class="space-y-6 xl:col-span-4">
+      @if($canCreateVisit)
+        <section id="new-visit" class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft scroll-mt-24">
+          <details @if($showCreateVisitForm) open @endif>
+            <summary class="cursor-pointer text-lg font-semibold text-[var(--c-text)]">Agendar visita</summary>
+            <div class="mt-4">
+              @if($visitClientOptions->isEmpty())
+                <div class="rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] p-4 text-sm text-[var(--c-muted)]">
+                  No hay clientes activos disponibles para agendar una visita.
+                </div>
+              @else
+                @include('clients.partials.visit-form', [
+                    'client' => null,
+                    'visit' => null,
+                    'clientOptions' => $visitClientOptions,
+                    'showClientSelect' => true,
+                    'action' => route('calendar.visits.store'),
+                    'method' => 'POST',
+                    'submitLabel' => 'Agendar visita',
+                    'assignableUsers' => $assignableUsers,
+                    'visitStatusOptions' => $visitStatusOptions,
+                    'useOld' => $showCreateVisitForm,
+                ])
+              @endif
+            </div>
+          </details>
+        </section>
+      @endif
+
       <section class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
         @if($selectedVisit)
           <div class="flex flex-col gap-3">

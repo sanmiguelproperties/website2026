@@ -26,11 +26,11 @@
         <span>CRM</span>
       </div>
       <h1 class="mt-2 text-2xl font-bold text-[var(--c-text)]">Clientes</h1>
-      <p class="mt-1 text-[var(--c-muted)]">Consulta los clientes creados desde solicitudes y formularios de propiedad.</p>
+      <p class="mt-1 text-[var(--c-muted)]">Consulta los clientes creados desde leads y formularios de propiedad.</p>
     </div>
 
     <a href="{{ route('property-contact-requests') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-4 py-2 text-sm hover:bg-[var(--c-surface)] transition">
-      Ver solicitudes
+      Ver leads
       <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
     </a>
   </div>
@@ -175,7 +175,7 @@
                 <div class="flex flex-col gap-2">
                   <a href="{{ route('clients.show', $client) }}" class="inline-flex items-center justify-center rounded-xl bg-[var(--c-primary)] px-3 py-2 text-xs font-semibold text-[var(--c-primary-ink)] hover:opacity-95 transition">Gestionar</a>
                   @if($client->contactRequest)
-                    <a href="{{ route('property-contact-requests', ['search' => $client->contactRequest->id]) }}" class="inline-flex items-center justify-center rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-xs font-semibold hover:bg-[var(--c-surface)] transition">Ver solicitud</a>
+                    <a href="{{ route('property-contact-requests', ['search' => $client->contactRequest->id]) }}" class="inline-flex items-center justify-center rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-xs font-semibold hover:bg-[var(--c-surface)] transition">Ver lead</a>
                   @endif
                 </div>
               </td>
@@ -184,7 +184,7 @@
             <tr>
               <td colspan="8" class="px-5 py-12 text-center">
                 <p class="font-semibold text-[var(--c-text)]">Aun no hay clientes registrados</p>
-                <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando conviertas una solicitud en cliente, aparecera aqui.</p>
+                <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando conviertas un lead en cliente, aparecera aqui.</p>
               </td>
             </tr>
           @endforelse
@@ -226,14 +226,14 @@
           <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <a href="{{ route('clients.show', $client) }}" class="inline-flex w-full items-center justify-center rounded-xl bg-[var(--c-primary)] px-3 py-2 text-xs font-semibold text-[var(--c-primary-ink)] transition">Gestionar</a>
             @if($client->contactRequest)
-              <a href="{{ route('property-contact-requests', ['search' => $client->contactRequest->id]) }}" class="inline-flex w-full items-center justify-center rounded-xl border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-2 text-xs font-semibold transition">Ver solicitud</a>
+              <a href="{{ route('property-contact-requests', ['search' => $client->contactRequest->id]) }}" class="inline-flex w-full items-center justify-center rounded-xl border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-2 text-xs font-semibold transition">Ver lead</a>
             @endif
           </div>
         </article>
       @empty
         <div class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)] p-8 text-center">
           <p class="font-semibold text-[var(--c-text)]">Aun no hay clientes registrados</p>
-          <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando conviertas una solicitud en cliente, aparecera aqui.</p>
+          <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando conviertas un lead en cliente, aparecera aqui.</p>
         </div>
       @endforelse
     </div>

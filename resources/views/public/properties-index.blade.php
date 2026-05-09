@@ -118,29 +118,14 @@
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div class="{{ $isZoneLanding ? 'max-w-6xl' : 'max-w-3xl' }}">
           @if($isZoneLanding)
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {{ $isEn ? 'Zone' : 'Zona' }}
-            </div>
-
-            <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight" style="color: var(--fe-properties-title, #1C1C1C);">
+            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight" style="color: var(--fe-properties-title, #1C1C1C);">
               {{ $zoneTitle ?? ($isEn ? 'Properties by zone' : 'Propiedades por zona') }}
             </h1>
             <div class="mt-4 text-lg rich-content" style="color: var(--fe-properties-subtitle, #5B5B5B);">
               {!! $rich($zoneDescription, $isEn ? 'Explore this area and adjust filters to compare nearby zones.' : 'Explora esta zona y ajusta filtros para comparar zonas cercanas.') !!}
             </div>
           @else
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              {{ $txt('page_badge', 'Catálogo', 'Catalog') }}
-            </div>
-
-            <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight" style="color: var(--fe-properties-title, #1C1C1C);">
+            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight" style="color: var(--fe-properties-title, #1C1C1C);">
               {{ $txt('page_title_prefix', 'Explora nuestras', 'Explore our') }} <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('page_title_highlight', 'propiedades', 'properties') }}</span>
             </h1>
             <div class="mt-4 text-lg rich-content" style="color: var(--fe-properties-subtitle, #5B5B5B);">

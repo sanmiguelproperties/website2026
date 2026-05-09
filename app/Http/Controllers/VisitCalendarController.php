@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClientVisit;
+use App\Models\Client;
 use App\Models\User;
 use App\Support\Rbac;
 use Illuminate\Http\RedirectResponse;
@@ -35,6 +36,14 @@ class VisitCalendarController extends Controller
             ->orderBy('name')
             ->orderBy('email')
             ->get(['id', 'name', 'email']);
+        $canCreateVisit = $this->canCreateVisits($request->user());
+        $visitClientOptions = $canCreateVisit
+            ? $this->editableClientsQuery($request->user())
+                ->with('contactRequest')
+                ->orderBy('name')
+                ->limit(200)
+                ->get(['id', 'contact_request_id', 'property_id', 'owner_id', 'name', 'email', 'phone'])
+            : collect();
 
         return view('calendar.visits', [
             'month' => $month,
@@ -46,6 +55,8 @@ class VisitCalendarController extends Controller
             'calendarDays' => $this->calendarDays($startOfMonth),
             'selectedVisit' => $selectedVisit,
             'assignableUsers' => $assignableUsers,
+            'canCreateVisit' => $canCreateVisit,
+            'visitClientOptions' => $visitClientOptions,
             'canEditSelectedVisit' => $selectedVisit ? $this->canEditVisit($request->user(), $selectedVisit) : false,
             'editableVisitIds' => $visits
                 ->filter(fn (ClientVisit $visit): bool => $this->canEditVisit($request->user(), $visit))
@@ -59,6 +70,56 @@ class VisitCalendarController extends Controller
                 'cancelled' => $visits->where('status', ClientVisit::STATUS_CANCELLED)->count(),
             ],
         ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        if (!$this->canCreateVisits($request->user())) {
+            abort(403, 'No tienes permisos para agendar visitas.');
+        }
+
+        $validator = $this->visitValidator($request);
+        $validator->addRules([
+            'client_id' => [
+                'required',
+                'integer',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request): void {
+                    if ($value === null || $value === '' || !is_numeric($value)) {
+                        return;
+                    }
+
+                    $client = Client::query()->find((int) $value);
+                    if (!$client || !$this->canEditClient($request->user(), $client)) {
+                        $fail('Selecciona un cliente valido para tu usuario.');
+                    }
+                },
+            ],
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('calendar', ['action' => 'create'])
+                ->withErrors($validator)
+                ->withInput()
+                ->with('calendar_visit_form', true);
+        }
+
+        $data = $validator->validated();
+        $client = Client::query()->findOrFail((int) $data['client_id']);
+        $visitData = $this->normalizeVisitData($data, $request->user()?->getAuthIdentifier());
+
+        $visit = $client->visits()->create($visitData);
+        $scheduledAt = $visitData['scheduled_at'];
+        $visit->load(['client.owner', 'client.contactRequest.owner', 'property', 'assignedUser']);
+
+        app(\App\Services\CrmNotificationService::class)->visitScheduled($visit, $request->user());
+
+        return redirect()
+            ->route('calendar', [
+                'month' => $scheduledAt->format('Y-m'),
+                'visit' => $visit->id,
+            ])
+            ->with('status', 'Visita agendada correctamente.');
     }
 
     public function update(Request $request, ClientVisit $visit): RedirectResponse
@@ -79,6 +140,8 @@ class VisitCalendarController extends Controller
         }
 
         $previousScheduledAt = $visit->scheduled_at?->copy();
+        $previousStatus = $visit->status;
+        $previousAssignedUserId = $visit->assigned_user_id;
         $data = $this->normalizeVisitData($validator->validated(), $visit->created_by, $visit->completed_at);
         $newScheduledAt = $data['scheduled_at']->copy();
 
@@ -89,6 +152,18 @@ class VisitCalendarController extends Controller
                 $this->recordRescheduleComment($visit, $request->user(), $previousScheduledAt, $newScheduledAt);
             }
         });
+
+        $notificationChanges = $this->visitNotificationChanges(
+            $previousScheduledAt,
+            $newScheduledAt,
+            $previousStatus,
+            $visit->status,
+            $previousAssignedUserId,
+            $visit->assigned_user_id
+        );
+
+        $visit->load(['client.owner', 'client.contactRequest.owner', 'property', 'assignedUser']);
+        app(\App\Services\CrmNotificationService::class)->visitUpdated($visit, $notificationChanges, $request->user());
 
         return redirect()
             ->route('calendar', [
@@ -149,6 +224,59 @@ class VisitCalendarController extends Controller
         }
 
         $query->whereRaw('1 = 0');
+    }
+
+    private function editableClientsQuery($user)
+    {
+        $query = Client::query()->active();
+
+        if (Rbac::canAny($user, 'clients.edit')) {
+            return $query;
+        }
+
+        if (Rbac::canAny($user, 'clients.edit.own')) {
+            return $query->where(function ($clientQuery) use ($user) {
+                $clientQuery
+                    ->where('owner_id', $user?->getAuthIdentifier())
+                    ->orWhereHas('contactRequest', function ($leadQuery) use ($user) {
+                        $leadQuery->where('owner_id', $user?->getAuthIdentifier());
+                    });
+            });
+        }
+
+        return $query->whereRaw('1 = 0');
+    }
+
+    private function canCreateVisits($user): bool
+    {
+        return Rbac::canAny($user, 'clients.edit|clients.edit.own');
+    }
+
+    private function canEditClient($user, Client $client): bool
+    {
+        if (Rbac::canAny($user, 'clients.edit')) {
+            return true;
+        }
+
+        return Rbac::canAny($user, 'clients.edit.own')
+            && $this->isClientOwnedBy($client, $user);
+    }
+
+    private function isClientOwnedBy(Client $client, $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if ($client->owner_id !== null && (int) $client->owner_id === (int) $user->getAuthIdentifier()) {
+            return true;
+        }
+
+        $client->loadMissing('contactRequest');
+
+        return $client->contactRequest !== null
+            && $client->contactRequest->owner_id !== null
+            && (int) $client->contactRequest->owner_id === (int) $user->getAuthIdentifier();
     }
 
     private function canEditVisit($user, ClientVisit $visit): bool
@@ -249,5 +377,39 @@ class VisitCalendarController extends Controller
             ClientVisit::STATUS_COMPLETED => 'Realizada',
             ClientVisit::STATUS_CANCELLED => 'Cancelada',
         ];
+    }
+
+    private function visitNotificationChanges(
+        ?Carbon $previousScheduledAt,
+        Carbon $newScheduledAt,
+        ?string $previousStatus,
+        ?string $newStatus,
+        $previousAssignedUserId,
+        $newAssignedUserId
+    ): array {
+        $changes = [];
+
+        if (!$previousScheduledAt || !$previousScheduledAt->equalTo($newScheduledAt)) {
+            $changes['scheduled_at'] = [
+                'from' => $previousScheduledAt?->toDateTimeString(),
+                'to' => $newScheduledAt->toDateTimeString(),
+            ];
+        }
+
+        if ($previousStatus !== $newStatus) {
+            $changes['status'] = [
+                'from' => $previousStatus,
+                'to' => $newStatus,
+            ];
+        }
+
+        if ((int) $previousAssignedUserId !== (int) $newAssignedUserId) {
+            $changes['assigned_user_id'] = [
+                'from' => $previousAssignedUserId,
+                'to' => $newAssignedUserId,
+            ];
+        }
+
+        return $changes;
     }
 }

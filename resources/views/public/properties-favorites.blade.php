@@ -5,7 +5,6 @@
   $txt = fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($isEn ? $en : $es);
   $pageTitle = $pageData?->entity?->title($locale ?? app()->getLocale()) ?? ($isEn ? 'Favorite Properties' : 'Propiedades Favoritas');
   $favoritesLabels = [
-    'badge' => $txt('favorites_badge', 'Mis favoritas', 'My favorites'),
     'titlePrefix' => $txt('favorites_title_prefix', 'Tu coleccion de', 'Your collection of'),
     'titleHighlight' => $txt('favorites_title_highlight', 'propiedades favoritas', 'favorite properties'),
     'subtitle' => $txt('favorites_subtitle', 'Guarda las propiedades que te interesan y revisalas cuando quieras, sin iniciar sesion.', 'Save the properties that interest you and review them anytime, without signing in.'),
@@ -32,14 +31,7 @@
 
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div class="max-w-3xl">
-          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-            {{ $favoritesLabels['badge'] }}
-          </div>
-
-          <h1 class="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
+          <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
             {{ $favoritesLabels['titlePrefix'] }}
             <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $favoritesLabels['titleHighlight'] }}</span>
           </h1>

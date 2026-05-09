@@ -103,13 +103,7 @@
     <div class="relative z-20 h-full flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8">
         <div class="max-w-4xl mx-auto">
             {{-- Badge - Usa variables CSS dinámicas --}}
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm text-white/90 text-sm font-medium mb-6 animate-fade-in" style="background: var(--fe-hero-badge_bg, rgba(255,255,255,0.1));">
-                <span class="flex h-2 w-2 relative">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: var(--fe-hero-badge_dot, #768D59);"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2" style="background-color: var(--fe-hero-badge_dot, #768D59);"></span>
-                </span>
-                {{ $txt('hero_badge_text', '+500 propiedades disponibles', '+500 available properties') }}
-            </div>
+         
 
             {{-- Main Title - Usa variables CSS dinámicas --}}
             <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 animate-slide-up">
@@ -192,12 +186,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Section Header --}}
         <div class="text-center max-w-3xl mx-auto mb-16">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: var(--fe-services-badge_bg, #eef2ff); color: var(--fe-services-badge_text, #D1A054);">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                {{ $txt('services_badge', 'Nuestros Servicios', 'Our Services') }}
-            </div>
+          
             <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" style="color: var(--fe-services-title, #1C1C1C);">
                 {{ $txt('services_title', '¿Por qué elegirnos?', 'Why choose us?') }}
             </h2>
@@ -296,12 +285,7 @@
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="max-w-2xl">
             {{-- Badge --}}
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium mb-6" style="background: var(--fe-cta_sale-badge_bg, rgba(255,255,255,0.1)); color: var(--fe-cta_sale-badge_text, #768D59);">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {{ $txt('cta_sale_badge', 'Propiedades en Venta', 'Properties for Sale') }}
-            </div>
+          
 
             <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6" style="color: var(--fe-cta_sale-title, #ffffff);">
                 {{ $txt('cta_sale_title_line1', 'Tu próxima', 'Your next') }}
@@ -367,12 +351,7 @@
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="max-w-2xl ml-auto text-right">
             {{-- Badge --}}
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm text-sm font-medium mb-6" style="background: var(--fe-cta_rent-badge_bg, rgba(255,255,255,0.1)); color: var(--fe-cta_rent-badge_text, #D1A054);">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {{ $txt('cta_rent_badge', 'Propiedades en Renta', 'Properties for Rent') }}
-            </div>
+          
 
             <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6" style="color: var(--fe-cta_rent-title, #ffffff);">
                 {{ $txt('cta_rent_title_line1', 'Renta sin', 'Rent with no') }}
@@ -437,12 +416,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Section Header --}}
         <div class="text-center max-w-3xl mx-auto mb-12">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: var(--fe-properties-badge_bg, #eef2ff); color: var(--fe-properties-badge_text, #D1A054);">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                {{ $txt('properties_section_badge', 'Catálogo de Propiedades', 'Property Catalog') }}
-            </div>
+          
             <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" style="color: var(--fe-properties-title, #1C1C1C);">
                 {{ $txt('properties_section_title', 'Explora nuestras propiedades', 'Explore our properties') }}
             </h2>
@@ -585,12 +559,7 @@
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Section Header --}}
         <div class="text-center max-w-3xl mx-auto mb-16">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background: var(--fe-process-badge_bg, rgba(255,255,255,0.1)); color: var(--fe-process-badge_text, #768D59);">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-                {{ $txt('process_badge', 'Proceso Simplificado', 'Simplified Process') }}
-            </div>
+          
             <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" style="color: var(--fe-process-title, #ffffff);">
                 {{ $txt('process_title', 'Tu nuevo hogar en', 'Your new home in') }}
                 <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-process-highlight_from, #D1A054), var(--fe-process-highlight_to, #768D59));">{{ $txt('process_title_highlight', '4 simples pasos', '4 simple steps') }}</span>
@@ -676,12 +645,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Section Header --}}
         <div class="text-center max-w-3xl mx-auto mb-16">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-4" style="background-color: var(--fe-testimonials-badge_bg, #fffbeb); color: var(--fe-testimonials-badge_text, #d97706);">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                {{ $txt('testimonials_badge', 'Lo que dicen nuestros clientes', 'What our clients say') }}
-            </div>
+        
             <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4" style="color: var(--fe-testimonials-title, #1C1C1C);">
                 {{ $txt('testimonials_title', 'Historias de éxito', 'Success stories') }}
             </h2>
@@ -801,12 +765,7 @@
 
             {{-- Content Side --}}
             <div>
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6" style="background-color: var(--fe-about-badge_bg, #e0e7ff); color: var(--fe-about-badge_text, #D1A054);">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    {{ $txt('home_about_badge', 'Sobre Nosotros', 'About Us') }}
-                </div>
+               
 
                 <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6" style="color: var(--fe-about-title, #1C1C1C);">
                     {{ $txt('home_about_title', 'Más que una inmobiliaria, somos tu', 'More than a real estate agency, we are your') }}
@@ -873,12 +832,7 @@
         <div class="grid lg:grid-cols-2 gap-12 lg:gap-20">
             {{-- Contact Info --}}
             <div>
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mb-6" style="background-color: var(--fe-contact-badge_bg, #eef2ff); color: var(--fe-contact-badge_text, #D1A054);">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    {{ $txt('home_contact_badge', 'Contáctanos', 'Contact us') }}
-                </div>
+            
 
                 <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6" style="color: var(--fe-contact-title, #1C1C1C);">
                     {{ $txt('home_contact_title', '¿Listo para encontrar tu', 'Ready to find your') }}

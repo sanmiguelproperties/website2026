@@ -49,6 +49,9 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 // Rutas de autenticación API
 Route::post('/login', [AuthController::class, 'apiLogin']);
 
+Route::middleware(['auth.api', 'admin.api:dashboard.view'])
+    ->get('notifications/admin', [NotificationController::class, 'adminIndex']);
+
 Route::middleware(['auth.api', 'admin.api:dashboard.view'])->prefix('notifications')->group(function () {
     Route::get('/', [NotificationController::class, 'index']);
     Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);

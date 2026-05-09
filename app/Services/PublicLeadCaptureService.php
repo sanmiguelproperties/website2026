@@ -309,13 +309,12 @@ class PublicLeadCaptureService
     private function notifyLeadRouting(ContactRequest $lead): void
     {
         if ($lead->assignment_status === 'assigned') {
+            app(CrmNotificationService::class)->leadCreated($lead);
+        }
+
+        if ($lead->assignment_status === 'assigned') {
             RbacNotifications::notifyUsers(
                 $lead->owner ? [$lead->owner] : [],
-                new LeadRoutedNotification($lead, 'assigned')
-            );
-
-            RbacNotifications::notifyRoles(
-                ['manager'],
                 new LeadRoutedNotification($lead, 'assigned')
             );
 
@@ -323,7 +322,7 @@ class PublicLeadCaptureService
         }
 
         RbacNotifications::notifyRoles(
-            ['super-admin', 'manager'],
+            ['super-admin'],
             new LeadRoutedNotification($lead, 'pending_assignment')
         );
     }

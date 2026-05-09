@@ -7,8 +7,6 @@
     $txt = fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($isEn ? $en : $es);
     $pageTitle = $pageData?->entity?->title($locale) ?? ($isEn ? 'About Us' : 'Nosotros');
 
-    $whoTitle = $pageData?->field('about_who_title')
-        ?? ($isEn ? 'Who are we?' : '¿Quiénes somos?');
     $whoSubtitle = $pageData?->field('about_who_text')
         ?? $pageData?->field('about_hero_subtitle')
         ?? ($isEn
@@ -147,10 +145,7 @@
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid lg:grid-cols-12 gap-8 lg:gap-12 items-end">
                 <div class="lg:col-span-8">
-                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold tracking-wide uppercase" style="background-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.92);">
-                        {{ $whoTitle }}
-                    </span>
-                    <h1 class="mt-6 text-4xl sm:text-5xl lg:text-6xl font-black leading-tight text-white">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight text-white">
                         {{ $txt('about_who_heading', 'Real estate con visión moderna', 'Real estate with modern vision') }}
                     </h1>
                     <div class="mt-6 text-lg sm:text-xl max-w-3xl rich-content" style="color: rgba(255,255,255,0.82);">

@@ -20,6 +20,10 @@
           'currencies' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Monedas', '#']],
           'color-themes' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Temas de Color', '#']],
           'frontend-colors' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Colores Frontend', '#']],
+          'property-contact-requests' => [['Inicio', route('dashboard')], ['CRM', '#'], ['Leads', '#']],
+          'clients' => [['Inicio', route('dashboard')], ['CRM', '#'], ['Clientes', '#']],
+          'clients.show' => [['Inicio', route('dashboard')], ['CRM', '#'], ['Cliente', '#']],
+          'calendar' => [['Inicio', route('dashboard')], ['CRM', '#'], ['Agenda de visitas', '#']],
           'mls-agents' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Agentes MLS', '#']],
           'mls-offices' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Agencias MLS', '#']],
         ];
@@ -59,25 +63,49 @@
 
     <!-- Acciones derechas -->
     <div class="flex items-center justify-end gap-2 sm:gap-3 ml-auto w-full">
-      <div class="hidden md:flex items-center gap-2 rounded-2xl bg-[var(--c-elev)] px-3 py-2 ring-1 ring-[var(--c-border)] focus-within:ring-[var(--c-primary)]">
-        <svg class="size-5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input id="dash-top-search" type="search" placeholder="Buscar en todo…" class="bg-transparent outline-none w-64 text-sm placeholder:text-[var(--c-muted)]" />
-      </div>
-
       <div class="hidden sm:flex items-center gap-2">
-        <button id="dash-action-new" class="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-xl bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 shadow-soft">
-          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-          Nueva propiedad
-        </button>
-        <button class="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-xl bg-[var(--c-accent)] text-[var(--c-accent-ink)] ring-1 ring-[var(--c-accent)] hover:opacity-90">
-          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h2"/><path d="M12 14h2"/></svg>
-          Agendar visita
-        </button>
+        @php
+          $headerUser = auth()->user();
+          $canCreateHeaderProperty = \App\Support\Rbac::canAny($headerUser, 'properties.create');
+          $canCreateHeaderVisit = \App\Support\Rbac::canAny($headerUser, 'calendar.view')
+            && \App\Support\Rbac::canAny($headerUser, 'clients.edit|clients.edit.own');
+        @endphp
+        @if($canCreateHeaderProperty)
+          <a id="dash-action-new-property" href="{{ route('properties', ['action' => 'create']) }}" class="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-xl bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 shadow-soft">
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            Nueva propiedad
+          </a>
+        @endif
+        @if($canCreateHeaderVisit)
+          <a href="{{ route('calendar', ['action' => 'create']) }}#new-visit" class="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-xl bg-[var(--c-accent)] text-[var(--c-accent-ink)] ring-1 ring-[var(--c-accent)] hover:opacity-90">
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h2"/><path d="M12 14h2"/></svg>
+            Agendar visita
+          </a>
+        @endif
       </div>
 
-      <button id="dash-bell" class="inline-flex size-10 items-center justify-center rounded-xl ring-1 ring-[var(--c-border)] hover:bg-[var(--c-primary)] hover:text-[var(--c-primary-ink)]">
-        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.7 1.7 0 0 0 3.4 0"/></svg>
-      </button>
+      <div id="dash-notifications" class="relative">
+        <button id="dash-bell" type="button" class="relative inline-flex size-10 items-center justify-center rounded-xl ring-1 ring-[var(--c-border)] hover:bg-[var(--c-primary)] hover:text-[var(--c-primary-ink)]" aria-haspopup="true" aria-expanded="false" aria-controls="dash-notification-panel">
+          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.7 1.7 0 0 0 3.4 0"/></svg>
+          <span id="dash-notification-badge" class="absolute -right-1 -top-1 hidden min-w-[18px] rounded-full bg-red-600 px-1 text-center text-[10px] font-bold leading-[18px] text-white">0</span>
+        </button>
+
+        <div id="dash-notification-panel" class="absolute right-0 z-[12000] mt-2 hidden w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] shadow-2xl">
+          <div class="flex items-center justify-between gap-3 border-b border-[var(--c-border)] px-4 py-3">
+            <div>
+              <p class="text-sm font-semibold text-[var(--c-text)]">Notificaciones</p>
+              <p id="dash-notification-summary" class="text-xs text-[var(--c-muted)]">Sin revisar</p>
+            </div>
+            <button id="dash-notification-read-all" type="button" class="rounded-lg px-2 py-1 text-xs font-semibold text-[var(--c-primary)] hover:bg-[var(--c-elev)]">Marcar leidas</button>
+          </div>
+          <div id="dash-notification-list" class="max-h-[24rem] overflow-y-auto">
+            <div class="p-4 text-sm text-[var(--c-muted)]">Cargando notificaciones...</div>
+          </div>
+          <div class="border-t border-[var(--c-border)] px-4 py-3">
+            <button id="dash-notification-refresh" type="button" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-xs font-semibold hover:bg-[var(--c-surface)]">Actualizar</button>
+          </div>
+        </div>
+      </div>
       <button id="dash-avatar" class="inline-flex items-center gap-3 px-2 py-1 rounded-xl ring-1 ring-[var(--c-border)] hover:bg-[var(--c-elev)]">
         @php
           $user = auth()->user()->load('profileImage');

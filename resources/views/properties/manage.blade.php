@@ -2157,6 +2157,14 @@ document.addEventListener('DOMContentLoaded', () => {
       $('#filter-agency').disabled = true;
     }
     await loadProperties(1);
+
+    const action = new URLSearchParams(window.location.search).get('action');
+    if (action === 'create') {
+      await openDrawerForCreate();
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('action');
+      window.history.replaceState({}, document.title, cleanUrl.toString());
+    }
   })();
 });
 </script>

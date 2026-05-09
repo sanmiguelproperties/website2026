@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Solicitudes / Leads')
+@section('title', 'Leads')
 
 @section('content')
 @php
@@ -36,7 +36,7 @@
         <span>/</span>
         <span>CRM</span>
       </div>
-      <h1 class="mt-2 text-2xl font-bold text-[var(--c-text)]">Solicitudes / Leads</h1>
+      <h1 class="mt-2 text-2xl font-bold text-[var(--c-text)]">Leads</h1>
       <p class="mt-1 text-[var(--c-muted)]">Registros captados desde formularios publicos, clasificados por tipo, propiedad y origen.</p>
     </div>
 
@@ -71,7 +71,7 @@
 
   <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-7">
     <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
-      <p class="text-sm text-[var(--c-muted)]">Total captadas</p>
+      <p class="text-sm text-[var(--c-muted)]">Total leads</p>
       <p class="mt-2 text-3xl font-bold text-[var(--c-text)]">{{ number_format($stats['total']) }}</p>
     </article>
     <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-5 shadow-soft">
@@ -265,7 +265,7 @@
                   @if($lead->convertedClient)
                     <span class="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">Cliente #{{ $lead->convertedClient->id }}</span>
                   @elseif($canConvertThisLead)
-                    <form method="POST" action="{{ route('property-contact-requests.convert-client', $lead) }}" onsubmit="return confirm('Convertir esta solicitud en cliente?');">
+                    <form method="POST" action="{{ route('property-contact-requests.convert-client', $lead) }}" onsubmit="return confirm('Convertir este lead en cliente?');">
                       @csrf
                       <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-[var(--c-primary)] px-3 py-2 text-xs font-semibold text-[var(--c-primary-ink)] hover:opacity-95 transition">
                         Convertir en cliente
@@ -282,7 +282,7 @@
           @empty
             <tr>
               <td colspan="7" class="px-5 py-12 text-center">
-                <p class="font-semibold text-[var(--c-text)]">Aun no hay solicitudes publicas</p>
+                <p class="font-semibold text-[var(--c-text)]">Aun no hay leads publicos</p>
                 <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando alguien envie un formulario publico, aparecera aqui.</p>
               </td>
             </tr>
@@ -350,14 +350,14 @@
                 data-owner-id="{{ $lead->owner_id }}"
                 data-message="{{ $lead->message }}"
               >
-                Editar solicitud
+                Editar lead
               </button>
             @endif
 
             @if($lead->convertedClient)
               <span class="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">Cliente #{{ $lead->convertedClient->id }}</span>
             @elseif($canConvertThisLead)
-              <form method="POST" action="{{ route('property-contact-requests.convert-client', $lead) }}" onsubmit="return confirm('Convertir esta solicitud en cliente?');">
+              <form method="POST" action="{{ route('property-contact-requests.convert-client', $lead) }}" onsubmit="return confirm('Convertir este lead en cliente?');">
                 @csrf
                 <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-[var(--c-primary)] px-3 py-2 text-xs font-semibold text-[var(--c-primary-ink)]">
                   Convertir en cliente
@@ -372,7 +372,7 @@
         </article>
       @empty
         <div class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)] p-8 text-center">
-          <p class="font-semibold text-[var(--c-text)]">Aun no hay solicitudes publicas</p>
+          <p class="font-semibold text-[var(--c-text)]">Aun no hay leads publicos</p>
           <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando alguien envie un formulario publico, aparecera aqui.</p>
         </div>
       @endforelse
@@ -392,7 +392,7 @@
     <div class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] shadow-2xl">
       <div class="flex items-start justify-between gap-3 border-b border-[var(--c-border)] px-6 py-4">
         <div>
-          <h2 id="leadEditTitle" class="text-lg font-semibold text-[var(--c-text)]">Editar solicitud</h2>
+          <h2 id="leadEditTitle" class="text-lg font-semibold text-[var(--c-text)]">Editar lead</h2>
           <p class="mt-1 text-xs text-[var(--c-muted)]">Actualiza datos, estado y usuario responsable.</p>
         </div>
         <button type="button" data-lead-edit-close class="rounded-xl bg-[var(--c-elev)] p-2 hover:bg-[var(--c-surface)] transition" aria-label="Cerrar">
@@ -450,7 +450,7 @@
             </select>
             <p class="mt-1 text-xs text-[var(--c-muted)]">
               @if($assignableUsers->isNotEmpty())
-                Este usuario sera el responsable de ver y gestionar la solicitud.
+                Este usuario sera el responsable de ver y gestionar el lead.
               @else
                 No hay usuarios activos disponibles para asignar.
               @endif
@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function openModal(button) {
     form.action = button.dataset.action || '#';
-    title.textContent = `Editar solicitud #${button.dataset.id || ''}`;
+    title.textContent = `Editar lead #${button.dataset.id || ''}`;
     fields.name.value = button.dataset.name || '';
     fields.email.value = button.dataset.email || '';
     fields.phone.value = button.dataset.phone || '';

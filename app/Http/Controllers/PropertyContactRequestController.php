@@ -146,7 +146,7 @@ class PropertyContactRequestController extends Controller
         $this->abortUnlessPropertyLead($contactRequest);
 
         if (!$this->canEditLead($request->user(), $contactRequest)) {
-            abort(403, 'No tienes permisos para editar esta solicitud.');
+            abort(403, 'No tienes permisos para editar este lead.');
         }
 
         $validator = Validator::make($request->all(), [
@@ -185,6 +185,8 @@ class PropertyContactRequestController extends Controller
 
         $data = $validator->validated();
         $ownerId = $data['owner_id'] ?? null;
+        $previousOwnerId = $contactRequest->owner_id;
+        $previousStatus = $contactRequest->status;
 
         $contactRequest->update([
             'name' => $data['name'],
@@ -206,7 +208,20 @@ class PropertyContactRequestController extends Controller
             ]);
         }
 
-        return back()->with('status', 'Solicitud actualizada correctamente.');
+        $contactRequest->load(['property', 'owner']);
+
+        if ($contactRequest->owner_id && (int) $contactRequest->owner_id !== (int) $previousOwnerId) {
+            app(\App\Services\CrmNotificationService::class)->leadAssigned($contactRequest, $request->user());
+        }
+
+        app(\App\Services\CrmNotificationService::class)->leadStatusChanged(
+            $contactRequest,
+            $previousStatus,
+            $contactRequest->status,
+            $request->user()
+        );
+
+        return back()->with('status', 'Lead actualizado correctamente.');
     }
 
     public function convertToClient(Request $request, ContactRequest $contactRequest): RedirectResponse
@@ -214,7 +229,7 @@ class PropertyContactRequestController extends Controller
         $this->abortUnlessPropertyLead($contactRequest);
 
         if (!Rbac::canAny($request->user(), 'clients.create') || !$this->canViewLead($request->user(), $contactRequest)) {
-            abort(403, 'No tienes permisos para convertir esta solicitud en cliente.');
+            abort(403, 'No tienes permisos para convertir este lead en cliente.');
         }
 
         $missing = $this->missingClientFields($contactRequest);
@@ -223,10 +238,10 @@ class PropertyContactRequestController extends Controller
         }
 
         if ($contactRequest->converted_client_id) {
-            return back()->with('status', 'Esta solicitud ya fue convertida en cliente.');
+            return back()->with('status', 'Este lead ya fue convertido en cliente.');
         }
 
-        DB::transaction(function () use ($contactRequest) {
+        $client = DB::transaction(function () use ($contactRequest) {
             $client = Client::create([
                 'contact_request_id' => $contactRequest->id,
                 'property_id' => $contactRequest->property_id,
@@ -237,7 +252,7 @@ class PropertyContactRequestController extends Controller
                 'source' => $contactRequest->source ?: Client::SOURCE_PROPERTY_FORM,
                 'contact_type' => $contactRequest->contact_type ?: Client::CONTACT_TYPE_BUYER,
                 'status' => 'active',
-                'notes' => 'Cliente convertido desde una solicitud publica.',
+                'notes' => 'Cliente convertido desde un lead publico.',
                 'raw_payload' => [
                     'contact_request_id' => $contactRequest->id,
                     'property_public_id' => $contactRequest->property_public_id,
@@ -254,9 +269,14 @@ class PropertyContactRequestController extends Controller
                 'converted_at' => now(),
                 'status' => 'converted',
             ]);
+
+            return $client;
         });
 
-        return back()->with('status', 'Solicitud convertida en cliente correctamente.');
+        $contactRequest->load(['property', 'owner']);
+        app(\App\Services\CrmNotificationService::class)->leadConverted($contactRequest, $client, $request->user());
+
+        return back()->with('status', 'Lead convertido en cliente correctamente.');
     }
 
     public function store(Request $request, PublicLeadCaptureService $leadCapture): JsonResponse
