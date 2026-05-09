@@ -101,23 +101,13 @@ class DashboardController extends Controller
                 ->limit(6)
                 ->get(),
             'leadSources' => $this->leadBreakdown(
-                (clone $leadsQuery)
-                    ->selectRaw("COALESCE(NULLIF(source, ''), 'sin_origen') as dashboard_key, COUNT(*) as total")
-                    ->groupByRaw("COALESCE(NULLIF(source, ''), 'sin_origen')")
-                    ->orderByDesc('total')
-                    ->limit(6)
-                    ->get(),
+                $this->buildDashboardBreakdownRows($leadsQuery, 'source', 'sin_origen'),
                 ContactRequest::sourceLabels(),
                 'Sin origen',
                 $totalLeads
             ),
             'leadTypes' => $this->leadBreakdown(
-                (clone $leadsQuery)
-                    ->selectRaw("COALESCE(NULLIF(contact_type, ''), 'sin_tipo') as dashboard_key, COUNT(*) as total")
-                    ->groupByRaw("COALESCE(NULLIF(contact_type, ''), 'sin_tipo')")
-                    ->orderByDesc('total')
-                    ->limit(6)
-                    ->get(),
+                $this->buildDashboardBreakdownRows($leadsQuery, 'contact_type', 'sin_tipo'),
                 ContactRequest::contactTypeLabels(),
                 'Sin tipo',
                 $totalLeads
@@ -225,6 +215,26 @@ class DashboardController extends Controller
                         ->orWhereHas('property', fn ($propertyQuery) => $propertyQuery->where('agent_user_id', $userId));
                 });
         });
+    }
+
+    private function buildDashboardBreakdownRows($baseQuery, string $column, string $fallbackKey): Collection
+    {
+        $normalizedExpression = match ($column) {
+            'source' => "COALESCE(NULLIF(source, ''), 'sin_origen')",
+            'contact_type' => "COALESCE(NULLIF(contact_type, ''), 'sin_tipo')",
+            default => throw new \InvalidArgumentException("Unsupported dashboard breakdown column: {$column}"),
+        };
+
+        return DB::query()
+            ->fromSub(
+                (clone $baseQuery)->selectRaw("{$normalizedExpression} as dashboard_key"),
+                'dashboard_breakdown'
+            )
+            ->selectRaw('dashboard_key, COUNT(*) as total')
+            ->groupBy('dashboard_key')
+            ->orderByDesc('total')
+            ->limit(6)
+            ->get();
     }
 
     private function leadBreakdown(Collection $rows, array $labels, string $fallbackLabel, int $totalLeads): Collection
