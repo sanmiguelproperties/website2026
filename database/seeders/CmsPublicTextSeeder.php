@@ -28,92 +28,108 @@ class CmsPublicTextSeeder extends Seeder
 
         $sharedViewPaths = [
             resource_path('views/layouts/public.blade.php'),
-            resource_path('views/components/public/header.blade.php'),
-            resource_path('views/components/public/footer.blade.php'),
         ];
+
+        $headerViewPath = resource_path('views/components/public/header.blade.php');
+        if (is_file($headerViewPath)) {
+            $this->syncPageFields('header', [$headerViewPath], 'Textos auto header', 1);
+        }
+
+        $footerViewPath = resource_path('views/components/public/footer.blade.php');
+        if (is_file($footerViewPath)) {
+            $this->syncPageFields('footer', [$footerViewPath], 'Textos auto footer', 1);
+        }
 
         foreach ($viewMap as $slug => $viewPath) {
             if (!is_file($viewPath)) {
                 continue;
             }
 
-            $page = $this->ensurePage($slug);
-
-            $fieldsByKey = [];
             $paths = array_values(array_unique(array_merge([$viewPath], $sharedViewPaths)));
+            $this->syncPageFields($slug, $paths, 'Textos auto ' . $slug, 95);
+        }
+    }
 
-            foreach ($paths as $path) {
-                if (!is_file($path)) {
-                    continue;
-                }
+    /**
+     * @param array<int, string> $paths
+     */
+    private function syncPageFields(string $slug, array $paths, string $groupName, int $sortOrder): void
+    {
+        $page = $this->ensurePage($slug);
 
-                foreach ($this->extractViewFields($path) as $field) {
-                    $fieldsByKey[$field['field_key']] = $field;
-                }
-            }
+        $fieldsByKey = [];
 
-            $fields = array_values($fieldsByKey);
-            if (empty($fields)) {
+        foreach ($paths as $path) {
+            if (!is_file($path)) {
                 continue;
             }
 
-            $existingKeys = CmsFieldGroup::query()
-                ->forPage($slug)
-                ->with('allFieldDefinitions:id,field_group_id,field_key')
-                ->get()
-                ->flatMap(fn (CmsFieldGroup $group) => $group->allFieldDefinitions->pluck('field_key'))
-                ->unique()
-                ->values()
-                ->all();
-
-            $existingLookup = array_fill_keys($existingKeys, true);
-            $missingFields = array_values(array_filter($fields, static fn (array $field) => !isset($existingLookup[$field['field_key']])));
-
-            if (empty($missingFields)) {
-                continue;
+            foreach ($this->extractViewFields($path) as $field) {
+                $fieldsByKey[$field['field_key']] = $field;
             }
+        }
 
-            $group = CmsFieldGroup::query()->updateOrCreate(
-                ['slug' => $slug . '-texts-auto'],
+        $fields = array_values($fieldsByKey);
+        if (empty($fields)) {
+            return;
+        }
+
+        $existingKeys = CmsFieldGroup::query()
+            ->forPage($slug)
+            ->with('allFieldDefinitions:id,field_group_id,field_key')
+            ->get()
+            ->flatMap(fn (CmsFieldGroup $group) => $group->allFieldDefinitions->pluck('field_key'))
+            ->unique()
+            ->values()
+            ->all();
+
+        $existingLookup = array_fill_keys($existingKeys, true);
+        $missingFields = array_values(array_filter($fields, static fn (array $field) => !isset($existingLookup[$field['field_key']])));
+
+        if (empty($missingFields)) {
+            return;
+        }
+
+        $group = CmsFieldGroup::query()->updateOrCreate(
+            ['slug' => $slug . '-texts-auto'],
+            [
+                'name' => $groupName,
+                'description' => 'Llaves de texto extraidas automaticamente de la vista publica.',
+                'location_type' => 'page',
+                'location_identifier' => $slug,
+                'sort_order' => $sortOrder,
+                'is_active' => true,
+            ]
+        );
+
+        foreach ($missingFields as $index => $field) {
+            $fieldDef = CmsFieldDefinition::query()->updateOrCreate(
                 [
-                    'name' => 'Textos auto ' . $slug,
-                    'description' => 'Llaves de texto extraidas automaticamente de la vista publica.',
-                    'location_type' => 'page',
-                    'location_identifier' => $slug,
-                    'sort_order' => 95,
-                    'is_active' => true,
+                    'field_group_id' => $group->id,
+                    'field_key' => $field['field_key'],
+                ],
+                [
+                    'type' => $field['type'],
+                    'label_es' => $field['label_es'],
+                    'label_en' => $field['label_en'],
+                    'is_required' => false,
+                    'is_translatable' => true,
+                    'sort_order' => $index,
                 ]
             );
 
-            foreach ($missingFields as $index => $field) {
-                $fieldDef = CmsFieldDefinition::query()->updateOrCreate(
-                    [
-                        'field_group_id' => $group->id,
-                        'field_key' => $field['field_key'],
-                    ],
-                    [
-                        'type' => $field['type'],
-                        'label_es' => $field['label_es'],
-                        'label_en' => $field['label_en'],
-                        'is_required' => false,
-                        'is_translatable' => true,
-                        'sort_order' => $index,
-                    ]
-                );
-
-                CmsFieldValue::query()->updateOrCreate(
-                    [
-                        'field_definition_id' => $fieldDef->id,
-                        'entity_type' => 'page',
-                        'entity_id' => $page->id,
-                        'parent_value_id' => null,
-                    ],
-                    [
-                        'value_es' => $field['value_es'],
-                        'value_en' => $field['value_en'],
-                    ]
-                );
-            }
+            CmsFieldValue::query()->updateOrCreate(
+                [
+                    'field_definition_id' => $fieldDef->id,
+                    'entity_type' => 'page',
+                    'entity_id' => $page->id,
+                    'parent_value_id' => null,
+                ],
+                [
+                    'value_es' => $field['value_es'],
+                    'value_en' => $field['value_en'],
+                ]
+            );
         }
     }
 
@@ -213,6 +229,8 @@ class CmsPublicTextSeeder extends Seeder
             'mls-office-detail' => ['title_es' => 'Detalle de Agencia', 'title_en' => 'Agency Detail', 'template' => 'public.mls-office-detail', 'sort_order' => 7],
             'mls-agents' => ['title_es' => 'Agentes', 'title_en' => 'Agents', 'template' => 'public.mls-agents-index', 'sort_order' => 8],
             'mls-agent-detail' => ['title_es' => 'Detalle de Agente', 'title_en' => 'Agent Detail', 'template' => 'public.mls-agent-detail', 'sort_order' => 9],
+            'header' => ['title_es' => 'Header', 'title_en' => 'Header', 'template' => 'components.public.header', 'sort_order' => 94],
+            'footer' => ['title_es' => 'Footer', 'title_en' => 'Footer', 'template' => 'components.public.footer', 'sort_order' => 95],
         ];
 
         $fallback = [

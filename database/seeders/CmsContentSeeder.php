@@ -316,95 +316,51 @@ class CmsContentSeeder extends Seeder
         $this->command->info('  Creando campos de Nosotros...');
         $page = CmsPage::where('slug', 'about')->first();
 
-        // â�?��,�â�?��,� Hero â�?��,�â�?��,�
-        $heroGroup = $this->createFieldGroup('about-hero', 'Hero Nosotros', 'page', 'about', 1);
-        $this->createFieldsAndValues($heroGroup, $page, 'page', [
-            ['field_key' => 'about_hero_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'Qui�f©nes somos', 'value_en' => 'Who we are'],
-            ['field_key' => 'about_hero_title', 'type' => 'text', 'label_es' => 'T�f­tulo', 'value_es' => 'Construimos confianza,', 'value_en' => 'We build trust,'],
-            ['field_key' => 'about_hero_title_highlight', 'type' => 'text', 'label_es' => 'T�f­tulo destacado', 'value_es' => 'cerramos oportunidades', 'value_en' => 'we close opportunities'],
-            ['field_key' => 'about_hero_subtitle', 'type' => 'textarea', 'label_es' => 'Subt�f­tulo', 'value_es' => 'Somos un equipo inmobiliario que combina experiencia, datos y acompa�f±amiento humano para que comprar, vender o rentar sea un proceso claro, r�f¡pido y seguro.', 'value_en' => 'We are a real estate team that combines experience, data and human support so that buying, selling or renting is a clear, fast and secure process.'],
+        // Hero, enfoque y equipos usados por resources/views/public/about.blade.php
+        $teamGroup = $this->createFieldGroup('about-team', 'Equipo, Brokers y Agentes', 'page', 'about', 2);
+        $this->createFieldsAndValues($teamGroup, $page, 'page', [
+            ['field_key' => 'about_who_heading', 'type' => 'text', 'label_es' => 'Heading principal', 'value_es' => 'Real estate con vision moderna', 'value_en' => 'Real estate with modern vision'],
+            ['field_key' => 'about_who_text', 'type' => 'textarea', 'label_es' => 'Texto del hero', 'value_es' => 'Un equipo inmobiliario moderno, enfocado en estrategia, confianza y resultados medibles.', 'value_en' => 'A modern real estate team focused on strategy, trust and measurable results.'],
+            ['field_key' => 'about_focus_label', 'type' => 'text', 'label_es' => 'Etiqueta de enfoque', 'value_es' => 'Estrategia + Ejecucion', 'value_en' => 'Strategy + Execution'],
+            ['field_key' => 'about_focus_text', 'type' => 'textarea', 'label_es' => 'Texto de enfoque', 'value_es' => 'Decisiones con datos, operacion clara y acompanamiento cercano.', 'value_en' => 'Data-driven decisions, clear execution and close support.'],
+            ['field_key' => 'about_brokers_title', 'type' => 'text', 'label_es' => 'Titulo Brokers', 'value_es' => 'Nuestros Brokers', 'value_en' => 'Our Brokers'],
+            ['field_key' => 'about_brokers_subtitle', 'type' => 'textarea', 'label_es' => 'Subtitulo Brokers', 'value_es' => 'Liderazgo comercial con criterio, experiencia y ejecucion precisa.', 'value_en' => 'Commercial leadership with judgment, experience and precise execution.'],
+            ['field_key' => 'about_core_team_title', 'type' => 'text', 'label_es' => 'Titulo Equipo', 'value_es' => 'Nuestro equipo', 'value_en' => 'Our Team'],
+            ['field_key' => 'about_core_team_subtitle', 'type' => 'textarea', 'label_es' => 'Subtitulo Equipo', 'value_es' => 'El equipo interno que sostiene la operacion de punta a punta.', 'value_en' => 'The internal team that sustains operations end-to-end.'],
+            ['field_key' => 'about_agents_title', 'type' => 'text', 'label_es' => 'Titulo Agentes', 'value_es' => 'Nuestros agentes', 'value_en' => 'Our Agents'],
+            ['field_key' => 'about_agents_subtitle', 'type' => 'textarea', 'label_es' => 'Subtitulo Agentes', 'value_es' => 'Mostramos unicamente agentes activos de la agencia principal.', 'value_en' => 'We only show active agents from the main agency.'],
         ]);
 
-        // â�?��,�â�?��,� Resumen + M�f©tricas â�?��,�â�?��,�
-        $summaryGroup = $this->createFieldGroup('about-summary', 'Resumen y M�f©tricas', 'page', 'about', 2);
-        $this->createFieldsAndValues($summaryGroup, $page, 'page', [
-            ['field_key' => 'about_summary_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'Nuestra promesa', 'value_en' => 'Our promise'],
-            ['field_key' => 'about_summary_title', 'type' => 'text', 'label_es' => 'T�f­tulo', 'value_es' => 'Experiencia inmobiliaria moderna,', 'value_en' => 'Modern real estate experience,'],
-            ['field_key' => 'about_summary_title_highlight', 'type' => 'text', 'label_es' => 'T�f­tulo destacado', 'value_es' => 'sin fricciones', 'value_en' => 'frictionless'],
-            ['field_key' => 'about_summary_text1', 'type' => 'textarea', 'label_es' => 'Texto p�f¡rrafo 1', 'value_es' => 'En San Miguel Properties combinamos tecnolog�f­a con asesor�f­a personalizada. Te ayudamos a comparar opciones, validar documentaci�f³n, negociar y cerrar con seguridad.', 'value_en' => 'At San Miguel Properties we combine technology with personalized advice. We help you compare options, validate documentation, negotiate and close securely.'],
-            ['field_key' => 'about_summary_text2', 'type' => 'textarea', 'label_es' => 'Texto p�f¡rrafo 2', 'value_es' => 'Nuestro enfoque es simple: claridad en el proceso, comunicaci�f³n constante y resultados medibles.', 'value_en' => 'Our approach is simple: process clarity, constant communication and measurable results.'],
+        $this->createRepeaterAndRows($teamGroup, $page, 'page', 'about_brokers_members', 'Brokers', [
+            ['broker_name' => ['es' => 'Erwit', 'en' => 'Erwit'], 'broker_role' => ['es' => 'Broker Lider', 'en' => 'Lead Broker'], 'broker_bio' => ['es' => 'Especializado en propiedades premium y negociaciones estrategicas.', 'en' => 'Specialized in premium listings and strategic negotiations.']],
+            ['broker_name' => ['es' => 'Jenny', 'en' => 'Jenny'], 'broker_role' => ['es' => 'Broker Senior', 'en' => 'Senior Broker'], 'broker_bio' => ['es' => 'Enfocada en experiencia del cliente y cierres eficientes.', 'en' => 'Focused on client experience and efficient closing workflows.']],
+        ], [
+            ['field_key' => 'broker_name', 'type' => 'text', 'label_es' => 'Nombre', 'label_en' => 'Name', 'is_translatable' => false],
+            ['field_key' => 'broker_role', 'type' => 'text', 'label_es' => 'Cargo', 'label_en' => 'Role'],
+            ['field_key' => 'broker_bio', 'type' => 'textarea', 'label_es' => 'Bio', 'label_en' => 'Bio'],
+            ['field_key' => 'broker_image', 'type' => 'image', 'label_es' => 'Foto', 'label_en' => 'Photo'],
         ]);
 
-        // â�?��,�â�?��,� Valores â�?��,�â�?��,�
-        // -- Historia, Misión y Visión --
+        $this->createRepeaterAndRows($teamGroup, $page, 'page', 'about_core_team_members', 'Equipo base', [
+            ['core_member_name' => ['es' => 'Sophia', 'en' => 'Sophia'], 'core_member_role' => ['es' => 'Operaciones', 'en' => 'Operations'], 'core_member_bio' => ['es' => 'Coordina los flujos internos para mantener cada operacion en ritmo.', 'en' => 'Coordinates internal workflows to keep every operation on track.']],
+            ['core_member_name' => ['es' => 'Jorge', 'en' => 'Jorge'], 'core_member_role' => ['es' => 'Marketing', 'en' => 'Marketing'], 'core_member_bio' => ['es' => 'Impulsa posicionamiento, contenido y adquisicion digital.', 'en' => 'Drives positioning, content and digital acquisition.']],
+            ['core_member_name' => ['es' => 'Greta', 'en' => 'Greta'], 'core_member_role' => ['es' => 'Customer Success', 'en' => 'Customer Success'], 'core_member_bio' => ['es' => 'Lidera la atencion postventa y la relacion de largo plazo con clientes.', 'en' => 'Leads post-sale service and long-term client relationships.']],
+        ], [
+            ['field_key' => 'core_member_name', 'type' => 'text', 'label_es' => 'Nombre', 'label_en' => 'Name', 'is_translatable' => false],
+            ['field_key' => 'core_member_role', 'type' => 'text', 'label_es' => 'Cargo', 'label_en' => 'Role'],
+            ['field_key' => 'core_member_bio', 'type' => 'textarea', 'label_es' => 'Bio', 'label_en' => 'Bio'],
+            ['field_key' => 'core_member_image', 'type' => 'image', 'label_es' => 'Foto', 'label_en' => 'Photo'],
+        ]);
+
+        // Historia, Mision y Vision
         $identityGroup = $this->createFieldGroup('about-identity', 'Historia, Misión y Visión', 'page', 'about', 3);
         $this->createFieldsAndValues($identityGroup, $page, 'page', [
-            ['field_key' => 'about_identity_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'Lo que nos define', 'value_en' => 'What defines us'],
-            ['field_key' => 'about_identity_title', 'type' => 'text', 'label_es' => 'Título de sección', 'value_es' => 'Historia, misión y visión', 'value_en' => 'History, mission and vision'],
-            ['field_key' => 'about_identity_subtitle', 'type' => 'textarea', 'label_es' => 'Subtítulo de sección', 'value_es' => 'Los principios detrás de cada recomendación y cada cierre.', 'value_en' => 'The principles behind each recommendation and every close.'],
             ['field_key' => 'about_history_title', 'type' => 'text', 'label_es' => 'Título Historia', 'value_es' => 'Historia', 'value_en' => 'History'],
             ['field_key' => 'about_history_text', 'type' => 'textarea', 'label_es' => 'Texto Historia', 'value_es' => 'Desde nuestros inicios hemos evolucionado con procesos claros y enfoque total en el cliente.', 'value_en' => 'Since our beginnings, we have evolved with clear processes and a client-first mindset.'],
             ['field_key' => 'about_mission_title', 'type' => 'text', 'label_es' => 'Título Misión', 'value_es' => 'Misión', 'value_en' => 'Mission'],
             ['field_key' => 'about_mission_text', 'type' => 'textarea', 'label_es' => 'Texto Misión', 'value_es' => 'Guiar a cada cliente con asesoría transparente y resultados medibles en cada operación.', 'value_en' => 'Guide each client with transparent advice and measurable results in every transaction.'],
             ['field_key' => 'about_vision_title', 'type' => 'text', 'label_es' => 'Título Visión', 'value_es' => 'Visión', 'value_en' => 'Vision'],
             ['field_key' => 'about_vision_text', 'type' => 'textarea', 'label_es' => 'Texto Visión', 'value_es' => 'Ser el aliado inmobiliario más confiable de la región, combinando personas y tecnología.', 'value_en' => 'Be the most trusted real estate partner in the region, powered by people and technology.'],
-        ]);
-
-        $valuesGroup = $this->createFieldGroup('about-values', 'Valores', 'page', 'about', 4);
-        $this->createFieldsAndValues($valuesGroup, $page, 'page', [
-            ['field_key' => 'about_values_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'Nuestra cultura', 'value_en' => 'Our culture'],
-            ['field_key' => 'about_values_title', 'type' => 'text', 'label_es' => 'T�f­tulo', 'value_es' => 'Valores que se sienten en cada operaci�f³n', 'value_en' => 'Values felt in every operation'],
-            ['field_key' => 'about_values_subtitle', 'type' => 'textarea', 'label_es' => 'Subt�f­tulo', 'value_es' => 'Lo importante no es solo cerrar una venta: es hacerlo bien, con transparencia y acompa�f±amiento.', 'value_en' => 'What matters is not just closing a deal: it\'s doing it right, with transparency and support.'],
-        ]);
-        $this->createRepeaterAndRows($valuesGroup, $page, 'page', 'about_values_items', 'Valores', [
-            ['value_title' => ['es' => 'Transparencia', 'en' => 'Transparency'], 'value_description' => ['es' => 'Informaci�f³n clara, costos definidos y acompa�f±amiento honesto desde el primer d�f­a.', 'en' => 'Clear information, defined costs and honest support from day one.']],
-            ['value_title' => ['es' => 'Velocidad con control', 'en' => 'Speed with control'], 'value_description' => ['es' => 'Procesos �f¡giles sin improvisaci�f³n: validamos y priorizamos lo que realmente importa.', 'en' => 'Agile processes without improvisation: we validate and prioritize what really matters.']],
-            ['value_title' => ['es' => 'Innovaci�f³n', 'en' => 'Innovation'], 'value_description' => ['es' => 'Datos, automatizaci�f³n y marketing digital para tomar mejores decisiones y llegar m�f¡s lejos.', 'en' => 'Data, automation and digital marketing to make better decisions and go further.']],
-        ], [
-            ['field_key' => 'value_title', 'type' => 'text', 'label_es' => 'T�f­tulo del valor'],
-            ['field_key' => 'value_description', 'type' => 'textarea', 'label_es' => 'Descripci�f³n del valor'],
-        ]);
-
-        // â�?��,�â�?��,� Timeline â�?��,�â�?��,�
-        $timelineGroup = $this->createFieldGroup('about-timeline', 'Timeline Historia', 'page', 'about', 5);
-        $this->createFieldsAndValues($timelineGroup, $page, 'page', [
-            ['field_key' => 'about_timeline_title', 'type' => 'text', 'label_es' => 'T�f­tulo', 'value_es' => 'Nuestra historia', 'value_en' => 'Our history'],
-            ['field_key' => 'about_timeline_subtitle', 'type' => 'textarea', 'label_es' => 'Subt�f­tulo', 'value_es' => 'Hemos evolucionado con el mercado. Hoy trabajamos con procesos y herramientas que elevan la experiencia del cliente.', 'value_en' => 'We have evolved with the market. Today we work with processes and tools that elevate the client experience.'],
-        ]);
-        $this->createRepeaterAndRows($timelineGroup, $page, 'page', 'about_timeline_items', 'Hitos', [
-            ['timeline_year' => ['es' => '2009'], 'timeline_title' => ['es' => 'Nacemos con enfoque local', 'en' => 'We start with a local focus'], 'timeline_description' => ['es' => 'Iniciamos acompa�f±ando familias y peque�f±os inversionistas en decisiones clave.', 'en' => 'We started accompanying families and small investors in key decisions.']],
-            ['timeline_year' => ['es' => '2016'], 'timeline_title' => ['es' => 'Estandarizamos procesos', 'en' => 'We standardize processes'], 'timeline_description' => ['es' => 'Implementamos checklists, validaci�f³n documental y mejores pr�f¡cticas para cerrar con seguridad.', 'en' => 'We implemented checklists, document validation and best practices to close securely.']],
-            ['timeline_year' => ['es' => '2021'], 'timeline_title' => ['es' => 'Impulso digital', 'en' => 'Digital boost'], 'timeline_description' => ['es' => 'Marketing, CRM y medici�f³n para acelerar ventas y mejorar la experiencia del cliente.', 'en' => 'Marketing, CRM and measurement to accelerate sales and improve client experience.']],
-            ['timeline_year' => ['es' => 'Hoy', 'en' => 'Today'], 'timeline_title' => ['es' => 'Ecosistema completo', 'en' => 'Complete ecosystem'], 'timeline_description' => ['es' => 'Asesor�f­a, tecnolog�f­a y operaci�f³n para comprar/vender/rentar con control y claridad.', 'en' => 'Advisory, technology and operations to buy/sell/rent with control and clarity.']],
-        ], [
-            ['field_key' => 'timeline_year', 'type' => 'text', 'label_es' => 'A�f±o'],
-            ['field_key' => 'timeline_title', 'type' => 'text', 'label_es' => 'T�f­tulo del hito'],
-            ['field_key' => 'timeline_description', 'type' => 'textarea', 'label_es' => 'Descripci�f³n del hito'],
-        ]);
-
-        // â�?��,�â�?��,� Equipo â�?��,�â�?��,�
-        $teamGroup = $this->createFieldGroup('about-team', 'Equipo', 'page', 'about', 6);
-        $this->createFieldsAndValues($teamGroup, $page, 'page', [
-            ['field_key' => 'about_team_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'El equipo', 'value_en' => 'The team'],
-            ['field_key' => 'about_team_title', 'type' => 'text', 'label_es' => 'T�f­tulo', 'value_es' => 'Personas reales, resultados reales', 'value_en' => 'Real people, real results'],
-            ['field_key' => 'about_team_subtitle', 'type' => 'textarea', 'label_es' => 'Subt�f­tulo', 'value_es' => 'Un equipo que entiende tu objetivo y trabaja para lograrlo con criterio, datos y experiencia.', 'value_en' => 'A team that understands your goal and works to achieve it with criteria, data and experience.'],
-        ]);
-        $this->createRepeaterAndRows($teamGroup, $page, 'page', 'about_team_members', 'Miembros', [
-            ['member_name' => ['es' => 'Laura Mart�f­nez'], 'member_role' => ['es' => 'Direcci�f³n Comercial', 'en' => 'Commercial Director']],
-            ['member_name' => ['es' => 'Diego Herrera'], 'member_role' => ['es' => 'Asesor Inmobiliario', 'en' => 'Real Estate Advisor']],
-            ['member_name' => ['es' => 'Sof�f­a Ram�f­rez'], 'member_role' => ['es' => 'Marketing & Contenido', 'en' => 'Marketing & Content']],
-            ['member_name' => ['es' => 'Andr�f©s Silva'], 'member_role' => ['es' => 'Operaciones & Cierres', 'en' => 'Operations & Closings']],
-        ], [
-            ['field_key' => 'member_name', 'type' => 'text', 'label_es' => 'Nombre', 'is_translatable' => false],
-            ['field_key' => 'member_role', 'type' => 'text', 'label_es' => 'Rol'],
-            ['field_key' => 'member_image', 'type' => 'image', 'label_es' => 'Foto'],
-        ]);
-
-        // â�?��,�â�?��,� CTA Final â�?��,�â�?��,�
-        $ctaGroup = $this->createFieldGroup('about-cta', 'CTA Final', 'page', 'about', 7);
-        $this->createFieldsAndValues($ctaGroup, $page, 'page', [
-            ['field_key' => 'about_cta_title', 'type' => 'text', 'label_es' => 'T�f­tulo', 'value_es' => '�,¿Hablamos de tu pr�f³xima propiedad?', 'value_en' => 'Shall we talk about your next property?'],
-            ['field_key' => 'about_cta_subtitle', 'type' => 'textarea', 'label_es' => 'Subt�f­tulo', 'value_es' => 'Cu�f©ntanos qu�f© buscas y te compartimos opciones reales, con contexto y recomendaciones.', 'value_en' => 'Tell us what you\'re looking for and we\'ll share real options, with context and recommendations.'],
         ]);
     }
 

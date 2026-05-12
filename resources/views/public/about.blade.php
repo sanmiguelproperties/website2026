@@ -211,13 +211,18 @@
                             ?: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=900&q=80';
                     @endphp
                     <article class="group rounded-3xl overflow-hidden border shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style="border-color: #e2e8f0; background-color: #ffffff;">
-                        <div class="h-72 sm:h-80 lg:h-96 overflow-hidden">
-                            <img src="{{ $brokerImage }}" alt="{{ $broker['name'] }}" class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                        </div>
+                        @if(!empty($broker['image']))
+                            <div class="h-72 sm:h-80 lg:h-96 overflow-hidden">
+                                <img src="{{ $brokerImage }}" alt="{{ $broker['name'] }}" class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                            </div>
+                        @endif
                         <div class="p-6">
                             <h3 class="text-2xl font-extrabold" style="color: #0f172a;">{{ $broker['name'] }}</h3>
                             @if(!empty($broker['role']))
                                 <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: #9a7035;">{{ $broker['role'] }}</p>
+                            @endif
+                            @if(!empty($broker['bio']))
+                                <div class="mt-4 text-sm leading-relaxed rich-content" style="color: #475569;">{!! $rich($broker['bio']) !!}</div>
                             @endif
                         </div>
                     </article>
@@ -240,13 +245,18 @@
                             ?: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&q=80';
                     @endphp
                     <article class="group rounded-3xl overflow-hidden border shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style="border-color: #e2e8f0; background-color: #ffffff;">
-                        <div class="h-72 sm:h-80 lg:h-96 overflow-hidden">
-                            <img src="{{ $memberImage }}" alt="{{ $member['name'] }}" class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                        </div>
+                        @if(!empty($member['image']))
+                            <div class="h-72 sm:h-80 lg:h-96 overflow-hidden">
+                                <img src="{{ $memberImage }}" alt="{{ $member['name'] }}" class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                            </div>
+                        @endif
                         <div class="p-6">
                             <h3 class="text-2xl font-extrabold" style="color: #0f172a;">{{ $member['name'] }}</h3>
                             @if(!empty($member['role']))
                                 <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: #0f766e;">{{ $member['role'] }}</p>
+                            @endif
+                            @if(!empty($member['bio']))
+                                <div class="mt-4 text-sm leading-relaxed rich-content" style="color: #475569;">{!! $rich($member['bio']) !!}</div>
                             @endif
                         </div>
                     </article>

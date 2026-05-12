@@ -79,6 +79,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const $ = (s, e = document) => e.querySelector(s);
   const $$ = (s, e = document) => Array.from(e.querySelectorAll(s));
   const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const mediaTypes = ['image', 'gallery', 'file'];
+  const isMediaType = type => mediaTypes.includes(String(type || '').toLowerCase());
+  const mediaUrlFrom = media => media?.serving_url || media?.url || '';
+  const mediaModeFor = type => String(type || '').toLowerCase() === 'gallery' ? 'multiple' : 'single';
+  const mediaStorageFor = type => String(type || '').toLowerCase() === 'gallery' ? 'csv' : 'asset';
+  const parseMediaId = value => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    return raw.includes(',') ? raw.split(',').map(id => parseInt(id.trim(), 10)).filter(Number.isFinite).join(',') : (Number.isFinite(parseInt(raw, 10)) ? parseInt(raw, 10) : null);
+  };
 
   async function api(url, opts = {}) {
     const method = (opts.method || 'GET').toUpperCase();
@@ -192,6 +202,72 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.closest('.repeater-row').remove();
       });
     });
+
+    initCmsMediaPickers(body);
+  }
+
+  function renderMediaField({ key, label, type, mediaId = '', mediaUrl = '', context = 'field', repeaterKey = '', rowIndex = 0, subKey = '' }) {
+    const safeKey = String(key || subKey || 'media').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const uniqueId = `cms_page_${context}_${safeKey}_${rowIndex}_${Math.random().toString(36).slice(2, 8)}`;
+    const mode = mediaModeFor(type);
+    const storage = mediaStorageFor(type);
+    const max = mode === 'multiple' ? 20 : 1;
+    const fieldAttrs = context === 'repeater'
+      ? `data-repeater="${esc(repeaterKey)}" data-row="${rowIndex}" data-sub-key="${esc(subKey)}" data-media-field="1" data-media-storage="${storage}"`
+      : `data-field-key="${esc(key)}" data-media-field="1" data-media-storage="${storage}"`;
+
+    return `
+      <div class="space-y-2" data-cms-media-field>
+        ${label ? `<label class="text-xs font-medium">${esc(label)}</label>` : ''}
+        ${mediaUrl ? `<div><img src="${esc(mediaUrl)}" class="h-16 rounded-xl border border-[var(--c-border)] object-contain" alt="Preview" /></div>` : ''}
+        <div data-fp-scope class="rounded-2xl border border-[var(--c-border)] p-3 bg-[var(--c-surface)]">
+          <div class="flex items-center gap-2">
+            <input
+              type="text"
+              id="${uniqueId}"
+              value="${esc(mediaId)}"
+              placeholder="ID del media asset"
+              readonly
+              class="w-full rounded-lg border px-3 py-2 bg-[var(--c-elev)] border-[var(--c-border)] text-xs"
+              data-filepicker="${mode}"
+              data-fp-max="${max}"
+              data-fp-per-page="10"
+              data-fp-preview="#${uniqueId}_preview"
+              data-fp-columns="4"
+              ${fieldAttrs}
+            />
+            <button
+              type="button"
+              class="cms-fp-open-btn px-3 py-2 rounded-lg bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 text-xs whitespace-nowrap"
+              aria-controls="archive_manager-root"
+            >
+              Seleccionar
+            </button>
+          </div>
+          <div id="${uniqueId}_preview" class="mt-3"></div>
+        </div>
+      </div>`;
+  }
+
+  function bindMediaPickerButton(button, input) {
+    if (!button || !input || button.dataset.fpBound === '1') return;
+    button.dataset.fpBound = '1';
+
+    button.addEventListener('click', () => {
+      if (typeof window.openMediaPickerFor === 'function') {
+        window.openMediaPickerFor(input);
+      } else {
+        console.error('Media Picker no disponible. Asegurate de que media-picker.js este cargado.');
+      }
+    });
+  }
+
+  function initCmsMediaPickers(scope = document) {
+    $$('[data-cms-media-field]', scope).forEach(wrapper => {
+      if (wrapper.dataset.fpInitialized === '1') return;
+      wrapper.dataset.fpInitialized = '1';
+      bindMediaPickerButton(wrapper.querySelector('.cms-fp-open-btn'), wrapper.querySelector('input[data-filepicker]'));
+    });
   }
 
   function renderField(fd, groupSlug) {
@@ -203,10 +279,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const valueEs = val?.value_es || '';
     const valueEn = val?.value_en || '';
+    const mediaId = mediaStorageFor(fd.type) === 'csv' ? valueEs : (val?.media_asset_id || '');
+    const mediaUrl = mediaUrlFrom(val?.media_asset);
     const isTranslatable = fd.is_translatable;
 
     let input = '';
     switch (fd.type) {
+      case 'image':
+      case 'gallery':
+      case 'file':
+        input = renderMediaField({ key: fd.field_key, type: fd.type, mediaId, mediaUrl, context: 'field' });
+        break;
       case 'text':
       case 'url':
       case 'email':
@@ -293,10 +376,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const subVal = rowData?.[sf.field_key] || {};
       const valEs = subVal?.value_es || '';
       const valEn = subVal?.value_en || '';
+      const mediaId = mediaStorageFor(sf.type) === 'csv' ? valEs : (subVal?.media_asset_id || '');
+      const mediaUrl = mediaUrlFrom(subVal?.media_asset);
       const isTranslatable = sf.is_translatable;
 
-      if (sf.type === 'image' || sf.type === 'file') {
-        return `<div class="text-xs text-[var(--c-muted)]">[${sf.type}] ${esc(sf.label_es)} — Media Picker</div>`;
+      if (isMediaType(sf.type)) {
+        return renderMediaField({
+          key: `${repeaterKey}_${sf.field_key}`,
+          label: sf.label_es,
+          type: sf.type,
+          mediaId,
+          mediaUrl,
+          context: 'repeater',
+          repeaterKey,
+          rowIndex,
+          subKey: sf.field_key,
+        });
       }
 
       if (sf.type === 'textarea') {
@@ -335,6 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add delete listener
     const delBtn = container.lastElementChild.querySelector('.btn-delete-row');
     if (delBtn) delBtn.addEventListener('click', () => delBtn.closest('.repeater-row').remove());
+    initCmsMediaPickers(container.lastElementChild);
   }
 
   function getFieldValue(fieldKey, groupSlug) {
@@ -351,7 +447,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const key = el.dataset.fieldKey;
       const lang = el.dataset.lang;
       if (!fields[key]) fields[key] = {};
-      if (el.type === 'checkbox') {
+      if (el.dataset.mediaField === '1') {
+        if (el.dataset.mediaStorage === 'csv') {
+          fields[key].value_es = el.value || null;
+        } else {
+          fields[key].media_asset_id = parseMediaId(el.value);
+        }
+      } else if (el.type === 'checkbox') {
         fields[key][`value_${lang}`] = el.checked ? '1' : '0';
       } else {
         fields[key][`value_${lang}`] = el.value;
@@ -359,7 +461,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Campos de repeater
-    $$('[data-repeater]', $('#drawer-body')).forEach(el => {
+    $$('[data-repeater-key]', $('#drawer-body')).forEach(container => {
+      const repeaterKey = container.dataset.repeaterKey;
+      if (!fields[repeaterKey]) fields[repeaterKey] = { rows: [] };
+
+      $$('.repeater-row', container).forEach((rowEl, rowIdx) => {
+        if (!fields[repeaterKey].rows[rowIdx]) fields[repeaterKey].rows[rowIdx] = {};
+
+        $$('[data-repeater]', rowEl).forEach(el => {
+          const subKey = el.dataset.subKey;
+          const lang = el.dataset.lang;
+          if (!fields[repeaterKey].rows[rowIdx][subKey]) fields[repeaterKey].rows[rowIdx][subKey] = {};
+
+          if (el.dataset.mediaField === '1') {
+            if (el.dataset.mediaStorage === 'csv') {
+              fields[repeaterKey].rows[rowIdx][subKey].value_es = el.value || null;
+            } else {
+              fields[repeaterKey].rows[rowIdx][subKey].media_asset_id = parseMediaId(el.value);
+            }
+          } else {
+            fields[repeaterKey].rows[rowIdx][subKey][`value_${lang}`] = el.value;
+          }
+        });
+      });
+    });
+
+    /* Campos repeater heredados que no esten dentro de un contenedor data-repeater-key. */
+    $$('[data-repeater]', $('#drawer-body')).filter(el => !el.closest('[data-repeater-key]')).forEach(el => {
       const repeaterKey = el.dataset.repeater;
       const rowIdx = parseInt(el.dataset.row);
       const subKey = el.dataset.subKey;
@@ -369,7 +497,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!fields[repeaterKey].rows) fields[repeaterKey].rows = [];
       while (fields[repeaterKey].rows.length <= rowIdx) fields[repeaterKey].rows.push({});
       if (!fields[repeaterKey].rows[rowIdx][subKey]) fields[repeaterKey].rows[rowIdx][subKey] = {};
-      fields[repeaterKey].rows[rowIdx][subKey][`value_${lang}`] = el.value;
+      if (el.dataset.mediaField === '1') {
+        if (el.dataset.mediaStorage === 'csv') {
+          fields[repeaterKey].rows[rowIdx][subKey].value_es = el.value || null;
+        } else {
+          fields[repeaterKey].rows[rowIdx][subKey].media_asset_id = parseMediaId(el.value);
+        }
+      } else {
+        fields[repeaterKey].rows[rowIdx][subKey][`value_${lang}`] = el.value;
+      }
     });
 
     try {

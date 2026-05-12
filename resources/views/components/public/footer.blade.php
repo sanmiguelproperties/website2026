@@ -3,8 +3,8 @@
     use Illuminate\Support\Str;
 
     $locale = app()->getLocale();
-    $pageData = $pageData ?? null;
-    $txt = static fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($locale === 'en' ? $en : $es);
+    $footerData = CmsService::getPageData('footer', $locale);
+    $txt = static fn (string $key, string $es, string $en) => $footerData?->field($key) ?? ($locale === 'en' ? $en : $es);
 
     $settings = CmsService::settings(['general', 'contact', 'social', 'company'], $locale);
     $footerCompany = CmsService::getMenu('footer-company');

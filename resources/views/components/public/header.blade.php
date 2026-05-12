@@ -6,8 +6,8 @@
     $isHome = request()->routeIs('home');
     $currentLocale = app()->getLocale();
     $nextLocale = $currentLocale === 'es' ? 'en' : 'es';
-    $pageData = $pageData ?? null;
-    $txt = static fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($currentLocale === 'en' ? $en : $es);
+    $headerData = CmsService::getPageData('header', $currentLocale);
+    $txt = static fn (string $key, string $es, string $en) => $headerData?->field($key) ?? ($currentLocale === 'en' ? $en : $es);
 
     $menu = CmsService::getMenu('main-header');
     $menuItems = $menu?->rootItems ?? collect();
