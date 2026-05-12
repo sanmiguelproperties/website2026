@@ -94,7 +94,7 @@ class RolePermissionController extends Controller
         ];
 
         $validator = Validator::make($payload, [
-            'permissions' => ['required', 'array', 'min:1'],
+            'permissions' => ['present', 'array'],
             'mode' => ['required', 'in:by_id,by_name'],
             'guard_name' => ['sometimes', 'in:web,api'],
         ]);

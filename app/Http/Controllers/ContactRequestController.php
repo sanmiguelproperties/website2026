@@ -409,8 +409,8 @@ class ContactRequestController extends Controller
             return;
         }
 
-        RbacNotifications::notifyRoles(
-            ['super-admin'],
+        RbacNotifications::notifyPermissions(
+            ['leads.assign', 'leads.view.all'],
             new LeadRoutedNotification($lead, 'pending_assignment')
         );
     }

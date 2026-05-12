@@ -16,19 +16,8 @@ class RbacSeeder extends Seeder
         $guards = config('rbac.guards', ['web', 'api']);
         $permissions = config('rbac.permissions', []);
         $roles = config('rbac.roles', []);
-        $roleNames = array_keys($roles);
 
         foreach ($guards as $guard) {
-            Role::where('guard_name', $guard)
-                ->whereNotIn('name', $roleNames)
-                ->get()
-                ->each(fn (Role $role) => $role->delete());
-
-            Permission::where('guard_name', $guard)
-                ->whereNotIn('name', $permissions)
-                ->get()
-                ->each(fn (Permission $permission) => $permission->delete());
-
             foreach ($permissions as $name) {
                 Permission::firstOrCreate([
                     'name' => $name,

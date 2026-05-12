@@ -6,6 +6,34 @@ return [
     'permissions' => [
         'dashboard.view',
 
+        'menu.dashboard.view',
+        'menu.properties.view',
+        'menu.zones.view',
+        'menu.team-members.view',
+        'menu.agencies.view',
+        'menu.clients.view',
+        'menu.property-contact-requests.view',
+        'menu.calendar.view',
+        'menu.users.view',
+        'menu.rbac.view',
+        'menu.easybroker.mls-export.view',
+        'menu.mls.view',
+        'menu.mls-agents.view',
+        'menu.mls-offices.view',
+        'menu.corporate-email.configuration.view',
+        'menu.corporate-email.inbox.view',
+        'menu.corporate-email.outbox.view',
+        'menu.corporate-email.compose.view',
+        'menu.cms.pages.view',
+        'menu.cms.posts.view',
+        'menu.cms.menus.view',
+        'menu.cms.settings.view',
+        'menu.currencies.view',
+        'menu.color-themes.view',
+        'menu.frontend-colors.view',
+        'menu.easybroker.view',
+        'menu.notifications.view',
+
         'users.view',
         'users.view.all',
         'users.create',
@@ -106,6 +134,16 @@ return [
         'calendar.edit',
         'calendar.edit.own',
 
+        'notifications.view',
+        'notifications.view.all',
+        'notifications.manage',
+
+        'corporate-email.view',
+        'corporate-email.view.all',
+        'corporate-email.send',
+        'corporate-email.send.any',
+        'corporate-email.accounts.manage',
+
         'cms.view',
         'cms.manage',
 
@@ -138,6 +176,27 @@ return [
             'label' => 'Manager',
             'permissions' => [
                 'dashboard.view',
+
+                'menu.dashboard.view',
+                'menu.properties.view',
+                'menu.zones.view',
+                'menu.team-members.view',
+                'menu.agencies.view',
+                'menu.clients.view',
+                'menu.property-contact-requests.view',
+                'menu.calendar.view',
+                'menu.easybroker.mls-export.view',
+                'menu.mls.view',
+                'menu.mls-agents.view',
+                'menu.mls-offices.view',
+                'menu.corporate-email.inbox.view',
+                'menu.corporate-email.outbox.view',
+                'menu.corporate-email.compose.view',
+                'menu.cms.pages.view',
+                'menu.cms.posts.view',
+                'menu.cms.menus.view',
+                'menu.cms.settings.view',
+                'menu.notifications.view',
 
                 'properties.view',
                 'properties.view.all',
@@ -200,6 +259,14 @@ return [
                 'calendar.view.all',
                 'calendar.edit',
 
+                'notifications.view',
+                'notifications.view.all',
+
+                'corporate-email.view',
+                'corporate-email.view.all',
+                'corporate-email.send',
+                'corporate-email.send.any',
+
                 'cms.view',
                 'catalogs.view',
                 'integrations.view',
@@ -215,6 +282,15 @@ return [
             'label' => 'Asistente',
             'permissions' => [
                 'dashboard.view',
+
+                'menu.dashboard.view',
+                'menu.properties.view',
+                'menu.cms.pages.view',
+                'menu.cms.posts.view',
+                'menu.cms.menus.view',
+                'menu.cms.settings.view',
+                'menu.easybroker.view',
+                'menu.notifications.view',
 
                 'properties.view',
                 'properties.view.all',
@@ -237,6 +313,11 @@ return [
                 'catalogs.view',
                 'catalogs.manage',
 
+                'notifications.view',
+
+                'corporate-email.view',
+                'corporate-email.send',
+
                 'integrations.view',
                 'integrations.logs.view',
                 'integrations.sync',
@@ -247,6 +328,16 @@ return [
             'label' => 'Agente',
             'permissions' => [
                 'dashboard.view',
+
+                'menu.dashboard.view',
+                'menu.properties.view',
+                'menu.clients.view',
+                'menu.property-contact-requests.view',
+                'menu.calendar.view',
+                'menu.corporate-email.inbox.view',
+                'menu.corporate-email.outbox.view',
+                'menu.corporate-email.compose.view',
+                'menu.notifications.view',
 
                 'properties.view',
                 'properties.view.all',
@@ -285,6 +376,11 @@ return [
                 'calendar.view',
                 'calendar.view.own',
                 'calendar.edit.own',
+
+                'notifications.view',
+
+                'corporate-email.view',
+                'corporate-email.send',
 
                 'commissions.view.own',
                 'marketing.view',

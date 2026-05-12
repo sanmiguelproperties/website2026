@@ -18,7 +18,7 @@ class DashboardController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $isGlobalScope = Rbac::isSuperAdmin($user);
+        $isGlobalScope = $this->hasGlobalDashboardScope($user);
         $today = now();
         $startOfDay = $today->copy()->startOfDay();
         $endOfDay = $today->copy()->endOfDay();
@@ -136,7 +136,7 @@ class DashboardController extends Controller
     {
         $query = Property::query();
 
-        if (Rbac::isSuperAdmin($user)) {
+        if (Rbac::canAny($user, 'properties.view.all')) {
             return $query;
         }
 
@@ -151,7 +151,7 @@ class DashboardController extends Controller
     {
         $query = ContactRequest::query()->fromPublicForms();
 
-        if (Rbac::isSuperAdmin($user)) {
+        if (Rbac::canAny($user, 'leads.view.all')) {
             return $query;
         }
 
@@ -172,7 +172,7 @@ class DashboardController extends Controller
     {
         $query = Client::query();
 
-        if (Rbac::isSuperAdmin($user)) {
+        if (Rbac::canAny($user, 'clients.view.all')) {
             return $query;
         }
 
@@ -194,7 +194,7 @@ class DashboardController extends Controller
     {
         $query = ClientVisit::query();
 
-        if (Rbac::isSuperAdmin($user)) {
+        if (Rbac::canAny($user, 'calendar.view.all')) {
             return $query;
         }
 
@@ -235,6 +235,16 @@ class DashboardController extends Controller
             ->orderByDesc('total')
             ->limit(6)
             ->get();
+    }
+
+    private function hasGlobalDashboardScope($user): bool
+    {
+        return Rbac::canAny($user, [
+            'properties.view.all',
+            'leads.view.all',
+            'clients.view.all',
+            'calendar.view.all',
+        ]);
     }
 
     private function leadBreakdown(Collection $rows, array $labels, string $fallbackLabel, int $totalLeads): Collection

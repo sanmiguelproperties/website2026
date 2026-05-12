@@ -49,10 +49,10 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 // Rutas de autenticación API
 Route::post('/login', [AuthController::class, 'apiLogin']);
 
-Route::middleware(['auth.api', 'admin.api:dashboard.view'])
+Route::middleware(['auth.api', 'admin.api:notifications.view'])
     ->get('notifications/admin', [NotificationController::class, 'adminIndex']);
 
-Route::middleware(['auth.api', 'admin.api:dashboard.view'])->prefix('notifications')->group(function () {
+Route::middleware(['auth.api', 'admin.api:notifications.view'])->prefix('notifications')->group(function () {
     Route::get('/', [NotificationController::class, 'index']);
     Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::patch('/{notification}', [NotificationController::class, 'markAsRead']);
@@ -350,7 +350,7 @@ Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () 
 
 
 // Corporate Email routes propias del usuario autenticado
-Route::middleware(['auth.api', 'admin.api:dashboard.view|integrations.config.edit|integrations.manage'])->prefix('corporate-email')->group(function () {
+Route::middleware(['auth.api', 'admin.api:corporate-email.view|corporate-email.send|corporate-email.accounts.manage'])->prefix('corporate-email')->group(function () {
     // Bandeja propia del usuario autenticado
     Route::get('my/accounts', [CorporateEmailController::class, 'myAccounts']);
     Route::post('my/accounts/{account}/sync', [CorporateEmailController::class, 'syncMyAccount']);
@@ -362,8 +362,8 @@ Route::middleware(['auth.api', 'admin.api:dashboard.view|integrations.config.edi
     Route::post('my/send', [CorporateEmailController::class, 'sendMyMessage']);
 });
 
-// Corporate Email routes administrativas (solo rol administrador / super-admin)
-Route::middleware(['auth.api', 'admin.api:super-admin'])->prefix('corporate-email')->group(function () {
+// Corporate Email routes administrativas
+Route::middleware(['auth.api', 'admin.api:corporate-email.accounts.manage'])->prefix('corporate-email')->group(function () {
     // Cuentas de correo
     Route::get('accounts', [CorporateEmailController::class, 'accountsIndex']);
     Route::post('accounts', [CorporateEmailController::class, 'storeAccount']);

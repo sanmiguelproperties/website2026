@@ -185,7 +185,7 @@ class CrmNotificationService
 
     private function superAdminUsers(): Collection
     {
-        $query = User::query()->role('super-admin');
+        $query = User::query()->permission(['leads.view.all', 'clients.view.all', 'calendar.view.all']);
 
         if (Schema::hasColumn('users', 'is_active')) {
             $query->where('is_active', true);

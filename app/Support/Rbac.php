@@ -16,6 +16,11 @@ class Rbac
             && $user->hasRole(self::SUPER_ADMIN);
     }
 
+    public static function canViewAll(?Authenticatable $user, string $basePermission): bool
+    {
+        return self::canAny($user, $basePermission . '.view.all');
+    }
+
     public static function canAny(?Authenticatable $user, array|string|null $permissions): bool
     {
         if (!$user) {

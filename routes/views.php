@@ -267,7 +267,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/users', function () {
             return view('users.manage');
-        })->name('users')->middleware('admin:super-admin');
+        })->name('users')->middleware('admin:users.view');
 
         Route::get('/rbac', function () {
             return view('rbac.manage');
@@ -382,23 +382,23 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/correos/configuracion', function () {
             return view('emails.configuration');
-        })->name('corporate-email.configuration')->middleware('admin:super-admin');
+        })->name('corporate-email.configuration')->middleware('admin:corporate-email.accounts.manage');
 
         Route::get('/correos/bandeja', function () {
             return view('emails.inbox');
-        })->name('corporate-email.inbox')->middleware('admin:dashboard.view|integrations.config.edit|integrations.manage');
+        })->name('corporate-email.inbox')->middleware('admin:corporate-email.view');
 
         Route::get('/correos/salida', function () {
             return view('emails.outbox');
-        })->name('corporate-email.outbox')->middleware('admin:dashboard.view|integrations.config.edit|integrations.manage');
+        })->name('corporate-email.outbox')->middleware('admin:corporate-email.view');
 
         Route::get('/correos/redactar', function () {
             return view('emails.compose');
-        })->name('corporate-email.compose')->middleware('admin:dashboard.view|integrations.config.edit|integrations.manage');
+        })->name('corporate-email.compose')->middleware('admin:corporate-email.send');
 
         Route::get('/notifications', function () {
             return view('notifications.manage');
-        })->name('notifications')->middleware('admin:dashboard.view');
+        })->name('notifications')->middleware('admin:notifications.view');
 
         // CMS
         Route::get('/cms/pages', function () {

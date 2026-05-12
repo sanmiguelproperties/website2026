@@ -35,9 +35,9 @@ class NotificationController extends Controller
     public function adminIndex(Request $request): JsonResponse
     {
         $user = $request->user('api');
-        $isSuperAdmin = Rbac::isSuperAdmin($user);
+        $canViewAll = Rbac::canAny($user, 'notifications.view.all');
 
-        $query = $this->scopedNotificationsQuery($user, $isSuperAdmin)
+        $query = $this->scopedNotificationsQuery($user, $canViewAll)
             ->with('notifiable')
             ->latest();
 
@@ -61,7 +61,7 @@ class NotificationController extends Controller
             });
         }
 
-        if ($isSuperAdmin && $request->filled('recipient_id')) {
+        if ($canViewAll && $request->filled('recipient_id')) {
             $query->where('notifiable_type', User::class)
                 ->where('notifiable_id', (int) $request->input('recipient_id'));
         }
@@ -95,8 +95,8 @@ class NotificationController extends Controller
         $notifications->getCollection()->transform(fn (DatabaseNotification $notification): array => $this->formatNotification($notification, true));
 
         return $this->apiSuccess('Notificaciones del sistema', 'ADMIN_NOTIFICATIONS_LIST', $notifications, 200, [
-            'scope' => $isSuperAdmin ? 'global' : 'own',
-            'stats' => $this->adminStats($user, $isSuperAdmin),
+            'scope' => $canViewAll ? 'global' : 'own',
+            'stats' => $this->adminStats($user, $canViewAll),
         ]);
     }
 
@@ -149,9 +149,9 @@ class NotificationController extends Controller
         return $formatted;
     }
 
-    private function adminStats(User $user, bool $isSuperAdmin): array
+    private function adminStats(User $user, bool $canViewAll): array
     {
-        $baseQuery = $this->scopedNotificationsQuery($user, $isSuperAdmin);
+        $baseQuery = $this->scopedNotificationsQuery($user, $canViewAll);
 
         return [
             'total' => (clone $baseQuery)->count(),
@@ -161,11 +161,11 @@ class NotificationController extends Controller
         ];
     }
 
-    private function scopedNotificationsQuery(User $user, bool $isSuperAdmin)
+    private function scopedNotificationsQuery(User $user, bool $canViewAll)
     {
         $query = DatabaseNotification::query();
 
-        if (!$isSuperAdmin) {
+        if (!$canViewAll) {
             $query->where('notifiable_type', User::class)
                 ->where('notifiable_id', $user->getAuthIdentifier());
         }

@@ -20,6 +20,17 @@ class RbacNotifications
         self::notifyUsers($query->get(), $notification);
     }
 
+    public static function notifyPermissions(array|string $permissions, Notification $notification): void
+    {
+        $query = User::query()->permission($permissions);
+
+        if (Schema::hasColumn('users', 'is_active')) {
+            $query->where('is_active', true);
+        }
+
+        self::notifyUsers($query->get(), $notification);
+    }
+
     public static function notifyUsers(iterable $users, Notification $notification): void
     {
         collect($users)

@@ -7,37 +7,37 @@ use Illuminate\Contracts\Auth\Authenticatable;
 class AdminMenu
 {
     private const ITEM_PERMISSIONS = [
-        'dashboard' => 'dashboard.view',
-        'properties' => 'properties.view',
-        'zones' => 'settings.manage',
-        'team-members' => 'users.view',
-        'agencies' => 'catalogs.manage',
-        'clients' => 'clients.view',
-        'property-contact-requests' => 'leads.view',
-        'calendar' => 'calendar.view',
+        'dashboard' => 'menu.dashboard.view',
+        'properties' => 'menu.properties.view',
+        'zones' => 'menu.zones.view',
+        'team-members' => 'menu.team-members.view',
+        'agencies' => 'menu.agencies.view',
+        'clients' => 'menu.clients.view',
+        'property-contact-requests' => 'menu.property-contact-requests.view',
+        'calendar' => 'menu.calendar.view',
 
-        'users' => 'super-admin',
-        'currencies' => 'settings.manage',
-        'color-themes' => 'settings.manage',
-        'frontend-colors' => 'settings.manage',
-        'rbac' => 'rbac.manage',
-        'easybroker' => 'integrations.view',
-        'easybroker.mls-export' => 'integrations.sync',
-        'mls' => 'integrations.view',
-        'mls-agents' => 'catalogs.manage',
-        'mls-offices' => 'catalogs.manage',
+        'users' => 'menu.users.view',
+        'currencies' => 'menu.currencies.view',
+        'color-themes' => 'menu.color-themes.view',
+        'frontend-colors' => 'menu.frontend-colors.view',
+        'rbac' => 'menu.rbac.view',
+        'easybroker' => 'menu.easybroker.view',
+        'easybroker.mls-export' => 'menu.easybroker.mls-export.view',
+        'mls' => 'menu.mls.view',
+        'mls-agents' => 'menu.mls-agents.view',
+        'mls-offices' => 'menu.mls-offices.view',
 
-        'corporate-email.configuration' => 'super-admin',
-        'corporate-email.inbox' => 'dashboard.view',
-        'corporate-email.outbox' => 'dashboard.view',
-        'corporate-email.compose' => 'dashboard.view',
+        'corporate-email.configuration' => 'menu.corporate-email.configuration.view',
+        'corporate-email.inbox' => 'menu.corporate-email.inbox.view',
+        'corporate-email.outbox' => 'menu.corporate-email.outbox.view',
+        'corporate-email.compose' => 'menu.corporate-email.compose.view',
 
-        'cms.pages' => 'cms.view',
-        'cms.posts' => 'cms.view',
-        'cms.menus' => 'cms.view',
-        'cms.settings' => 'cms.view',
+        'cms.pages' => 'menu.cms.pages.view',
+        'cms.posts' => 'menu.cms.posts.view',
+        'cms.menus' => 'menu.cms.menus.view',
+        'cms.settings' => 'menu.cms.settings.view',
 
-        'notifications' => 'dashboard.view',
+        'notifications' => 'menu.notifications.view',
     ];
 
     private const GROUP_ITEMS = [
@@ -92,10 +92,6 @@ class AdminMenu
         }
 
         $permission = self::ITEM_PERMISSIONS[$item];
-
-        if ($permission === 'super-admin') {
-            return Rbac::isSuperAdmin($user);
-        }
 
         return Rbac::canAny($user, $permission);
     }

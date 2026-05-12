@@ -169,8 +169,8 @@ class EasyBrokerSyncController extends Controller
             return;
         }
 
-        RbacNotifications::notifyRoles(
-            ['super-admin', 'assistant'],
+        RbacNotifications::notifyPermissions(
+            ['integrations.logs.view', 'integrations.sync'],
             new SyncIssueNotification(
                 'EasyBroker',
                 $result['message'] ?? 'La sincronizacion de EasyBroker requiere revision.',

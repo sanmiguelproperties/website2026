@@ -1198,8 +1198,8 @@ class MLSSyncController extends Controller
             return;
         }
 
-        RbacNotifications::notifyRoles(
-            ['super-admin', 'assistant'],
+        RbacNotifications::notifyPermissions(
+            ['integrations.logs.view', 'integrations.sync'],
             new SyncIssueNotification(
                 'MLS',
                 $result['message'] ?? 'La sincronizacion MLS requiere revision.',

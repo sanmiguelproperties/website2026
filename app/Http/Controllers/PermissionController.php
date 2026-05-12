@@ -23,7 +23,7 @@ class PermissionController extends Controller
         $validator = Validator::make($request->query(), [
             'guard' => ['sometimes', 'in:web,api'],
             'page' => ['sometimes', 'integer', 'min:1'],
-            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:500'],
             'sort' => ['sometimes', 'in:name'],
             'order' => ['sometimes', 'in:asc,desc'],
             'q' => 'nullable|string|max:255',
@@ -35,7 +35,7 @@ class PermissionController extends Controller
 
         $guard = $request->query('guard', 'web');
         $perPage = (int) $request->query('per_page', 15);
-        $perPage = max(1, min(100, $perPage));
+        $perPage = max(1, min(500, $perPage));
         $sort = $request->query('sort', 'name');
         $order = $request->query('order', 'asc');
         $q = $request->query('q');

@@ -10,7 +10,7 @@ class AdminMenuTest extends TestCase
 {
     public function test_it_hides_items_and_groups_without_required_permissions(): void
     {
-        $user = new AdminMenuUser(['dashboard.view']);
+        $user = new AdminMenuUser(['menu.dashboard.view', 'menu.notifications.view']);
 
         $this->assertTrue(AdminMenu::canAccessItem($user, 'dashboard'));
         $this->assertFalse(AdminMenu::canAccessItem($user, 'users'));
@@ -25,9 +25,9 @@ class AdminMenuTest extends TestCase
 
     public function test_crm_group_contains_clients_leads_and_calendar_items(): void
     {
-        $user = new AdminMenuUser(['clients.view']);
-        $leadsUser = new AdminMenuUser(['leads.view']);
-        $calendarUser = new AdminMenuUser(['calendar.view']);
+        $user = new AdminMenuUser(['menu.clients.view']);
+        $leadsUser = new AdminMenuUser(['menu.property-contact-requests.view']);
+        $calendarUser = new AdminMenuUser(['menu.calendar.view']);
 
         $this->assertTrue(AdminMenu::canAccessItem($user, 'clients'));
         $this->assertTrue(AdminMenu::groupVisible($user, 6));
@@ -40,17 +40,17 @@ class AdminMenuTest extends TestCase
 
     public function test_first_accessible_route_follows_menu_order(): void
     {
-        $user = new AdminMenuUser(['integrations.view']);
+        $user = new AdminMenuUser(['menu.easybroker.view']);
 
         $this->assertSame('easybroker', AdminMenu::firstAccessibleRoute($user));
     }
 
     public function test_mls_items_live_in_their_own_menu_group(): void
     {
-        $integrationUser = new AdminMenuUser(['integrations.view']);
-        $syncUser = new AdminMenuUser(['integrations.sync']);
-        $catalogUser = new AdminMenuUser(['catalogs.manage']);
-        $adminUser = new AdminMenuUser(['settings.manage']);
+        $integrationUser = new AdminMenuUser(['menu.mls.view', 'menu.easybroker.view']);
+        $syncUser = new AdminMenuUser(['menu.easybroker.mls-export.view']);
+        $catalogUser = new AdminMenuUser(['menu.mls-agents.view', 'menu.mls-offices.view']);
+        $adminUser = new AdminMenuUser(['menu.currencies.view', 'menu.color-themes.view', 'menu.frontend-colors.view']);
 
         $this->assertTrue(AdminMenu::canAccessItem($integrationUser, 'mls'));
         $this->assertTrue(AdminMenu::groupVisible($integrationUser, 7));
@@ -73,18 +73,25 @@ class AdminMenuTest extends TestCase
         $this->assertFalse(AdminMenu::groupVisible($adminUser, 7));
     }
 
-    public function test_corporate_email_configuration_requires_super_admin(): void
+    public function test_corporate_email_configuration_uses_its_menu_permission(): void
     {
         $user = new AdminMenuUser(['integrations.config.edit']);
+        $configurationUser = new AdminMenuUser(['menu.corporate-email.configuration.view']);
 
         $this->assertFalse(AdminMenu::canAccessItem($user, 'corporate-email.configuration'));
+        $this->assertTrue(AdminMenu::canAccessItem($configurationUser, 'corporate-email.configuration'));
         $this->assertFalse(AdminMenu::groupVisible($user, 2));
         $this->assertFalse(AdminMenu::groupVisible($user, 5));
+        $this->assertTrue(AdminMenu::groupVisible($configurationUser, 5));
     }
 
-    public function test_corporate_email_inbox_uses_dashboard_permission(): void
+    public function test_corporate_email_items_use_menu_permissions(): void
     {
-        $user = new AdminMenuUser(['dashboard.view']);
+        $user = new AdminMenuUser([
+            'menu.corporate-email.inbox.view',
+            'menu.corporate-email.outbox.view',
+            'menu.corporate-email.compose.view',
+        ]);
 
         $this->assertTrue(AdminMenu::canAccessItem($user, 'corporate-email.inbox'));
         $this->assertTrue(AdminMenu::canAccessItem($user, 'corporate-email.outbox'));

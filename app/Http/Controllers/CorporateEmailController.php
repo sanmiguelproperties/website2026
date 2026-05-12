@@ -72,7 +72,7 @@ class CorporateEmailController extends Controller
 
         $query = CorporateEmailAccount::query()->with('user:id,name,email');
 
-        if (!$this->currentApiUserIsSuperAdmin($request)) {
+        if (!$this->currentApiUserCanViewAllEmail($request)) {
             $query->where('user_id', $userId);
         }
 
@@ -92,7 +92,7 @@ class CorporateEmailController extends Controller
     {
         $userId = $this->currentApiUserId($request);
 
-        if (!$this->currentApiUserIsSuperAdmin($request) && (int) $account->user_id !== $userId) {
+        if (!$this->currentApiUserCanSendAnyEmail($request) && (int) $account->user_id !== $userId) {
             return $this->apiNotFound('Cuenta de correo no encontrada', 'CORP_EMAIL_MY_ACCOUNT_NOT_FOUND');
         }
 
@@ -110,7 +110,7 @@ class CorporateEmailController extends Controller
             ->with(['account:id,name,email_address,from_name,user_id'])
             ->where('direction', 'incoming');
 
-        if (!$this->currentApiUserIsSuperAdmin($request)) {
+        if (!$this->currentApiUserCanViewAllEmail($request)) {
             $query->whereHas('account', function ($accountQuery) use ($userId) {
                 $accountQuery->where('user_id', $userId);
             });
@@ -195,7 +195,7 @@ class CorporateEmailController extends Controller
             ->with(['account:id,name,email_address,from_name,user_id'])
             ->where('direction', 'outgoing');
 
-        if (!$this->currentApiUserIsSuperAdmin($request)) {
+        if (!$this->currentApiUserCanViewAllEmail($request)) {
             $query->whereHas('account', function ($accountQuery) use ($userId) {
                 $accountQuery->where('user_id', $userId);
             });
@@ -276,7 +276,7 @@ class CorporateEmailController extends Controller
         $accountQuery = CorporateEmailAccount::query()
             ->whereKey((int) $data['corporate_email_account_id']);
 
-        if (!$this->currentApiUserIsSuperAdmin($request)) {
+        if (!$this->currentApiUserCanSendAnyEmail($request)) {
             $accountQuery->where('user_id', $userId);
         }
 
@@ -622,7 +622,7 @@ class CorporateEmailController extends Controller
             ->whereKey($message->getKey())
             ->where('direction', 'incoming');
 
-        if (!$this->currentApiUserIsSuperAdmin($request)) {
+        if (!$this->currentApiUserCanViewAllEmail($request)) {
             $query->whereHas('account', function ($accountQuery) use ($userId) {
                 $accountQuery->where('user_id', $userId);
             });
@@ -643,7 +643,7 @@ class CorporateEmailController extends Controller
             ->whereKey($message->getKey())
             ->where('direction', 'outgoing');
 
-        if (!$this->currentApiUserIsSuperAdmin($request)) {
+        if (!$this->currentApiUserCanViewAllEmail($request)) {
             $query->whereHas('account', function ($accountQuery) use ($userId) {
                 $accountQuery->where('user_id', $userId);
             });
@@ -657,8 +657,13 @@ class CorporateEmailController extends Controller
         return (int) $request->user('api')?->getAuthIdentifier();
     }
 
-    protected function currentApiUserIsSuperAdmin(Request $request): bool
+    protected function currentApiUserCanViewAllEmail(Request $request): bool
     {
-        return Rbac::isSuperAdmin($request->user('api'));
+        return Rbac::canAny($request->user('api'), 'corporate-email.view.all');
+    }
+
+    protected function currentApiUserCanSendAnyEmail(Request $request): bool
+    {
+        return Rbac::canAny($request->user('api'), 'corporate-email.send.any');
     }
 }

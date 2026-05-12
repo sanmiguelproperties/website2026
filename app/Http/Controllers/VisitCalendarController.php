@@ -281,7 +281,7 @@ class VisitCalendarController extends Controller
 
     private function canEditVisit($user, ClientVisit $visit): bool
     {
-        if (Rbac::isSuperAdmin($user)) {
+        if (Rbac::canAny($user, 'calendar.edit')) {
             return true;
         }
 

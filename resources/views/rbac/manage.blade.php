@@ -78,16 +78,36 @@
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-[var(--c-text)]">Asignar Permisos a Roles</h2>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
+        <div class="space-y-6">
+          <div class="max-w-3xl rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)] p-4">
             <label class="block text-sm font-medium text-[var(--c-text)] mb-2">Seleccionar Rol</label>
             <select id="role-select" class="w-full px-3 py-2 bg-[var(--c-elev)] border border-[var(--c-border)] rounded-lg">
               <option value="">Selecciona un rol...</option>
             </select>
+            <p class="mt-2 text-xs text-[var(--c-muted)]">Se muestran roles y permisos del guard web. Al guardar, el sistema mantiene sincronizado el guard api por nombre.</p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-[var(--c-text)] mb-2">Permisos Disponibles</label>
-            <div id="permissions-checkboxes" class="w-full max-h-64 overflow-auto bg-[var(--c-elev)] border border-[var(--c-border)] rounded-lg p-3 space-y-2">
+
+          <div class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)] overflow-hidden">
+            <div class="border-b border-[var(--c-border)] p-4 space-y-4">
+              <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                <div>
+                  <label class="block text-sm font-medium text-[var(--c-text)]">Permisos Disponibles</label>
+                  <p id="assignment-summary" class="mt-1 text-xs text-[var(--c-muted)]">Selecciona un rol para cargar permisos.</p>
+                </div>
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <input type="text" id="permission-assignment-search" placeholder="Buscar permiso o vista..." class="w-full sm:w-72 px-3 py-2 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-lg text-sm">
+                  <button id="btn-select-all-permissions" type="button" class="px-3 py-2 rounded-lg border border-[var(--c-border)] bg-[var(--c-surface)] text-sm hover:bg-[var(--c-elev)] transition">Seleccionar todos</button>
+                  <button id="btn-clear-permissions" type="button" class="px-3 py-2 rounded-lg border border-[var(--c-border)] bg-[var(--c-surface)] text-sm hover:bg-[var(--c-elev)] transition">Limpiar</button>
+                </div>
+              </div>
+              <div>
+                <p class="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--c-muted)]">Acceso rápido por área</p>
+                <div id="permission-area-buttons" class="flex flex-wrap gap-2">
+                  <!-- Area buttons will be loaded here -->
+                </div>
+              </div>
+            </div>
+            <div id="permissions-checkboxes" class="w-full max-h-[60vh] overflow-auto bg-[var(--c-surface)] p-4 space-y-4">
               <!-- Checkboxes will be loaded here -->
             </div>
           </div>
@@ -95,9 +115,6 @@
         <div class="mt-4 flex gap-2">
           <button id="btn-assign-permissions" class="px-4 py-2 bg-[var(--c-primary)] text-[var(--c-primary-ink)] rounded-lg hover:opacity-95 transition">Asignar Permisos</button>
           <button id="btn-sync-permissions" class="px-4 py-2 bg-[var(--c-accent)] text-white rounded-lg hover:opacity-95 transition">Sincronizar Permisos</button>
-        </div>
-        <div id="role-permissions" class="mt-6">
-          <!-- Current permissions will be shown here -->
         </div>
       </div>
     </div>
@@ -156,6 +173,75 @@ document.addEventListener('DOMContentLoaded', function() {
   const API_BASE = '/api/rbac';
   const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
   const API_TOKEN = document.querySelector('meta[name="api-token"]')?.getAttribute('content') || null;
+  let assignmentPermissions = [];
+  let assignmentAssignedIds = [];
+  let assignmentSearchTerm = '';
+
+  const PERMISSION_GROUPS = [
+    {
+      key: 'dashboard',
+      label: 'Dashboard',
+      description: 'Entrada al panel y métricas generales.',
+      prefixes: ['dashboard.', 'menu.dashboard.'],
+      exact: ['menu.dashboard.view'],
+    },
+    {
+      key: 'real-estate',
+      label: 'Inmobiliaria',
+      description: 'Dashboard, propiedades, zonas, equipo y agencias.',
+      prefixes: ['properties.', 'menu.properties.', 'menu.zones.', 'menu.team-members.', 'menu.agencies.', 'catalogs.'],
+      exact: ['menu.properties.view', 'menu.zones.view', 'menu.team-members.view', 'menu.agencies.view'],
+    },
+    {
+      key: 'crm',
+      label: 'CRM',
+      description: 'Clientes, leads, notas, visitas y pipeline.',
+      prefixes: ['clients.', 'leads.', 'crm.', 'calendar.', 'pipelines.', 'closings.', 'commissions.', 'menu.clients.', 'menu.property-contact-requests.', 'menu.calendar.'],
+      exact: ['menu.clients.view', 'menu.property-contact-requests.view', 'menu.calendar.view'],
+    },
+    {
+      key: 'admin',
+      label: 'Administración',
+      description: 'Usuarios, roles y permisos.',
+      prefixes: ['users.', 'rbac.', 'menu.users.', 'menu.rbac.'],
+      exact: ['menu.users.view', 'menu.rbac.view'],
+    },
+    {
+      key: 'mls',
+      label: 'MLS',
+      description: 'Sincronización, agentes, oficinas y exportación.',
+      prefixes: ['menu.easybroker.mls-export.', 'menu.mls.', 'menu.mls-agents.', 'menu.mls-offices.'],
+      exact: ['menu.easybroker.mls-export.view', 'menu.mls.view', 'menu.mls-agents.view', 'menu.mls-offices.view'],
+    },
+    {
+      key: 'email',
+      label: 'Correos',
+      description: 'Cuentas, bandejas y envío de correo corporativo.',
+      prefixes: ['corporate-email.', 'menu.corporate-email.'],
+      exact: ['menu.corporate-email.configuration.view', 'menu.corporate-email.inbox.view', 'menu.corporate-email.outbox.view', 'menu.corporate-email.compose.view'],
+    },
+    {
+      key: 'cms',
+      label: 'CMS',
+      description: 'Páginas, posts, menús y ajustes del sitio.',
+      prefixes: ['cms.', 'menu.cms.'],
+      exact: ['menu.cms.pages.view', 'menu.cms.posts.view', 'menu.cms.menus.view', 'menu.cms.settings.view'],
+    },
+    {
+      key: 'settings',
+      label: 'Ajustes',
+      description: 'Monedas, temas, colores, integraciones y notificaciones.',
+      prefixes: ['settings.', 'integrations.', 'notifications.', 'marketing.', 'sensitive.', 'financial.', 'records.', 'menu.currencies.', 'menu.color-themes.', 'menu.frontend-colors.', 'menu.easybroker.', 'menu.notifications.'],
+      exact: ['menu.currencies.view', 'menu.color-themes.view', 'menu.frontend-colors.view', 'menu.easybroker.view', 'menu.notifications.view'],
+    },
+    {
+      key: 'documents-reports',
+      label: 'Documentos y reportes',
+      description: 'Documentos, reportes y exportaciones.',
+      prefixes: ['documents.', 'reports.'],
+      exact: [],
+    },
+  ];
 
   // Tab switching
   const tabs = document.querySelectorAll('.tab-btn');
@@ -196,6 +282,12 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('role-select').addEventListener('change', loadRolePermissions);
   document.getElementById('btn-assign-permissions').addEventListener('click', assignPermissions);
   document.getElementById('btn-sync-permissions').addEventListener('click', syncPermissions);
+  document.getElementById('permission-assignment-search').addEventListener('input', (event) => {
+    assignmentSearchTerm = event.target.value.trim().toLowerCase();
+    renderPermissionsCheckboxes(assignmentPermissions, assignmentAssignedIds);
+  });
+  document.getElementById('btn-select-all-permissions').addEventListener('click', selectVisiblePermissions);
+  document.getElementById('btn-clear-permissions').addEventListener('click', clearVisiblePermissions);
 
   // Search functionality
   document.getElementById('search-roles').addEventListener('input', debounce(loadRoles, 300));
@@ -212,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Functions
   async function loadRoles() {
     const search = document.getElementById('search-roles').value;
-    const url = `${API_BASE}/roles?q=${encodeURIComponent(search)}`;
+    const url = `${API_BASE}/roles?per_page=500&q=${encodeURIComponent(search)}`;
 
     try {
       const response = await fetch(url, {
@@ -237,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function loadPermissions() {
     const search = document.getElementById('search-permissions').value;
-    const url = `${API_BASE}/permissions?q=${encodeURIComponent(search)}`;
+    const url = `${API_BASE}/permissions?per_page=500&q=${encodeURIComponent(search)}`;
 
     try {
       const response = await fetch(url, {
@@ -262,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function loadRolesForSelect() {
     try {
-      const response = await fetch(`${API_BASE}/roles`, {
+      const response = await fetch(`${API_BASE}/roles?per_page=500`, {
         headers: {
           'Authorization': `Bearer ${API_TOKEN}`,
           'X-CSRF-TOKEN': CSRF_TOKEN,
@@ -292,14 +384,15 @@ document.addEventListener('DOMContentLoaded', function() {
   async function loadRolePermissions() {
     const roleId = document.getElementById('role-select').value;
     if (!roleId) {
-      document.getElementById('role-permissions').innerHTML = '';
       document.getElementById('permissions-checkboxes').innerHTML = '';
+      document.getElementById('permission-area-buttons').innerHTML = '';
+      updateAssignmentSummary();
       return;
     }
 
     try {
       // Load all permissions
-      const permissionsResponse = await fetch(`${API_BASE}/permissions`, {
+      const permissionsResponse = await fetch(`${API_BASE}/permissions?per_page=500`, {
         headers: {
           'Authorization': `Bearer ${API_TOKEN}`,
           'X-CSRF-TOKEN': CSRF_TOKEN,
@@ -320,8 +413,9 @@ document.addEventListener('DOMContentLoaded', function() {
       const rolePermissionsData = await rolePermissionsResponse.json();
 
       if (permissionsData.success && rolePermissionsData.success) {
-        renderPermissionsCheckboxes(permissionsData.data, rolePermissionsData.data);
-        renderRolePermissions(rolePermissionsData.data);
+        assignmentPermissions = [...permissionsData.data].sort((a, b) => a.name.localeCompare(b.name));
+        assignmentAssignedIds = rolePermissionsData.data.map(p => Number(p.id));
+        renderPermissionsCheckboxes(assignmentPermissions, assignmentAssignedIds);
       } else {
         showApiError('Error al cargar permisos del rol', permissionsData.success ? rolePermissionsData : permissionsData);
       }
@@ -414,69 +508,283 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  function renderPermissionsCheckboxes(allPermissions, assignedPermissions) {
+  function renderPermissionsCheckboxes(allPermissions, assignedIds = []) {
     const container = document.getElementById('permissions-checkboxes');
     container.innerHTML = '';
 
+    const normalizedAssignedIds = assignedIds.map(id => Number(id));
+
     if (allPermissions.length === 0) {
       container.innerHTML = '<p class="text-[var(--c-muted)] text-center py-4">No hay permisos disponibles</p>';
+      renderAreaButtons([]);
+      updateAssignmentSummary();
       return;
     }
 
-    const assignedIds = assignedPermissions.map(p => p.id);
+    const groups = buildPermissionGroups(allPermissions);
+    renderAreaButtons(groups);
 
-    allPermissions.forEach(permission => {
-      const checkboxDiv = document.createElement('div');
-      checkboxDiv.className = 'flex items-center space-x-2';
+    let renderedCount = 0;
+    groups.forEach(group => {
+      const visiblePermissions = filterPermissions(group.permissions);
+      if (visiblePermissions.length === 0) {
+        return;
+      }
 
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.id = `permission-${permission.id}`;
-      checkbox.value = permission.id;
-      checkbox.className = 'w-4 h-4 text-[var(--c-primary)] bg-[var(--c-elev)] border-[var(--c-border)] rounded focus:ring-[var(--c-primary)] focus:ring-2';
-      checkbox.checked = assignedIds.includes(permission.id);
+      renderedCount += visiblePermissions.length;
+      const selectedInGroup = visiblePermissions.filter(permission => normalizedAssignedIds.includes(Number(permission.id))).length;
 
-      const label = document.createElement('label');
-      label.htmlFor = `permission-${permission.id}`;
-      label.className = 'text-sm text-[var(--c-text)] cursor-pointer';
-      label.textContent = permission.name;
+      const section = document.createElement('section');
+      section.id = `permission-group-${group.key}`;
+      section.className = 'permission-group-section scroll-mt-4 rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)] overflow-hidden transition-shadow duration-300';
+      section.innerHTML = `
+        <div class="flex flex-col gap-3 border-b border-[var(--c-border)] p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h3 class="font-semibold text-[var(--c-text)]">${escapeHtml(group.label)}</h3>
+            <p class="mt-1 text-xs text-[var(--c-muted)]">${escapeHtml(group.description)} ${selectedInGroup}/${visiblePermissions.length} seleccionados.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="select-group-btn px-3 py-1.5 rounded-lg bg-[var(--c-primary)] text-[var(--c-primary-ink)] text-xs font-medium hover:opacity-95 transition" data-group="${group.key}">Seleccionar área</button>
+            <button type="button" class="clear-group-btn px-3 py-1.5 rounded-lg border border-[var(--c-border)] bg-[var(--c-surface)] text-xs font-medium hover:bg-[var(--c-elev)] transition" data-group="${group.key}">Limpiar área</button>
+          </div>
+        </div>
+      `;
 
-      checkboxDiv.appendChild(checkbox);
-      checkboxDiv.appendChild(label);
-      container.appendChild(checkboxDiv);
+      const grid = document.createElement('div');
+      grid.className = 'grid grid-cols-1 gap-2 p-4 md:grid-cols-2 xl:grid-cols-3';
+
+      visiblePermissions.forEach(permission => {
+        grid.appendChild(createPermissionCheckbox(permission, normalizedAssignedIds.includes(Number(permission.id))));
+      });
+
+      section.appendChild(grid);
+      container.appendChild(section);
+    });
+
+    if (renderedCount === 0) {
+      container.innerHTML = '<p class="text-[var(--c-muted)] text-center py-8">No hay permisos que coincidan con la búsqueda.</p>';
+    }
+
+    container.querySelectorAll('.select-group-btn').forEach(button => {
+      button.addEventListener('click', () => setGroupSelection(button.dataset.group, true));
+    });
+
+    container.querySelectorAll('.clear-group-btn').forEach(button => {
+      button.addEventListener('click', () => setGroupSelection(button.dataset.group, false));
+    });
+
+    updateAssignmentSummary();
+  }
+
+  function buildPermissionGroups(permissions) {
+    const matchedIds = new Set();
+    const groups = PERMISSION_GROUPS.map(group => {
+      const groupPermissions = permissions.filter(permission => permissionBelongsToGroup(permission.name, group));
+      groupPermissions.forEach(permission => matchedIds.add(Number(permission.id)));
+
+      return {
+        ...group,
+        permissions: groupPermissions,
+      };
+    }).filter(group => group.permissions.length > 0);
+
+    const otherPermissions = permissions.filter(permission => !matchedIds.has(Number(permission.id)));
+    if (otherPermissions.length > 0) {
+      groups.push({
+        key: 'other',
+        label: 'Otros permisos',
+        description: 'Permisos personalizados o sin área definida.',
+        prefixes: [],
+        exact: [],
+        permissions: otherPermissions,
+      });
+    }
+
+    return groups;
+  }
+
+  function permissionBelongsToGroup(permissionName, group) {
+    return (group.exact || []).includes(permissionName)
+      || (group.prefixes || []).some(prefix => permissionName.startsWith(prefix));
+  }
+
+  function filterPermissions(permissions) {
+    if (!assignmentSearchTerm) {
+      return permissions;
+    }
+
+    return permissions.filter(permission => {
+      const area = getPermissionArea(permission.name);
+      return permission.name.toLowerCase().includes(assignmentSearchTerm)
+        || area.label.toLowerCase().includes(assignmentSearchTerm)
+        || area.description.toLowerCase().includes(assignmentSearchTerm);
     });
   }
 
-  function renderRolePermissions(permissions) {
-    const container = document.getElementById('role-permissions');
-    container.innerHTML = '<h3 class="text-md font-medium text-[var(--c-text)] mb-2">Permisos Asignados</h3>';
+  function createPermissionCheckbox(permission, checked) {
+    const item = document.createElement('label');
+    item.htmlFor = `permission-${permission.id}`;
+    item.className = 'flex min-h-[3rem] cursor-pointer items-start gap-3 rounded-xl border border-[var(--c-border)] bg-[var(--c-surface)] p-3 hover:border-[var(--c-primary)] transition';
 
-    if (permissions.length === 0) {
-      container.innerHTML += '<p class="text-[var(--c-muted)]">No hay permisos asignados</p>';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `permission-${permission.id}`;
+    checkbox.value = permission.id;
+    checkbox.className = 'permission-checkbox mt-1 w-4 h-4 text-[var(--c-primary)] bg-[var(--c-elev)] border-[var(--c-border)] rounded focus:ring-[var(--c-primary)] focus:ring-2';
+    checkbox.checked = checked;
+    checkbox.addEventListener('change', updateAssignmentSummary);
+
+    const content = document.createElement('span');
+    content.className = 'min-w-0 flex-1';
+
+    const name = document.createElement('span');
+    name.className = 'block break-all text-sm font-medium text-[var(--c-text)]';
+    name.textContent = permission.name;
+
+    const meta = document.createElement('span');
+    meta.className = 'mt-1 block text-xs text-[var(--c-muted)]';
+    meta.textContent = permissionHint(permission.name);
+
+    content.appendChild(name);
+    content.appendChild(meta);
+    item.appendChild(checkbox);
+    item.appendChild(content);
+
+    return item;
+  }
+
+  function renderAreaButtons(groups) {
+    const container = document.getElementById('permission-area-buttons');
+    container.innerHTML = '';
+
+    groups.forEach(group => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'area-select-btn rounded-full border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-1.5 text-xs font-medium hover:border-[var(--c-primary)] hover:text-[var(--c-primary)] transition';
+      button.dataset.group = group.key;
+      button.textContent = `${group.label} (${group.permissions.length})`;
+      button.addEventListener('click', () => scrollToPermissionGroup(group.key));
+      container.appendChild(button);
+    });
+  }
+
+  function scrollToPermissionGroup(groupKey) {
+    const section = document.getElementById(`permission-group-${groupKey}`);
+    if (!section) {
       return;
     }
 
-    const list = document.createElement('div');
-    list.className = 'space-y-2';
-    permissions.forEach(permission => {
-      const item = document.createElement('div');
-      item.className = 'flex items-center justify-between p-2 bg-[var(--c-elev)] rounded-lg';
-      item.innerHTML = `
-        <span class="text-sm text-[var(--c-text)]">${permission.name}</span>
-        <button class="detach-permission-btn px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition" data-id="${permission.id}">Quitar</button>
-      `;
-      list.appendChild(item);
-    });
-    container.appendChild(list);
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    section.classList.add('ring-2', 'ring-[var(--c-primary)]', 'shadow-lg');
 
-    // Add event listeners for detach
-    container.querySelectorAll('.detach-permission-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const permissionId = e.target.dataset.id;
-        const roleId = document.getElementById('role-select').value;
-        detachPermission(roleId, permissionId);
-      });
+    window.setTimeout(() => {
+      section.classList.remove('ring-2', 'ring-[var(--c-primary)]', 'shadow-lg');
+    }, 1200);
+  }
+
+  function setGroupSelection(groupKey, checked) {
+    const group = buildPermissionGroups(assignmentPermissions).find(item => item.key === groupKey);
+    if (!group) {
+      return;
+    }
+
+    const visibleIds = new Set(filterPermissions(group.permissions).map(permission => Number(permission.id)));
+    document.querySelectorAll('#permissions-checkboxes input.permission-checkbox').forEach(checkbox => {
+      if (visibleIds.has(Number(checkbox.value))) {
+        checkbox.checked = checked;
+      }
     });
+
+    updateAssignmentSummary();
+  }
+
+  function selectVisiblePermissions() {
+    document.querySelectorAll('#permissions-checkboxes input.permission-checkbox').forEach(checkbox => {
+      checkbox.checked = true;
+    });
+    updateAssignmentSummary();
+  }
+
+  function clearVisiblePermissions() {
+    document.querySelectorAll('#permissions-checkboxes input.permission-checkbox').forEach(checkbox => {
+      checkbox.checked = false;
+    });
+    updateAssignmentSummary();
+  }
+
+  function updateAssignmentSummary() {
+    const summary = document.getElementById('assignment-summary');
+    const selected = document.querySelectorAll('#permissions-checkboxes input.permission-checkbox:checked').length;
+    const visible = document.querySelectorAll('#permissions-checkboxes input.permission-checkbox').length;
+    const total = assignmentPermissions.length;
+
+    if (!document.getElementById('role-select').value) {
+      summary.textContent = 'Selecciona un rol para cargar permisos.';
+      return;
+    }
+
+    summary.textContent = `${selected} permisos seleccionados de ${visible} visibles (${total} permisos disponibles en web).`;
+  }
+
+  function getPermissionArea(permissionName) {
+    return PERMISSION_GROUPS.find(group => permissionBelongsToGroup(permissionName, group)) || {
+      label: 'Otros permisos',
+      description: 'Permisos personalizados o sin área definida.',
+    };
+  }
+
+  function permissionHint(permissionName) {
+    if (permissionName.startsWith('menu.')) {
+      return 'Visibilidad de menú';
+    }
+
+    if (permissionName.endsWith('.view.all') || permissionName.endsWith('.view.global')) {
+      return 'Ver registros globales';
+    }
+
+    if (permissionName.endsWith('.view.own')) {
+      return 'Ver registros propios';
+    }
+
+    if (permissionName.endsWith('.edit.own')) {
+      return 'Editar registros propios';
+    }
+
+    if (permissionName.endsWith('.delete.own')) {
+      return 'Eliminar registros propios';
+    }
+
+    if (permissionName.includes('.create')) {
+      return 'Crear registros';
+    }
+
+    if (permissionName.includes('.edit') || permissionName.includes('.manage')) {
+      return 'Administrar o editar';
+    }
+
+    if (permissionName.includes('.delete')) {
+      return 'Eliminar registros';
+    }
+
+    if (permissionName.includes('.sync')) {
+      return 'Ejecutar sincronización';
+    }
+
+    if (permissionName.includes('.export')) {
+      return 'Exportar información';
+    }
+
+    if (permissionName.includes('.view')) {
+      return 'Ver sección o información';
+    }
+
+    return getPermissionArea(permissionName).label;
+  }
+
+  function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value;
+    return div.innerHTML;
   }
 
   function openRoleModal(id = null, name = '') {
@@ -584,6 +892,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (response.ok && data.success) {
         closePermissionModal();
         loadPermissions();
+        if (document.getElementById('role-select').value) {
+          loadRolePermissions();
+        }
         window.dispatchEvent(new CustomEvent('api:response', { detail: data }));
       } else {
         showApiError('Error al guardar permiso', data);
@@ -648,7 +959,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function assignPermissions() {
     const roleId = document.getElementById('role-select').value;
-    const checkboxes = document.querySelectorAll('#permissions-checkboxes input[type="checkbox"]:checked');
+    const checkboxes = document.querySelectorAll('#permissions-checkboxes input.permission-checkbox:checked');
     const selectedPermissions = Array.from(checkboxes).map(checkbox => checkbox.value);
 
     if (!roleId || selectedPermissions.length === 0) {
@@ -683,7 +994,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function syncPermissions() {
     const roleId = document.getElementById('role-select').value;
-    const checkboxes = document.querySelectorAll('#permissions-checkboxes input[type="checkbox"]:checked');
+    const checkboxes = document.querySelectorAll('#permissions-checkboxes input.permission-checkbox:checked');
     const selectedPermissions = Array.from(checkboxes).map(checkbox => checkbox.value);
 
     if (!roleId) {
@@ -713,32 +1024,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } catch (error) {
       showError('Error de conexión', 'No se pudieron sincronizar los permisos');
-    }
-  }
-
-  async function detachPermission(roleId, permissionId) {
-    try {
-      const response = await fetch(`${API_BASE}/roles/${roleId}/permissions/detach`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${API_TOKEN}`,
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': CSRF_TOKEN,
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ permissions: [permissionId] })
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        loadRolePermissions();
-        window.dispatchEvent(new CustomEvent('api:response', { detail: data }));
-      } else {
-        showApiError('Error al quitar permiso', data);
-      }
-    } catch (error) {
-      showError('Error de conexión', 'No se pudo quitar el permiso');
     }
   }
 

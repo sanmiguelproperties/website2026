@@ -33,22 +33,6 @@ class ApiAdminMiddleware
 
         $requiredPermissions = $permissions === [] ? ['dashboard.view'] : $permissions;
 
-        if (in_array('super-admin', $requiredPermissions, true)) {
-            if (!Rbac::isSuperAdmin($user)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Acceso denegado. Esta accion es solo para administradores.',
-                    'code' => 'SUPER_ADMIN_REQUIRED',
-                    'data' => null,
-                    'errors' => [
-                        'auth' => ['Esta accion requiere el rol administrador'],
-                    ],
-                ], 403);
-            }
-
-            return $next($request);
-        }
-
         if (!Rbac::canAny($user, $requiredPermissions)) {
             return response()->json([
                 'success' => false,
