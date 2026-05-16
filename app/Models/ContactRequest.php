@@ -18,6 +18,19 @@ class ContactRequest extends Model
     public const SOURCE_HOME_CONTACT_FORM = 'home_contact_form';
     public const SOURCE_FOOTER_NEWSLETTER = 'footer_newsletter';
     public const SOURCE_WEBSITE_CONTACT_FORM = 'website_contact_form';
+    public const SOURCE_MANUAL_ENTRY = 'manual_entry';
+    public const SOURCE_REFERRAL = 'referral';
+    public const SOURCE_FACEBOOK = 'facebook';
+    public const SOURCE_TIKTOK = 'tiktok';
+    public const SOURCE_INSTAGRAM = 'instagram';
+    public const SOURCE_WHATSAPP = 'whatsapp';
+    public const SOURCE_PHONE_CALL = 'phone_call';
+    public const SOURCE_EMAIL = 'email';
+    public const SOURCE_GOOGLE_ADS = 'google_ads';
+    public const SOURCE_REAL_ESTATE_PORTAL = 'real_estate_portal';
+    public const SOURCE_EVENT = 'event';
+    public const SOURCE_WALK_IN = 'walk_in';
+    public const SOURCE_OTHER = 'other';
 
     public const LEAD_TYPE_BUYER = 'buyer';
     public const LEAD_TYPE_SELLER = 'seller';
@@ -116,15 +129,7 @@ class ContactRequest extends Model
 
     public function scopeFromPublicForms($query)
     {
-        return $query->whereIn('source', [
-            self::SOURCE_PROPERTY_FORM,
-            self::SOURCE_PROPERTY_DETAIL_FORM,
-            self::SOURCE_SELLER_FORM,
-            self::SOURCE_CONTACT_PAGE_FORM,
-            self::SOURCE_HOME_CONTACT_FORM,
-            self::SOURCE_FOOTER_NEWSLETTER,
-            self::SOURCE_WEBSITE_CONTACT_FORM,
-        ]);
+        return $query->whereIn('source', self::publicSources());
     }
 
     public static function publicSources(): array
@@ -137,6 +142,26 @@ class ContactRequest extends Model
             self::SOURCE_HOME_CONTACT_FORM,
             self::SOURCE_FOOTER_NEWSLETTER,
             self::SOURCE_WEBSITE_CONTACT_FORM,
+            ...array_keys(self::manualSourceLabels()),
+        ];
+    }
+
+    public static function manualSourceLabels(): array
+    {
+        return [
+            self::SOURCE_MANUAL_ENTRY => 'Carga manual',
+            self::SOURCE_REFERRAL => 'Referencia',
+            self::SOURCE_FACEBOOK => 'Facebook',
+            self::SOURCE_TIKTOK => 'TikTok',
+            self::SOURCE_INSTAGRAM => 'Instagram',
+            self::SOURCE_WHATSAPP => 'WhatsApp',
+            self::SOURCE_PHONE_CALL => 'Llamada telefonica',
+            self::SOURCE_EMAIL => 'Correo electronico',
+            self::SOURCE_GOOGLE_ADS => 'Google Ads',
+            self::SOURCE_REAL_ESTATE_PORTAL => 'Portal inmobiliario',
+            self::SOURCE_EVENT => 'Evento o feria',
+            self::SOURCE_WALK_IN => 'Visita a oficina',
+            self::SOURCE_OTHER => 'Otra fuente',
         ];
     }
 
@@ -150,7 +175,7 @@ class ContactRequest extends Model
             self::SOURCE_HOME_CONTACT_FORM => 'Formulario del home',
             self::SOURCE_FOOTER_NEWSLETTER => 'Newsletter',
             self::SOURCE_WEBSITE_CONTACT_FORM => 'Contacto web',
-        ];
+        ] + self::manualSourceLabels();
     }
 
     public static function leadTypeLabels(): array

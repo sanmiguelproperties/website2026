@@ -294,6 +294,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/property-contact-requests', [PropertyContactRequestController::class, 'index'])
             ->name('property-contact-requests')
             ->middleware('admin:leads.view');
+        Route::post('/property-contact-requests', [PropertyContactRequestController::class, 'manualStore'])
+            ->name('property-contact-requests.store')
+            ->middleware('admin:leads.create');
         Route::patch('/property-contact-requests/{contactRequest}', [PropertyContactRequestController::class, 'update'])
             ->name('property-contact-requests.update')
             ->middleware('admin:leads.view');

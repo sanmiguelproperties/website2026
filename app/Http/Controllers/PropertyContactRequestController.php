@@ -4,14 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\ContactRequest;
 use App\Models\Client;
+use App\Models\Property;
 use App\Models\User;
+use App\Notifications\LeadRoutedNotification;
 use App\Services\PublicLeadCaptureService;
 use App\Support\Rbac;
+use App\Support\RbacNotifications;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -121,10 +125,12 @@ class PropertyContactRequestController extends Controller
             'stats' => $stats,
             'assignableUsers' => $assignableUsers,
             'canManageLeads' => Rbac::canAny($request->user(), ['leads.edit', 'leads.edit.own']),
+            'canCreateLeads' => Rbac::canAny($request->user(), 'leads.create'),
             'canConvertLeads' => Rbac::canAny($request->user(), 'clients.create'),
             'leadTypeOptions' => ContactRequest::leadTypeLabels(),
             'contactTypeOptions' => ContactRequest::contactTypeLabels(),
             'sourceOptions' => ContactRequest::sourceLabels(),
+            'manualSourceOptions' => ContactRequest::manualSourceLabels(),
             'propertyContextOptions' => ContactRequest::propertyContextLabels(),
             'statusOptions' => [
                 'new' => 'Nuevo',
@@ -141,6 +147,117 @@ class PropertyContactRequestController extends Controller
         ]);
     }
 
+    public function manualStore(Request $request): RedirectResponse
+    {
+        if (!Rbac::canAny($request->user(), 'leads.create')) {
+            abort(403, 'No tienes permisos para crear leads.');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255', 'required_without:phone'],
+            'phone' => ['nullable', 'string', 'max:50', 'required_without:email'],
+            'contact_type' => ['required', 'string', Rule::in(array_keys(ContactRequest::contactTypeLabels()))],
+            'lead_type' => ['required', 'string', Rule::in(array_keys(ContactRequest::leadTypeLabels()))],
+            'source' => ['required', 'string', Rule::in(array_keys(ContactRequest::manualSourceLabels()))],
+            'source_detail' => ['nullable', 'string', 'max:255'],
+            'source_url' => ['nullable', 'string', 'max:2048'],
+            'property_context' => ['required', 'string', Rule::in(array_keys(ContactRequest::propertyContextLabels()))],
+            'property_id' => ['nullable', 'integer', 'exists:properties,id'],
+            'property_address' => ['nullable', 'string', 'max:255'],
+            'owner_id' => [
+                'nullable',
+                'integer',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($value === null || $value === '' || !is_numeric($value)) {
+                        return;
+                    }
+
+                    $userExists = User::query()
+                        ->where('is_active', true)
+                        ->whereKey((int) $value)
+                        ->exists();
+
+                    if (!$userExists) {
+                        $fail('El usuario asignado no esta activo o no existe.');
+                    }
+                },
+            ],
+            'status' => ['required', 'string', 'in:new,pending_assignment,contacted,qualified,converted,closed'],
+            'message' => ['nullable', 'string'],
+        ]);
+
+        $validator->after(function ($validator) use ($request): void {
+            if (
+                $request->input('property_context') === ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING
+                && blank($request->input('property_id'))
+            ) {
+                $validator->errors()->add('property_id', 'Selecciona una propiedad publicada para este contexto.');
+            }
+        });
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('creating_lead', true);
+        }
+
+        $data = $validator->validated();
+        $property = !empty($data['property_id'])
+            ? Property::query()->with(['agency', 'mlsOffice'])->find((int) $data['property_id'])
+            : null;
+        $ownerId = !empty($data['owner_id'])
+            ? (int) $data['owner_id']
+            : ($property?->agent_user_id ?: null);
+        $propertyContext = $property
+            ? ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING
+            : $data['property_context'];
+        $propertyPublicId = $this->manualPropertyPublicId($property, $propertyContext);
+
+        $lead = ContactRequest::create([
+            'agency_id' => $property?->agency_id,
+            'property_id' => $property?->id,
+            'owner_id' => $ownerId,
+            'property_public_id' => $propertyPublicId,
+            'property_address' => ($data['property_address'] ?? null) ?: null,
+            'remote_id' => Str::limit('manual-' . (string) Str::uuid(), 100, ''),
+            'source' => $data['source'],
+            'source_url' => ($data['source_url'] ?? null) ?: null,
+            'referrer_url' => null,
+            'lead_type' => $data['lead_type'],
+            'contact_type' => $data['contact_type'],
+            'property_context' => $propertyContext,
+            'interest' => null,
+            'name' => $data['name'],
+            'email' => ($data['email'] ?? null) ?: null,
+            'phone' => ($data['phone'] ?? null) ?: null,
+            'locale' => app()->getLocale(),
+            'message' => ($data['message'] ?? null) ?: 'Lead creado manualmente desde el administrador.',
+            'happened_at' => now(),
+            'privacy_accepted_at' => null,
+            'status' => $data['status'],
+            'assignment_status' => $ownerId ? 'assigned' : 'pending_assignment',
+            'assigned_at' => $ownerId ? now() : null,
+            'raw_payload' => [
+                'manual_entry' => true,
+                'manual_source_detail' => ($data['source_detail'] ?? null) ?: null,
+                'created_by_user_id' => $request->user()?->id,
+                'created_by_user_name' => $request->user()?->name,
+                'property_id' => $property?->id,
+                'property_name' => $property?->title,
+                'submitted_from' => ($data['source_url'] ?? null) ?: null,
+            ],
+        ]);
+
+        $lead->load(['property', 'agency', 'owner']);
+        $this->notifyLeadRouting($lead);
+
+        return redirect()
+            ->route('property-contact-requests', ['search' => $lead->id])
+            ->with('status', 'Lead creado manualmente correctamente.');
+    }
+
     public function update(Request $request, ContactRequest $contactRequest): RedirectResponse
     {
         $this->abortUnlessPropertyLead($contactRequest);
@@ -151,8 +268,8 @@ class PropertyContactRequestController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
+            'email' => ['nullable', 'email', 'max:255', 'required_without:phone'],
+            'phone' => ['nullable', 'string', 'max:50', 'required_without:email'],
             'contact_type' => ['required', 'string', Rule::in(array_keys(ContactRequest::contactTypeLabels()))],
             'status' => ['required', 'string', 'max:50', 'in:new,pending_assignment,contacted,qualified,converted,closed'],
             'owner_id' => [
@@ -190,11 +307,11 @@ class PropertyContactRequestController extends Controller
 
         $contactRequest->update([
             'name' => $data['name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
+            'email' => ($data['email'] ?? null) ?: null,
+            'phone' => ($data['phone'] ?? null) ?: null,
             'contact_type' => $data['contact_type'],
             'status' => $data['status'],
-            'message' => $data['message'] ?: $contactRequest->message,
+            'message' => ($data['message'] ?? null) ?: $contactRequest->message,
             'owner_id' => $ownerId,
             'assignment_status' => $ownerId ? 'assigned' : 'pending_assignment',
             'assigned_at' => $ownerId
@@ -375,6 +492,45 @@ class PropertyContactRequestController extends Controller
         }
 
         return $fields;
+    }
+
+    private function manualPropertyPublicId(?Property $property, string $propertyContext): string
+    {
+        if ($property) {
+            return Str::limit(
+                $property->easybroker_public_id
+                    ?: $property->mls_public_id
+                    ?: (string) $property->id,
+                50,
+                ''
+            );
+        }
+
+        return match ($propertyContext) {
+            ContactRequest::PROPERTY_CONTEXT_SELLER_PROPERTY => 'seller-lead',
+            default => 'manual-lead',
+        };
+    }
+
+    private function notifyLeadRouting(ContactRequest $lead): void
+    {
+        if ($lead->assignment_status === 'assigned') {
+            app(\App\Services\CrmNotificationService::class)->leadCreated($lead);
+        }
+
+        if ($lead->assignment_status === 'assigned') {
+            RbacNotifications::notifyUsers(
+                $lead->owner ? [$lead->owner] : [],
+                new LeadRoutedNotification($lead, 'assigned')
+            );
+
+            return;
+        }
+
+        RbacNotifications::notifyPermissions(
+            ['leads.assign', 'leads.view.all'],
+            new LeadRoutedNotification($lead, 'pending_assignment')
+        );
     }
 
     private function scopeVisibleLeads($query, $user): void

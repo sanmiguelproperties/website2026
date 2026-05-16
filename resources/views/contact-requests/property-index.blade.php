@@ -37,13 +37,21 @@
         <span>CRM</span>
       </div>
       <h1 class="mt-2 text-2xl font-bold text-[var(--c-text)]">Leads</h1>
-      <p class="mt-1 text-[var(--c-muted)]">Registros captados desde formularios publicos, clasificados por tipo, propiedad y origen.</p>
+      <p class="mt-1 text-[var(--c-muted)]">Registros captados desde formularios y cargas manuales, clasificados por tipo, propiedad y origen.</p>
     </div>
 
-    <a href="{{ route('public.properties.index') }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-4 py-2 text-sm hover:bg-[var(--c-surface)] transition">
-      Ver propiedades
-      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
-    </a>
+    <div class="flex flex-wrap items-center gap-2">
+      @if($canCreateLeads)
+        <button type="button" data-lead-create-open class="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--c-primary)] px-4 py-2 text-sm font-semibold text-[var(--c-primary-ink)] hover:opacity-95 transition">
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          Agregar lead
+        </button>
+      @endif
+      <a href="{{ route('public.properties.index') }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] px-4 py-2 text-sm hover:bg-[var(--c-surface)] transition">
+        Ver propiedades
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+      </a>
+    </div>
   </div>
 
   @if(session('status'))
@@ -194,6 +202,7 @@
               $missing = $missingClientFields($lead);
               $canConvertThisLead = $canConvertLeads && !$lead->converted_client_id && $missing === [];
               $sourceUrl = $lead->source_url ?: data_get($lead->raw_payload, 'submitted_from');
+              $sourceDetail = data_get($lead->raw_payload, 'manual_source_detail');
             @endphp
             <tr class="align-top">
               <td class="px-5 py-4 whitespace-nowrap text-[var(--c-muted)]">
@@ -208,6 +217,9 @@
               <td class="px-5 py-4">
                 <div class="font-semibold text-[var(--c-text)]">{{ $contactTypeLabel($lead->contact_type) }}</div>
                 <div class="mt-1 text-xs text-[var(--c-muted)]">{{ $lead->lead_type_label }} - {{ $lead->source_label }}</div>
+                @if($sourceDetail)
+                  <div class="mt-1 text-xs text-[var(--c-muted)]">Detalle: {{ $sourceDetail }}</div>
+                @endif
                 @if($lead->utm_source || $lead->utm_campaign)
                   <div class="mt-2 text-xs text-[var(--c-muted)]">UTM: {{ collect([$lead->utm_source, $lead->utm_campaign])->filter()->join(' / ') }}</div>
                 @endif
@@ -282,8 +294,8 @@
           @empty
             <tr>
               <td colspan="7" class="px-5 py-12 text-center">
-                <p class="font-semibold text-[var(--c-text)]">Aun no hay leads publicos</p>
-                <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando alguien envie un formulario publico, aparecera aqui.</p>
+                <p class="font-semibold text-[var(--c-text)]">Aun no hay leads</p>
+                <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando alguien envie un formulario o agregues uno manualmente, aparecera aqui.</p>
               </td>
             </tr>
           @endforelse
@@ -299,6 +311,7 @@
           $missing = $missingClientFields($lead);
           $canConvertThisLead = $canConvertLeads && !$lead->converted_client_id && $missing === [];
           $sourceUrl = $lead->source_url ?: data_get($lead->raw_payload, 'submitted_from');
+          $sourceDetail = data_get($lead->raw_payload, 'manual_source_detail');
         @endphp
         <article class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)] p-4">
           <div class="flex items-start justify-between gap-3">
@@ -316,6 +329,9 @@
             <p class="text-xs text-[var(--c-muted)]">Tipo / origen</p>
             <p class="mt-1 font-semibold text-[var(--c-text)]">{{ $contactTypeLabel($lead->contact_type) }}</p>
             <p class="text-xs text-[var(--c-muted)]">{{ $lead->lead_type_label }} - {{ $lead->source_label }}</p>
+            @if($sourceDetail)
+              <p class="text-xs text-[var(--c-muted)]">Detalle: {{ $sourceDetail }}</p>
+            @endif
             @if($sourceUrl)
               <a href="{{ $sourceUrl }}" target="_blank" rel="noopener" class="mt-2 inline-flex text-xs font-semibold text-[var(--c-primary)] hover:underline">Ver origen</a>
             @endif
@@ -372,8 +388,8 @@
         </article>
       @empty
         <div class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)] p-8 text-center">
-          <p class="font-semibold text-[var(--c-text)]">Aun no hay leads publicos</p>
-          <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando alguien envie un formulario publico, aparecera aqui.</p>
+          <p class="font-semibold text-[var(--c-text)]">Aun no hay leads</p>
+          <p class="mt-1 text-sm text-[var(--c-muted)]">Cuando alguien envie un formulario o agregues uno manualmente, aparecera aqui.</p>
         </div>
       @endforelse
     </div>
@@ -385,6 +401,133 @@
     @endif
   </section>
 </div>
+
+@if($canCreateLeads)
+<div id="leadCreateModal" class="fixed inset-0 z-[11000] hidden" role="dialog" aria-modal="true" aria-labelledby="leadCreateTitle">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" data-lead-create-close></div>
+  <div class="relative mx-auto mt-6 w-full max-w-4xl px-4">
+    <div class="max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] shadow-2xl">
+      <div class="flex items-start justify-between gap-3 border-b border-[var(--c-border)] px-6 py-4">
+        <div>
+          <h2 id="leadCreateTitle" class="text-lg font-semibold text-[var(--c-text)]">Agregar lead manual</h2>
+          <p class="mt-1 text-xs text-[var(--c-muted)]">Registra un contacto y define la fuente desde donde llego.</p>
+        </div>
+        <button type="button" data-lead-create-close class="rounded-xl bg-[var(--c-elev)] p-2 hover:bg-[var(--c-surface)] transition" aria-label="Cerrar">
+          <svg class="size-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 8.586l4.95-4.95a1 1 0 111.414 1.415L11.414 10l4.95 4.95a1 1 0 11-1.414 1.415L10 11.414l-4.95 4.95a1 1 0 11-1.415-1.415L8.586 10l-4.95-4.95A1 1 0 115.05 3.636L10 8.586z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+
+      <form method="POST" action="{{ route('property-contact-requests.store') }}" class="space-y-5 px-6 py-5">
+        @csrf
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div class="sm:col-span-3">
+            <label for="lead-create-name" class="block text-sm font-medium mb-1">Nombre completo</label>
+            <input id="lead-create-name" name="name" type="text" value="{{ old('name') }}" required class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label for="lead-create-phone" class="block text-sm font-medium mb-1">Telefono</label>
+            <input id="lead-create-phone" name="phone" type="text" value="{{ old('phone') }}" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+          </div>
+          <div class="sm:col-span-2">
+            <label for="lead-create-email" class="block text-sm font-medium mb-1">Email</label>
+            <input id="lead-create-email" name="email" type="email" value="{{ old('email') }}" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+            <p class="mt-1 text-xs text-[var(--c-muted)]">Agrega telefono o email como minimo.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label for="lead-create-contact-type" class="block text-sm font-medium mb-1">Tipo</label>
+            <select id="lead-create-contact-type" name="contact_type" required class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+              @foreach($contactTypeOptions as $value => $label)
+                <option value="{{ $value }}" @selected(old('contact_type', \App\Models\ContactRequest::CONTACT_TYPE_BUYER) === $value)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div>
+            <label for="lead-create-lead-type" class="block text-sm font-medium mb-1">Subtipo</label>
+            <select id="lead-create-lead-type" name="lead_type" required class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+              @foreach($leadTypeOptions as $value => $label)
+                <option value="{{ $value }}" @selected(old('lead_type', \App\Models\ContactRequest::LEAD_TYPE_GENERAL) === $value)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div>
+            <label for="lead-create-source" class="block text-sm font-medium mb-1">Fuente</label>
+            <select id="lead-create-source" name="source" required class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+              @foreach($manualSourceOptions as $value => $label)
+                <option value="{{ $value }}" @selected(old('source', \App\Models\ContactRequest::SOURCE_MANUAL_ENTRY) === $value)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div class="sm:col-span-2">
+            <label for="lead-create-source-detail" class="block text-sm font-medium mb-1">Detalle de fuente</label>
+            <input id="lead-create-source-detail" name="source_detail" type="text" value="{{ old('source_detail') }}" placeholder="Ej. referido por Juan, campana, feria..." class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label for="lead-create-status" class="block text-sm font-medium mb-1">Estado</label>
+            <select id="lead-create-status" name="status" required class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+              @foreach($statusOptions as $value => $label)
+                <option value="{{ $value }}" @selected(old('status', 'new') === $value)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label for="lead-create-property-context" class="block text-sm font-medium mb-1">Contexto</label>
+            <select id="lead-create-property-context" name="property_context" required class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+              @foreach($propertyContextOptions as $value => $label)
+                <option value="{{ $value }}" @selected(old('property_context', \App\Models\ContactRequest::PROPERTY_CONTEXT_NONE) === $value)>{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div>
+            <label for="lead-create-property-id" class="block text-sm font-medium mb-1">ID de propiedad</label>
+            <input id="lead-create-property-id" name="property_id" type="number" min="1" value="{{ old('property_id') }}" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+            <p class="mt-1 text-xs text-[var(--c-muted)]">Requerido si el contexto es propiedad publicada.</p>
+          </div>
+          <div>
+            <label for="lead-create-property-address" class="block text-sm font-medium mb-1">Direccion o referencia</label>
+            <input id="lead-create-property-address" name="property_address" type="text" value="{{ old('property_address') }}" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label for="lead-create-owner" class="block text-sm font-medium mb-1">Usuario asignado</label>
+            <select id="lead-create-owner" name="owner_id" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+              <option value="">Sin usuario asignado</option>
+              @foreach($assignableUsers as $user)
+                <option value="{{ $user->id }}" @selected((string) old('owner_id') === (string) $user->id)>{{ $user->name }}{{ $user->email ? ' - ' . $user->email : '' }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div>
+            <label for="lead-create-source-url" class="block text-sm font-medium mb-1">URL de origen</label>
+            <input id="lead-create-source-url" name="source_url" type="url" value="{{ old('source_url') }}" placeholder="https://..." class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+          </div>
+        </div>
+
+        <div>
+          <label for="lead-create-message" class="block text-sm font-medium mb-1">Notas internas</label>
+          <textarea id="lead-create-message" name="message" rows="4" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">{{ old('message') }}</textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-[var(--c-border)] pt-4">
+          <button type="button" data-lead-create-close class="rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-4 py-2 text-sm hover:bg-[var(--c-surface)] transition">Cancelar</button>
+          <button type="submit" class="rounded-xl bg-[var(--c-primary)] px-4 py-2 text-sm font-semibold text-[var(--c-primary-ink)] hover:opacity-95 transition">Crear lead</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+@endif
 
 <div id="leadEditModal" class="fixed inset-0 z-[11000] hidden" role="dialog" aria-modal="true" aria-labelledby="leadEditTitle">
   <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" data-lead-edit-close></div>
@@ -411,13 +554,14 @@
           </div>
           <div>
             <label for="lead-edit-phone" class="block text-sm font-medium mb-1">Telefono</label>
-            <input id="lead-edit-phone" name="phone" type="text" required class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+            <input id="lead-edit-phone" name="phone" type="text" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
           </div>
         </div>
 
         <div>
           <label for="lead-edit-email" class="block text-sm font-medium mb-1">Email</label>
-          <input id="lead-edit-email" name="email" type="email" required class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+          <input id="lead-edit-email" name="email" type="email" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+          <p class="mt-1 text-xs text-[var(--c-muted)]">Manten telefono o email como minimo.</p>
         </div>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -474,7 +618,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const modal = document.getElementById('leadEditModal');
+  const createModal = document.getElementById('leadCreateModal');
+  const createName = document.getElementById('lead-create-name');
+  const createPropertyContext = document.getElementById('lead-create-property-context');
+  const createPropertyId = document.getElementById('lead-create-property-id');
+  const editModal = document.getElementById('leadEditModal');
   const form = document.getElementById('leadEditForm');
   const title = document.getElementById('leadEditTitle');
   const fields = {
@@ -487,6 +635,28 @@ document.addEventListener('DOMContentLoaded', () => {
     message: document.getElementById('lead-edit-message'),
   };
 
+  function openCreateModal() {
+    if (!createModal) {
+      return;
+    }
+
+    createModal.classList.remove('hidden');
+    syncCreatePropertyRequirement();
+    createName?.focus();
+  }
+
+  function closeCreateModal() {
+    createModal?.classList.add('hidden');
+  }
+
+  function syncCreatePropertyRequirement() {
+    if (!createPropertyContext || !createPropertyId) {
+      return;
+    }
+
+    createPropertyId.required = createPropertyContext.value === @json(\App\Models\ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING);
+  }
+
   function openModal(button) {
     form.action = button.dataset.action || '#';
     title.textContent = `Editar lead #${button.dataset.id || ''}`;
@@ -497,13 +667,24 @@ document.addEventListener('DOMContentLoaded', () => {
     fields.status.value = button.dataset.status || 'new';
     fields.owner.value = button.dataset.ownerId || '';
     fields.message.value = button.dataset.message || '';
-    modal.classList.remove('hidden');
+    editModal.classList.remove('hidden');
     fields.name.focus();
   }
 
   function closeModal() {
-    modal.classList.add('hidden');
+    editModal.classList.add('hidden');
   }
+
+  document.querySelectorAll('[data-lead-create-open]').forEach((button) => {
+    button.addEventListener('click', openCreateModal);
+  });
+
+  document.querySelectorAll('[data-lead-create-close]').forEach((button) => {
+    button.addEventListener('click', closeCreateModal);
+  });
+
+  createPropertyContext?.addEventListener('change', syncCreatePropertyRequirement);
+  syncCreatePropertyRequirement();
 
   document.querySelectorAll('.js-edit-lead').forEach((button) => {
     button.addEventListener('click', () => openModal(button));
@@ -516,8 +697,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       closeModal();
+      closeCreateModal();
     }
   });
+
+  const creatingLead = @json(session('creating_lead'));
+  if (creatingLead) {
+    openCreateModal();
+  }
 
   const editingLeadId = @json(session('editing_lead_id'));
   if (editingLeadId) {
