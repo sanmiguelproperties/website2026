@@ -8,7 +8,7 @@ class RbacConfigTest extends TestCase
 {
     public function test_agent_property_permissions_are_read_only(): void
     {
-        $permissions = config('rbac.roles.agent.permissions', []);
+        $permissions = config('rbac.roles.agente.permissions', []);
 
         $this->assertContains('properties.view', $permissions);
         $this->assertContains('properties.view.all', $permissions);

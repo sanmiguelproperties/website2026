@@ -43,6 +43,7 @@ class CmsSiteSetting extends Model
             'hero_slider_source_type',
             'hero_slider_property_ids',
             'hero_slider_image_ids',
+            'home_featured_property_ids',
         ];
 
         if (in_array($this->type, $nonTranslatable, true) || in_array($this->setting_key, $nonTranslatableKeys, true)) {

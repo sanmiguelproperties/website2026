@@ -36,7 +36,7 @@ class User extends Authenticatable
         'is_active',
         'color_theme_id',
 
-        // Perfil de agente (nullable; se usa cuando el user tiene rol `agent`)
+        // Perfil de agente (nullable; se usa cuando el user tiene rol `agente`)
         'agency_id',
         'agent_phone',
         'agent_public_email',

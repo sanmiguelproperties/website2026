@@ -195,11 +195,27 @@ class CmsContentSeeder extends Seeder
         ]);
 
         // â�?��,�â�?��,� Servicios â�?��,�â�?��,�
+        $this->createFieldsAndValues($statsGroup, $page, 'page', [
+            ['field_key' => 'stats_happy_clients_number', 'type' => 'text', 'label_es' => 'Clientes felices', 'label_en' => 'Happy clients', 'value_es' => '1000+', 'value_en' => '1000+'],
+        ]);
+
         $servicesGroup = $this->createFieldGroup('home-services', 'Servicios', 'page', 'home', 3);
         $this->createFieldsAndValues($servicesGroup, $page, 'page', [
             ['field_key' => 'services_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'Nuestros Servicios', 'value_en' => 'Our Services'],
             ['field_key' => 'services_title', 'type' => 'text', 'label_es' => 'T�f­tulo', 'value_es' => '�,¿Por qu�f© elegirnos?', 'value_en' => 'Why choose us?'],
             ['field_key' => 'services_subtitle', 'type' => 'textarea', 'label_es' => 'Subt�f­tulo', 'value_es' => 'Ofrecemos una experiencia inmobiliaria completa con tecnolog�f­a de vanguardia y un equipo de expertos dedicados a ti.', 'value_en' => 'We offer a complete real estate experience with cutting-edge technology and a team of experts dedicated to you.'],
+            ['field_key' => 'services_feature1_icon', 'type' => 'image', 'label_es' => 'Icono - Busqueda inteligente'],
+            ['field_key' => 'services_feature1_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - Busqueda inteligente', 'value_es' => '#D1A054', 'is_translatable' => false],
+            ['field_key' => 'services_feature2_icon', 'type' => 'image', 'label_es' => 'Icono - Transacciones seguras'],
+            ['field_key' => 'services_feature2_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - Transacciones seguras', 'value_es' => '#768D59', 'is_translatable' => false],
+            ['field_key' => 'services_feature3_icon', 'type' => 'image', 'label_es' => 'Icono - Tours virtuales'],
+            ['field_key' => 'services_feature3_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - Tours virtuales', 'value_es' => '#A52A2A', 'is_translatable' => false],
+            ['field_key' => 'services_feature4_icon', 'type' => 'image', 'label_es' => 'Icono - Asesores expertos'],
+            ['field_key' => 'services_feature4_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - Asesores expertos', 'value_es' => '#5B5B5B', 'is_translatable' => false],
+            ['field_key' => 'services_feature5_icon', 'type' => 'image', 'label_es' => 'Icono - Financiamiento flexible'],
+            ['field_key' => 'services_feature5_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - Financiamiento flexible', 'value_es' => '#A52A2A', 'is_translatable' => false],
+            ['field_key' => 'services_feature6_icon', 'type' => 'image', 'label_es' => 'Icono - App movil'],
+            ['field_key' => 'services_feature6_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - App movil', 'value_es' => '#768D59', 'is_translatable' => false],
         ]);
         $this->createRepeaterAndRows($servicesGroup, $page, 'page', 'services_items', 'Servicios', [
             ['service_title' => ['es' => 'B�fºsqueda Inteligente', 'en' => 'Smart Search'], 'service_description' => ['es' => 'Filtros avanzados y b�fºsqueda por mapa para encontrar exactamente lo que necesitas en segundos.', 'en' => 'Advanced filters and map search to find exactly what you need in seconds.']],

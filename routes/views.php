@@ -2,6 +2,7 @@
 
 use App\Services\PublicLocationMenuService;
 use App\Services\CmsService;
+use App\Services\HomeStatsService;
 use App\Services\ZonePageService;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SellerLeadController;
@@ -68,6 +69,12 @@ Route::get('/idioma/{locale}', function (Request $request, string $locale) {
 // Home
 Route::get('/', function () use ($publicContext) {
     $context = $publicContext('home');
+
+    $context['homeStats'] = HomeStatsService::make(
+        $context['pageData'] ?? null,
+        $context['locale'] ?? app()->getLocale()
+    );
+
     return view('home', $context);
 })->name('home');
 

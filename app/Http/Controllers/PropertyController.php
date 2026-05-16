@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CmsSiteSetting;
 use App\Models\MLSOffice;
 use App\Models\Property;
 use App\Models\PropertyLocation;
@@ -113,12 +114,25 @@ class PropertyController extends Controller
             $query->where('parking_spaces', '>=', (int) $request->input('parking_spaces'));
         }
 
-        if ($request->filled('min_construction_size')) {
-            $query->where('construction_size', '>=', (float) $request->input('min_construction_size'));
+        $minConstructionSize = $this->publicNumericFilter($request, 'min_construction_size');
+        $maxConstructionSize = $this->publicNumericFilter($request, 'max_construction_size');
+        $minLotSize = $this->publicNumericFilter($request, 'min_lot_size');
+        $maxLotSize = $this->publicNumericFilter($request, 'max_lot_size');
+
+        if ($minConstructionSize !== null) {
+            $query->where('construction_size', '>=', $minConstructionSize);
         }
 
-        if ($request->filled('min_lot_size')) {
-            $query->where('lot_size', '>=', (float) $request->input('min_lot_size'));
+        if ($maxConstructionSize !== null) {
+            $query->where('construction_size', '<=', $maxConstructionSize);
+        }
+
+        if ($minLotSize !== null) {
+            $query->where('lot_size', '>=', $minLotSize);
+        }
+
+        if ($maxLotSize !== null) {
+            $query->where('lot_size', '<=', $maxLotSize);
         }
 
         if (
@@ -150,6 +164,22 @@ class PropertyController extends Controller
             $order = 'updated_at';
         }
         $sort = $sort === 'asc' ? 'asc' : 'desc';
+
+        $homeFeaturedPropertyIds = $this->homeFeaturedPropertyIdsForRequest($request, $order, $sort);
+        if (!empty($homeFeaturedPropertyIds)) {
+            $caseParts = [];
+            $bindings = [];
+
+            foreach ($homeFeaturedPropertyIds as $position => $propertyId) {
+                $caseParts[] = 'WHEN properties.id = ? THEN ?';
+                $bindings[] = $propertyId;
+                $bindings[] = $position;
+            }
+
+            $bindings[] = count($homeFeaturedPropertyIds);
+            $query->orderByRaw('CASE ' . implode(' ', $caseParts) . ' ELSE ? END', $bindings);
+        }
+
         $query->orderBy($order, $sort);
 
         $perPage = (int) $request->input('per_page', 6);
@@ -1010,6 +1040,89 @@ class PropertyController extends Controller
         }
 
         $query->whereRaw('1 = 0');
+    }
+
+    private function homeFeaturedPropertyIdsForRequest(Request $request, string $order, string $sort): array
+    {
+        if (!$request->boolean('home_featured_first')) {
+            return [];
+        }
+
+        if ($order !== 'updated_at' || $sort !== 'desc') {
+            return [];
+        }
+
+        if ($this->requestHasPublicPropertyFilters($request)) {
+            return [];
+        }
+
+        return $this->parseCsvIds(CmsSiteSetting::get('home_featured_property_ids'), 6);
+    }
+
+    private function requestHasPublicPropertyFilters(Request $request): bool
+    {
+        $filterKeys = [
+            'mls_office_id',
+            'mls_agent_id',
+            'search',
+            'property_type_name',
+            'operation_type',
+            'min_price',
+            'max_price',
+            'bedrooms',
+            'bathrooms',
+            'parking_spaces',
+            'min_construction_size',
+            'max_construction_size',
+            'min_lot_size',
+            'max_lot_size',
+            'region',
+            'city',
+            'city_area',
+            'published',
+        ];
+
+        foreach ($filterKeys as $key) {
+            if ($request->filled($key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function parseCsvIds(?string $rawValue, int $limit): array
+    {
+        $parts = preg_split('/\s*,\s*/', (string) $rawValue, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $ids = [];
+        $seen = [];
+
+        foreach ($parts as $part) {
+            $id = (int) $part;
+            if ($id <= 0 || isset($seen[$id])) {
+                continue;
+            }
+
+            $seen[$id] = true;
+            $ids[] = $id;
+
+            if (count($ids) >= $limit) {
+                break;
+            }
+        }
+
+        return $ids;
+    }
+
+    private function publicNumericFilter(Request $request, string $key): ?float
+    {
+        $value = $request->input($key);
+
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return null;
+        }
+
+        return max(0, (float) $value);
     }
 
     private function canViewInternalProperty($user, Property $property): bool

@@ -36,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const HERO_SLIDER_MAX_PROPERTIES = 10;
   const HERO_SLIDER_MAX_IMAGES = 10;
+  const HOME_FEATURED_PROPERTY_IDS_KEY = 'home_featured_property_ids';
+  const HOME_FEATURED_MAX_PROPERTIES = 6;
   const heroPropertyCache = new Map();
   const normalizeSourceType = (value) => String(value || '').toLowerCase() === 'images' ? 'images' : 'properties';
 
@@ -129,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicializar media inputs despues de renderizar
     initMediaInputs();
     initHeroSliderControls();
+    initHomeFeaturedPropertyPickers();
   }
 
   function renderHeroSliderSourceField(s) {
@@ -188,6 +191,41 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>`;
   }
 
+  function renderHomeFeaturedPropertyField(s) {
+    const initialCsv = idsToCsv(s.value_es, HOME_FEATURED_MAX_PROPERTIES);
+
+    return `
+      <div class="setting-field" data-setting-key="${esc(s.setting_key)}" data-type="home-featured-properties">
+        <label class="block text-sm font-medium text-[var(--c-text)] mb-2">
+          ${esc(s.label_es)}
+          <span class="text-xs text-[var(--c-muted)] font-normal ml-2">[${esc(s.setting_key)}]</span>
+        </label>
+        <input type="hidden" data-setting-key="${esc(s.setting_key)}" data-lang="es" data-home-featured-prop-ids-input value="${esc(initialCsv)}" />
+        <div class="rounded-2xl border border-[var(--c-border)] p-4 bg-[var(--c-surface)] space-y-3">
+          <div class="flex flex-col sm:flex-row items-stretch gap-2">
+            <input
+              type="search"
+              data-home-featured-prop-search
+              placeholder="Buscar propiedad por titulo o ID..."
+              class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] text-sm"
+            />
+            <button
+              type="button"
+              data-home-featured-prop-search-btn
+              class="px-4 py-2 rounded-xl bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95 text-sm whitespace-nowrap"
+            >
+              Buscar
+            </button>
+          </div>
+          <p class="text-xs text-[var(--c-muted)]">
+            Selecciona hasta ${HOME_FEATURED_MAX_PROPERTIES} propiedades publicadas. Estas seran las primeras tarjetas de la home mientras no haya filtros ni orden personalizado.
+          </p>
+          <div data-home-featured-prop-selected class="flex flex-wrap gap-2"></div>
+          <div data-home-featured-prop-results class="space-y-2 hidden"></div>
+        </div>
+      </div>`;
+  }
+
   function renderHeroSliderImageField(s) {
     const key = s.setting_key;
     const uniqueId = `setting_img_${key}`;
@@ -242,6 +280,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (s.setting_key === HERO_SLIDER_KEYS.imageIds) {
       return renderHeroSliderImageField(s);
+    }
+    if (s.setting_key === HOME_FEATURED_PROPERTY_IDS_KEY) {
+      return renderHomeFeaturedPropertyField(s);
     }
 
     const translatable = !nonTranslatable.includes(s.type);
@@ -581,6 +622,165 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (state.selectedIds.length >= HERO_SLIDER_MAX_PROPERTIES) {
               emitClientMessage(false, `Solo puedes seleccionar ${HERO_SLIDER_MAX_PROPERTIES} propiedades.`);
+              return;
+            }
+
+            state.selectedIds.push(id);
+            const row = state.searchRows.find(item => item.id === id);
+            if (row) state.selectedMap.set(id, row);
+            syncHiddenInput();
+            renderSelected();
+            renderSearchResults(state.searchRows);
+          });
+        });
+      };
+
+      const hydrateSelectedIds = async () => {
+        if (!state.selectedIds.length) return;
+
+        await Promise.all(state.selectedIds.map(async (id) => {
+          const property = await fetchPropertySummaryById(id);
+          if (property) state.selectedMap.set(id, property);
+        }));
+
+        renderSelected();
+      };
+
+      const runSearch = async () => {
+        const term = searchInput.value || '';
+        resultsContainer.classList.remove('hidden');
+        resultsContainer.innerHTML = `<p class="text-xs text-[var(--c-muted)]">Buscando...</p>`;
+
+        try {
+          const rows = await searchPublishedProperties(term);
+          rows.forEach(row => heroPropertyCache.set(row.id, row));
+          renderSearchResults(rows);
+        } catch (_error) {
+          resultsContainer.innerHTML = `<p class="text-xs text-red-600">No se pudo cargar la lista de propiedades.</p>`;
+        }
+      };
+
+      searchBtn.addEventListener('click', runSearch);
+      searchInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        runSearch();
+      });
+      searchInput.addEventListener('input', () => {
+        clearTimeout(state.debounceTimer);
+        state.debounceTimer = setTimeout(runSearch, 350);
+      });
+
+      syncHiddenInput();
+      renderSelected();
+      hydrateSelectedIds();
+      runSearch();
+    });
+  }
+
+  function initHomeFeaturedPropertyPickers() {
+    $$('.setting-field[data-type="home-featured-properties"]').forEach(wrapper => {
+      if (wrapper.dataset.initialized === '1') return;
+      wrapper.dataset.initialized = '1';
+
+      const hiddenInput = wrapper.querySelector('[data-home-featured-prop-ids-input]');
+      const searchInput = wrapper.querySelector('[data-home-featured-prop-search]');
+      const searchBtn = wrapper.querySelector('[data-home-featured-prop-search-btn]');
+      const selectedContainer = wrapper.querySelector('[data-home-featured-prop-selected]');
+      const resultsContainer = wrapper.querySelector('[data-home-featured-prop-results]');
+      if (!hiddenInput || !searchInput || !searchBtn || !selectedContainer || !resultsContainer) return;
+
+      const state = {
+        selectedIds: parseIdList(hiddenInput.value, HOME_FEATURED_MAX_PROPERTIES),
+        selectedMap: new Map(),
+        searchRows: [],
+        debounceTimer: null,
+      };
+
+      const syncHiddenInput = () => {
+        hiddenInput.value = idsToCsv(state.selectedIds, HOME_FEATURED_MAX_PROPERTIES);
+      };
+
+      const renderSelected = () => {
+        if (!state.selectedIds.length) {
+          selectedContainer.innerHTML = `<p class="text-xs text-[var(--c-muted)]">No hay propiedades seleccionadas para la home.</p>`;
+          return;
+        }
+
+        selectedContainer.innerHTML = state.selectedIds.map((id, index) => {
+          const property = state.selectedMap.get(id);
+          const label = property?.title || `Propiedad #${id}`;
+          const location = [property?.city, property?.city_area].filter(Boolean).join(', ');
+          const status = property && property.published === false
+            ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700">No publicada</span>`
+            : '';
+
+          return `
+            <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)]">
+              <span class="text-[11px] font-semibold text-[var(--c-muted)]">#${index + 1}</span>
+              <div class="min-w-0">
+                <p class="text-xs font-medium text-[var(--c-text)] truncate">${esc(label)}</p>
+                ${location ? `<p class="text-[11px] text-[var(--c-muted)] truncate">${esc(location)}</p>` : ''}
+              </div>
+              ${status}
+              <button type="button" data-home-featured-prop-remove="${id}" class="text-[var(--c-muted)] hover:text-red-600 text-sm leading-none" title="Quitar">x</button>
+            </div>
+          `;
+        }).join('');
+
+        $$('[data-home-featured-prop-remove]', selectedContainer).forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = Number(btn.dataset.homeFeaturedPropRemove);
+            state.selectedIds = state.selectedIds.filter(currentId => currentId !== id);
+            state.selectedMap.delete(id);
+            syncHiddenInput();
+            renderSelected();
+            renderSearchResults(state.searchRows);
+          });
+        });
+      };
+
+      const renderSearchResults = (rows) => {
+        state.searchRows = rows;
+        resultsContainer.classList.remove('hidden');
+
+        if (!rows.length) {
+          resultsContainer.innerHTML = `<p class="text-xs text-[var(--c-muted)]">No se encontraron propiedades publicadas.</p>`;
+          return;
+        }
+
+        resultsContainer.innerHTML = rows.map(row => {
+          const alreadySelected = state.selectedIds.includes(row.id);
+          const location = [row.city, row.city_area].filter(Boolean).join(', ');
+          const subtitle = [row.property_type_name, location].filter(Boolean).join(' - ');
+          const canAdd = !alreadySelected && state.selectedIds.length < HOME_FEATURED_MAX_PROPERTIES;
+
+          return `
+            <div class="flex items-center justify-between gap-3 p-3 rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)]">
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-[var(--c-text)] truncate">${esc(row.title)}</p>
+                <p class="text-xs text-[var(--c-muted)] truncate">${esc(subtitle || `ID ${row.id}`)}</p>
+              </div>
+              <button
+                type="button"
+                data-home-featured-prop-add="${row.id}"
+                class="px-3 py-1.5 rounded-lg text-xs ${canAdd ? 'bg-[var(--c-primary)] text-[var(--c-primary-ink)] hover:opacity-95' : 'bg-[var(--c-surface)] text-[var(--c-muted)] cursor-not-allowed'}"
+                ${canAdd ? '' : 'disabled'}
+              >
+                ${alreadySelected ? 'Agregada' : 'Agregar'}
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        $$('[data-home-featured-prop-add]', resultsContainer).forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = Number(btn.dataset.homeFeaturedPropAdd);
+            if (!Number.isFinite(id) || id <= 0) return;
+            if (state.selectedIds.includes(id)) return;
+
+            if (state.selectedIds.length >= HOME_FEATURED_MAX_PROPERTIES) {
+              emitClientMessage(false, `Solo puedes seleccionar ${HOME_FEATURED_MAX_PROPERTIES} propiedades.`);
               return;
             }
 

@@ -170,30 +170,27 @@
         </div>
     </section>
 
-    <section id="historia" class="py-14 lg:py-20" style="background: linear-gradient(to bottom, #ffffff, #f8fafc);">
+    <section class="py-14 lg:py-20" style="background: linear-gradient(to bottom, #ffffff, #f8fafc);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <article class="rounded-3xl border p-8 lg:p-10 shadow-soft" style="border-color: #e2e8f0; background: linear-gradient(130deg, rgba(255,255,255,1), rgba(248,250,252,1));">
-                <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style="background: rgba(209,160,84,0.15); color: #9a7035;">{{ $historyTitle }}</span>
-                <div class="mt-5 text-lg leading-relaxed rich-content" style="color: #334155;">{!! $rich($historyText) !!}</div>
-            </article>
-        </div>
-    </section>
+            <div class="grid gap-6 lg:grid-cols-3 lg:items-stretch">
+                <article id="historia" class="h-full rounded-3xl border p-8 lg:p-9 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl scroll-mt-28" style="border-color: #e2e8f0; background: linear-gradient(140deg, rgba(255,255,255,1), rgba(248,250,252,1));">
+                    <div class="mb-7 h-1 w-14 rounded-full" style="background: linear-gradient(to right, #D1A054, #768D59);"></div>
+                    <h2 class="text-2xl sm:text-3xl font-black leading-tight" style="color: #0f172a;">{{ $historyTitle }}</h2>
+                    <div class="mt-5 text-base sm:text-lg leading-relaxed rich-content" style="color: #475569;">{!! $rich($historyText) !!}</div>
+                </article>
 
-    <section id="mision" class="py-10" style="background-color: #f8fafc;">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <article class="rounded-3xl border p-8 lg:p-10 shadow-soft" style="border-color: #dbeafe; background: linear-gradient(135deg, rgba(239,246,255,1), rgba(255,255,255,1));">
-                <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style="background: rgba(59,130,246,0.12); color: #1d4ed8;">{{ $missionTitle }}</span>
-                <div class="mt-5 text-lg leading-relaxed rich-content" style="color: #1e3a8a;">{!! $rich($missionText) !!}</div>
-            </article>
-        </div>
-    </section>
+                <article id="mision" class="h-full rounded-3xl border p-8 lg:p-9 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl scroll-mt-28" style="border-color: #dbeafe; background: linear-gradient(140deg, rgba(255,255,255,1), rgba(239,246,255,0.78));">
+                    <div class="mb-7 h-1 w-14 rounded-full" style="background: linear-gradient(to right, #3b82f6, #768D59);"></div>
+                    <h2 class="text-2xl sm:text-3xl font-black leading-tight" style="color: #0f172a;">{{ $missionTitle }}</h2>
+                    <div class="mt-5 text-base sm:text-lg leading-relaxed rich-content" style="color: #334155;">{!! $rich($missionText) !!}</div>
+                </article>
 
-    <section id="vision" class="py-10 lg:pb-16" style="background-color: #f8fafc;">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <article class="rounded-3xl border p-8 lg:p-10 shadow-soft" style="border-color: #dcfce7; background: linear-gradient(135deg, rgba(240,253,244,1), rgba(255,255,255,1));">
-                <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style="background: rgba(34,197,94,0.14); color: #15803d;">{{ $visionTitle }}</span>
-                <div class="mt-5 text-lg leading-relaxed rich-content" style="color: #14532d;">{!! $rich($visionText) !!}</div>
-            </article>
+                <article id="vision" class="h-full rounded-3xl border p-8 lg:p-9 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl scroll-mt-28" style="border-color: #dcfce7; background: linear-gradient(140deg, rgba(255,255,255,1), rgba(240,253,244,0.82));">
+                    <div class="mb-7 h-1 w-14 rounded-full" style="background: linear-gradient(to right, #22c55e, #D1A054);"></div>
+                    <h2 class="text-2xl sm:text-3xl font-black leading-tight" style="color: #0f172a;">{{ $visionTitle }}</h2>
+                    <div class="mt-5 text-base sm:text-lg leading-relaxed rich-content" style="color: #334155;">{!! $rich($visionText) !!}</div>
+                </article>
+            </div>
         </div>
     </section>
 

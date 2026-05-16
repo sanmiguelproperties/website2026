@@ -42,6 +42,10 @@
       background-color: var(--fe-properties-tag_price_bg, #fef3c7);
       color: var(--fe-properties-tag_price_text, #b45309);
     }
+    .properties-tag-size {
+      background-color: var(--fe-properties-tag_size_bg, #ecfeff);
+      color: var(--fe-properties-tag_size_text, #0f766e);
+    }
     .properties-tag-city {
       background-color: var(--fe-properties-tag_city_bg, #f3e8ff);
       color: var(--fe-properties-tag_city_text, #7e22ce);
@@ -61,6 +65,9 @@
     }
     .properties-tag-remove-price:hover {
       color: var(--fe-properties-tag_price_remove_hover, #78350f);
+    }
+    .properties-tag-remove-size:hover {
+      color: var(--fe-properties-tag_size_remove_hover, #134e4a);
     }
     .properties-tag-remove-city:hover {
       color: var(--fe-properties-tag_city_remove_hover, #581c87);
@@ -103,6 +110,71 @@
     }
     .properties-pagination-btn:hover {
       background-color: var(--fe-properties-pagination_hover_bg, #f8fafc);
+    }
+
+    .properties-range {
+      position: relative;
+      height: 32px;
+    }
+    .properties-range-track {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 13px;
+      height: 6px;
+      border-radius: 9999px;
+      background: var(--fe-properties-range_track_bg, #e2e8f0);
+    }
+    .properties-range-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 32px;
+      pointer-events: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    .properties-range-input::-webkit-slider-runnable-track {
+      height: 6px;
+      background: transparent;
+      border: 0;
+    }
+    .properties-range-input::-moz-range-track {
+      height: 6px;
+      background: transparent;
+      border: 0;
+    }
+    .properties-range-input::-webkit-slider-thumb {
+      width: 18px;
+      height: 18px;
+      margin-top: -6px;
+      border-radius: 9999px;
+      border: 3px solid var(--fe-properties-range_thumb_border, #ffffff);
+      background: var(--fe-primary-from, #D1A054);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+      cursor: grab;
+      pointer-events: auto;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .properties-range-input::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 9999px;
+      border: 3px solid var(--fe-properties-range_thumb_border, #ffffff);
+      background: var(--fe-primary-from, #D1A054);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+      cursor: grab;
+      pointer-events: auto;
+    }
+    .properties-range-input:focus-visible::-webkit-slider-thumb {
+      outline: 3px solid var(--fe-properties-range_focus, rgba(209, 160, 84, 0.35));
+      outline-offset: 2px;
+    }
+    .properties-range-input:focus-visible::-moz-range-thumb {
+      outline: 3px solid var(--fe-properties-range_focus, rgba(209, 160, 84, 0.35));
+      outline-offset: 2px;
     }
   </style>
 @endpush
@@ -228,6 +300,22 @@
               <span class="properties-tag-price inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
                 <span x-text="getPriceRangeLabel()"></span>
                 <button @click="filters.min_price = ''; filters.max_price = ''; applyFilters()" class="properties-tag-remove-price ml-1 transition-colors">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </span>
+            </template>
+            <template x-if="hasSizeRangeFilter('construction')">
+              <span class="properties-tag-size inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
+                <span x-text="tPublic('properties.filterPrefixConstruction', isEnLocale ? 'Construction: ' : 'Construccion: ') + getSizeRangeFilterLabel('construction')"></span>
+                <button @click="clearSizeRangeFilter('construction'); applyFilters()" class="properties-tag-remove-size ml-1 transition-colors">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </span>
+            </template>
+            <template x-if="hasSizeRangeFilter('lot')">
+              <span class="properties-tag-size inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium">
+                <span x-text="tPublic('properties.filterPrefixLot', isEnLocale ? 'Lot: ' : 'Terreno: ') + getSizeRangeFilterLabel('lot')"></span>
+                <button @click="clearSizeRangeFilter('lot'); applyFilters()" class="properties-tag-remove-size ml-1 transition-colors">
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </span>
@@ -425,24 +513,133 @@
                 {{-- Tamaño --}}
                 <div>
                   <label class="block text-sm font-semibold mb-3" style="color: var(--fe-properties-filter_label, #334155);">{{ $txt('size_label', 'Tamano (m2)', 'Size (m2)') }}</label>
-                  <div class="grid grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('minimum_construction_label', 'Construccion minima', 'Minimum construction') }}</label>
-                      <input type="number" 
-                             x-model="filters.min_construction_size"
-                             @input.debounce.500ms="applyFiltersInModal()"
-                             placeholder="{{ $txt('minimum_construction_placeholder', 'Ej: 100', 'Ex: 100') }}"
-                             class="w-full px-4 py-3 rounded-xl border transition-all focus:outline-none focus-fe-primary"
-                             style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
+                  <div class="space-y-5">
+                    <div class="rounded-xl border p-4"
+                         style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0);">
+                      <div class="flex items-start justify-between gap-3">
+                        <div>
+                          <label class="block text-xs font-semibold" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('construction_range_label', 'Construccion', 'Construction') }}</label>
+                          <p class="mt-1 text-sm font-semibold" style="color: var(--fe-properties-input_text, #1C1C1C);" x-text="getSizeRangeSummary('construction')"></p>
+                        </div>
+                        <button type="button"
+                                x-show="hasSizeRangeFilter('construction')"
+                                @click="clearSizeRangeFilter('construction'); applyFiltersInModal()"
+                                class="text-xs font-semibold transition"
+                                style="color: var(--fe-primary-to, #768D59);">
+                          {{ $txt('clear_filter', 'Limpiar', 'Clear') }}
+                        </button>
+                      </div>
+
+                      <div class="mt-4 properties-range" x-show="getSizeRangeMax('construction') > getSizeRangeMin('construction')">
+                        <div class="properties-range-track" :style="getSizeRangeTrackStyle('construction')"></div>
+                        <input type="range"
+                               aria-label="{{ $txt('minimum_construction_label', 'Construccion minima', 'Minimum construction') }}"
+                               class="properties-range-input"
+                               :min="getSizeRangeMin('construction')"
+                               :max="getSizeRangeMax('construction')"
+                               :step="getSizeRangeStep('construction')"
+                               :value="getSizeSliderValue('construction', 'min')"
+                               @input="setSizeRangeBound('construction', 'min', $event.target.value, false)"
+                               @change="applyFiltersInModal()">
+                        <input type="range"
+                               aria-label="{{ $txt('maximum_construction_label', 'Construccion maxima', 'Maximum construction') }}"
+                               class="properties-range-input"
+                               :min="getSizeRangeMin('construction')"
+                               :max="getSizeRangeMax('construction')"
+                               :step="getSizeRangeStep('construction')"
+                               :value="getSizeSliderValue('construction', 'max')"
+                               @input="setSizeRangeBound('construction', 'max', $event.target.value, false)"
+                               @change="applyFiltersInModal()">
+                      </div>
+
+                      <div class="mt-3 grid grid-cols-2 gap-3">
+                        <div>
+                          <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('minimum_label', 'Minimo', 'Minimum') }}</label>
+                          <input type="number"
+                                 x-model="filters.min_construction_size"
+                                 @input.debounce.500ms="setSizeNumberBound('construction', 'min', $event.target.value)"
+                                 :min="getSizeRangeMin('construction')"
+                                 :max="getSizeRangeMax('construction')"
+                                 :placeholder="formatSizeNumber(getSizeRangeMin('construction'))"
+                                 class="w-full px-3 py-2.5 rounded-xl border transition-all focus:outline-none focus-fe-primary"
+                                 style="background-color: var(--fe-properties-modal_bg, #ffffff); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
+                        </div>
+                        <div>
+                          <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('maximum_label', 'Maximo', 'Maximum') }}</label>
+                          <input type="number"
+                                 x-model="filters.max_construction_size"
+                                 @input.debounce.500ms="setSizeNumberBound('construction', 'max', $event.target.value)"
+                                 :min="getSizeRangeMin('construction')"
+                                 :max="getSizeRangeMax('construction')"
+                                 :placeholder="formatSizeNumber(getSizeRangeMax('construction'))"
+                                 class="w-full px-3 py-2.5 rounded-xl border transition-all focus:outline-none focus-fe-primary"
+                                 style="background-color: var(--fe-properties-modal_bg, #ffffff); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('minimum_lot_label', 'Terreno minimo', 'Minimum lot') }}</label>
-                      <input type="number" 
-                             x-model="filters.min_lot_size"
-                             @input.debounce.500ms="applyFiltersInModal()"
-                             placeholder="{{ $txt('minimum_lot_placeholder', 'Ej: 200', 'Ex: 200') }}"
-                             class="w-full px-4 py-3 rounded-xl border transition-all focus:outline-none focus-fe-primary"
-                             style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
+
+                    <div class="rounded-xl border p-4"
+                         style="background-color: var(--fe-properties-input_bg, #f8fafc); border-color: var(--fe-properties-input_border, #e2e8f0);">
+                      <div class="flex items-start justify-between gap-3">
+                        <div>
+                          <label class="block text-xs font-semibold" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('lot_range_label', 'Terreno', 'Lot') }}</label>
+                          <p class="mt-1 text-sm font-semibold" style="color: var(--fe-properties-input_text, #1C1C1C);" x-text="getSizeRangeSummary('lot')"></p>
+                        </div>
+                        <button type="button"
+                                x-show="hasSizeRangeFilter('lot')"
+                                @click="clearSizeRangeFilter('lot'); applyFiltersInModal()"
+                                class="text-xs font-semibold transition"
+                                style="color: var(--fe-primary-to, #768D59);">
+                          {{ $txt('clear_filter', 'Limpiar', 'Clear') }}
+                        </button>
+                      </div>
+
+                      <div class="mt-4 properties-range" x-show="getSizeRangeMax('lot') > getSizeRangeMin('lot')">
+                        <div class="properties-range-track" :style="getSizeRangeTrackStyle('lot')"></div>
+                        <input type="range"
+                               aria-label="{{ $txt('minimum_lot_label', 'Terreno minimo', 'Minimum lot') }}"
+                               class="properties-range-input"
+                               :min="getSizeRangeMin('lot')"
+                               :max="getSizeRangeMax('lot')"
+                               :step="getSizeRangeStep('lot')"
+                               :value="getSizeSliderValue('lot', 'min')"
+                               @input="setSizeRangeBound('lot', 'min', $event.target.value, false)"
+                               @change="applyFiltersInModal()">
+                        <input type="range"
+                               aria-label="{{ $txt('maximum_lot_label', 'Terreno maximo', 'Maximum lot') }}"
+                               class="properties-range-input"
+                               :min="getSizeRangeMin('lot')"
+                               :max="getSizeRangeMax('lot')"
+                               :step="getSizeRangeStep('lot')"
+                               :value="getSizeSliderValue('lot', 'max')"
+                               @input="setSizeRangeBound('lot', 'max', $event.target.value, false)"
+                               @change="applyFiltersInModal()">
+                      </div>
+
+                      <div class="mt-3 grid grid-cols-2 gap-3">
+                        <div>
+                          <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('minimum_label', 'Minimo', 'Minimum') }}</label>
+                          <input type="number"
+                                 x-model="filters.min_lot_size"
+                                 @input.debounce.500ms="setSizeNumberBound('lot', 'min', $event.target.value)"
+                                 :min="getSizeRangeMin('lot')"
+                                 :max="getSizeRangeMax('lot')"
+                                 :placeholder="formatSizeNumber(getSizeRangeMin('lot'))"
+                                 class="w-full px-3 py-2.5 rounded-xl border transition-all focus:outline-none focus-fe-primary"
+                                 style="background-color: var(--fe-properties-modal_bg, #ffffff); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
+                        </div>
+                        <div>
+                          <label class="block text-xs mb-1" style="color: var(--fe-properties-filter_label_muted, #64748b);">{{ $txt('maximum_label', 'Maximo', 'Maximum') }}</label>
+                          <input type="number"
+                                 x-model="filters.max_lot_size"
+                                 @input.debounce.500ms="setSizeNumberBound('lot', 'max', $event.target.value)"
+                                 :min="getSizeRangeMin('lot')"
+                                 :max="getSizeRangeMax('lot')"
+                                 :placeholder="formatSizeNumber(getSizeRangeMax('lot'))"
+                                 class="w-full px-3 py-2.5 rounded-xl border transition-all focus:outline-none focus-fe-primary"
+                                 style="background-color: var(--fe-properties-modal_bg, #ffffff); border-color: var(--fe-properties-input_border, #e2e8f0); color: var(--fe-properties-input_text, #1C1C1C);">
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -622,6 +819,10 @@
         availableBathrooms: [],
         availableParking: [],
         priceRange: { min: 0, max: 0 },
+        sizeRanges: {
+          construction: { min: 0, max: 1000 },
+          lot: { min: 0, max: 1000 },
+        },
         totalAvailable: 0,
         filterOptionsLoaded: false,
         
@@ -636,7 +837,9 @@
           bathrooms: '',
           parking_spaces: '',
           min_construction_size: '',
+          max_construction_size: '',
           min_lot_size: '',
+          max_lot_size: '',
           region: '',
           city: '',
           city_area: '',
@@ -682,6 +885,10 @@
               this.availableBathrooms = opts.bathrooms || [];
               this.availableParking = opts.parking_spaces || [];
               this.priceRange = opts.price_range || { min: 0, max: 0 };
+              this.sizeRanges.construction = this.normalizeSizeRangeOptions(opts.construction_size_range);
+              this.sizeRanges.lot = this.normalizeSizeRangeOptions(opts.lot_size_range);
+              this.normalizeSizeRangeFilter('construction');
+              this.normalizeSizeRangeFilter('lot');
               this.totalAvailable = opts.total_properties || 0;
               this.filterOptionsLoaded = true;
             }
@@ -719,7 +926,8 @@
           const filterKeys = [
             'search', 'property_type_name', 'operation_type', 'min_price', 'max_price',
             'bedrooms', 'bathrooms', 'parking_spaces', 'min_construction_size',
-            'min_lot_size', 'region', 'city', 'city_area', 'order', 'sort', 'per_page', 'page'
+            'max_construction_size', 'min_lot_size', 'max_lot_size', 'region', 'city',
+            'city_area', 'order', 'sort', 'per_page', 'page'
           ];
           
           filterKeys.forEach(key => {
@@ -727,8 +935,9 @@
               const value = urlParams.get(key);
               // Convertir a número si es necesario
               if (['min_price', 'max_price', 'bedrooms', 'bathrooms', 'parking_spaces',
-                   'min_construction_size', 'min_lot_size', 'per_page', 'page'].includes(key)) {
-                this.filters[key] = value ? parseInt(value, 10) || value : '';
+                   'min_construction_size', 'max_construction_size', 'min_lot_size',
+                   'max_lot_size', 'per_page', 'page'].includes(key)) {
+                this.filters[key] = value ? parseFloat(value) || value : '';
               } else {
                 this.filters[key] = value;
               }
@@ -780,8 +989,8 @@
           if (this.filters.bedrooms) count++;
           if (this.filters.bathrooms) count++;
           if (this.filters.parking_spaces) count++;
-          if (this.filters.min_construction_size) count++;
-          if (this.filters.min_lot_size) count++;
+          if (this.hasSizeRangeFilter('construction')) count++;
+          if (this.hasSizeRangeFilter('lot')) count++;
           if (this.filters.region) count++;
           if (this.filters.city) count++;
           if (this.filters.city_area) count++;
@@ -831,6 +1040,188 @@
           return '';
         },
 
+        sizeFilterKeys(kind) {
+          return kind === 'lot'
+            ? { min: 'min_lot_size', max: 'max_lot_size' }
+            : { min: 'min_construction_size', max: 'max_construction_size' };
+        },
+
+        normalizeSizeRangeOptions(range) {
+          const min = Number(range?.min);
+          const max = Number(range?.max);
+
+          if (!Number.isFinite(max) || max <= 0) {
+            return { min: 0, max: 1000 };
+          }
+
+          const safeMin = Number.isFinite(min) && min >= 0 ? Math.floor(min) : 0;
+          const safeMax = Math.ceil(max);
+
+          return {
+            min: Math.min(safeMin, safeMax),
+            max: safeMax <= safeMin ? safeMin + 1 : safeMax,
+          };
+        },
+
+        numericSizeValue(value) {
+          if (value === null || value === undefined || value === '') return null;
+          const numeric = Number(value);
+          return Number.isFinite(numeric) ? numeric : null;
+        },
+
+        clampSizeValue(value, min, max) {
+          return Math.min(max, Math.max(min, value));
+        },
+
+        getSizeRangeMin(kind) {
+          return Number(this.sizeRanges?.[kind]?.min ?? 0);
+        },
+
+        getSizeRangeMax(kind) {
+          const min = this.getSizeRangeMin(kind);
+          const max = Number(this.sizeRanges?.[kind]?.max ?? min + 1000);
+          return max > min ? max : min + 1;
+        },
+
+        getSizeRangeStep(kind) {
+          const spread = this.getSizeRangeMax(kind) - this.getSizeRangeMin(kind);
+          if (spread > 10000) return 50;
+          if (spread > 1000) return 10;
+          return 1;
+        },
+
+        getSizeSliderValue(kind, bound) {
+          const keys = this.sizeFilterKeys(kind);
+          const rangeMin = this.getSizeRangeMin(kind);
+          const rangeMax = this.getSizeRangeMax(kind);
+          const fallback = bound === 'min' ? rangeMin : rangeMax;
+          const key = bound === 'min' ? keys.min : keys.max;
+          const value = this.numericSizeValue(this.filters[key]);
+
+          return this.clampSizeValue(value ?? fallback, rangeMin, rangeMax);
+        },
+
+        setSizeRangeBound(kind, bound, value, shouldApply = true) {
+          const keys = this.sizeFilterKeys(kind);
+          const rangeMin = this.getSizeRangeMin(kind);
+          const rangeMax = this.getSizeRangeMax(kind);
+          const numeric = this.numericSizeValue(value);
+
+          if (numeric === null) return;
+
+          let nextMin = bound === 'min'
+            ? this.clampSizeValue(numeric, rangeMin, rangeMax)
+            : this.getSizeSliderValue(kind, 'min');
+          let nextMax = bound === 'max'
+            ? this.clampSizeValue(numeric, rangeMin, rangeMax)
+            : this.getSizeSliderValue(kind, 'max');
+
+          if (nextMin > nextMax) {
+            if (bound === 'min') {
+              nextMax = nextMin;
+            } else {
+              nextMin = nextMax;
+            }
+          }
+
+          this.filters[keys.min] = nextMin <= rangeMin ? '' : nextMin;
+          this.filters[keys.max] = nextMax >= rangeMax ? '' : nextMax;
+
+          if (shouldApply) {
+            this.applyFiltersInModal();
+          }
+        },
+
+        setSizeNumberBound(kind, bound, value) {
+          const keys = this.sizeFilterKeys(kind);
+          const key = bound === 'min' ? keys.min : keys.max;
+
+          if (value === null || value === undefined || value === '') {
+            this.filters[key] = '';
+            this.applyFiltersInModal();
+            return;
+          }
+
+          this.setSizeRangeBound(kind, bound, value, true);
+        },
+
+        normalizeSizeRangeFilter(kind) {
+          const keys = this.sizeFilterKeys(kind);
+          const rangeMin = this.getSizeRangeMin(kind);
+          const rangeMax = this.getSizeRangeMax(kind);
+          const min = this.numericSizeValue(this.filters[keys.min]);
+          const max = this.numericSizeValue(this.filters[keys.max]);
+
+          if (min !== null) {
+            this.filters[keys.min] = min <= rangeMin ? '' : this.clampSizeValue(min, rangeMin, rangeMax);
+          }
+
+          if (max !== null) {
+            this.filters[keys.max] = max >= rangeMax ? '' : this.clampSizeValue(max, rangeMin, rangeMax);
+          }
+        },
+
+        hasSizeRangeFilter(kind) {
+          const keys = this.sizeFilterKeys(kind);
+          return this.filters[keys.min] !== '' || this.filters[keys.max] !== '';
+        },
+
+        clearSizeRangeFilter(kind) {
+          const keys = this.sizeFilterKeys(kind);
+          this.filters[keys.min] = '';
+          this.filters[keys.max] = '';
+        },
+
+        getSizeRangeTrackStyle(kind) {
+          const rangeMin = this.getSizeRangeMin(kind);
+          const rangeMax = this.getSizeRangeMax(kind);
+          const spread = Math.max(1, rangeMax - rangeMin);
+          const min = this.getSizeSliderValue(kind, 'min');
+          const max = this.getSizeSliderValue(kind, 'max');
+          const left = ((min - rangeMin) / spread) * 100;
+          const right = ((max - rangeMin) / spread) * 100;
+
+          return `background: linear-gradient(to right, var(--fe-properties-range_track_bg, #e2e8f0) 0%, var(--fe-properties-range_track_bg, #e2e8f0) ${left}%, var(--fe-primary-from, #D1A054) ${left}%, var(--fe-primary-to, #768D59) ${right}%, var(--fe-properties-range_track_bg, #e2e8f0) ${right}%, var(--fe-properties-range_track_bg, #e2e8f0) 100%);`;
+        },
+
+        formatSizeNumber(value) {
+          const numeric = Number(value);
+          return Number.isFinite(numeric) ? wholeNumberFormatter.format(Math.round(numeric)) : '';
+        },
+
+        getSizeUnit() {
+          return tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2');
+        },
+
+        getSizeRangeFilterLabel(kind) {
+          const keys = this.sizeFilterKeys(kind);
+          const min = this.numericSizeValue(this.filters[keys.min]);
+          const max = this.numericSizeValue(this.filters[keys.max]);
+          const unit = this.getSizeUnit();
+
+          if (min !== null && max !== null) {
+            return `${this.formatSizeNumber(min)} - ${this.formatSizeNumber(max)} ${unit}`;
+          }
+
+          if (min !== null) {
+            return `${tPublic('properties.sizeFromLabel', isEnLocale ? 'From' : 'Desde')} ${this.formatSizeNumber(min)} ${unit}`;
+          }
+
+          if (max !== null) {
+            return `${tPublic('properties.sizeUpToLabel', isEnLocale ? 'Up to' : 'Hasta')} ${this.formatSizeNumber(max)} ${unit}`;
+          }
+
+          return '';
+        },
+
+        getSizeRangeSummary(kind) {
+          if (!this.hasSizeRangeFilter(kind)) {
+            return tPublic('properties.sizeNoFilter', isEnLocale ? 'No size filter' : 'Sin filtro de tamano');
+          }
+
+          return this.getSizeRangeFilterLabel(kind);
+        },
+
         applyFilters() {
           this.filters.page = 1;
           this.updateUrlWithFilters();
@@ -854,7 +1245,9 @@
           this.filters.bathrooms = '';
           this.filters.parking_spaces = '';
           this.filters.min_construction_size = '';
+          this.filters.max_construction_size = '';
           this.filters.min_lot_size = '';
+          this.filters.max_lot_size = '';
           this.filters.region = '';
           this.filters.city = '';
           this.filters.city_area = '';

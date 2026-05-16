@@ -62,6 +62,34 @@
         'propertyIds' => $heroSliderPropertyIds,
         'imageUrls' => $heroSliderImageUrls,
     ];
+
+    $serviceIconColorDefaults = [
+        1 => 'var(--fe-services-feature1_from, #D1A054)',
+        2 => 'var(--fe-services-feature2_from, #768D59)',
+        3 => 'var(--fe-services-feature3_from, #A52A2A)',
+        4 => 'var(--fe-services-feature4_from, #5B5B5B)',
+        5 => 'var(--fe-services-feature5_from, #A52A2A)',
+        6 => 'var(--fe-services-feature6_from, #768D59)',
+    ];
+
+    $serviceIconColor = static function (?string $value, string $fallback): string {
+        $value = trim((string) $value);
+
+        return preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?([0-9A-Fa-f]{2})?$/', $value)
+            ? $value
+            : $fallback;
+    };
+
+    $serviceFeatureIconUrls = [];
+    $serviceFeatureIconColors = [];
+    for ($featureIndex = 1; $featureIndex <= 6; $featureIndex++) {
+        $iconMedia = $pageData?->media("services_feature{$featureIndex}_icon");
+        $serviceFeatureIconUrls[$featureIndex] = $iconMedia?->serving_url ?? $iconMedia?->url ?? null;
+        $serviceFeatureIconColors[$featureIndex] = $serviceIconColor(
+            $pageData?->field("services_feature{$featureIndex}_icon_bg_color"),
+            $serviceIconColorDefaults[$featureIndex]
+        );
+    }
 @endphp
 
 @section('title', $pageTitle)
@@ -166,11 +194,11 @@
 <section class="relative z-30 -mt-16">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-2xl shadow-xl border" style="background-color: var(--fe-stats-bg, #ffffff); border-color: var(--fe-stats-border, #f1f5f9);">
-            @php $statsItems = $pageData?->repeater('stats_items') ?? []; @endphp
+            @php $statsItems = $homeStats ?? []; @endphp
             @forelse($statsItems as $stat)
             <div class="text-center p-4 {{ !$loop->last ? 'border-r' : '' }}" style="border-color: var(--fe-stats-border, #f1f5f9);">
-                <div class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-stats-properties_from, #D1A054), var(--fe-stats-properties_to, #D1A054));">{{ $stat->field('stat_number') }}</div>
-                <div class="text-sm mt-1" style="color: var(--fe-stats-text, #5B5B5B);">{{ $stat->field('stat_label') }}</div>
+                <div class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-stats-properties_from, #D1A054), var(--fe-stats-properties_to, #D1A054));">{{ $stat['number'] ?? '' }}</div>
+                <div class="text-sm mt-1" style="color: var(--fe-stats-text, #5B5B5B);">{{ $stat['label'] ?? '' }}</div>
             </div>
             @empty
             <div class="text-center p-4"><div class="text-3xl font-bold">500+</div><div class="text-sm mt-1">{{ $txt('stats_fallback_label', 'Propiedades', 'Properties') }}</div></div>
@@ -199,10 +227,14 @@
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {{-- Feature 1 - Búsqueda Inteligente --}}
             <div class="group relative p-8 rounded-2xl border transition-all duration-300 hover:shadow-xl" style="background: linear-gradient(to bottom right, var(--fe-services-card_bg_from, #f8fafc), var(--fe-services-card_bg_to, #ffffff)); border-color: var(--fe-services-card_border, #f1f5f9);">
-                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-services-feature1_from, #D1A054), var(--fe-services-feature1_to, #D1A054));">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background-color: {{ $serviceFeatureIconColors[1] }};">
+                    @if($serviceFeatureIconUrls[1])
+                        <img src="{{ $serviceFeatureIconUrls[1] }}" alt="" class="w-7 h-7 object-contain" loading="lazy">
+                    @else
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    @endif
                 </div>
                 <h3 class="text-xl font-bold mb-3" style="color: var(--fe-services-card_title, #1C1C1C);">{{ $txt('services_feature1_title', 'Búsqueda Inteligente', 'Smart Search') }}</h3>
                 <p style="color: var(--fe-services-card_text, #5B5B5B);">{{ $txt('services_feature1_desc', 'Filtros avanzados y búsqueda por mapa para encontrar exactamente lo que necesitas en segundos.', 'Advanced filters and map search to find exactly what you need in seconds.') }}</p>
@@ -211,10 +243,14 @@
 
             {{-- Feature 2 - Transacciones Seguras --}}
             <div class="group relative p-8 rounded-2xl border transition-all duration-300 hover:shadow-xl" style="background: linear-gradient(to bottom right, var(--fe-services-card_bg_from, #f8fafc), var(--fe-services-card_bg_to, #ffffff)); border-color: var(--fe-services-card_border, #f1f5f9);">
-                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-services-feature2_from, #768D59), var(--fe-services-feature2_to, #768D59));">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background-color: {{ $serviceFeatureIconColors[2] }};">
+                    @if($serviceFeatureIconUrls[2])
+                        <img src="{{ $serviceFeatureIconUrls[2] }}" alt="" class="w-7 h-7 object-contain" loading="lazy">
+                    @else
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    @endif
                 </div>
                 <h3 class="text-xl font-bold mb-3" style="color: var(--fe-services-card_title, #1C1C1C);">{{ $txt('services_feature2_title', 'Transacciones Seguras', 'Secure Transactions') }}</h3>
                 <p style="color: var(--fe-services-card_text, #5B5B5B);">{{ $txt('services_feature2_desc', 'Proceso de compra transparente con asesoría legal incluida y documentación verificada.', 'Transparent buying process with legal guidance and verified documentation.') }}</p>
@@ -223,10 +259,14 @@
 
             {{-- Feature 3 - Tours Virtuales --}}
             <div class="group relative p-8 rounded-2xl border transition-all duration-300 hover:shadow-xl" style="background: linear-gradient(to bottom right, var(--fe-services-card_bg_from, #f8fafc), var(--fe-services-card_bg_to, #ffffff)); border-color: var(--fe-services-card_border, #f1f5f9);">
-                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-services-feature3_from, #A52A2A), var(--fe-services-feature3_to, #A52A2A));">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background-color: {{ $serviceFeatureIconColors[3] }};">
+                    @if($serviceFeatureIconUrls[3])
+                        <img src="{{ $serviceFeatureIconUrls[3] }}" alt="" class="w-7 h-7 object-contain" loading="lazy">
+                    @else
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    @endif
                 </div>
                 <h3 class="text-xl font-bold mb-3" style="color: var(--fe-services-card_title, #1C1C1C);">{{ $txt('services_feature3_title', 'Tours Virtuales 360°', '360 Virtual Tours') }}</h3>
                 <p style="color: var(--fe-services-card_text, #5B5B5B);">{{ $txt('services_feature3_desc', 'Recorre las propiedades desde la comodidad de tu hogar con nuestros tours virtuales inmersivos.', 'Explore properties from home with our immersive virtual tours.') }}</p>
@@ -235,10 +275,14 @@
 
             {{-- Feature 4 - Asesores Expertos --}}
             <div class="group relative p-8 rounded-2xl border transition-all duration-300 hover:shadow-xl" style="background: linear-gradient(to bottom right, var(--fe-services-card_bg_from, #f8fafc), var(--fe-services-card_bg_to, #ffffff)); border-color: var(--fe-services-card_border, #f1f5f9);">
-                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-services-feature4_from, #D1A054), var(--fe-services-feature4_to, #D1A054));">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background-color: {{ $serviceFeatureIconColors[4] }};">
+                    @if($serviceFeatureIconUrls[4])
+                        <img src="{{ $serviceFeatureIconUrls[4] }}" alt="" class="w-7 h-7 object-contain" loading="lazy">
+                    @else
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    @endif
                 </div>
                 <h3 class="text-xl font-bold mb-3" style="color: var(--fe-services-card_title, #1C1C1C);">{{ $txt('services_feature4_title', 'Asesores Expertos', 'Expert Advisors') }}</h3>
                 <p style="color: var(--fe-services-card_text, #5B5B5B);">{{ $txt('services_feature4_desc', 'Un equipo de profesionales certificados te acompaña en cada paso del proceso.', 'A team of certified professionals supports you at every step.') }}</p>
@@ -247,10 +291,14 @@
 
             {{-- Feature 5 - Financiamiento Flexible --}}
             <div class="group relative p-8 rounded-2xl border transition-all duration-300 hover:shadow-xl" style="background: linear-gradient(to bottom right, var(--fe-services-card_bg_from, #f8fafc), var(--fe-services-card_bg_to, #ffffff)); border-color: var(--fe-services-card_border, #f1f5f9);">
-                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-services-feature5_from, #A52A2A), var(--fe-services-feature5_to, #A52A2A));">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background-color: {{ $serviceFeatureIconColors[5] }};">
+                    @if($serviceFeatureIconUrls[5])
+                        <img src="{{ $serviceFeatureIconUrls[5] }}" alt="" class="w-7 h-7 object-contain" loading="lazy">
+                    @else
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    @endif
                 </div>
                 <h3 class="text-xl font-bold mb-3" style="color: var(--fe-services-card_title, #1C1C1C);">{{ $txt('services_feature5_title', 'Financiamiento Flexible', 'Flexible Financing') }}</h3>
                 <p style="color: var(--fe-services-card_text, #5B5B5B);">{{ $txt('services_feature5_desc', 'Opciones de crédito con las mejores tasas del mercado y planes a tu medida.', 'Credit options with competitive rates and plans tailored to you.') }}</p>
@@ -259,10 +307,14 @@
 
             {{-- Feature 6 - App Móvil --}}
             <div class="group relative p-8 rounded-2xl border transition-all duration-300 hover:shadow-xl" style="background: linear-gradient(to bottom right, var(--fe-services-card_bg_from, #f8fafc), var(--fe-services-card_bg_to, #ffffff)); border-color: var(--fe-services-card_border, #f1f5f9);">
-                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, var(--fe-services-feature6_from, #768D59), var(--fe-services-feature6_to, #979790));">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
+                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300" style="background-color: {{ $serviceFeatureIconColors[6] }};">
+                    @if($serviceFeatureIconUrls[6])
+                        <img src="{{ $serviceFeatureIconUrls[6] }}" alt="" class="w-7 h-7 object-contain" loading="lazy">
+                    @else
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                    @endif
                 </div>
                 <h3 class="text-xl font-bold mb-3" style="color: var(--fe-services-card_title, #1C1C1C);">{{ $txt('services_feature6_title', 'App Móvil', 'Mobile App') }}</h3>
                 <p style="color: var(--fe-services-card_text, #5B5B5B);">{{ $txt('services_feature6_desc', 'Gestiona tus favoritos, agenda visitas y recibe alertas desde cualquier lugar.', 'Manage favorites, schedule visits and receive alerts from anywhere.') }}</p>
@@ -1365,6 +1417,9 @@ function propertiesFilter() {
                         params.append(key, this.filters[key]);
                     }
                 });
+                if (this.shouldUseHomeFeaturedFirst()) {
+                    params.append('home_featured_first', '1');
+                }
 
                 const response = await fetch(`/api/public/properties?${params.toString()}`);
                 const data = await response.json();
@@ -1576,6 +1631,14 @@ function propertiesFilter() {
             return this.filters.search !== '' || 
                    this.filters.property_type_name !== '' || 
                    this.filters.published !== null;
+        },
+
+        usesDefaultPropertyOrdering() {
+            return this.filters.order === 'updated_at' && this.filters.sort === 'desc';
+        },
+
+        shouldUseHomeFeaturedFirst() {
+            return !this.hasFilters() && this.usesDefaultPropertyOrdering();
         },
 
         togglePublished(value) {

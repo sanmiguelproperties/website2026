@@ -324,7 +324,7 @@ return [
             ],
         ],
 
-        'agent' => [
+        'agente' => [
             'label' => 'Agente',
             'permissions' => [
                 'dashboard.view',

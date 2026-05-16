@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!TOKEN) return;
 
   let currentPageId = null;
+  let currentPageSlug = '';
   let currentLang = 'es';
   let fieldValues = {};
   let fieldGroups = [];
@@ -145,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Drawer: abrir y cargar campos ──
   async function openDrawer(pageId, slug, title) {
     currentPageId = pageId;
+    currentPageSlug = slug;
     $('#drawer-title').textContent = `Editar: ${title}`;
     $('#drawer-subtitle').textContent = `Slug: /${slug} • ID: ${pageId}`;
     $('#page-drawer').classList.remove('hidden');
@@ -271,6 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderField(fd, groupSlug) {
+    if (currentPageSlug === 'home' && fd.field_key === 'stats_items') {
+      return renderHomeStatsAutomaticPreview();
+    }
+
     const val = getFieldValue(fd.field_key, groupSlug);
 
     if (fd.type === 'repeater') {
@@ -347,6 +353,22 @@ document.addEventListener('DOMContentLoaded', () => {
         </label>
         ${fd.instructions_es ? `<p class="text-xs text-[var(--c-muted)] mb-2">${esc(fd.instructions_es)}</p>` : ''}
         ${input}
+      </div>`;
+  }
+
+  function renderHomeStatsAutomaticPreview() {
+    return `
+      <div class="field-wrapper rounded-xl border border-[var(--c-border)] bg-[var(--c-surface)] p-4">
+        <label class="block text-sm font-semibold text-[var(--c-text)] mb-2">Estadisticas automaticas</label>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          ${['Casas', 'Lotes', 'Agentes'].map(label => `
+            <div class="rounded-lg border border-[var(--c-border)] bg-[var(--c-elev)] p-3">
+              <div class="text-xs text-[var(--c-muted)]">${label}</div>
+              <div class="mt-1 text-sm font-semibold text-[var(--c-text)]">Automatico</div>
+            </div>
+          `).join('')}
+        </div>
+        <p class="mt-3 text-xs text-[var(--c-muted)]">El contador Clientes felices se edita en el campo manual de esta seccion.</p>
       </div>`;
   }
 
