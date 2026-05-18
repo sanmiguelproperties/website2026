@@ -783,7 +783,7 @@
       construction: @json(asset('iconos-base/construccion.svg')),
     };
 
-    function propertyIcon(name, className = 'w-5 h-5') {
+    function propertyIcon(name, className = 'w-4 h-4 shrink-0 overflow-visible') {
       const src = propertyIconUrls[name];
       return src ? `<img src="${src}" alt="" aria-hidden="true" class="${className} inline-block object-contain opacity-75">` : '';
     }
@@ -1333,8 +1333,8 @@
                 : '';
               const price = cardPriceValue(firstOperation?.formatted_amount || fallbackAmount || propertyCardI18n.priceFallback);
               const op = p.operations?.[0]?.operation_type || '';
-              const location = [p.location?.city_area, p.location?.region].filter(Boolean).join(', ')
-                || [p.location?.city, p.location?.region].filter(Boolean).join(', ')
+              const location = p.location?.city_area
+                || p.location?.city
                 || propertyCardI18n.locationFallback;
               const cardDetails = [
                 { icon: 'lot', label: propertyCardI18n.lotSizeLabel, value: cardAreaValue(p.lot_size) },
@@ -1387,7 +1387,7 @@
                     <div class="grid grid-cols-3 gap-x-3 gap-y-3 text-sm border-t pt-4" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
                       ${cardDetails.map((item) => `
                       <div class="flex min-w-0 items-center gap-1.5" title="${item.label}" aria-label="${item.label}: ${item.value}">
-                        ${propertyIcon(item.icon, 'w-4 h-4')}
+                        ${propertyIcon(item.icon, 'w-8 h-8 shrink-0 overflow-visible')}
                         <span class="truncate font-semibold" style="color: var(--fe-properties-card_title, #1C1C1C);">${item.value}</span>
                       </div>
                       `).join('')}

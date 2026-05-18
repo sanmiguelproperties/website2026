@@ -7,7 +7,6 @@
     $rich = static fn (?string $html, ?string $fallback = null): string => \App\Support\RichTextSanitizer::sanitize($html, $fallback);
 
     $pageTitle = $pageData?->entity?->title($locale) ?? ($isEn ? 'Sell With Us' : 'Vende con nosotros');
-    $heroBadge = trim((string) $txt('seller_hero_badge', 'Vendedores', 'Sellers'));
     $heroImage = $pageData?->image('seller_hero_image')
         ?: 'https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?auto=format&fit=crop&w=1800&q=85';
 
@@ -58,12 +57,6 @@
             var(--fe-sell_hero-overlay_mid, var(--fe-sell_page-hero_overlay_mid, rgba(15,23,42,0.70))) 45%,
             var(--fe-sell_hero-overlay_to, var(--fe-sell_page-hero_overlay_to, rgba(118,141,89,0.42))) 100%
         );
-    }
-
-    .sell-with-us-page .sell-hero-badge {
-        background-color: var(--fe-sell_hero-badge_bg, var(--fe-sell_page-hero_badge_bg, rgba(255,255,255,0.10)));
-        border-color: var(--fe-sell_hero-badge_border, var(--fe-sell_page-hero_badge_border, rgba(255,255,255,0.20)));
-        color: var(--fe-sell_hero-badge_text, var(--fe-sell_page-hero_badge_text, rgba(255,255,255,0.90)));
     }
 
     .sell-with-us-page .sell-hero-title {
@@ -222,11 +215,6 @@
 
         <div class="relative mx-auto grid min-h-[calc(100vh-6rem)] max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8">
             <div class="max-w-3xl">
-                @if($heroBadge !== '')
-                    <p class="sell-hero-badge mb-5 inline-flex rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wide">
-                        {{ $heroBadge }}
-                    </p>
-                @endif
                 <h1 class="sell-hero-title text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
                     {{ $txt('seller_hero_title', 'Vende tu propiedad con estrategia local', 'Sell your home with local strategy') }}
                 </h1>

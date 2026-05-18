@@ -15,7 +15,8 @@
     'agents' => $txt('i18n_breadcrumb_agents', 'Agentes', 'Agents'),
     'agent' => $txt('i18n_label_agent', 'Agente', 'Agent'),
     'agency' => $txt('i18n_label_agency', 'Agencia', 'Agency'),
-    'contact' => $txt('i18n_label_contact', 'Contacto', 'Contact'),
+    'contactAgency' => $txt('i18n_label_contactAgency', 'Contactar agencia', 'Contact agency'),
+    'contact' => $txt('i18n_label_contactAgent', 'Contactar agente', 'Contact agent'),
     'sendEmail' => $txt('i18n_label_sendEmail', 'Enviar correo', 'Send email'),
     'agencyWhatsapp' => $txt('i18n_label_agencyWhatsapp', 'WhatsApp agencia', 'Agency WhatsApp'),
     'agentWhatsapp' => $txt('i18n_label_agentWhatsapp', 'WhatsApp agente', 'Agent WhatsApp'),
@@ -104,7 +105,7 @@
           </section>
 
           <section class="rounded-3xl border border-slate-200 bg-white shadow-soft p-6" x-show="office">
-            <h3 class="text-sm font-semibold text-slate-900" x-text="labels.agency"></h3>
+            <h3 class="text-sm font-semibold text-slate-900" x-text="labels.contactAgency"></h3>
 
             <div class="mt-4 flex gap-4">
               <div class="size-14 rounded-2xl overflow-hidden border border-slate-200 bg-white grid place-items-center shrink-0">
@@ -231,7 +232,7 @@
       construction: @json(asset('iconos-base/construccion.svg')),
     };
 
-    function propertyIcon(name, className = 'w-5 h-5') {
+    function propertyIcon(name, className = 'w-4 h-4 shrink-0 overflow-visible') {
       const src = propertyIconUrls[name];
       return src ? `<img src="${src}" alt="" aria-hidden="true" class="${className} inline-block object-contain opacity-75">` : '';
     }
@@ -447,8 +448,8 @@
                 : '';
               const price = cardPriceValue(firstOperation?.formatted_amount || fallbackAmount || propertyCardI18n.priceFallback);
               const op = p.operations?.[0]?.operation_type || '';
-              const location = [p.location?.city_area, p.location?.region].filter(Boolean).join(', ')
-                || [p.location?.city, p.location?.region].filter(Boolean).join(', ')
+              const location = p.location?.city_area
+                || p.location?.city
                 || propertyCardI18n.locationFallback;
               const cardDetails = [
                 { icon: 'lot', label: propertyCardI18n.lotSizeLabel, value: cardAreaValue(p.lot_size) },
@@ -482,7 +483,7 @@
                     <div class="grid grid-cols-3 gap-x-3 gap-y-3 text-sm border-t pt-4" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
                       ${cardDetails.map((item) => `
                       <div class="flex min-w-0 items-center gap-1.5" title="${esc(item.label)}" aria-label="${esc(item.label)}: ${esc(item.value)}">
-                        ${propertyIcon(item.icon, 'w-4 h-4')}
+                        ${propertyIcon(item.icon, 'w-8 h-8 shrink-0 overflow-visible')}
                         <span class="truncate font-semibold" style="color: var(--fe-properties-card_title, #1C1C1C);">${esc(item.value)}</span>
                       </div>
                       `).join('')}

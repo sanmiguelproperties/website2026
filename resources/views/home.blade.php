@@ -361,18 +361,19 @@
             </p>
 
             {{-- Stats --}}
+            @php $saleStats = $homeSaleStats ?? []; @endphp
             <div class="flex flex-wrap gap-8 mb-10">
                 <div>
-                    <div class="text-4xl font-bold" style="color: var(--fe-cta_sale-stat_value, #ffffff);">{{ $txt('cta_sale_stat_houses_value', '200+', '200+') }}</div>
+                    <div class="text-4xl font-bold" style="color: var(--fe-cta_sale-stat_value, #ffffff);">{{ data_get($saleStats, 'houses.number', '0') }}</div>
                     <div class="text-sm" style="color: var(--fe-cta_sale-stat_label, rgba(255,255,255,0.6));">{{ $txt('cta_sale_stat_houses', 'Casas disponibles', 'Available houses') }}</div>
                 </div>
                 <div>
-                    <div class="text-4xl font-bold" style="color: var(--fe-cta_sale-stat_value, #ffffff);">{{ $txt('cta_sale_stat_apartments_value', '150+', '150+') }}</div>
+                    <div class="text-4xl font-bold" style="color: var(--fe-cta_sale-stat_value, #ffffff);">{{ data_get($saleStats, 'apartments.number', '0') }}</div>
                     <div class="text-sm" style="color: var(--fe-cta_sale-stat_label, rgba(255,255,255,0.6));">{{ $txt('cta_sale_stat_apartments', 'Departamentos', 'Apartments') }}</div>
                 </div>
                 <div>
-                    <div class="text-4xl font-bold" style="color: var(--fe-cta_sale-stat_value, #ffffff);">{{ $txt('cta_sale_stat_land_value', '50+', '50+') }}</div>
-                    <div class="text-sm" style="color: var(--fe-cta_sale-stat_label, rgba(255,255,255,0.6));">{{ $txt('cta_sale_stat_land', 'Terrenos', 'Land') }}</div>
+                    <div class="text-4xl font-bold" style="color: var(--fe-cta_sale-stat_value, #ffffff);">{{ data_get($saleStats, 'lots.number', '0') }}</div>
+                    <div class="text-sm" style="color: var(--fe-cta_sale-stat_label, rgba(255,255,255,0.6));">{{ $txt('cta_sale_stat_lots', 'Lotes', 'Lots') }}</div>
                 </div>
             </div>
 
@@ -1162,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('homeContactForm')?.addEventListener('submit', submitHomeContactForm);
 });
 
-function propertyIcon(name, className = 'w-5 h-5') {
+function propertyIcon(name, className = 'w-4 h-4 shrink-0 overflow-visible') {
     const src = propertyIconUrls[name];
     return src ? `<img src="${src}" alt="" aria-hidden="true" class="${className} inline-block object-contain opacity-75">` : '';
 }
@@ -1503,8 +1504,8 @@ function propertiesFilter() {
                 : '';
             const price = cardPriceValue(firstOperation?.formatted_amount || fallbackAmount || homeI18n.priceFallback);
             const operationType = property.operations?.[0]?.operation_type || '';
-            const location = [property.location?.city_area, property.location?.region].filter(Boolean).join(', ')
-                || [property.location?.city, property.location?.region].filter(Boolean).join(', ')
+            const location = property.location?.city_area
+                || property.location?.city
                 || homeI18n.locationFallback;
             const cardDetails = [
                 { icon: 'lot', label: homeI18n.lotSizeLabel, value: cardAreaValue(property.lot_size) },
@@ -1558,7 +1559,7 @@ function propertiesFilter() {
                         <div class="grid grid-cols-3 gap-x-3 gap-y-3 text-sm border-t pt-4" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
                             ${cardDetails.map((item) => `
                             <div class="flex min-w-0 items-center gap-1.5" title="${item.label}" aria-label="${item.label}: ${item.value}">
-                                ${propertyIcon(item.icon, 'w-4 h-4')}
+                                ${propertyIcon(item.icon, 'w-8 h-8 shrink-0 overflow-visible')}
                                 <span class="truncate font-semibold" style="color: var(--fe-properties-card_title, #1C1C1C);">${item.value}</span>
                             </div>
                             `).join('')}

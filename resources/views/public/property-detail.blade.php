@@ -46,7 +46,7 @@
 
           <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
             <div class="inline-flex items-center gap-2 text-slate-600 pd-meta-row">
-              <img src="{{ asset('iconos-base/ubicacion.svg') }}" alt="" aria-hidden="true" class="w-5 h-5 object-contain opacity-75">
+              <img src="{{ asset('iconos-base/ubicacion.svg') }}" alt="" aria-hidden="true" class="w-4 h-4 shrink-0 overflow-visible object-contain opacity-75">
               <span id="propertyLocation" class="truncate">—</span>
             </div>
 

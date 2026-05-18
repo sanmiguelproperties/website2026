@@ -30,6 +30,15 @@ class HomeStatsService
         'terrenos',
     ];
 
+    private const APARTMENT_TERMS = [
+        'apartamento',
+        'apartamentos',
+        'apartment',
+        'apartments',
+        'departamento',
+        'departamentos',
+    ];
+
     private const AGENT_ROLE_NAMES = [
         'agente',
     ];
@@ -37,6 +46,11 @@ class HomeStatsService
     public static function make(?CmsPageData $pageData = null, ?string $locale = null): array
     {
         return (new self())->items($pageData, $locale);
+    }
+
+    public static function saleCta(?string $locale = null): array
+    {
+        return (new self())->saleCtaItems($locale);
     }
 
     public function items(?CmsPageData $pageData = null, ?string $locale = null): array
@@ -67,6 +81,26 @@ class HomeStatsService
         ];
     }
 
+    public function saleCtaItems(?string $locale = null): array
+    {
+        $locale = ($locale ?? app()->getLocale()) === 'en' ? 'en' : 'es';
+
+        return [
+            'houses' => [
+                'number' => $this->formatCount($this->countSalePropertiesByTerms(self::HOUSE_TERMS)),
+                'label' => $locale === 'en' ? 'Available houses' : 'Casas disponibles',
+            ],
+            'apartments' => [
+                'number' => $this->formatCount($this->countSalePropertiesByTerms(self::APARTMENT_TERMS)),
+                'label' => $locale === 'en' ? 'Apartments' : 'Departamentos',
+            ],
+            'lots' => [
+                'number' => $this->formatCount($this->countSalePropertiesByTerms(self::LOT_TERMS)),
+                'label' => $locale === 'en' ? 'Lots' : 'Lotes',
+            ],
+        ];
+    }
+
     private function countHouses(): int
     {
         return $this->publishedProperties()
@@ -81,6 +115,15 @@ class HomeStatsService
         return $this->publishedProperties()
             ->where(function (Builder $query) {
                 $this->whereAnyTerm($query, ['property_type_name', 'category'], self::LOT_TERMS);
+            })
+            ->count();
+    }
+
+    private function countSalePropertiesByTerms(array $terms): int
+    {
+        return $this->publishedSaleProperties()
+            ->where(function (Builder $query) use ($terms) {
+                $this->whereAnyTerm($query, ['property_type_name', 'category'], $terms);
             })
             ->count();
     }
@@ -138,6 +181,12 @@ class HomeStatsService
     private function publishedProperties(): Builder
     {
         return Property::query()->where('published', true);
+    }
+
+    private function publishedSaleProperties(): Builder
+    {
+        return $this->publishedProperties()
+            ->whereHas('operations', fn (Builder $query) => $query->where('operation_type', 'sale'));
     }
 
     private function whereAnyTerm(Builder $query, array $columns, array $terms): void

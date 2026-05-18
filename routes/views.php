@@ -74,6 +74,9 @@ Route::get('/', function () use ($publicContext) {
         $context['pageData'] ?? null,
         $context['locale'] ?? app()->getLocale()
     );
+    $context['homeSaleStats'] = HomeStatsService::saleCta(
+        $context['locale'] ?? app()->getLocale()
+    );
 
     return view('home', $context);
 })->name('home');
