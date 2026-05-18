@@ -429,7 +429,12 @@ class FrontendColorService
             'about_page' => 'Página Nosotros (legacy)',
 
             // Página vende con nosotros
-            'sell_page' => 'Vende con nosotros',
+            'sell_hero' => 'Vende con nosotros - Hero',
+            'sell_form' => 'Vende con nosotros - Formulario',
+            'sell_content' => 'Vende con nosotros - Contenido',
+            'sell_guide' => 'Vende con nosotros - Manual',
+            'sell_testimonials' => 'Vende con nosotros - Testimoniales',
+            'sell_page' => 'Vende con nosotros (legacy)',
             
             // Nota: Las vistas de mls-offices y mls-agents reutilizan los grupos
             // property_cards, filters y properties para mantener consistencia

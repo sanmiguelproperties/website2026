@@ -69,7 +69,7 @@ class FrontendColorSetting extends Model
             'sell-with-us' => [
                 'name' => 'Vende con nosotros',
                 'description' => 'Colores para la página de vendedores',
-                'groups' => ['sell_page'],
+                'groups' => ['sell_hero', 'sell_form', 'sell_content', 'sell_guide', 'sell_testimonials'],
             ],
             'mls-offices' => [
                 'name' => 'Agencias MLS',
@@ -1091,6 +1091,66 @@ class FrontendColorSetting extends Model
             ],
 
             // === COLORES DE VENDE CON NOSOTROS ===
+            'sell_hero' => [
+                'section_bg' => '#0f172a',
+                'overlay_bg' => 'rgba(15,23,42,0.70)',
+                'overlay_from' => 'rgba(15,23,42,0.88)',
+                'overlay_mid' => 'rgba(15,23,42,0.70)',
+                'overlay_to' => 'rgba(118,141,89,0.42)',
+                'badge_bg' => 'rgba(255,255,255,0.10)',
+                'badge_border' => 'rgba(255,255,255,0.20)',
+                'badge_text' => 'rgba(255,255,255,0.90)',
+                'title' => '#ffffff',
+                'text' => 'rgba(255,255,255,0.82)',
+            ],
+            'sell_form' => [
+                'card_bg' => '#ffffff',
+                'card_border' => 'rgba(255,255,255,0.18)',
+                'eyebrow' => '#9a7035',
+                'title' => '#0f172a',
+                'text' => '#334155',
+                'muted_text' => '#475569',
+                'label' => '#334155',
+                'input_bg' => '#ffffff',
+                'input_border' => '#cbd5e1',
+                'input_text' => '#0f172a',
+                'input_focus' => '#D1A054',
+                'input_focus_ring' => 'rgba(209,160,84,0.20)',
+                'checkbox_accent' => '#768D59',
+                'alert_success_bg' => '#ecfdf5',
+                'alert_success_border' => '#bbf7d0',
+                'alert_success_text' => '#166534',
+                'alert_error_bg' => '#fef2f2',
+                'alert_error_border' => '#fecaca',
+                'alert_error_text' => '#991b1b',
+            ],
+            'sell_content' => [
+                'page_bg' => '#ffffff',
+                'eyebrow' => '#9a7035',
+                'title' => '#0f172a',
+                'body_text' => '#334155',
+                'muted_text' => '#475569',
+                'intro_bg_from' => '#ffffff',
+                'intro_bg_to' => '#f8fafc',
+                'intro_border' => '#D1A054',
+            ],
+            'sell_guide' => [
+                'section_bg' => '#0f172a',
+                'eyebrow' => '#D1A054',
+                'title' => '#ffffff',
+                'text' => 'rgba(255,255,255,0.75)',
+                'pending_border' => 'rgba(255,255,255,0.20)',
+                'pending_text' => 'rgba(255,255,255,0.70)',
+            ],
+            'sell_testimonials' => [
+                'section_bg' => '#f8fafc',
+                'card_bg' => '#ffffff',
+                'card_border' => '#e2e8f0',
+                'divider' => '#f1f5f9',
+            ],
+
+            // Legacy single group kept so older saved configurations can still
+            // generate CSS variables while the admin uses the separated groups.
             'sell_page' => [
                 'page_bg' => '#ffffff',
                 'hero_overlay_bg' => 'rgba(15,23,42,0.70)',

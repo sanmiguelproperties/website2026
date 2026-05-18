@@ -7,6 +7,7 @@
     $rich = static fn (?string $html, ?string $fallback = null): string => \App\Support\RichTextSanitizer::sanitize($html, $fallback);
 
     $pageTitle = $pageData?->entity?->title($locale) ?? ($isEn ? 'Sell With Us' : 'Vende con nosotros');
+    $heroBadge = trim((string) $txt('seller_hero_badge', 'Vendedores', 'Sellers'));
     $heroImage = $pageData?->image('seller_hero_image')
         ?: 'https://images.unsplash.com/photo-1518105779142-d975f22f1b0a?auto=format&fit=crop&w=1800&q=85';
 
@@ -38,29 +39,39 @@
 @push('styles')
 <style>
     .sell-with-us-page {
-        background-color: var(--fe-sell_page-page_bg, #ffffff);
-        color: var(--fe-sell_page-body_text, var(--fe-ui-body_text, #0f172a));
+        background-color: var(--fe-sell_content-page_bg, var(--fe-sell_page-page_bg, #ffffff));
+        color: var(--fe-sell_content-body_text, var(--fe-sell_page-body_text, var(--fe-ui-body_text, #0f172a)));
+    }
+
+    .sell-with-us-page .sell-hero-section {
+        background-color: var(--fe-sell_hero-section_bg, var(--fe-sell_page-hero_section_bg, #0f172a));
     }
 
     .sell-with-us-page .sell-hero-overlay-base {
-        background-color: var(--fe-sell_page-hero_overlay_bg, rgba(15,23,42,0.70));
+        background-color: var(--fe-sell_hero-overlay_bg, var(--fe-sell_page-hero_overlay_bg, rgba(15,23,42,0.70)));
     }
 
     .sell-with-us-page .sell-hero-overlay-gradient {
         background: linear-gradient(
             110deg,
-            var(--fe-sell_page-hero_overlay_from, rgba(15,23,42,0.88)) 0%,
-            var(--fe-sell_page-hero_overlay_mid, rgba(15,23,42,0.70)) 45%,
-            var(--fe-sell_page-hero_overlay_to, rgba(118,141,89,0.42)) 100%
+            var(--fe-sell_hero-overlay_from, var(--fe-sell_page-hero_overlay_from, rgba(15,23,42,0.88))) 0%,
+            var(--fe-sell_hero-overlay_mid, var(--fe-sell_page-hero_overlay_mid, rgba(15,23,42,0.70))) 45%,
+            var(--fe-sell_hero-overlay_to, var(--fe-sell_page-hero_overlay_to, rgba(118,141,89,0.42))) 100%
         );
     }
 
+    .sell-with-us-page .sell-hero-badge {
+        background-color: var(--fe-sell_hero-badge_bg, var(--fe-sell_page-hero_badge_bg, rgba(255,255,255,0.10)));
+        border-color: var(--fe-sell_hero-badge_border, var(--fe-sell_page-hero_badge_border, rgba(255,255,255,0.20)));
+        color: var(--fe-sell_hero-badge_text, var(--fe-sell_page-hero_badge_text, rgba(255,255,255,0.90)));
+    }
+
     .sell-with-us-page .sell-hero-title {
-        color: var(--fe-sell_page-hero_title, #ffffff) !important;
+        color: var(--fe-sell_hero-title, var(--fe-sell_page-hero_title, #ffffff)) !important;
     }
 
     .sell-with-us-page .sell-hero-text {
-        color: var(--fe-sell_page-hero_text, rgba(255,255,255,0.82));
+        color: var(--fe-sell_hero-text, var(--fe-sell_page-hero_text, rgba(255,255,255,0.82)));
     }
 
     .sell-with-us-page .sell-btn-primary,
@@ -92,105 +103,117 @@
     }
 
     .sell-with-us-page .sell-form-card {
-        background-color: var(--fe-sell_page-form_bg, #ffffff);
-        border-color: var(--fe-sell_page-form_border, rgba(255,255,255,0.18));
+        background-color: var(--fe-sell_form-card_bg, var(--fe-sell_page-form_bg, #ffffff));
+        border-color: var(--fe-sell_form-card_border, var(--fe-sell_page-form_border, rgba(255,255,255,0.18)));
     }
 
     .sell-with-us-page .sell-eyebrow {
-        color: var(--fe-sell_page-eyebrow, #9a7035);
+        color: var(--fe-sell_content-eyebrow, var(--fe-sell_page-eyebrow, #9a7035));
+    }
+
+    .sell-with-us-page .sell-form-card .sell-eyebrow {
+        color: var(--fe-sell_form-eyebrow, var(--fe-sell_page-eyebrow, #9a7035));
     }
 
     .sell-with-us-page .sell-heading {
-        color: var(--fe-sell_page-title, #0f172a) !important;
+        color: var(--fe-sell_content-title, var(--fe-sell_page-title, #0f172a)) !important;
+    }
+
+    .sell-with-us-page .sell-form-card .sell-heading {
+        color: var(--fe-sell_form-title, var(--fe-sell_page-title, #0f172a)) !important;
     }
 
     .sell-with-us-page .sell-body {
-        color: var(--fe-sell_page-body_text, #334155);
+        color: var(--fe-sell_content-body_text, var(--fe-sell_page-body_text, #334155));
     }
 
     .sell-with-us-page .sell-muted {
-        color: var(--fe-sell_page-muted_text, #475569);
+        color: var(--fe-sell_content-muted_text, var(--fe-sell_page-muted_text, #475569));
+    }
+
+    .sell-with-us-page .sell-form-card .sell-muted {
+        color: var(--fe-sell_form-muted_text, var(--fe-sell_page-muted_text, #475569));
     }
 
     .sell-with-us-page .sell-alert-success {
-        background-color: var(--fe-sell_page-alert_success_bg, #ecfdf5);
-        border-color: var(--fe-sell_page-alert_success_border, #bbf7d0);
-        color: var(--fe-sell_page-alert_success_text, #166534);
+        background-color: var(--fe-sell_form-alert_success_bg, var(--fe-sell_page-alert_success_bg, #ecfdf5));
+        border-color: var(--fe-sell_form-alert_success_border, var(--fe-sell_page-alert_success_border, #bbf7d0));
+        color: var(--fe-sell_form-alert_success_text, var(--fe-sell_page-alert_success_text, #166534));
     }
 
     .sell-with-us-page .sell-alert-error {
-        background-color: var(--fe-sell_page-alert_error_bg, #fef2f2);
-        border-color: var(--fe-sell_page-alert_error_border, #fecaca);
-        color: var(--fe-sell_page-alert_error_text, #991b1b);
+        background-color: var(--fe-sell_form-alert_error_bg, var(--fe-sell_page-alert_error_bg, #fef2f2));
+        border-color: var(--fe-sell_form-alert_error_border, var(--fe-sell_page-alert_error_border, #fecaca));
+        color: var(--fe-sell_form-alert_error_text, var(--fe-sell_page-alert_error_text, #991b1b));
     }
 
     .sell-with-us-page .sell-label {
-        color: var(--fe-sell_page-body_text, #334155);
+        color: var(--fe-sell_form-label, var(--fe-sell_form-text, var(--fe-sell_page-body_text, #334155)));
     }
 
     .sell-with-us-page .sell-input {
-        background-color: var(--fe-sell_page-input_bg, #ffffff);
-        border-color: var(--fe-sell_page-input_border, #cbd5e1);
-        color: var(--fe-sell_page-input_text, #0f172a);
+        background-color: var(--fe-sell_form-input_bg, var(--fe-sell_page-input_bg, #ffffff));
+        border-color: var(--fe-sell_form-input_border, var(--fe-sell_page-input_border, #cbd5e1));
+        color: var(--fe-sell_form-input_text, var(--fe-sell_page-input_text, #0f172a));
     }
 
     .sell-with-us-page .sell-input:focus {
-        border-color: var(--fe-sell_page-input_focus, var(--fe-buttons-primary_bg, #D1A054));
-        --tw-ring-color: var(--fe-sell_page-input_focus_ring, rgba(209,160,84,0.20));
+        border-color: var(--fe-sell_form-input_focus, var(--fe-sell_page-input_focus, var(--fe-buttons-primary_bg, #D1A054)));
+        --tw-ring-color: var(--fe-sell_form-input_focus_ring, var(--fe-sell_page-input_focus_ring, rgba(209,160,84,0.20)));
     }
 
     .sell-with-us-page .sell-checkbox {
-        accent-color: var(--fe-sell_page-checkbox_accent, var(--fe-buttons-secondary_bg, #768D59));
-        border-color: var(--fe-sell_page-input_border, #cbd5e1);
+        accent-color: var(--fe-sell_form-checkbox_accent, var(--fe-sell_page-checkbox_accent, var(--fe-buttons-secondary_bg, #768D59)));
+        border-color: var(--fe-sell_form-input_border, var(--fe-sell_page-input_border, #cbd5e1));
     }
 
     .sell-with-us-page .sell-intro-section {
-        background: linear-gradient(180deg, var(--fe-sell_page-intro_bg_from, #ffffff), var(--fe-sell_page-intro_bg_to, #f8fafc));
+        background: linear-gradient(180deg, var(--fe-sell_content-intro_bg_from, var(--fe-sell_page-intro_bg_from, #ffffff)), var(--fe-sell_content-intro_bg_to, var(--fe-sell_page-intro_bg_to, #f8fafc)));
     }
 
     .sell-with-us-page .sell-article {
-        border-color: var(--fe-sell_page-intro_border, var(--fe-buttons-primary_bg, #D1A054));
+        border-color: var(--fe-sell_content-intro_border, var(--fe-sell_page-intro_border, var(--fe-buttons-primary_bg, #D1A054)));
     }
 
     .sell-with-us-page .sell-guide-section {
-        background-color: var(--fe-sell_page-guide_bg, #0f172a);
+        background-color: var(--fe-sell_guide-section_bg, var(--fe-sell_page-guide_bg, #0f172a));
     }
 
     .sell-with-us-page .sell-guide-eyebrow {
-        color: var(--fe-sell_page-guide_eyebrow, var(--fe-buttons-primary_bg, #D1A054));
+        color: var(--fe-sell_guide-eyebrow, var(--fe-sell_page-guide_eyebrow, var(--fe-buttons-primary_bg, #D1A054)));
     }
 
     .sell-with-us-page .sell-guide-title {
-        color: var(--fe-sell_page-guide_title, #ffffff) !important;
+        color: var(--fe-sell_guide-title, var(--fe-sell_page-guide_title, #ffffff)) !important;
     }
 
     .sell-with-us-page .sell-guide-text {
-        color: var(--fe-sell_page-guide_text, rgba(255,255,255,0.75));
+        color: var(--fe-sell_guide-text, var(--fe-sell_page-guide_text, rgba(255,255,255,0.75)));
     }
 
     .sell-with-us-page .sell-btn-disabled {
-        border-color: var(--fe-sell_page-guide_pending_border, rgba(255,255,255,0.20));
-        color: var(--fe-sell_page-guide_pending_text, rgba(255,255,255,0.70)) !important;
+        border-color: var(--fe-sell_guide-pending_border, var(--fe-sell_page-guide_pending_border, rgba(255,255,255,0.20)));
+        color: var(--fe-sell_guide-pending_text, var(--fe-sell_page-guide_pending_text, rgba(255,255,255,0.70))) !important;
     }
 
     .sell-with-us-page .sell-testimonials-section {
-        background-color: var(--fe-sell_page-testimonials_bg, #f8fafc);
+        background-color: var(--fe-sell_testimonials-section_bg, var(--fe-sell_page-testimonials_bg, #f8fafc));
     }
 
     .sell-with-us-page .sell-testimonial-card {
-        background-color: var(--fe-sell_page-testimonial_card_bg, #ffffff);
-        border-color: var(--fe-sell_page-testimonial_card_border, #e2e8f0);
+        background-color: var(--fe-sell_testimonials-card_bg, var(--fe-sell_page-testimonial_card_bg, #ffffff));
+        border-color: var(--fe-sell_testimonials-card_border, var(--fe-sell_page-testimonial_card_border, #e2e8f0));
     }
 
     .sell-with-us-page .sell-testimonial-divider {
-        border-color: var(--fe-sell_page-testimonial_divider, #f1f5f9);
+        border-color: var(--fe-sell_testimonials-divider, var(--fe-sell_page-testimonial_divider, #f1f5f9));
     }
 </style>
 @endpush
 
 @section('content')
 <div class="sell-with-us-page pt-24">
-    <section class="relative min-h-[calc(100vh-6rem)] overflow-hidden">
+    <section class="sell-hero-section relative min-h-[calc(100vh-6rem)] overflow-hidden">
         <div class="absolute inset-0">
             <img src="{{ $heroImage }}" alt="{{ $pageTitle }}" class="h-full w-full object-cover" />
             <div class="sell-hero-overlay-base absolute inset-0"></div>
@@ -199,6 +222,11 @@
 
         <div class="relative mx-auto grid min-h-[calc(100vh-6rem)] max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8">
             <div class="max-w-3xl">
+                @if($heroBadge !== '')
+                    <p class="sell-hero-badge mb-5 inline-flex rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wide">
+                        {{ $heroBadge }}
+                    </p>
+                @endif
                 <h1 class="sell-hero-title text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
                     {{ $txt('seller_hero_title', 'Vende tu propiedad con estrategia local', 'Sell your home with local strategy') }}
                 </h1>

@@ -194,6 +194,18 @@ document.addEventListener('DOMContentLoaded', function() {
   let modifiedColors = {};
   let activeColorTab = null;
 
+  const viewPreviewUrls = {
+    global: '/',
+    home: '/',
+    properties: '/propiedades',
+    'property-detail': '/propiedades',
+    contact: '/contacto',
+    about: '/nosotros',
+    'sell-with-us': '/vendedores/vende-con-nosotros',
+    'mls-offices': '/agencias',
+    'mls-agents': '/agentes'
+  };
+
   // Color group labels
   const groupLabels = {
     'primary': 'Primarios',
@@ -225,7 +237,12 @@ document.addEventListener('DOMContentLoaded', function() {
     'about_team': 'Nosotros - Equipo',
     'about_agents': 'Nosotros - Agentes',
     'about_page': 'Página Nosotros',
-    'sell_page': 'Vende con nosotros'
+    'sell_hero': 'Vende - Hero',
+    'sell_form': 'Vende - Formulario',
+    'sell_content': 'Vende - Contenido',
+    'sell_guide': 'Vende - Manual',
+    'sell_testimonials': 'Vende - Testimoniales',
+    'sell_page': 'Vende con nosotros (legacy)'
   };
 
   // Color key labels (human readable)
@@ -254,9 +271,23 @@ document.addEventListener('DOMContentLoaded', function() {
     'hero_overlay_from': 'Hero overlay - inicio',
     'hero_overlay_mid': 'Hero overlay - medio',
     'hero_overlay_to': 'Hero overlay - fin',
+    'overlay_bg': 'Overlay - fondo',
+    'overlay_mid': 'Overlay - medio',
     'hero_badge_border': 'Hero badge - borde',
+    'badge_border': 'Badge - borde',
     'hero_title': 'Hero - titulo',
     'hero_text': 'Hero - texto',
+    'section_bg': 'Fondo seccion',
+    'card_bg': 'Tarjeta - fondo',
+    'card_border': 'Tarjeta - borde',
+    'card_bg_from': 'Tarjeta - fondo inicio',
+    'card_bg_to': 'Tarjeta - fondo fin',
+    'card_title': 'Tarjeta - titulo',
+    'card_value': 'Tarjeta - valor',
+    'text': 'Texto',
+    'label': 'Etiqueta',
+    'pending_border': 'Boton pendiente - borde',
+    'pending_text': 'Boton pendiente - texto',
     'badge_bg': 'Badge - fondo',
     'badge_dot': 'Badge - punto',
     'badge_text': 'Badge - texto',
@@ -952,7 +983,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('btn-delete').addEventListener('click', deleteConfig);
   document.getElementById('btn-save-colors').addEventListener('click', saveColors);
   document.getElementById('btn-cancel-changes').addEventListener('click', cancelChanges);
-  document.getElementById('btn-preview').addEventListener('click', () => window.open('/', '_blank'));
+  document.getElementById('btn-preview').addEventListener('click', () => {
+    window.open(viewPreviewUrls[currentViewSlug] || '/', '_blank');
+  });
   document.getElementById('config-form').addEventListener('submit', saveConfig);
   document.getElementById('duplicate-form').addEventListener('submit', duplicateConfig);
   document.getElementById('btn-cancel-modal').addEventListener('click', closeConfigModal);
@@ -1010,6 +1043,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('view-title').textContent = viewInfo.name;
     document.getElementById('view-description').textContent = viewInfo.description;
     document.getElementById('view-groups-count').textContent = viewInfo.groups.length;
+    document.getElementById('btn-preview').lastChild.textContent = `Ver ${viewInfo.name}`;
 
     // Load configs for this view
     await loadConfigsForView(viewSlug);
