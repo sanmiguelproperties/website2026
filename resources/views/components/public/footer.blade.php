@@ -80,6 +80,7 @@
     $newsletterTitle = $txt('footer_newsletter_title', 'Suscribete a nuestro newsletter', 'Subscribe to our newsletter');
     $newsletterText = $txt('footer_newsletter_text', 'Recibe las ultimas propiedades y oportunidades exclusivas directamente en tu correo.', 'Receive the latest properties and exclusive opportunities directly in your inbox.');
     $newsletterButton = $txt('footer_newsletter_button', 'Suscribirse', 'Subscribe');
+    $showNewsletter = $footerData?->field('footer_hide_newsletter') !== '1';
 
     $labels = [
         'quick_links' => $txt('footer_quick_links', 'Enlaces rapidos', 'Quick Links'),
@@ -105,6 +106,7 @@
     </div>
 
     <div class="relative">
+        @if($showNewsletter)
         <div class="footer-divider border-b border-white/10">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 text-center">
                 <h3 class="text-2xl sm:text-3xl font-bold mb-3">{{ $newsletterTitle }}</h3>
@@ -118,6 +120,7 @@
                 <p id="publicNewsletterFeedback" class="hidden mx-auto mt-4 max-w-md rounded-xl border px-4 py-3 text-sm"></p>
             </div>
         </div>
+        @endif
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
@@ -237,71 +240,73 @@
     </div>
 </footer>
 
-@once
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('publicNewsletterForm');
-    const feedback = document.getElementById('publicNewsletterFeedback');
-    if (!form || !feedback) return;
+@if($showNewsletter)
+    @once
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('publicNewsletterForm');
+        const feedback = document.getElementById('publicNewsletterFeedback');
+        if (!form || !feedback) return;
 
-    function showNewsletterFeedback(type, message) {
-        feedback.textContent = message;
-        feedback.classList.remove('hidden', 'border-emerald-500/30', 'bg-emerald-500/10', 'text-emerald-100', 'border-rose-500/30', 'bg-rose-500/10', 'text-rose-100');
-        if (type === 'success') {
-            feedback.classList.add('border-emerald-500/30', 'bg-emerald-500/10', 'text-emerald-100');
-        } else {
-            feedback.classList.add('border-rose-500/30', 'bg-rose-500/10', 'text-rose-100');
-        }
-    }
-
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const email = form.elements.namedItem('email')?.value?.trim() || '';
-        if (!email) {
-            showNewsletterFeedback('error', window.publicT('contact.requiredFields', 'Por favor completa todos los campos requeridos.'));
-            return;
+        function showNewsletterFeedback(type, message) {
+            feedback.textContent = message;
+            feedback.classList.remove('hidden', 'border-emerald-500/30', 'bg-emerald-500/10', 'text-emerald-100', 'border-rose-500/30', 'bg-rose-500/10', 'text-rose-100');
+            if (type === 'success') {
+                feedback.classList.add('border-emerald-500/30', 'bg-emerald-500/10', 'text-emerald-100');
+            } else {
+                feedback.classList.add('border-rose-500/30', 'bg-rose-500/10', 'text-rose-100');
+            }
         }
 
-        const submitButton = form.querySelector('button[type="submit"]');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
 
-        try {
-            if (submitButton) submitButton.disabled = true;
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            const response = await fetch('/api/public/contact-requests', {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
-                },
-                body: JSON.stringify({
-                    email,
-                    source: 'footer_newsletter',
-                    lead_type: 'newsletter',
-                    ...((window.publicLeadTrackingPayload && window.publicLeadTrackingPayload()) || {}),
-                }),
-            });
-            const data = await response.json().catch(() => null);
-
-            if (!response.ok || !data?.success) {
-                showNewsletterFeedback('error', data?.message || window.publicT('contact.submitError', 'Hubo un error al enviar el mensaje. Por favor intenta de nuevo.'));
+            const email = form.elements.namedItem('email')?.value?.trim() || '';
+            if (!email) {
+                showNewsletterFeedback('error', window.publicT('contact.requiredFields', 'Por favor completa todos los campos requeridos.'));
                 return;
             }
 
-            form.reset();
-            showNewsletterFeedback('success', window.publicT('contact.submitSuccess', 'Mensaje enviado con exito. Nos pondremos en contacto contigo pronto.'));
-        } catch (_error) {
-            showNewsletterFeedback('error', window.publicT('contact.connectionError', 'Error de conexion. Por favor verifica tu internet e intenta de nuevo.'));
-        } finally {
-            if (submitButton) submitButton.disabled = false;
-        }
+            const submitButton = form.querySelector('button[type="submit"]');
+
+            try {
+                if (submitButton) submitButton.disabled = true;
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const response = await fetch('/api/public/contact-requests', {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+                    },
+                    body: JSON.stringify({
+                        email,
+                        source: 'footer_newsletter',
+                        lead_type: 'newsletter',
+                        ...((window.publicLeadTrackingPayload && window.publicLeadTrackingPayload()) || {}),
+                    }),
+                });
+                const data = await response.json().catch(() => null);
+
+                if (!response.ok || !data?.success) {
+                    showNewsletterFeedback('error', data?.message || window.publicT('contact.submitError', 'Hubo un error al enviar el mensaje. Por favor intenta de nuevo.'));
+                    return;
+                }
+
+                form.reset();
+                showNewsletterFeedback('success', window.publicT('contact.submitSuccess', 'Mensaje enviado con exito. Nos pondremos en contacto contigo pronto.'));
+            } catch (_error) {
+                showNewsletterFeedback('error', window.publicT('contact.connectionError', 'Error de conexion. Por favor verifica tu internet e intenta de nuevo.'));
+            } finally {
+                if (submitButton) submitButton.disabled = false;
+            }
+        });
     });
-});
-</script>
-@endpush
-@endonce
+    </script>
+    @endpush
+    @endonce
+@endif
 
 <style>
     .smp-public-footer .footer-divider {

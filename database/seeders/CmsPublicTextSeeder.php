@@ -6,6 +6,7 @@ use App\Models\CmsFieldDefinition;
 use App\Models\CmsFieldGroup;
 use App\Models\CmsFieldValue;
 use App\Models\CmsPage;
+use App\Support\CmsSpanishText;
 use Illuminate\Database\Seeder;
 
 class CmsPublicTextSeeder extends Seeder
@@ -74,22 +75,6 @@ class CmsPublicTextSeeder extends Seeder
             return;
         }
 
-        $existingKeys = CmsFieldGroup::query()
-            ->forPage($slug)
-            ->with('allFieldDefinitions:id,field_group_id,field_key')
-            ->get()
-            ->flatMap(fn (CmsFieldGroup $group) => $group->allFieldDefinitions->pluck('field_key'))
-            ->unique()
-            ->values()
-            ->all();
-
-        $existingLookup = array_fill_keys($existingKeys, true);
-        $missingFields = array_values(array_filter($fields, static fn (array $field) => !isset($existingLookup[$field['field_key']])));
-
-        if (empty($missingFields)) {
-            return;
-        }
-
         $group = CmsFieldGroup::query()->updateOrCreate(
             ['slug' => $slug . '-texts-auto'],
             [
@@ -102,7 +87,20 @@ class CmsPublicTextSeeder extends Seeder
             ]
         );
 
-        foreach ($missingFields as $index => $field) {
+        $existingKeysOutsideAutoGroup = CmsFieldGroup::query()
+            ->forPage($slug)
+            ->where('id', '!=', $group->id)
+            ->with('allFieldDefinitions:id,field_group_id,field_key')
+            ->get()
+            ->flatMap(fn (CmsFieldGroup $group) => $group->allFieldDefinitions->pluck('field_key'))
+            ->unique()
+            ->values()
+            ->all();
+
+        $outsideLookup = array_fill_keys($existingKeysOutsideAutoGroup, true);
+        $syncFields = array_values(array_filter($fields, static fn (array $field) => !isset($outsideLookup[$field['field_key']])));
+
+        foreach ($syncFields as $index => $field) {
             $fieldDef = CmsFieldDefinition::query()->updateOrCreate(
                 [
                     'field_group_id' => $group->id,
@@ -118,18 +116,26 @@ class CmsPublicTextSeeder extends Seeder
                 ]
             );
 
-            CmsFieldValue::query()->updateOrCreate(
-                [
-                    'field_definition_id' => $fieldDef->id,
-                    'entity_type' => 'page',
-                    'entity_id' => $page->id,
-                    'parent_value_id' => null,
-                ],
-                [
+            $fieldValue = CmsFieldValue::query()->firstOrNew([
+                'field_definition_id' => $fieldDef->id,
+                'entity_type' => 'page',
+                'entity_id' => $page->id,
+                'parent_value_id' => null,
+            ]);
+
+            if (!$fieldValue->exists) {
+                $fieldValue->fill([
                     'value_es' => $field['value_es'],
                     'value_en' => $field['value_en'],
-                ]
-            );
+                ]);
+            } else {
+                $fieldValue->value_es = CmsSpanishText::repairEncoding($fieldValue->value_es);
+                $fieldValue->value_en = CmsSpanishText::repairEncoding($fieldValue->value_en);
+            }
+
+            if ($fieldValue->isDirty()) {
+                $fieldValue->save();
+            }
         }
     }
 
@@ -205,13 +211,14 @@ class CmsPublicTextSeeder extends Seeder
             return;
         }
 
-        $human = ucwords(str_replace('_', ' ', $fieldKey));
+        $valueEs = CmsSpanishText::repairEncoding($valueEs) ?? '';
+        $valueEn = CmsSpanishText::repairEncoding($valueEn) ?? '';
 
         $result[$fieldKey] = [
             'field_key' => $fieldKey,
             'type' => (mb_strlen($valueEs) > 120 || mb_strlen($valueEn) > 120) ? 'textarea' : 'text',
-            'label_es' => 'Texto: ' . $human,
-            'label_en' => 'Text: ' . $human,
+            'label_es' => CmsSpanishText::makeAdminLabel($fieldKey, $valueEs),
+            'label_en' => 'Text: ' . ucwords(str_replace('_', ' ', $fieldKey)),
             'value_es' => $valueEs,
             'value_en' => $valueEn,
         ];

@@ -9,7 +9,10 @@ use App\Models\CmsMenu;
 use App\Models\CmsMenuItem;
 use App\Models\CmsPage;
 use App\Models\CmsSiteSetting;
+use App\Support\CmsSpanishText;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Seeder maestro del CMS.
@@ -31,6 +34,7 @@ class CmsContentSeeder extends Seeder
         $this->seedPublicFrontendFieldGroups();
         $this->seedMenus();
         $this->seedSiteSettings();
+        $this->repairSeededCmsText();
 
         $this->command->info('Contenido CMS sembrado correctamente.');
     }
@@ -614,6 +618,68 @@ class CmsContentSeeder extends Seeder
     // â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�
     // HELPERS
     // â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�â�?��,�
+
+    protected function repairSeededCmsText(): void
+    {
+        foreach ($this->cmsTextColumns() as $table => $columns) {
+            $this->repairTableColumns($table, $columns);
+        }
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    protected function cmsTextColumns(): array
+    {
+        return [
+            'cms_pages' => ['title_es', 'title_en', 'meta_title_es', 'meta_title_en', 'meta_description_es', 'meta_description_en'],
+            'cms_field_groups' => ['name', 'description'],
+            'cms_field_definitions' => ['label_es', 'label_en', 'instructions_es', 'instructions_en', 'placeholder_es', 'placeholder_en', 'default_value_es', 'default_value_en'],
+            'cms_field_values' => ['value_es', 'value_en'],
+            'cms_site_settings' => ['label_es', 'label_en', 'value_es', 'value_en'],
+            'cms_menus' => ['name', 'description'],
+            'cms_menu_items' => ['label_es', 'label_en'],
+        ];
+    }
+
+    /**
+     * @param array<int, string> $columns
+     */
+    protected function repairTableColumns(string $table, array $columns): void
+    {
+        if (!Schema::hasTable($table)) {
+            return;
+        }
+
+        $columns = array_values(array_filter($columns, static fn (string $column): bool => Schema::hasColumn($table, $column)));
+        if ($columns === []) {
+            return;
+        }
+
+        DB::table($table)
+            ->orderBy('id')
+            ->chunkById(200, function ($rows) use ($table, $columns): void {
+                foreach ($rows as $row) {
+                    $updates = [];
+
+                    foreach ($columns as $column) {
+                        $original = $row->{$column} ?? null;
+                        if (!is_string($original)) {
+                            continue;
+                        }
+
+                        $fixed = CmsSpanishText::repairEncoding($original);
+                        if ($fixed !== $original) {
+                            $updates[$column] = $fixed;
+                        }
+                    }
+
+                    if ($updates !== []) {
+                        DB::table($table)->where('id', $row->id)->update($updates);
+                    }
+                }
+            });
+    }
 
     protected function createFieldGroup(string $slug, string $name, string $locationType, ?string $locationIdentifier, int $sortOrder): CmsFieldGroup
     {

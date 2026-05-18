@@ -127,7 +127,6 @@
         'We only show active agents from the main agency.'
     );
 
-    $primaryOfficeName = $primaryOffice?->name ?? ($isEn ? 'Main agency' : 'Agencia principal');
     $primaryOfficeAgents = collect($primaryOfficeAgents ?? []);
     $rich = static fn (?string $html, ?string $fallback = null): string => \App\Support\RichTextSanitizer::sanitize($html, $fallback);
 @endphp
@@ -136,32 +135,27 @@
 
 @section('content')
 <div class="pt-24">
-    <section class="relative overflow-hidden py-16 lg:py-24">
-        <div class="absolute inset-0">
-            <div class="absolute inset-0" style="background: radial-gradient(circle at 0% 0%, rgba(209,160,84,0.20), transparent 45%), radial-gradient(circle at 100% 100%, rgba(118,141,89,0.28), transparent 42%), linear-gradient(145deg, #0f172a, #1f2937 55%, #334155);"></div>
-            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.14) 1px, transparent 0); background-size: 30px 30px;"></div>
-        </div>
-
+    <section class="relative overflow-hidden py-16 lg:py-24" style="background-color: var(--fe-about_hero-section_bg, var(--fe-about_page-hero_bg_from, #0f172a));">
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid lg:grid-cols-12 gap-8 lg:gap-12 items-end">
                 <div class="lg:col-span-8">
-                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight text-white">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight" style="color: var(--fe-about_hero-title, var(--fe-about_page-hero_title, #ffffff));">
                         {{ $txt('about_who_heading', 'Real estate con visión moderna', 'Real estate with modern vision') }}
                     </h1>
-                    <div class="mt-6 text-lg sm:text-xl max-w-3xl rich-content" style="color: rgba(255,255,255,0.82);">
+                    <div class="mt-6 text-lg sm:text-xl max-w-3xl rich-content" style="color: var(--fe-about_hero-subtitle, var(--fe-about_page-hero_subtitle, rgba(255,255,255,0.82)));">
                         {!! $rich($whoSubtitle) !!}
                     </div>
                 </div>
 
                 <div class="lg:col-span-4">
-                    <div class="rounded-3xl border p-6 backdrop-blur" style="border-color: rgba(255,255,255,0.18); background: rgba(15,23,42,0.45);">
-                        <div class="text-xs uppercase tracking-wide font-semibold" style="color: rgba(255,255,255,0.72);">
+                    <div class="rounded-3xl border p-6 backdrop-blur" style="border-color: var(--fe-about_hero-focus_card_border, var(--fe-about_page-hero_secondary_cta_border, rgba(255,255,255,0.18))); background-color: var(--fe-about_hero-focus_card_bg, var(--fe-about_page-hero_secondary_cta_bg, rgba(15,23,42,0.45)));">
+                        <div class="text-xs uppercase tracking-wide font-semibold" style="color: var(--fe-about_hero-focus_label, var(--fe-about_page-hero_badge_text, rgba(255,255,255,0.72)));">
                             {{ $isEn ? 'Focus' : 'Enfoque' }}
                         </div>
-                        <div class="mt-3 text-2xl font-extrabold text-white">
+                        <div class="mt-3 text-2xl font-extrabold" style="color: var(--fe-about_hero-focus_title, var(--fe-about_page-hero_title, #ffffff));">
                             {{ $txt('about_focus_label', 'Estrategia + Ejecución', 'Strategy + Execution') }}
                         </div>
-                        <p class="mt-3 text-sm" style="color: rgba(255,255,255,0.78);">
+                        <p class="mt-3 text-sm" style="color: var(--fe-about_hero-focus_text, var(--fe-about_page-hero_subtitle, rgba(255,255,255,0.78)));">
                             {{ $txt('about_focus_text', 'Decisiones con datos, operación clara y acompañamiento cercano.', 'Data-driven decisions, clear execution and close support.') }}
                         </p>
                     </div>
@@ -170,35 +164,35 @@
         </div>
     </section>
 
-    <section class="py-14 lg:py-20" style="background: linear-gradient(to bottom, #ffffff, #f8fafc);">
+    <section class="py-14 lg:py-20" style="background-color: var(--fe-about_identity-section_bg, var(--fe-about_page-values_section_bg_from, #f8fafc));">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid gap-6 lg:grid-cols-3 lg:items-stretch">
-                <article id="historia" class="h-full rounded-3xl border p-8 lg:p-9 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl scroll-mt-28" style="border-color: #e2e8f0; background: linear-gradient(140deg, rgba(255,255,255,1), rgba(248,250,252,1));">
-                    <div class="mb-7 h-1 w-14 rounded-full" style="background: linear-gradient(to right, #D1A054, #768D59);"></div>
-                    <h2 class="text-2xl sm:text-3xl font-black leading-tight" style="color: #0f172a;">{{ $historyTitle }}</h2>
-                    <div class="mt-5 text-base sm:text-lg leading-relaxed rich-content" style="color: #475569;">{!! $rich($historyText) !!}</div>
+                <article id="historia" class="h-full rounded-3xl border p-8 lg:p-9 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl scroll-mt-28" style="border-color: var(--fe-about_identity-card_border, var(--fe-about_page-value_card_border, #e2e8f0)); background-color: var(--fe-about_identity-card_bg, var(--fe-about_page-value_card_bg_from, #ffffff));">
+                    <div class="mb-7 h-1 w-14 rounded-full" style="background-color: var(--fe-about_identity-card_line, var(--fe-about_page-value_icon_1, #D1A054));"></div>
+                    <h2 class="text-2xl sm:text-3xl font-black leading-tight" style="color: var(--fe-about_identity-history_title, var(--fe-about_page-section_title, #0f172a));">{{ $historyTitle }}</h2>
+                    <div class="mt-5 text-base sm:text-lg leading-relaxed rich-content" style="color: var(--fe-about_identity-history_text, var(--fe-about_page-body_text, #475569));">{!! $rich($historyText) !!}</div>
                 </article>
 
-                <article id="mision" class="h-full rounded-3xl border p-8 lg:p-9 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl scroll-mt-28" style="border-color: #dbeafe; background: linear-gradient(140deg, rgba(255,255,255,1), rgba(239,246,255,0.78));">
-                    <div class="mb-7 h-1 w-14 rounded-full" style="background: linear-gradient(to right, #3b82f6, #768D59);"></div>
-                    <h2 class="text-2xl sm:text-3xl font-black leading-tight" style="color: #0f172a;">{{ $missionTitle }}</h2>
-                    <div class="mt-5 text-base sm:text-lg leading-relaxed rich-content" style="color: #334155;">{!! $rich($missionText) !!}</div>
+                <article id="mision" class="h-full rounded-3xl border p-8 lg:p-9 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl scroll-mt-28" style="border-color: var(--fe-about_identity-card_border, var(--fe-about_page-value_card_border, #e2e8f0)); background-color: var(--fe-about_identity-card_bg, var(--fe-about_page-value_card_bg_from, #ffffff));">
+                    <div class="mb-7 h-1 w-14 rounded-full" style="background-color: var(--fe-about_identity-card_line, var(--fe-about_page-value_icon_1, #D1A054));"></div>
+                    <h2 class="text-2xl sm:text-3xl font-black leading-tight" style="color: var(--fe-about_identity-mission_title, var(--fe-about_page-section_title, #0f172a));">{{ $missionTitle }}</h2>
+                    <div class="mt-5 text-base sm:text-lg leading-relaxed rich-content" style="color: var(--fe-about_identity-mission_text, var(--fe-about_page-body_text, #334155));">{!! $rich($missionText) !!}</div>
                 </article>
 
-                <article id="vision" class="h-full rounded-3xl border p-8 lg:p-9 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl scroll-mt-28" style="border-color: #dcfce7; background: linear-gradient(140deg, rgba(255,255,255,1), rgba(240,253,244,0.82));">
-                    <div class="mb-7 h-1 w-14 rounded-full" style="background: linear-gradient(to right, #22c55e, #D1A054);"></div>
-                    <h2 class="text-2xl sm:text-3xl font-black leading-tight" style="color: #0f172a;">{{ $visionTitle }}</h2>
-                    <div class="mt-5 text-base sm:text-lg leading-relaxed rich-content" style="color: #334155;">{!! $rich($visionText) !!}</div>
+                <article id="vision" class="h-full rounded-3xl border p-8 lg:p-9 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl scroll-mt-28" style="border-color: var(--fe-about_identity-card_border, var(--fe-about_page-value_card_border, #e2e8f0)); background-color: var(--fe-about_identity-card_bg, var(--fe-about_page-value_card_bg_from, #ffffff));">
+                    <div class="mb-7 h-1 w-14 rounded-full" style="background-color: var(--fe-about_identity-card_line, var(--fe-about_page-value_icon_1, #D1A054));"></div>
+                    <h2 class="text-2xl sm:text-3xl font-black leading-tight" style="color: var(--fe-about_identity-vision_title, var(--fe-about_page-section_title, #0f172a));">{{ $visionTitle }}</h2>
+                    <div class="mt-5 text-base sm:text-lg leading-relaxed rich-content" style="color: var(--fe-about_identity-vision_text, var(--fe-about_page-body_text, #334155));">{!! $rich($visionText) !!}</div>
                 </article>
             </div>
         </div>
     </section>
 
-    <section id="brokers" class="py-16 lg:py-20" style="background: linear-gradient(to bottom, #ffffff, #f8fafc);">
+    <section id="brokers" class="py-16 lg:py-20" style="background-color: var(--fe-about_brokers-section_bg, var(--fe-about_page-summary_section_bg, #ffffff));">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mb-10">
-                <h2 class="text-3xl sm:text-4xl font-black" style="color: #0f172a;">{{ $brokersTitle }}</h2>
-                <p class="mt-3 text-lg" style="color: #475569;">{{ $brokersSubtitle }}</p>
+                <h2 class="text-3xl sm:text-4xl font-black" style="color: var(--fe-about_brokers-title, var(--fe-about_page-section_title, #0f172a));">{{ $brokersTitle }}</h2>
+                <p class="mt-3 text-lg" style="color: var(--fe-about_brokers-subtitle, var(--fe-about_page-body_text, #475569));">{{ $brokersSubtitle }}</p>
             </div>
 
             <div class="grid md:grid-cols-2 gap-6 lg:gap-8">
@@ -207,19 +201,19 @@
                         $brokerImage = $broker['image']
                             ?: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=900&q=80';
                     @endphp
-                    <article class="group rounded-3xl overflow-hidden border shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style="border-color: #e2e8f0; background-color: #ffffff;">
+                    <article class="group rounded-3xl overflow-hidden border shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style="border-color: var(--fe-about_brokers-card_border, var(--fe-about_page-team_card_border, #e2e8f0)); background-color: var(--fe-about_brokers-card_bg, var(--fe-about_page-team_card_bg, #ffffff));">
                         @if(!empty($broker['image']))
                             <div class="h-72 sm:h-80 lg:h-96 overflow-hidden">
                                 <img src="{{ $brokerImage }}" alt="{{ $broker['name'] }}" class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                             </div>
                         @endif
                         <div class="p-6">
-                            <h3 class="text-2xl font-extrabold" style="color: #0f172a;">{{ $broker['name'] }}</h3>
+                            <h3 class="text-2xl font-extrabold" style="color: var(--fe-about_brokers-name, var(--fe-about_page-team_name, #0f172a));">{{ $broker['name'] }}</h3>
                             @if(!empty($broker['role']))
-                                <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: #9a7035;">{{ $broker['role'] }}</p>
+                                <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: var(--fe-about_brokers-role, var(--fe-about_page-team_role, #9a7035));">{{ $broker['role'] }}</p>
                             @endif
                             @if(!empty($broker['bio']))
-                                <div class="mt-4 text-sm leading-relaxed rich-content" style="color: #475569;">{!! $rich($broker['bio']) !!}</div>
+                                <div class="mt-4 text-sm leading-relaxed rich-content" style="color: var(--fe-about_brokers-bio, var(--fe-about_page-body_text, #475569));">{!! $rich($broker['bio']) !!}</div>
                             @endif
                         </div>
                     </article>
@@ -228,11 +222,11 @@
         </div>
     </section>
 
-    <section id="equipo" class="py-16 lg:py-20" style="background: linear-gradient(to bottom, #f8fafc, #ffffff);">
+    <section id="equipo" class="py-16 lg:py-20" style="background-color: var(--fe-about_team-section_bg, var(--fe-about_page-team_section_bg_from, #f8fafc));">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mb-10">
-                <h2 class="text-3xl sm:text-4xl font-black" style="color: #0f172a;">{{ $coreTeamTitle }}</h2>
-                <p class="mt-3 text-lg" style="color: #475569;">{{ $coreTeamSubtitle }}</p>
+                <h2 class="text-3xl sm:text-4xl font-black" style="color: var(--fe-about_team-title, var(--fe-about_page-section_title, #0f172a));">{{ $coreTeamTitle }}</h2>
+                <p class="mt-3 text-lg" style="color: var(--fe-about_team-subtitle, var(--fe-about_page-body_text, #475569));">{{ $coreTeamSubtitle }}</p>
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -241,19 +235,19 @@
                         $memberImage = $member['image']
                             ?: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&q=80';
                     @endphp
-                    <article class="group rounded-3xl overflow-hidden border shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style="border-color: #e2e8f0; background-color: #ffffff;">
+                    <article class="group rounded-3xl overflow-hidden border shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style="border-color: var(--fe-about_team-card_border, var(--fe-about_page-team_card_border, #e2e8f0)); background-color: var(--fe-about_team-card_bg, var(--fe-about_page-team_card_bg, #ffffff));">
                         @if(!empty($member['image']))
                             <div class="h-72 sm:h-80 lg:h-96 overflow-hidden">
                                 <img src="{{ $memberImage }}" alt="{{ $member['name'] }}" class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                             </div>
                         @endif
                         <div class="p-6">
-                            <h3 class="text-2xl font-extrabold" style="color: #0f172a;">{{ $member['name'] }}</h3>
+                            <h3 class="text-2xl font-extrabold" style="color: var(--fe-about_team-name, var(--fe-about_page-team_name, #0f172a));">{{ $member['name'] }}</h3>
                             @if(!empty($member['role']))
-                                <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: #0f766e;">{{ $member['role'] }}</p>
+                                <p class="mt-1 text-sm font-semibold uppercase tracking-wide" style="color: var(--fe-about_team-role, var(--fe-about_page-team_role, #0f766e));">{{ $member['role'] }}</p>
                             @endif
                             @if(!empty($member['bio']))
-                                <div class="mt-4 text-sm leading-relaxed rich-content" style="color: #475569;">{!! $rich($member['bio']) !!}</div>
+                                <div class="mt-4 text-sm leading-relaxed rich-content" style="color: var(--fe-about_team-bio, var(--fe-about_page-body_text, #475569));">{!! $rich($member['bio']) !!}</div>
                             @endif
                         </div>
                     </article>
@@ -262,20 +256,17 @@
         </div>
     </section>
 
-    <section id="agentes" class="py-16 lg:py-20" style="background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);">
+    <section id="agentes" class="py-16 lg:py-20" style="background-color: var(--fe-about_agents-section_bg, #0f172a);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mb-10">
-                <h2 class="text-3xl sm:text-4xl font-black text-white">{{ $agentsTitle }}</h2>
-                <p class="mt-3 text-lg" style="color: rgba(255,255,255,0.78);">{{ $agentsSubtitle }}</p>
-                <div class="mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide" style="background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.92);">
-                    {{ $isEn ? 'Primary agency' : 'Agencia principal' }}: {{ $primaryOfficeName }}
-                </div>
+                <h2 class="text-3xl sm:text-4xl font-black" style="color: var(--fe-about_agents-title, #ffffff);">{{ $agentsTitle }}</h2>
+                <p class="mt-3 text-lg" style="color: var(--fe-about_agents-subtitle, rgba(255,255,255,0.78));">{{ $agentsSubtitle }}</p>
             </div>
 
             @if($primaryOfficeAgents->isEmpty())
-                <div class="rounded-3xl border p-8 text-center" style="border-color: rgba(255,255,255,0.2); background: rgba(15,23,42,0.4);">
-                    <h3 class="text-xl font-bold text-white">{{ $isEn ? 'No agents available right now' : 'No hay agentes disponibles en este momento' }}</h3>
-                    <p class="mt-2" style="color: rgba(255,255,255,0.75);">
+                <div class="rounded-3xl border p-8 text-center" style="border-color: var(--fe-about_agents-empty_card_border, rgba(255,255,255,0.2)); background-color: var(--fe-about_agents-empty_card_bg, rgba(15,23,42,0.4));">
+                    <h3 class="text-xl font-bold" style="color: var(--fe-about_agents-empty_title, #ffffff);">{{ $isEn ? 'No agents available right now' : 'No hay agentes disponibles en este momento' }}</h3>
+                    <p class="mt-2" style="color: var(--fe-about_agents-empty_text, rgba(255,255,255,0.75));">
                         {{ $isEn
                             ? 'When agents are active in the main agency, they will appear here automatically.'
                             : 'Cuando existan agentes activos en la agencia principal, aparecerán aquí automáticamente.' }}
@@ -289,19 +280,19 @@
                             $agentImage = $agent->photo ?: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=900&q=80';
                         @endphp
 
-                        <article class="rounded-3xl overflow-hidden border" style="border-color: rgba(255,255,255,0.2); background: rgba(15,23,42,0.45); backdrop-filter: blur(8px);">
+                        <article class="rounded-3xl overflow-hidden border" style="border-color: var(--fe-about_agents-card_border, rgba(255,255,255,0.2)); background-color: var(--fe-about_agents-card_bg, rgba(15,23,42,0.45)); backdrop-filter: blur(8px);">
                             <div class="h-72 sm:h-80 lg:h-96 overflow-hidden">
                                 <img src="{{ $agentImage }}" alt="{{ $agentName }}" class="w-full h-full object-cover object-top" loading="lazy" />
                             </div>
                             <div class="p-6">
-                                <h3 class="text-xl font-extrabold text-white">{{ $agentName }}</h3>
+                                <h3 class="text-xl font-extrabold" style="color: var(--fe-about_agents-name, #ffffff);">{{ $agentName }}</h3>
 
                                 @if(!empty($agent->email))
-                                    <p class="mt-2 text-sm" style="color: rgba(255,255,255,0.74);">{{ $agent->email }}</p>
+                                    <p class="mt-2 text-sm" style="color: var(--fe-about_agents-email, rgba(255,255,255,0.74));">{{ $agent->email }}</p>
                                 @endif
 
                                 <div class="mt-5 flex gap-2">
-                                    <a href="{{ route('public.mls-agents.show', ['mlsAgentId' => (int) $agent->mls_agent_id]) }}" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
+                                    <a href="{{ route('public.mls-agents.show', ['mlsAgentId' => (int) $agent->mls_agent_id]) }}" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold" style="background-color: var(--fe-about_agents-button_bg, var(--fe-primary-from, #D1A054)); color: var(--fe-about_agents-button_text, #ffffff);">
                                         {{ $isEn ? 'View profile' : 'Ver perfil' }}
                                     </a>
                                 </div>

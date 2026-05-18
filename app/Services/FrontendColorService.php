@@ -421,7 +421,12 @@ class FrontendColorService
             'contact_page' => 'Página de Contacto',
             
             // Página nosotros
-            'about_page' => 'Página Nosotros',
+            'about_hero' => 'Nosotros - Hero',
+            'about_identity' => 'Nosotros - Historia, misión y visión',
+            'about_brokers' => 'Nosotros - Brokers',
+            'about_team' => 'Nosotros - Equipo',
+            'about_agents' => 'Nosotros - Agentes',
+            'about_page' => 'Página Nosotros (legacy)',
 
             // Página vende con nosotros
             'sell_page' => 'Vende con nosotros',

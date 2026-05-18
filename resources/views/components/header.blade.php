@@ -77,7 +77,7 @@
           </a>
         @endif
         @if($canCreateHeaderVisit)
-          <a href="{{ route('calendar', ['action' => 'create']) }}#new-visit" class="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-xl bg-[var(--c-accent)] text-[var(--c-accent-ink)] ring-1 ring-[var(--c-accent)] hover:opacity-90">
+          <a id="dash-action-new-visit" href="{{ route('calendar', ['action' => 'create']) }}#new-visit" class="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-xl bg-[var(--c-surface)] text-[var(--c-text)] ring-1 ring-[var(--c-border)] hover:bg-[var(--c-elev)] shadow-soft">
             <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h2"/><path d="M12 14h2"/></svg>
             Agendar visita
           </a>
