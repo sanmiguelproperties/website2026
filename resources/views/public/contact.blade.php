@@ -13,7 +13,19 @@
     $whatsappNumber = preg_replace('/[^0-9]/', '', (string) $whatsRaw) ?: '525512345678';
 
     $email = $settings['contact_email'] ?? 'info@sanmiguelproperties.com';
-    $address = $settings['contact_address'] ?? ($isEn ? 'San Miguel de Allende, Guanajuato, Mexico' : 'San Miguel de Allende, Guanajuato, México');
+    $defaultAddress = $isEn ? 'San Miguel de Allende, Guanajuato, Mexico' : 'San Miguel de Allende, Guanajuato, México';
+    $corporateAddress = $settings['contact_address'] ?? $defaultAddress;
+    $centerAddress = $settings['contact_address_center'] ?? '';
+    $contactAddresses = collect([
+        [
+            'label' => $txt('contact_label_corporate_office', 'Oficina corporativa', 'Corporate office'),
+            'address' => $corporateAddress,
+        ],
+        [
+            'label' => $txt('contact_label_center_office', 'Oficina centro', 'Downtown office'),
+            'address' => $centerAddress,
+        ],
+    ])->filter(fn ($office) => filled($office['address']))->values()->all();
 
     $siteName = $settings['site_name'] ?? 'San Miguel Properties';
 
@@ -124,8 +136,15 @@
             </div>
 
             <div>
-                <h3 class="font-semibold mb-2" style="color: var(--fe-contact_page-card_title, #1C1C1C);">{{ $txt('contact_label_address', 'Direccion', 'Address') }}</h3>
-                <p style="color: var(--fe-contact_page-section_text, #475569);">{{ $address }}</p>
+                <h3 class="font-semibold mb-3" style="color: var(--fe-contact_page-card_title, #1C1C1C);">{{ $txt('contact_label_addresses', 'Direcciones', 'Addresses') }}</h3>
+                <div class="space-y-3">
+                    @foreach($contactAddresses as $office)
+                        <div>
+                            <p class="text-sm font-semibold uppercase tracking-wide" style="color: var(--fe-contact_page-card_title, #1C1C1C);">{{ $office['label'] }}</p>
+                            <p class="mt-1 whitespace-pre-line" style="color: var(--fe-contact_page-section_text, #475569);">{{ $office['address'] }}</p>
+                        </div>
+                    @endforeach
+                </div>
             </div>
 
             <div>

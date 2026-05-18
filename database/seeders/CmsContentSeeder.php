@@ -580,7 +580,8 @@ class CmsContentSeeder extends Seeder
             ['setting_key' => 'contact_phone_secondary', 'setting_group' => 'contact', 'label_es' => 'Tel�f©fono secundario', 'label_en' => 'Secondary phone', 'type' => 'phone', 'value_es' => '', 'sort_order' => 2],
             ['setting_key' => 'contact_email', 'setting_group' => 'contact', 'label_es' => 'Email principal', 'label_en' => 'Main email', 'type' => 'email', 'value_es' => 'info@sanmiguelproperties.com', 'sort_order' => 3],
             ['setting_key' => 'contact_whatsapp', 'setting_group' => 'contact', 'label_es' => 'WhatsApp', 'label_en' => 'WhatsApp', 'type' => 'phone', 'value_es' => '+525512345678', 'sort_order' => 4],
-            ['setting_key' => 'contact_address', 'setting_group' => 'contact', 'label_es' => 'Direcci�f³n', 'label_en' => 'Address', 'type' => 'textarea', 'value_es' => 'San Miguel de Allende, Guanajuato, M�f©xico', 'value_en' => 'San Miguel de Allende, Guanajuato, Mexico', 'sort_order' => 5],
+            ['setting_key' => 'contact_address', 'setting_group' => 'contact', 'label_es' => 'Direccion - Oficina corporativa', 'label_en' => 'Address - Corporate office', 'type' => 'textarea', 'value_es' => 'San Miguel de Allende, Guanajuato, M�f©xico', 'value_en' => 'San Miguel de Allende, Guanajuato, Mexico', 'sort_order' => 5],
+            ['setting_key' => 'contact_address_center', 'setting_group' => 'contact', 'label_es' => 'Direccion - Oficina centro', 'label_en' => 'Address - Downtown office', 'type' => 'textarea', 'value_es' => '', 'value_en' => '', 'sort_order' => 6],
 
             // â�?��,�â�?��,� Redes Sociales â�?��,�â�?��,�
             ['setting_key' => 'social_facebook', 'setting_group' => 'social', 'label_es' => 'Facebook', 'type' => 'url', 'value_es' => 'https://facebook.com/sanmiguelproperties', 'sort_order' => 1],
