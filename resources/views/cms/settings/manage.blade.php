@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const groupLabels = {
     contact: { icon: '📞', name: 'Contacto', desc: 'Teléfono, email, WhatsApp, dirección' },
-    social: { icon: '🌐', name: 'Redes Sociales', desc: 'Facebook, Instagram, Twitter, LinkedIn' },
+    social: { icon: '🌐', name: 'Redes Sociales', desc: 'Facebook, Instagram, X, LinkedIn, YouTube, TikTok' },
     general: { icon: '🏠', name: 'General', desc: 'Nombre del sitio, tagline, logos, copyright' },
     header: { icon: 'H', name: 'Header', desc: 'Logo en desktop y móvil' },
     seo: { icon: '🔍', name: 'SEO', desc: 'Meta tags por defecto, Google Analytics' },

@@ -1,5 +1,6 @@
 @php
     use App\Services\CmsService;
+    use App\Support\SocialLinks;
     use Illuminate\Support\Str;
 
     $locale = app()->getLocale();
@@ -69,13 +70,7 @@
 
     $copyrightText = $settings['copyright_text'] ?? $txt('footer_copyright', 'Todos los derechos reservados.', 'All rights reserved.');
 
-    $socialLinks = [
-        ['key' => 'social_facebook', 'label' => 'Facebook'],
-        ['key' => 'social_instagram', 'label' => 'Instagram'],
-        ['key' => 'social_twitter', 'label' => 'X'],
-        ['key' => 'social_linkedin', 'label' => 'LinkedIn'],
-        ['key' => 'social_youtube', 'label' => 'YouTube'],
-    ];
+    $socialLinks = SocialLinks::fromSettings($settings);
 
     $newsletterTitle = $txt('footer_newsletter_title', 'Suscribete a nuestro newsletter', 'Subscribe to our newsletter');
     $newsletterText = $txt('footer_newsletter_text', 'Recibe las ultimas propiedades y oportunidades exclusivas directamente en tu correo.', 'Receive the latest properties and exclusive opportunities directly in your inbox.');
@@ -145,15 +140,15 @@
                         </div>
                     </a>
 
-                    <div class="flex items-center gap-3 mt-6">
+                    @if(!empty($socialLinks))
+                    <div class="flex flex-wrap items-center gap-3 mt-6">
                         @foreach($socialLinks as $social)
-                            @php $socialUrl = $settings[$social['key']] ?? null; @endphp
-                            @continue(empty($socialUrl))
-                            <a href="{{ $socialUrl }}" target="_blank" rel="noopener" class="footer-social-link w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-slate-300 hover:text-white transition-all duration-300" aria-label="{{ $social['label'] }}">
-                                <span class="text-xs font-semibold">{{ strtoupper(substr($social['label'], 0, 1)) }}</span>
+                            <a href="{{ $social['url'] }}" target="_blank" rel="noopener noreferrer" class="footer-social-link w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-slate-300 hover:text-white transition-all duration-300 hover:-translate-y-0.5" aria-label="{{ $social['label'] }}" title="{{ $social['label'] }}">
+                                @include('components.public.social-icon', ['network' => $social['network'], 'class' => 'h-5 w-5'])
                             </a>
                         @endforeach
                     </div>
+                    @endif
                 </div>
 
                 <div>

@@ -589,6 +589,8 @@ class CmsContentSeeder extends Seeder
             ['setting_key' => 'social_twitter', 'setting_group' => 'social', 'label_es' => 'Twitter/X', 'type' => 'url', 'value_es' => '', 'sort_order' => 3],
             ['setting_key' => 'social_linkedin', 'setting_group' => 'social', 'label_es' => 'LinkedIn', 'type' => 'url', 'value_es' => '', 'sort_order' => 4],
             ['setting_key' => 'social_youtube', 'setting_group' => 'social', 'label_es' => 'YouTube', 'type' => 'url', 'value_es' => '', 'sort_order' => 5],
+            ['setting_key' => 'social_tiktok', 'setting_group' => 'social', 'label_es' => 'TikTok', 'label_en' => 'TikTok', 'type' => 'url', 'value_es' => '', 'value_en' => '', 'sort_order' => 6],
+            ['setting_key' => 'social_pinterest', 'setting_group' => 'social', 'label_es' => 'Pinterest', 'label_en' => 'Pinterest', 'type' => 'url', 'value_es' => '', 'value_en' => '', 'sort_order' => 7],
 
             // â�?��,�â�?��,� General â�?��,�â�?��,�
             ['setting_key' => 'site_name', 'setting_group' => 'general', 'label_es' => 'Nombre del sitio', 'label_en' => 'Site name', 'type' => 'text', 'value_es' => 'San Miguel Properties', 'value_en' => 'San Miguel Properties', 'sort_order' => 1],

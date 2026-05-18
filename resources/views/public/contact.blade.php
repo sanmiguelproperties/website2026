@@ -29,13 +29,7 @@
 
     $siteName = $settings['site_name'] ?? 'San Miguel Properties';
 
-    $socialLinks = [
-        ['key' => 'social_facebook', 'label' => 'Facebook'],
-        ['key' => 'social_instagram', 'label' => 'Instagram'],
-        ['key' => 'social_twitter', 'label' => 'X'],
-        ['key' => 'social_linkedin', 'label' => 'LinkedIn'],
-        ['key' => 'social_youtube', 'label' => 'YouTube'],
-    ];
+    $socialLinks = \App\Support\SocialLinks::fromSettings($settings);
     $faqRows = $pageData?->repeater('contact_faq_items') ?? [];
 
     $contactFormLabels = [
@@ -147,18 +141,18 @@
                 </div>
             </div>
 
+            @if(!empty($socialLinks))
             <div>
                 <h3 class="font-semibold mb-3" style="color: var(--fe-contact_page-social_title, #1C1C1C);">{{ $txt('contact_label_follow', 'Siguenos', 'Follow us') }}</h3>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     @foreach($socialLinks as $social)
-                        @php $socialUrl = $settings[$social['key']] ?? null; @endphp
-                        @continue(empty($socialUrl))
-                        <a href="{{ $socialUrl }}" target="_blank" rel="noopener" class="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110" style="background-color: var(--fe-contact_page-social_bg, #f1f5f9); color: var(--fe-contact_page-social_icon, #475569);" aria-label="{{ $social['label'] }}">
-                            <span class="text-xs font-semibold">{{ strtoupper(substr($social['label'], 0, 1)) }}</span>
+                        <a href="{{ $social['url'] }}" target="_blank" rel="noopener noreferrer" class="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110" style="background-color: var(--fe-contact_page-social_bg, #f1f5f9); color: var(--fe-contact_page-social_icon, #475569);" aria-label="{{ $social['label'] }}" title="{{ $social['label'] }}">
+                            @include('components.public.social-icon', ['network' => $social['network'], 'class' => 'h-5 w-5'])
                         </a>
                     @endforeach
                 </div>
             </div>
+            @endif
         </div>
 
         <div class="lg:col-span-3">
