@@ -760,13 +760,18 @@
     const isEnLocale = (window.__PUBLIC_LOCALE__ || 'es') === 'en';
     const zoneBaseFilters = @json($zoneInitialFilters ?? []);
     const propertyCardI18n = {
-      notAvailable: tPublic('common.notAvailable', isEnLocale ? 'N/A' : 'N/D'),
-      locationFallback: tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible'),
+      heroImageAlt: tPublic('home.hero.imageAlt', isEnLocale ? 'Property' : 'Propiedad'),
+      priceFallback: tPublic('home.property.priceFallback', isEnLocale ? 'Ask for price' : 'Consultar precio'),
+      locationFallback: tPublic('home.property.locationFallback', isEnLocale ? 'Location available' : 'Ubicacion disponible'),
+      saleLabel: tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta'),
+      rentLabel: tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta'),
+      cardTitleFallback: tPublic('home.property.cardTitleFallback', isEnLocale ? 'Available property' : 'Propiedad disponible'),
       lotSizeLabel: tPublic('property.lotSize', isEnLocale ? 'Lot size' : 'M2 de terreno'),
       constructionSizeLabel: tPublic('property.constructionSize', isEnLocale ? 'Construction size' : 'M2 de construccion'),
       roomsLabel: tPublic('property.rooms', isEnLocale ? 'Rooms' : 'Cuartos'),
       bathroomsLabel: tPublic('property.bathrooms', isEnLocale ? 'Baths' : 'Banos'),
       halfBathroomsLabel: tPublic('property.halfBathrooms', isEnLocale ? 'Half baths' : 'Medios banos'),
+      detailsCta: tPublic('common.details', isEnLocale ? 'View details' : 'Ver detalles'),
       areaUnit: tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2'),
     };
     const propertyIconUrls = {
@@ -787,21 +792,25 @@
       maximumFractionDigits: 0,
     });
 
+    const featureNumberFormatter = new Intl.NumberFormat(isEnLocale ? 'en-US' : 'es-MX', {
+      maximumFractionDigits: 1,
+    });
+
     function cardNumberValue(value) {
       const text = String(value ?? '').trim();
-      if (text === '') return propertyCardI18n.notAvailable;
+      if (text === '') return null;
       const number = Number(text);
-      return Number.isFinite(number) ? wholeNumberFormatter.format(Math.trunc(number)) : propertyCardI18n.notAvailable;
+      return Number.isFinite(number) && number > 0 ? featureNumberFormatter.format(number) : null;
     }
 
     function cardAreaValue(value) {
       const number = Number(value);
-      return Number.isFinite(number) && number > 0 ? `${wholeNumberFormatter.format(number)} ${propertyCardI18n.areaUnit}` : propertyCardI18n.notAvailable;
+      return Number.isFinite(number) && number > 0 ? `${wholeNumberFormatter.format(number)} ${propertyCardI18n.areaUnit}` : null;
     }
 
     function cardPriceValue(value) {
       const text = String(value ?? '').trim();
-      return text ? text.replace(/([.,]\d{1,2})(?=\s*(?:[A-Z]{3})?$)/, '') : tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
+      return text ? text.replace(/([.,]\d{1,2})(?=\s*(?:[A-Z]{3})?$)/, '') : propertyCardI18n.priceFallback;
     }
 
     function propertiesFilter() {
@@ -1322,7 +1331,7 @@
               const fallbackAmount = (typeof window.formatDisplayPrice === 'function')
                 ? window.formatDisplayPrice(firstOperation?.amount, firstOperation?.currency?.code || firstOperation?.currency_code)
                 : '';
-              const price = cardPriceValue(firstOperation?.formatted_amount || fallbackAmount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio'));
+              const price = cardPriceValue(firstOperation?.formatted_amount || fallbackAmount || propertyCardI18n.priceFallback);
               const op = p.operations?.[0]?.operation_type || '';
               const location = [p.location?.city_area, p.location?.region].filter(Boolean).join(', ')
                 || [p.location?.city, p.location?.region].filter(Boolean).join(', ')
@@ -1333,23 +1342,23 @@
                 { icon: 'bedrooms', label: propertyCardI18n.roomsLabel, value: cardNumberValue(p.bedrooms) },
                 { icon: 'bathrooms', label: propertyCardI18n.bathroomsLabel, value: cardNumberValue(p.bathrooms) },
                 { icon: 'halfBathrooms', label: propertyCardI18n.halfBathroomsLabel, value: cardNumberValue(p.half_bathrooms) },
-              ];
+              ].filter((item) => item.value);
 
               return `
                 <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
                   <div class="relative h-56 overflow-hidden">
-                    <img src="${imageUrl}" alt="${(p.title || tPublic('common.properties', isEnLocale ? 'Property' : 'Propiedad')).replaceAll('"','&quot;')}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                    <img src="${imageUrl}" alt="${(p.title || propertyCardI18n.heroImageAlt).replaceAll('"','&quot;')}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style="background: linear-gradient(to top, var(--fe-properties-image_overlay, rgba(0,0,0,0.5)), transparent);"></div>
 
                     ${p.property_type_name ? `
-                      <span class="absolute top-4 left-4 px-3 py-1 backdrop-blur-sm text-xs font-semibold rounded-full" style="background-color: var(--fe-properties-type_badge_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-type_badge_text, #1C1C1C);">
+                      <span class="absolute top-4 left-4 px-3 py-1 backdrop-blur-sm text-xs font-medium rounded-full" style="background-color: var(--fe-properties-type_badge_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-type_badge_text, #1C1C1C);">
                         ${p.property_type_name}
                       </span>
                     ` : ''}
 
                     ${op ? `
                       <span class="absolute top-4 right-4 px-3 py-1 text-white text-xs font-semibold rounded-full" style="background-color: ${op === 'sale' ? 'var(--fe-properties-sale_badge, #768D59)' : 'var(--fe-properties-rent_badge, #D1A054)'};">
-                        ${op === 'sale' ? tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta') : tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta')}
+                        ${op === 'sale' ? propertyCardI18n.saleLabel : propertyCardI18n.rentLabel}
                       </span>
                     ` : ''}
 
@@ -1361,11 +1370,11 @@
                   </div>
 
                   <div class="p-6">
-                    <h3 class="text-lg font-bold mb-3 line-clamp-2" style="color: var(--fe-properties-card_title, #1C1C1C);">
-                      ${p.title || tPublic('common.available', isEnLocale ? 'Available property' : 'Propiedad disponible')}
+                    <h3 class="text-lg font-bold mb-3 line-clamp-2 transition-colors" style="color: var(--fe-properties-card_title, #1C1C1C);">
+                      ${p.title || propertyCardI18n.cardTitleFallback}
                     </h3>
 
-                    <div class="flex items-center gap-2 text-sm mb-3" style="color: var(--fe-properties-card_location, #64748b);">
+                    <div class="flex items-center gap-2 text-sm mb-3" style="color: var(--fe-properties-card_location, #5B5B5B);">
                       ${propertyIcon('location')}
                       <span class="truncate">${location}</span>
                     </div>
@@ -1374,7 +1383,8 @@
                       ${price}
                     </div>
 
-                    <div class="grid grid-cols-3 gap-x-3 gap-y-3 text-sm border-t pt-4 mb-5" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
+                    ${cardDetails.length ? `
+                    <div class="grid grid-cols-3 gap-x-3 gap-y-3 text-sm border-t pt-4" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
                       ${cardDetails.map((item) => `
                       <div class="flex min-w-0 items-center gap-1.5" title="${item.label}" aria-label="${item.label}: ${item.value}">
                         ${propertyIcon(item.icon, 'w-4 h-4')}
@@ -1382,14 +1392,16 @@
                       </div>
                       `).join('')}
                     </div>
+                    ` : ''}
 
-                    <a href="/propiedades/${p.id}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
-                      
-                      ${tPublic('common.details', isEnLocale ? 'View details' : 'Ver detalles')}
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                    </a>
+                    <div class="mt-5">
+                      <a href="/propiedades/${p.id}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
+                        ${propertyCardI18n.detailsCta}
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </a>
+                    </div>
                   </div>
                 </div>
               `;

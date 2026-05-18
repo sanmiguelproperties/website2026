@@ -277,6 +277,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return renderHomeStatsAutomaticPreview();
     }
 
+    if (currentPageSlug === 'home' && fd.field_key === 'services_items') {
+      return '';
+    }
+
     const val = getFieldValue(fd.field_key, groupSlug);
 
     if (fd.type === 'repeater') {

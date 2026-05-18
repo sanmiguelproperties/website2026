@@ -289,7 +289,7 @@ Route::middleware('auth')->group(function () {
         })->name('properties')->middleware('admin:properties.view');
         Route::get('/properties/search', [PropertyLookupController::class, 'search'])
             ->name('properties.search')
-            ->middleware('admin:clients.view|calendar.view|properties.view');
+            ->middleware('admin:clients.view|calendar.view|properties.view|leads.view|leads.create|leads.edit|leads.edit.own');
 
         Route::get('/property-contact-requests', [PropertyContactRequestController::class, 'index'])
             ->name('property-contact-requests')

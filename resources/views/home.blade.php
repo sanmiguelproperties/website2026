@@ -63,6 +63,17 @@
         'imageUrls' => $heroSliderImageUrls,
     ];
 
+    $cmsImageUrl = static function (string $fieldKey, string $fallback) use ($pageData): string {
+        $media = $pageData?->media($fieldKey);
+
+        return $media?->serving_url ?? $media?->url ?? $fallback;
+    };
+
+    $ctaSaleImageUrl = $cmsImageUrl('cta_sale_image', 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');
+    $ctaRentImageUrl = $cmsImageUrl('cta_rent_image', 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');
+    $homeAboutImageUrl = $cmsImageUrl('home_about_image', 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80');
+    $processBackgroundImageUrl = $cmsImageUrl('process_background_image', '');
+
     $serviceIconColorDefaults = [
         1 => 'var(--fe-services-feature1_from, #D1A054)',
         2 => 'var(--fe-services-feature2_from, #768D59)',
@@ -134,9 +145,9 @@
          
 
             {{-- Main Title - Usa variables CSS dinámicas --}}
-            <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 animate-slide-up">
+            <h1 class="home-hero-title text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-6 animate-slide-up">
                 {{ $txt('hero_title_line1', 'Encuentra tu', 'Find your') }}
-                <span class="block text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-hero-title_gradient_from, #D1A054), var(--fe-hero-title_gradient_via, #FFFAF5), var(--fe-hero-title_gradient_to, #768D59));">
+                <span class="home-hero-title-highlight block text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-hero-title_gradient_from, #D1A054), var(--fe-hero-title_gradient_via, #FFFAF5), var(--fe-hero-title_gradient_to, #768D59));">
                     {{ $txt('hero_title_highlight', 'hogar ideal', 'ideal home') }}
                 </span>
             </h1>
@@ -330,7 +341,7 @@
 <section id="venta" class="relative py-24 lg:py-32 overflow-hidden">
     {{-- Background Image --}}
     <div class="absolute inset-0 z-0">
-        <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80" alt="{{ $txt('cta_sale_image_alt', 'Casa moderna en venta', 'Modern house for sale') }}" class="w-full h-full object-cover">
+        <img src="{{ $ctaSaleImageUrl }}" alt="{{ $txt('cta_sale_image_alt', 'Casa moderna en venta', 'Modern house for sale') }}" class="w-full h-full object-cover">
         <div class="absolute inset-0" style="background: linear-gradient(to right, var(--fe-cta_sale-overlay_from, rgba(28, 28, 28, 0.95)), var(--fe-cta_sale-overlay_via, rgba(28, 28, 28, 0.8)), var(--fe-cta_sale-overlay_to, transparent));"></div>
     </div>
 
@@ -396,7 +407,7 @@
 <section id="renta" class="relative py-24 lg:py-32 overflow-hidden">
     {{-- Background Image --}}
     <div class="absolute inset-0 z-0">
-        <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80" alt="{{ $txt('cta_rent_image_alt', 'Departamento moderno en renta', 'Modern apartment for rent') }}" class="w-full h-full object-cover">
+        <img src="{{ $ctaRentImageUrl }}" alt="{{ $txt('cta_rent_image_alt', 'Departamento moderno en renta', 'Modern apartment for rent') }}" class="w-full h-full object-cover">
         <div class="absolute inset-0" style="background: linear-gradient(to left, var(--fe-cta_rent-overlay_from, rgba(28, 28, 28, 0.95)), var(--fe-cta_rent-overlay_via, rgba(28, 28, 28, 0.8)), var(--fe-cta_rent-overlay_to, transparent));"></div>
     </div>
 
@@ -601,8 +612,15 @@
 {{-- SECCIÓN FUTURISTA - PROCESO DE COMPRA - Usa variables CSS dinámicas --}}
 {{-- ============================================== --}}
 <section class="py-20 lg:py-28 relative overflow-hidden" style="background-color: var(--fe-process-bg, #1C1C1C);">
+    @if($processBackgroundImageUrl !== '')
+        <div class="absolute inset-0 z-0 pointer-events-none">
+            <img src="{{ $processBackgroundImageUrl }}" alt="" aria-hidden="true" class="w-full h-full object-cover">
+            <div class="absolute inset-0" style="background: linear-gradient(to bottom, var(--fe-process-image_overlay_from, rgba(28, 28, 28, 0.86)), var(--fe-process-image_overlay_via, rgba(28, 28, 28, 0.72)), var(--fe-process-image_overlay_to, rgba(28, 28, 28, 0.9)));"></div>
+        </div>
+    @endif
+
     {{-- Animated Background --}}
-    <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute inset-0 pointer-events-none" style="z-index: 1;">
         <div class="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl animate-float" style="background-color: var(--fe-process-glow1, rgba(209, 160, 84, 0.2));"></div>
         <div class="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl animate-float" style="animation-delay: -3s; background-color: var(--fe-process-glow2, rgba(118, 141, 89, 0.2));"></div>
         <div class="absolute inset-0 [background-size:40px_40px]" style="background-image: radial-gradient(circle at 1px 1px, var(--fe-process-pattern, rgba(255,255,255,0.05)) 1px, transparent 0);"></div>
@@ -792,7 +810,7 @@
             {{-- Image Side --}}
             <div class="relative">
                 <div class="relative rounded-3xl overflow-hidden shadow-2xl">
-                    <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80" alt="{{ $txt('about_image_alt', 'Equipo San Miguel Properties', 'San Miguel Properties team') }}" class="w-full h-[500px] object-cover">
+                    <img src="{{ $homeAboutImageUrl }}" alt="{{ $txt('about_image_alt', 'Equipo San Miguel Properties', 'San Miguel Properties team') }}" class="w-full h-[500px] object-cover">
                     <div class="absolute inset-0" style="background: linear-gradient(to top, var(--fe-about-image_overlay, rgba(28, 28, 28, 0.6)), transparent);"></div>
                     <div class="absolute bottom-0 left-0 right-0 p-8">
                         <p class="text-lg font-medium" style="color: var(--fe-about-image_caption_title, #ffffff);">{{ $txt('about_image_caption_title', 'Nuestro equipo de expertos', 'Our team of experts') }}</p>
@@ -1014,6 +1032,20 @@
 
 @push('styles')
 <style>
+    .home-hero-title {
+        line-height: 1.12 !important;
+        overflow: visible;
+        position: relative;
+        z-index: 30;
+    }
+
+    .home-hero-title-highlight {
+        line-height: 1.12 !important;
+        overflow: visible;
+        padding-bottom: 0.08em;
+        margin-bottom: -0.08em;
+    }
+
     .home-hero-search-input::placeholder {
         color: var(--fe-hero-search_input_placeholder, rgba(255,255,255,0.5));
     }
@@ -1038,7 +1070,6 @@ const homeI18n = {
     saleLabel: tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta'),
     rentLabel: tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta'),
     cardTitleFallback: tPublic('home.property.cardTitleFallback', isEnLocale ? 'Available property' : 'Propiedad disponible'),
-    notAvailable: tPublic('common.notAvailable', isEnLocale ? 'N/A' : 'N/D'),
     lotSizeLabel: tPublic('property.lotSize', isEnLocale ? 'Lot size' : 'M2 de terreno'),
     constructionSizeLabel: tPublic('property.constructionSize', isEnLocale ? 'Construction size' : 'M2 de construccion'),
     roomsLabel: tPublic('property.rooms', isEnLocale ? 'Rooms' : 'Cuartos'),
@@ -1140,16 +1171,20 @@ const wholeNumberFormatter = new Intl.NumberFormat(isEnLocale ? 'en-US' : 'es-MX
     maximumFractionDigits: 0,
 });
 
+const featureNumberFormatter = new Intl.NumberFormat(isEnLocale ? 'en-US' : 'es-MX', {
+    maximumFractionDigits: 1,
+});
+
 function cardNumberValue(value) {
     const text = String(value ?? '').trim();
-    if (text === '') return homeI18n.notAvailable;
+    if (text === '') return null;
     const number = Number(text);
-    return Number.isFinite(number) ? wholeNumberFormatter.format(Math.trunc(number)) : homeI18n.notAvailable;
+    return Number.isFinite(number) && number > 0 ? featureNumberFormatter.format(number) : null;
 }
 
 function cardAreaValue(value) {
     const number = Number(value);
-    return Number.isFinite(number) && number > 0 ? `${wholeNumberFormatter.format(number)} ${homeI18n.areaUnit}` : homeI18n.notAvailable;
+    return Number.isFinite(number) && number > 0 ? `${wholeNumberFormatter.format(number)} ${homeI18n.areaUnit}` : null;
 }
 
 function cardPriceValue(value) {
@@ -1477,7 +1512,7 @@ function propertiesFilter() {
                 { icon: 'bedrooms', label: homeI18n.roomsLabel, value: cardNumberValue(property.bedrooms) },
                 { icon: 'bathrooms', label: homeI18n.bathroomsLabel, value: cardNumberValue(property.bathrooms) },
                 { icon: 'halfBathrooms', label: homeI18n.halfBathroomsLabel, value: cardNumberValue(property.half_bathrooms) },
-            ];
+            ].filter((item) => item.value);
 
             return `
                 <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
@@ -1519,6 +1554,7 @@ function propertiesFilter() {
                             ${price}
                         </div>
 
+                        ${cardDetails.length ? `
                         <div class="grid grid-cols-3 gap-x-3 gap-y-3 text-sm border-t pt-4" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
                             ${cardDetails.map((item) => `
                             <div class="flex min-w-0 items-center gap-1.5" title="${item.label}" aria-label="${item.label}: ${item.value}">
@@ -1527,6 +1563,7 @@ function propertiesFilter() {
                             </div>
                             `).join('')}
                         </div>
+                        ` : ''}
 
                         <div class="mt-5">
                             <a href="/propiedades/${property.id}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">

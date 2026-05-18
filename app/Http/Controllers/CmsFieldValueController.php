@@ -76,7 +76,7 @@ class CmsFieldValueController extends Controller
             $actualEntityId = $entityType === 'global' ? null : $entityId;
 
             foreach ($validated['fields'] as $fieldKey => $fieldData) {
-                $fieldDef = CmsFieldDefinition::where('field_key', $fieldKey)->first();
+                $fieldDef = $this->resolveFieldDefinition($fieldKey, $entityType, $actualEntityId);
                 if (!$fieldDef) {
                     continue; // Skip unknown fields
                 }
@@ -211,6 +211,62 @@ class CmsFieldValueController extends Controller
         ];
 
         CmsFieldValue::updateOrCreate($attributes, $values);
+    }
+
+    protected function resolveFieldDefinition(string $fieldKey, string $entityType, ?int $entityId): ?CmsFieldDefinition
+    {
+        $baseQuery = CmsFieldDefinition::query()->where('field_key', $fieldKey);
+
+        if ($entityType === 'page' && $entityId) {
+            $slug = \App\Models\CmsPage::whereKey($entityId)->value('slug');
+
+            if ($slug) {
+                $fieldDef = (clone $baseQuery)
+                    ->whereHas('fieldGroup', function ($query) use ($slug) {
+                        $query->where('location_type', 'page')
+                            ->where('location_identifier', $slug);
+                    })
+                    ->orderBy('id')
+                    ->first();
+
+                if ($fieldDef) {
+                    return $fieldDef;
+                }
+            }
+        }
+
+        if ($entityType === 'post' && $entityId) {
+            $slug = \App\Models\CmsPost::whereKey($entityId)->value('slug');
+
+            if ($slug) {
+                $fieldDef = (clone $baseQuery)
+                    ->whereHas('fieldGroup', function ($query) use ($slug) {
+                        $query->where('location_type', 'post')
+                            ->where('location_identifier', $slug);
+                    })
+                    ->orderBy('id')
+                    ->first();
+
+                if ($fieldDef) {
+                    return $fieldDef;
+                }
+            }
+        }
+
+        if ($entityType === 'global') {
+            $fieldDef = (clone $baseQuery)
+                ->whereHas('fieldGroup', function ($query) {
+                    $query->where('location_type', 'global');
+                })
+                ->orderBy('id')
+                ->first();
+
+            if ($fieldDef) {
+                return $fieldDef;
+            }
+        }
+
+        return $baseQuery->orderBy('id')->first();
     }
 
     protected function saveRepeaterValues(CmsFieldDefinition $fieldDef, string $entityType, ?int $entityId, array $rows): void

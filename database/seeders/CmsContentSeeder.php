@@ -204,16 +204,28 @@ class CmsContentSeeder extends Seeder
             ['field_key' => 'services_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'Nuestros Servicios', 'value_en' => 'Our Services'],
             ['field_key' => 'services_title', 'type' => 'text', 'label_es' => 'T�f­tulo', 'value_es' => '�,¿Por qu�f© elegirnos?', 'value_en' => 'Why choose us?'],
             ['field_key' => 'services_subtitle', 'type' => 'textarea', 'label_es' => 'Subt�f­tulo', 'value_es' => 'Ofrecemos una experiencia inmobiliaria completa con tecnolog�f­a de vanguardia y un equipo de expertos dedicados a ti.', 'value_en' => 'We offer a complete real estate experience with cutting-edge technology and a team of experts dedicated to you.'],
+            ['field_key' => 'services_feature1_title', 'type' => 'text', 'label_es' => 'Titulo - Busqueda inteligente', 'label_en' => 'Title - Smart search', 'value_es' => 'Búsqueda Inteligente', 'value_en' => 'Smart Search'],
+            ['field_key' => 'services_feature1_desc', 'type' => 'textarea', 'label_es' => 'Descripcion - Busqueda inteligente', 'label_en' => 'Description - Smart search', 'value_es' => 'Filtros avanzados y búsqueda por mapa para encontrar exactamente lo que necesitas en segundos.', 'value_en' => 'Advanced filters and map search to find exactly what you need in seconds.'],
             ['field_key' => 'services_feature1_icon', 'type' => 'image', 'label_es' => 'Icono - Busqueda inteligente'],
             ['field_key' => 'services_feature1_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - Busqueda inteligente', 'value_es' => '#D1A054', 'is_translatable' => false],
+            ['field_key' => 'services_feature2_title', 'type' => 'text', 'label_es' => 'Titulo - Transacciones seguras', 'label_en' => 'Title - Secure transactions', 'value_es' => 'Transacciones Seguras', 'value_en' => 'Secure Transactions'],
+            ['field_key' => 'services_feature2_desc', 'type' => 'textarea', 'label_es' => 'Descripcion - Transacciones seguras', 'label_en' => 'Description - Secure transactions', 'value_es' => 'Proceso de compra transparente con asesoría legal incluida y documentación verificada.', 'value_en' => 'Transparent buying process with legal guidance and verified documentation.'],
             ['field_key' => 'services_feature2_icon', 'type' => 'image', 'label_es' => 'Icono - Transacciones seguras'],
             ['field_key' => 'services_feature2_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - Transacciones seguras', 'value_es' => '#768D59', 'is_translatable' => false],
+            ['field_key' => 'services_feature3_title', 'type' => 'text', 'label_es' => 'Titulo - Tours virtuales', 'label_en' => 'Title - Virtual tours', 'value_es' => 'Tours Virtuales 360°', 'value_en' => '360 Virtual Tours'],
+            ['field_key' => 'services_feature3_desc', 'type' => 'textarea', 'label_es' => 'Descripcion - Tours virtuales', 'label_en' => 'Description - Virtual tours', 'value_es' => 'Recorre las propiedades desde la comodidad de tu hogar con nuestros tours virtuales inmersivos.', 'value_en' => 'Explore properties from home with our immersive virtual tours.'],
             ['field_key' => 'services_feature3_icon', 'type' => 'image', 'label_es' => 'Icono - Tours virtuales'],
             ['field_key' => 'services_feature3_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - Tours virtuales', 'value_es' => '#A52A2A', 'is_translatable' => false],
+            ['field_key' => 'services_feature4_title', 'type' => 'text', 'label_es' => 'Titulo - Asesores expertos', 'label_en' => 'Title - Expert advisors', 'value_es' => 'Asesores Expertos', 'value_en' => 'Expert Advisors'],
+            ['field_key' => 'services_feature4_desc', 'type' => 'textarea', 'label_es' => 'Descripcion - Asesores expertos', 'label_en' => 'Description - Expert advisors', 'value_es' => 'Un equipo de profesionales certificados te acompaña en cada paso del proceso.', 'value_en' => 'A team of certified professionals supports you at every step.'],
             ['field_key' => 'services_feature4_icon', 'type' => 'image', 'label_es' => 'Icono - Asesores expertos'],
             ['field_key' => 'services_feature4_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - Asesores expertos', 'value_es' => '#5B5B5B', 'is_translatable' => false],
+            ['field_key' => 'services_feature5_title', 'type' => 'text', 'label_es' => 'Titulo - Financiamiento flexible', 'label_en' => 'Title - Flexible financing', 'value_es' => 'Financiamiento Flexible', 'value_en' => 'Flexible Financing'],
+            ['field_key' => 'services_feature5_desc', 'type' => 'textarea', 'label_es' => 'Descripcion - Financiamiento flexible', 'label_en' => 'Description - Flexible financing', 'value_es' => 'Opciones de crédito con las mejores tasas del mercado y planes a tu medida.', 'value_en' => 'Credit options with competitive rates and plans tailored to you.'],
             ['field_key' => 'services_feature5_icon', 'type' => 'image', 'label_es' => 'Icono - Financiamiento flexible'],
             ['field_key' => 'services_feature5_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - Financiamiento flexible', 'value_es' => '#A52A2A', 'is_translatable' => false],
+            ['field_key' => 'services_feature6_title', 'type' => 'text', 'label_es' => 'Titulo - App movil', 'label_en' => 'Title - Mobile app', 'value_es' => 'App Móvil', 'value_en' => 'Mobile App'],
+            ['field_key' => 'services_feature6_desc', 'type' => 'textarea', 'label_es' => 'Descripcion - App movil', 'label_en' => 'Description - Mobile app', 'value_es' => 'Gestiona tus favoritos, agenda visitas y recibe alertas desde cualquier lugar.', 'value_en' => 'Manage favorites, schedule visits and receive alerts from anywhere.'],
             ['field_key' => 'services_feature6_icon', 'type' => 'image', 'label_es' => 'Icono - App movil'],
             ['field_key' => 'services_feature6_icon_bg_color', 'type' => 'color', 'label_es' => 'Color fondo icono - App movil', 'value_es' => '#768D59', 'is_translatable' => false],
         ]);
@@ -232,6 +244,7 @@ class CmsContentSeeder extends Seeder
         // â�?��,�â�?��,� CTA Venta â�?��,�â�?��,�
         $ctaSaleGroup = $this->createFieldGroup('home-cta-sale', 'CTA Propiedades en Venta', 'page', 'home', 4);
         $this->createFieldsAndValues($ctaSaleGroup, $page, 'page', [
+            ['field_key' => 'cta_sale_image', 'type' => 'image', 'label_es' => 'Imagen de fondo', 'label_en' => 'Background image', 'is_translatable' => false],
             ['field_key' => 'cta_sale_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'Propiedades en Venta', 'value_en' => 'Properties for Sale'],
             ['field_key' => 'cta_sale_title_line1', 'type' => 'text', 'label_es' => 'T�f­tulo l�f­nea 1', 'value_es' => 'Tu pr�f³xima', 'value_en' => 'Your next'],
             ['field_key' => 'cta_sale_title_highlight', 'type' => 'text', 'label_es' => 'T�f­tulo destacado', 'value_es' => 'inversi�f³n', 'value_en' => 'investment'],
@@ -244,6 +257,7 @@ class CmsContentSeeder extends Seeder
         // â�?��,�â�?��,� CTA Renta â�?��,�â�?��,�
         $ctaRentGroup = $this->createFieldGroup('home-cta-rent', 'CTA Propiedades en Renta', 'page', 'home', 5);
         $this->createFieldsAndValues($ctaRentGroup, $page, 'page', [
+            ['field_key' => 'cta_rent_image', 'type' => 'image', 'label_es' => 'Imagen de fondo', 'label_en' => 'Background image', 'is_translatable' => false],
             ['field_key' => 'cta_rent_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'Propiedades en Renta', 'value_en' => 'Properties for Rent'],
             ['field_key' => 'cta_rent_title_line1', 'type' => 'text', 'label_es' => 'T�f­tulo l�f­nea 1', 'value_es' => 'Renta sin', 'value_en' => 'Rent without'],
             ['field_key' => 'cta_rent_title_highlight', 'type' => 'text', 'label_es' => 'T�f­tulo destacado', 'value_es' => 'complicaciones', 'value_en' => 'complications'],
@@ -255,6 +269,7 @@ class CmsContentSeeder extends Seeder
         // â�?��,�â�?��,� Proceso â�?��,�â�?��,�
         $processGroup = $this->createFieldGroup('home-process', 'Proceso de Compra', 'page', 'home', 6);
         $this->createFieldsAndValues($processGroup, $page, 'page', [
+            ['field_key' => 'process_background_image', 'type' => 'image', 'label_es' => 'Imagen de fondo', 'label_en' => 'Background image', 'is_translatable' => false],
             ['field_key' => 'process_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'Proceso Simplificado', 'value_en' => 'Simplified Process'],
             ['field_key' => 'process_title', 'type' => 'text', 'label_es' => 'T�f­tulo', 'value_es' => 'Tu nuevo hogar en', 'value_en' => 'Your new home in'],
             ['field_key' => 'process_title_highlight', 'type' => 'text', 'label_es' => 'T�f­tulo destacado', 'value_es' => '4 simples pasos', 'value_en' => '4 simple steps'],
@@ -306,6 +321,7 @@ class CmsContentSeeder extends Seeder
         // â�?��,�â�?��,� About (secci�f³n del home) â�?��,�â�?��,�
         $aboutGroup = $this->createFieldGroup('home-about', 'Sobre Nosotros (Home)', 'page', 'home', 8);
         $this->createFieldsAndValues($aboutGroup, $page, 'page', [
+            ['field_key' => 'home_about_image', 'type' => 'image', 'label_es' => 'Imagen principal', 'label_en' => 'Main image', 'is_translatable' => false],
             ['field_key' => 'home_about_badge', 'type' => 'text', 'label_es' => 'Badge', 'value_es' => 'Sobre Nosotros', 'value_en' => 'About Us'],
             ['field_key' => 'home_about_title', 'type' => 'text', 'label_es' => 'T�f­tulo', 'value_es' => 'M�f¡s que una inmobiliaria, somos tu', 'value_en' => 'More than a real estate agency, we are your'],
             ['field_key' => 'home_about_title_highlight', 'type' => 'text', 'label_es' => 'T�f­tulo destacado', 'value_es' => 'aliado', 'value_en' => 'ally'],

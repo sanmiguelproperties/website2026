@@ -272,6 +272,9 @@ class PropertyContactRequestController extends Controller
             'phone' => ['nullable', 'string', 'max:50', 'required_without:email'],
             'contact_type' => ['required', 'string', Rule::in(array_keys(ContactRequest::contactTypeLabels()))],
             'status' => ['required', 'string', 'max:50', 'in:new,pending_assignment,contacted,qualified,converted,closed'],
+            'property_context' => ['required', 'string', Rule::in(array_keys(ContactRequest::propertyContextLabels()))],
+            'property_id' => ['nullable', 'integer', 'exists:properties,id'],
+            'property_address' => ['nullable', 'string', 'max:255'],
             'owner_id' => [
                 'nullable',
                 'integer',
@@ -293,6 +296,15 @@ class PropertyContactRequestController extends Controller
             'message' => ['nullable', 'string'],
         ]);
 
+        $validator->after(function ($validator) use ($request): void {
+            if (
+                $request->input('property_context') === ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING
+                && blank($request->input('property_id'))
+            ) {
+                $validator->errors()->add('property_id', 'Selecciona una propiedad publicada para este contexto.');
+            }
+        });
+
         if ($validator->fails()) {
             return back()
                 ->withErrors($validator)
@@ -301,11 +313,26 @@ class PropertyContactRequestController extends Controller
         }
 
         $data = $validator->validated();
-        $ownerId = $data['owner_id'] ?? null;
+        $property = !empty($data['property_id'])
+            ? Property::query()->with(['agency', 'mlsOffice'])->find((int) $data['property_id'])
+            : null;
+        $propertyContext = $property
+            ? ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING
+            : $data['property_context'];
+        $propertyPublicId = $this->manualPropertyPublicId($property, $propertyContext);
+        $ownerId = ($data['owner_id'] ?? null) ?: null;
         $previousOwnerId = $contactRequest->owner_id;
         $previousStatus = $contactRequest->status;
+        $rawPayload = $contactRequest->raw_payload ?? [];
+        $rawPayload['property_id'] = $property?->id;
+        $rawPayload['property_name'] = $property?->title;
 
         $contactRequest->update([
+            'agency_id' => $property?->agency_id,
+            'property_id' => $property?->id,
+            'property_public_id' => $propertyPublicId,
+            'property_context' => $propertyContext,
+            'property_address' => ($data['property_address'] ?? null) ?: null,
             'name' => $data['name'],
             'email' => ($data['email'] ?? null) ?: null,
             'phone' => ($data['phone'] ?? null) ?: null,
@@ -317,11 +344,13 @@ class PropertyContactRequestController extends Controller
             'assigned_at' => $ownerId
                 ? ($contactRequest->assigned_at ?: now())
                 : null,
+            'raw_payload' => $rawPayload,
         ]);
 
         if ($contactRequest->convertedClient) {
             $contactRequest->convertedClient->update([
                 'owner_id' => $ownerId,
+                'property_id' => $property?->id,
             ]);
         }
 

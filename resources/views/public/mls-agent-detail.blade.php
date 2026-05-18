@@ -211,6 +211,59 @@
     window.__AGENT_ID__ = @json($mlsAgentId ?? null);
 
     const AGENT_LABELS = @json($agentLabels);
+    const propertyCardI18n = {
+      heroImageAlt: tPublic('home.hero.imageAlt', isEnLocale ? 'Property' : 'Propiedad'),
+      priceFallback: tPublic('home.property.priceFallback', isEnLocale ? 'Ask for price' : 'Consultar precio'),
+      locationFallback: tPublic('home.property.locationFallback', isEnLocale ? 'Location available' : 'Ubicacion disponible'),
+      cardTitleFallback: tPublic('home.property.cardTitleFallback', isEnLocale ? 'Available property' : 'Propiedad disponible'),
+      saleLabel: tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta'),
+      rentLabel: tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta'),
+      lotSizeLabel: tPublic('property.lotSize', isEnLocale ? 'Lot size' : 'M2 de terreno'),
+      constructionSizeLabel: tPublic('property.constructionSize', isEnLocale ? 'Construction size' : 'M2 de construccion'),
+      roomsLabel: tPublic('property.rooms', isEnLocale ? 'Rooms' : 'Cuartos'),
+      bathroomsLabel: tPublic('property.bathrooms', isEnLocale ? 'Baths' : 'Banos'),
+      halfBathroomsLabel: tPublic('property.halfBathrooms', isEnLocale ? 'Half baths' : 'Medios banos'),
+      detailsCta: tPublic('common.details', isEnLocale ? 'View details' : 'Ver detalles'),
+      areaUnit: tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2'),
+    };
+    const propertyIconUrls = {
+      location: @json(asset('iconos-base/ubicacion.svg')),
+      bedrooms: @json(asset('iconos-base/recamaras.svg')),
+      bathrooms: @json(asset('iconos-base/banos.svg')),
+      halfBathrooms: @json(asset('iconos-base/medio-bano.svg')),
+      lot: @json(asset('iconos-base/area.svg')),
+      construction: @json(asset('iconos-base/construccion.svg')),
+    };
+
+    function propertyIcon(name, className = 'w-5 h-5') {
+      const src = propertyIconUrls[name];
+      return src ? `<img src="${src}" alt="" aria-hidden="true" class="${className} inline-block object-contain opacity-75">` : '';
+    }
+
+    const wholeNumberFormatter = new Intl.NumberFormat(isEnLocale ? 'en-US' : 'es-MX', {
+      maximumFractionDigits: 0,
+    });
+
+    const featureNumberFormatter = new Intl.NumberFormat(isEnLocale ? 'en-US' : 'es-MX', {
+      maximumFractionDigits: 1,
+    });
+
+    function cardNumberValue(value) {
+      const text = String(value ?? '').trim();
+      if (text === '') return null;
+      const number = Number(text);
+      return Number.isFinite(number) && number > 0 ? featureNumberFormatter.format(number) : null;
+    }
+
+    function cardAreaValue(value) {
+      const number = Number(value);
+      return Number.isFinite(number) && number > 0 ? `${wholeNumberFormatter.format(number)} ${propertyCardI18n.areaUnit}` : null;
+    }
+
+    function cardPriceValue(value) {
+      const text = String(value ?? '').trim();
+      return text ? text.replace(/([.,]\d{1,2})(?=\s*(?:[A-Z]{3})?$)/, '') : propertyCardI18n.priceFallback;
+    }
 
     function agentDetailPage() {
       return {
@@ -346,9 +399,6 @@
             empty.classList.add('hidden');
 
             const esc = (s) => String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'", '&#039;');
-            const bedroomsShort = tPublic('home.property.bedroomsShort', isEnLocale ? 'Beds' : 'Rec.');
-            const bathroomsShort = tPublic('home.property.bathroomsShort', isEnLocale ? 'Baths' : 'Banos');
-            const areaUnit = tPublic('home.property.areaUnit', isEnLocale ? 'sqm' : 'm2');
 
             grid.innerHTML = this.properties.map((p) => {
               const imageUrl = p.cover_media_asset?.serving_url || p.cover_media_asset?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';
@@ -356,64 +406,57 @@
               const fallbackAmount = (typeof window.formatDisplayPrice === 'function')
                 ? window.formatDisplayPrice(firstOperation?.amount, firstOperation?.currency?.code || firstOperation?.currency_code)
                 : '';
-              const price = firstOperation?.formatted_amount || fallbackAmount || tPublic('common.consultPrice', isEnLocale ? 'Ask for price' : 'Consultar precio');
+              const price = cardPriceValue(firstOperation?.formatted_amount || fallbackAmount || propertyCardI18n.priceFallback);
               const op = p.operations?.[0]?.operation_type || '';
-              const location = [p.location?.city, p.location?.city_area].filter(Boolean).join(', ') || tPublic('common.locationAvailable', isEnLocale ? 'Location available' : 'Ubicacion disponible');
-              const constructionArea = Number(p.construction_size);
-              const lotArea = Number(p.lot_size);
-              const areaSize = Number.isFinite(constructionArea) && constructionArea > 0
-                ? p.construction_size
-                : (Number.isFinite(lotArea) && lotArea > 0 ? p.lot_size : null);
+              const location = [p.location?.city_area, p.location?.region].filter(Boolean).join(', ')
+                || [p.location?.city, p.location?.region].filter(Boolean).join(', ')
+                || propertyCardI18n.locationFallback;
+              const cardDetails = [
+                { icon: 'lot', label: propertyCardI18n.lotSizeLabel, value: cardAreaValue(p.lot_size) },
+                { icon: 'construction', label: propertyCardI18n.constructionSizeLabel, value: cardAreaValue(p.construction_size) },
+                { icon: 'bedrooms', label: propertyCardI18n.roomsLabel, value: cardNumberValue(p.bedrooms) },
+                { icon: 'bathrooms', label: propertyCardI18n.bathroomsLabel, value: cardNumberValue(p.bathrooms) },
+                { icon: 'halfBathrooms', label: propertyCardI18n.halfBathroomsLabel, value: cardNumberValue(p.half_bathrooms) },
+              ].filter((item) => item.value);
 
               return `
                 <div class="property-card rounded-2xl overflow-hidden border shadow-sm group" style="background-color: var(--fe-properties-card_bg, #ffffff); border-color: var(--fe-properties-card_border, #f1f5f9);">
-                  <div class="relative h-52 overflow-hidden">
-                    <img src="${esc(imageUrl)}" alt="${esc(p.title || tPublic('common.properties', isEnLocale ? 'Property' : 'Propiedad'))}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';" />
-                    ${p.property_type_name ? `<span class="absolute top-4 left-4 px-3 py-1 backdrop-blur-sm text-xs font-semibold rounded-full" style="background-color: var(--fe-properties-type_badge_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-type_badge_text, #1C1C1C);">${esc(p.property_type_name)}</span>` : ''}
-                    ${op ? `<span class="absolute top-4 right-4 px-3 py-1 text-white text-xs font-semibold rounded-full" style="background-color:${op === 'sale' ? 'var(--fe-properties-sale_badge, #768D59)' : 'var(--fe-properties-rent_badge, #D1A054)'};">${op === 'sale' ? tPublic('common.sale', isEnLocale ? 'For sale' : 'En venta') : tPublic('common.rent', isEnLocale ? 'For rent' : 'En renta')}</span>` : ''}
-                    <button type="button" data-favorite-btn data-property-id="${esc(p.id)}" class="absolute bottom-4 right-4 w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300 border border-slate-200" style="background-color: var(--fe-properties-fav_btn_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-fav_btn_icon, #5B5B5B);">
+                  <div class="relative h-56 overflow-hidden">
+                    <img src="${esc(imageUrl)}" alt="${esc(p.title || propertyCardI18n.heroImageAlt)}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80';" />
+                    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style="background: linear-gradient(to top, var(--fe-properties-image_overlay, rgba(0,0,0,0.5)), transparent);"></div>
+                    ${p.property_type_name ? `<span class="absolute top-4 left-4 px-3 py-1 backdrop-blur-sm text-xs font-medium rounded-full" style="background-color: var(--fe-properties-type_badge_bg, rgba(255,255,255,0.9)); color: var(--fe-properties-type_badge_text, #1C1C1C);">${esc(p.property_type_name)}</span>` : ''}
+                    ${op ? `<span class="absolute top-4 right-4 px-3 py-1 text-white text-xs font-semibold rounded-full" style="background-color: ${op === 'sale' ? 'var(--fe-properties-sale_badge, #768D59)' : 'var(--fe-properties-rent_badge, #D1A054)'};">${op === 'sale' ? propertyCardI18n.saleLabel : propertyCardI18n.rentLabel}</span>` : ''}
+                    <button type="button" data-favorite-btn data-property-id="${esc(p.id)}" class="absolute bottom-4 right-4 w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 duration-300 border" style="background-color: var(--fe-properties-fav_btn_bg, rgba(255,255,255,0.9)); border-color: var(--fe-properties-fav_btn_border, #e2e8f0); color: var(--fe-properties-fav_btn_icon, #5B5B5B);">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
                     </button>
                   </div>
                   <div class="p-6">
-                    <div class="flex items-center gap-2 text-sm mb-2" style="color: var(--fe-properties-card_location, #64748b);">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      ${esc(location)}
+                    <h3 class="text-lg font-bold mb-3 line-clamp-2 transition-colors" style="color: var(--fe-properties-card_title, #1C1C1C);">${esc(p.title || propertyCardI18n.cardTitleFallback)}</h3>
+                    <div class="flex items-center gap-2 text-sm mb-3" style="color: var(--fe-properties-card_location, #5B5B5B);">
+                      ${propertyIcon('location')}
+                      <span class="truncate">${esc(location)}</span>
                     </div>
-                    <h3 class="text-lg font-bold mb-3 line-clamp-2 text-slate-900">${esc(p.title || tPublic('common.available', isEnLocale ? 'Available property' : 'Propiedad disponible'))}</h3>
                     <div class="text-2xl font-extrabold text-transparent bg-clip-text mb-4" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">${esc(price)}</div>
-                    <div class="flex items-center gap-4 text-sm border-t pt-4 mb-5" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
-                      ${p.bedrooms != null ? `
-                      <div class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                        </svg>
-                        ${esc(p.bedrooms)} ${esc(bedroomsShort)}
+                    ${cardDetails.length ? `
+                    <div class="grid grid-cols-3 gap-x-3 gap-y-3 text-sm border-t pt-4" style="color: var(--fe-properties-card_meta, #5B5B5B); border-color: var(--fe-properties-card_divider, #f1f5f9);">
+                      ${cardDetails.map((item) => `
+                      <div class="flex min-w-0 items-center gap-1.5" title="${esc(item.label)}" aria-label="${esc(item.label)}: ${esc(item.value)}">
+                        ${propertyIcon(item.icon, 'w-4 h-4')}
+                        <span class="truncate font-semibold" style="color: var(--fe-properties-card_title, #1C1C1C);">${esc(item.value)}</span>
                       </div>
-                      ` : ''}
-                      ${p.bathrooms != null ? `
-                      <div class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        ${esc(p.bathrooms)} ${esc(bathroomsShort)}
-                      </div>
-                      ` : ''}
-                      ${areaSize != null && areaSize !== '' ? `
-                      <div class="flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                        </svg>
-                        ${esc(areaSize)} ${esc(areaUnit)}
-                      </div>
-                      ` : ''}
+                      `).join('')}
                     </div>
-                    <a href="/propiedades/${esc(p.id)}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">${tPublic('common.details', isEnLocale ? 'View details' : 'Ver detalles')}</a>
+                    ` : ''}
+                    <div class="mt-5">
+                      <a href="/propiedades/${esc(p.id)}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
+                        ${propertyCardI18n.detailsCta}
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </a>
+                    </div>
                   </div>
                 </div>
               `;

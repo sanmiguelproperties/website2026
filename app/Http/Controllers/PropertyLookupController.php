@@ -24,7 +24,6 @@ class PropertyLookupController extends Controller
                 'mls_neighborhood',
                 'easybroker_public_id',
             ])
-            ->orderByDesc('updated_at')
             ->limit(20);
 
         if ($search !== '') {
@@ -44,6 +43,10 @@ class PropertyLookupController extends Controller
                             ->orWhere('street', 'like', "%{$search}%")
                             ->orWhere('postal_code', 'like', "%{$search}%");
                     });
+
+                if (is_numeric($search)) {
+                    $propertyQuery->orWhere('id', (int) $search);
+                }
             });
         } elseif (is_numeric($selectedId)) {
             $query->whereKey((int) $selectedId);
@@ -51,7 +54,12 @@ class PropertyLookupController extends Controller
             $query->whereRaw('1 = 0');
         }
 
+        if ($search !== '' && is_numeric($search)) {
+            $query->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [(int) $search]);
+        }
+
         $properties = $query
+            ->orderByDesc('updated_at')
             ->get()
             ->map(fn (Property $property): array => $this->formatProperty($property))
             ->values();

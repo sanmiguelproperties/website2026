@@ -268,6 +268,13 @@
                       data-contact-type="{{ $lead->contact_type }}"
                       data-status="{{ $lead->status }}"
                       data-owner-id="{{ $lead->owner_id }}"
+                      data-property-context="{{ $lead->property_context }}"
+                      data-property-id="{{ $lead->property_id }}"
+                      data-property-title="{{ $lead->property?->title }}"
+                      data-property-mls-public-id="{{ $lead->property?->mls_public_id }}"
+                      data-property-mls-id="{{ $lead->property?->mls_id }}"
+                      data-property-easybroker-public-id="{{ $lead->property?->easybroker_public_id }}"
+                      data-property-address="{{ $lead->property_address }}"
                       data-message="{{ $lead->message }}"
                     >
                       Editar
@@ -364,6 +371,13 @@
                 data-contact-type="{{ $lead->contact_type }}"
                 data-status="{{ $lead->status }}"
                 data-owner-id="{{ $lead->owner_id }}"
+                data-property-context="{{ $lead->property_context }}"
+                data-property-id="{{ $lead->property_id }}"
+                data-property-title="{{ $lead->property?->title }}"
+                data-property-mls-public-id="{{ $lead->property?->mls_public_id }}"
+                data-property-mls-id="{{ $lead->property?->mls_id }}"
+                data-property-easybroker-public-id="{{ $lead->property?->easybroker_public_id }}"
+                data-property-address="{{ $lead->property_address }}"
                 data-message="{{ $lead->message }}"
               >
                 Editar lead
@@ -487,12 +501,17 @@
               @endforeach
             </select>
           </div>
-          <div>
-            <label for="lead-create-property-id" class="block text-sm font-medium mb-1">ID de propiedad</label>
-            <input id="lead-create-property-id" name="property_id" type="number" min="1" value="{{ old('property_id') }}" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
-            <p class="mt-1 text-xs text-[var(--c-muted)]">Requerido si el contexto es propiedad publicada.</p>
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium mb-1">Propiedad asignada</label>
+            <x-property-lookup
+              id="lead-create-property-picker"
+              input-id="lead-create-property-id"
+              :selected-property-id="old('property_id')"
+              placeholder="Buscar por nombre, ID interno, LMS/MLS ID o EasyBroker ID"
+            />
+            <p class="mt-1 text-xs text-[var(--c-muted)]">Busca y selecciona una propiedad publicada cuando aplique.</p>
           </div>
-          <div>
+          <div class="sm:col-span-3">
             <label for="lead-create-property-address" class="block text-sm font-medium mb-1">Direccion o referencia</label>
             <input id="lead-create-property-address" name="property_address" type="text" value="{{ old('property_address') }}" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
           </div>
@@ -531,8 +550,8 @@
 
 <div id="leadEditModal" class="fixed inset-0 z-[11000] hidden" role="dialog" aria-modal="true" aria-labelledby="leadEditTitle">
   <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" data-lead-edit-close></div>
-  <div class="relative mx-auto mt-6 w-full max-w-2xl px-4">
-    <div class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] shadow-2xl">
+  <div class="relative mx-auto mt-6 w-full max-w-3xl px-4">
+    <div class="max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] shadow-2xl">
       <div class="flex items-start justify-between gap-3 border-b border-[var(--c-border)] px-6 py-4">
         <div>
           <h2 id="leadEditTitle" class="text-lg font-semibold text-[var(--c-text)]">Editar lead</h2>
@@ -583,6 +602,30 @@
           </div>
         </div>
 
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label for="lead-edit-property-context" class="block text-sm font-medium mb-1">Contexto</label>
+            <select id="lead-edit-property-context" name="property_context" required class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+              @foreach($propertyContextOptions as $value => $label)
+                <option value="{{ $value }}">{{ $label }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium mb-1">Propiedad asignada</label>
+            <x-property-lookup
+              id="lead-edit-property-picker"
+              input-id="lead-edit-property-id"
+              placeholder="Buscar por nombre, ID interno, LMS/MLS ID o EasyBroker ID"
+            />
+            <p class="mt-1 text-xs text-[var(--c-muted)]">Selecciona una propiedad para actualizar la asignacion del lead.</p>
+          </div>
+          <div class="sm:col-span-3">
+            <label for="lead-edit-property-address" class="block text-sm font-medium mb-1">Direccion o referencia</label>
+            <input id="lead-edit-property-address" name="property_address" type="text" class="w-full rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm">
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label for="lead-edit-owner" class="block text-sm font-medium mb-1">Usuario asignado</label>
@@ -622,7 +665,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const createName = document.getElementById('lead-create-name');
   const createPropertyContext = document.getElementById('lead-create-property-context');
   const createPropertyId = document.getElementById('lead-create-property-id');
+  const createPropertyPicker = document.getElementById('lead-create-property-picker');
   const editModal = document.getElementById('leadEditModal');
+  const editPropertyPicker = document.getElementById('lead-edit-property-picker');
   const form = document.getElementById('leadEditForm');
   const title = document.getElementById('leadEditTitle');
   const fields = {
@@ -632,6 +677,9 @@ document.addEventListener('DOMContentLoaded', () => {
     contactType: document.getElementById('lead-edit-contact-type'),
     status: document.getElementById('lead-edit-status'),
     owner: document.getElementById('lead-edit-owner'),
+    propertyContext: document.getElementById('lead-edit-property-context'),
+    propertyId: document.getElementById('lead-edit-property-id'),
+    propertyAddress: document.getElementById('lead-edit-property-address'),
     message: document.getElementById('lead-edit-message'),
   };
 
@@ -657,6 +705,28 @@ document.addEventListener('DOMContentLoaded', () => {
     createPropertyId.required = createPropertyContext.value === @json(\App\Models\ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING);
   }
 
+  function syncEditPropertyRequirement() {
+    if (!fields.propertyContext || !fields.propertyId) {
+      return;
+    }
+
+    fields.propertyId.required = fields.propertyContext.value === @json(\App\Models\ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING);
+  }
+
+  function datasetProperty(button) {
+    if (!button.dataset.propertyId) {
+      return null;
+    }
+
+    return {
+      id: button.dataset.propertyId,
+      title: button.dataset.propertyTitle || `Propiedad #${button.dataset.propertyId}`,
+      mls_public_id: button.dataset.propertyMlsPublicId || '',
+      mls_id: button.dataset.propertyMlsId || '',
+      easybroker_public_id: button.dataset.propertyEasybrokerPublicId || '',
+    };
+  }
+
   function openModal(button) {
     form.action = button.dataset.action || '#';
     title.textContent = `Editar lead #${button.dataset.id || ''}`;
@@ -666,7 +736,11 @@ document.addEventListener('DOMContentLoaded', () => {
     fields.contactType.value = button.dataset.contactType || 'buyer';
     fields.status.value = button.dataset.status || 'new';
     fields.owner.value = button.dataset.ownerId || '';
+    editPropertyPicker?.smpPropertyLookup?.setSelected(datasetProperty(button));
+    fields.propertyContext.value = button.dataset.propertyContext || @json(\App\Models\ContactRequest::PROPERTY_CONTEXT_NONE);
+    fields.propertyAddress.value = button.dataset.propertyAddress || '';
     fields.message.value = button.dataset.message || '';
+    syncEditPropertyRequirement();
     editModal.classList.remove('hidden');
     fields.name.focus();
   }
@@ -684,7 +758,34 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   createPropertyContext?.addEventListener('change', syncCreatePropertyRequirement);
+  createPropertyPicker?.addEventListener('property-lookup:selected', () => {
+    if (createPropertyContext) {
+      createPropertyContext.value = @json(\App\Models\ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING);
+    }
+    syncCreatePropertyRequirement();
+  });
+  createPropertyPicker?.addEventListener('property-lookup:cleared', () => {
+    if (createPropertyContext?.value === @json(\App\Models\ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING)) {
+      createPropertyContext.value = @json(\App\Models\ContactRequest::PROPERTY_CONTEXT_NONE);
+    }
+    syncCreatePropertyRequirement();
+  });
   syncCreatePropertyRequirement();
+
+  fields.propertyContext?.addEventListener('change', syncEditPropertyRequirement);
+  editPropertyPicker?.addEventListener('property-lookup:selected', () => {
+    if (fields.propertyContext) {
+      fields.propertyContext.value = @json(\App\Models\ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING);
+    }
+    syncEditPropertyRequirement();
+  });
+  editPropertyPicker?.addEventListener('property-lookup:cleared', () => {
+    if (fields.propertyContext?.value === @json(\App\Models\ContactRequest::PROPERTY_CONTEXT_EXISTING_LISTING)) {
+      fields.propertyContext.value = @json(\App\Models\ContactRequest::PROPERTY_CONTEXT_NONE);
+    }
+    syncEditPropertyRequirement();
+  });
+  syncEditPropertyRequirement();
 
   document.querySelectorAll('.js-edit-lead').forEach((button) => {
     button.addEventListener('click', () => openModal(button));
