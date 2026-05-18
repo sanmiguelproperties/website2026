@@ -9,14 +9,11 @@
     'agency' => $txt('i18n_label_agency', 'Agencia', 'Agency'),
     'agencies' => $txt('i18n_breadcrumb_agencies', 'Agencias', 'Agencies'),
     'agents' => $txt('agents_title', 'Agentes', 'Agents'),
-    'properties' => $txt('i18n_label_properties', 'Propiedades', 'Properties'),
-    'phone' => $txt('i18n_label_phone', 'Teléfono', 'Phone'),
     'description' => $txt('i18n_label_description', 'Descripción', 'Description'),
     'contact' => $txt('i18n_label_contact', 'Contacto', 'Contact'),
     'paid' => $txt('i18n_label_paid', 'Pagado', 'Paid'),
     'locationAvailable' => $txt('i18n_common_locationAvailable', 'Ubicación disponible', 'Location available'),
     'loading' => $txt('i18n_label_loading', 'Cargando...', 'Loading...'),
-    'website' => $txt('i18n_label_website', 'Sitio web', 'Website'),
     'search' => $txt('i18n_label_search', 'Buscar', 'Search'),
     'searchPlaceholder' => $txt('search_placeholder', 'Buscar por ciudad, zona, tipo...', 'Search by city, area, type...'),
     'searchAgentPlaceholder' => $txt('i18n_label_searchAgentPlaceholder', 'Buscar agente...', 'Search agent...'),
@@ -79,30 +76,9 @@
             </div>
           </div>
 
-          <div class="p-6 sm:p-8">
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <p class="text-xs font-semibold text-slate-600" x-text="labels.agents"></p>
-                <p class="mt-1 text-lg font-extrabold text-slate-900" x-text="office?.agents_count ?? '—'"></p>
-              </div>
-              <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <p class="text-xs font-semibold text-slate-600" x-text="labels.properties"></p>
-                <p class="mt-1 text-lg font-extrabold text-slate-900" x-text="office?.properties_count ?? '—'"></p>
-              </div>
-              <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <p class="text-xs font-semibold text-slate-600" x-text="labels.phone"></p>
-                <p class="mt-1 text-sm font-semibold text-slate-900 truncate" x-text="officePhone || '—'"></p>
-              </div>
-              <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <p class="text-xs font-semibold text-slate-600" x-text="labels.website"></p>
-                <a class="mt-1 text-sm font-semibold text-slate-900 truncate block hover:underline" :href="office?.website || '#'" target="_blank" rel="noopener" x-text="office?.website ? office.website.replace(/^https?:\/\//,'') : '—'"></a>
-              </div>
-            </div>
-
-            <div class="mt-6" x-show="officeDescription">
-              <h2 class="text-lg font-bold text-slate-900" x-text="labels.description"></h2>
-              <div class="mt-3 text-slate-700 leading-relaxed rich-content" x-html="officeDescriptionHtml"></div>
-            </div>
+          <div class="p-6 sm:p-8" x-show="officeDescription">
+            <h2 class="text-lg font-bold text-slate-900" x-text="labels.description"></h2>
+            <div class="mt-3 text-slate-700 leading-relaxed rich-content" x-html="officeDescriptionHtml"></div>
           </div>
         </section>
 
@@ -219,10 +195,6 @@
 
         get officeLocation() {
           return [this.office?.city, this.office?.state_province].filter(Boolean).join(', ');
-        },
-
-        get officePhone() {
-          return this.office?.phone_1 || this.office?.phone_2 || this.office?.phone_3 || '';
         },
 
         get officeDescription() {
