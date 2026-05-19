@@ -34,6 +34,7 @@ class CmsContentSeeder extends Seeder
         $this->seedPublicFrontendFieldGroups();
         $this->seedMenus();
         $this->seedSiteSettings();
+        $this->seedFooterPartnerFields();
         $this->repairSeededCmsText();
 
         $this->command->info('Contenido CMS sembrado correctamente.');
@@ -626,6 +627,65 @@ class CmsContentSeeder extends Seeder
     {
         foreach ($this->cmsTextColumns() as $table => $columns) {
             $this->repairTableColumns($table, $columns);
+        }
+    }
+
+    protected function seedFooterPartnerFields(): void
+    {
+        $page = CmsPage::where('slug', 'footer')->first();
+
+        if (!$page) {
+            return;
+        }
+
+        $group = $this->createFieldGroup('footer-partners', 'Empresas que trabajan con nosotros', 'page', 'footer', 0);
+
+        $this->createFieldsAndValues($group, $page, 'page', [
+            [
+                'field_key' => 'footer_partners_bg_color',
+                'type' => 'color',
+                'label_es' => 'Color de fondo',
+                'label_en' => 'Background color',
+                'value_es' => '#020202',
+                'value_en' => null,
+                'is_translatable' => false,
+            ],
+        ]);
+
+        $repeater = CmsFieldDefinition::updateOrCreate(
+            ['field_group_id' => $group->id, 'field_key' => 'footer_partner_items'],
+            [
+                'parent_id' => null,
+                'type' => 'repeater',
+                'label_es' => 'Empresas',
+                'label_en' => 'Partner companies',
+                'instructions_es' => 'Agrega las empresas que trabajan con nosotros. Cada logo puede abrir un link externo.',
+                'instructions_en' => 'Add partner companies. Each logo can open an external link.',
+                'is_required' => false,
+                'is_translatable' => false,
+                'sort_order' => 10,
+            ]
+        );
+
+        $children = [
+            ['footer_partner_name', 'text', 'Nombre de la empresa', 'Company name', 1],
+            ['footer_partner_logo', 'image', 'Logo blanco', 'White logo', 2],
+            ['footer_partner_url', 'url', 'Link externo', 'External link', 3],
+        ];
+
+        foreach ($children as [$key, $type, $labelEs, $labelEn, $sortOrder]) {
+            CmsFieldDefinition::updateOrCreate(
+                ['field_group_id' => $group->id, 'field_key' => $key],
+                [
+                    'parent_id' => $repeater->id,
+                    'type' => $type,
+                    'label_es' => $labelEs,
+                    'label_en' => $labelEn,
+                    'is_required' => false,
+                    'is_translatable' => false,
+                    'sort_order' => $sortOrder,
+                ]
+            );
         }
     }
 

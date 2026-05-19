@@ -71,6 +71,50 @@
     $copyrightText = $settings['copyright_text'] ?? $txt('footer_copyright', 'Todos los derechos reservados.', 'All rights reserved.');
 
     $socialLinks = SocialLinks::fromSettings($settings);
+    $footerPartnersBg = trim((string) ($footerData?->field('footer_partners_bg_color') ?: '#020202'));
+    if (!preg_match('/^#[0-9a-fA-F]{3,8}$/', $footerPartnersBg)) {
+        $footerPartnersBg = '#020202';
+    }
+
+    $normalizeExternalUrl = static function (?string $url): ?string {
+        $url = trim((string) $url);
+        if ($url === '') {
+            return null;
+        }
+
+        if (Str::startsWith(Str::lower($url), ['http://', 'https://'])) {
+            return $url;
+        }
+
+        return 'https://' . ltrim($url, '/');
+    };
+
+    $partnerPlaceholderLogos = [
+        ['name' => 'AMPI SMA MLS', 'type' => 'ampi-mls'],
+        ['name' => 'AMPI', 'type' => 'ampi'],
+        ['name' => 'CIB', 'type' => 'cib'],
+        ['name' => 'AIAG', 'type' => 'aiag'],
+        ['name' => 'CIPS', 'type' => 'cips'],
+        ['name' => 'Administracion de Rentas Inmobiliarias', 'type' => 'ari'],
+        ['name' => 'Patronato Pro Ninos', 'type' => 'patronato'],
+        ['name' => 'REALTOR', 'type' => 'realtor'],
+    ];
+    $partnerLogoRows = collect($footerData?->repeater('footer_partner_items') ?? [])
+        ->map(static function ($row) use ($normalizeExternalUrl): array {
+            $name = trim((string) ($row->field('footer_partner_name') ?? ''));
+            $imageUrl = $row->image('footer_partner_logo');
+
+            return [
+                'name' => $name !== '' ? $name : 'Empresa aliada',
+                'image' => $imageUrl,
+                'url' => $normalizeExternalUrl($row->field('footer_partner_url')),
+                'type' => null,
+            ];
+        })
+        ->filter(static fn (array $partner): bool => filled($partner['image']))
+        ->values()
+        ->all();
+    $partnerLogos = !empty($partnerLogoRows) ? $partnerLogoRows : $partnerPlaceholderLogos;
 
     $newsletterTitle = $txt('footer_newsletter_title', 'Suscribete a nuestro newsletter', 'Subscribe to our newsletter');
     $newsletterText = $txt('footer_newsletter_text', 'Recibe las ultimas propiedades y oportunidades exclusivas directamente en tu correo.', 'Receive the latest properties and exclusive opportunities directly in your inbox.');
@@ -101,6 +145,91 @@
     </div>
 
     <div class="relative">
+        <section class="footer-partners w-full border-b border-white/10" aria-label="Empresas que trabajan con nosotros" style="background-color: {{ $footerPartnersBg }};">
+            <div class="footer-partners-track flex w-full items-center justify-between gap-8 overflow-x-auto px-6 py-5 sm:px-10 lg:px-14">
+                @foreach($partnerLogos as $partner)
+                    <div class="footer-partner-logo flex h-16 min-w-[112px] shrink-0 items-center justify-center text-white" title="{{ $partner['name'] }}">
+                        @if(!empty($partner['image']))
+                            @if(!empty($partner['url']))
+                                <a href="{{ $partner['url'] }}" target="_blank" rel="noopener noreferrer" class="flex h-full items-center justify-center" aria-label="{{ $partner['name'] }}">
+                                    <img src="{{ $partner['image'] }}" alt="{{ $partner['name'] }}" loading="lazy" />
+                                </a>
+                            @else
+                                <img src="{{ $partner['image'] }}" alt="{{ $partner['name'] }}" loading="lazy" />
+                            @endif
+                        @else
+                        @switch($partner['type'] ?? '')
+                            @case('ampi-mls')
+                                <div class="flex items-center gap-2">
+                                    <div class="grid h-9 w-9 place-items-center border-2 border-current">
+                                        <span class="block h-5 w-4 border-x-2 border-t-2 border-current"></span>
+                                    </div>
+                                    <div class="leading-none">
+                                        <p class="text-[10px] font-bold">AMPI SMA</p>
+                                        <p class="text-2xl font-extrabold">MLS</p>
+                                    </div>
+                                </div>
+                                @break
+
+                            @case('ampi')
+                                <p class="text-3xl font-extrabold italic">AMPI</p>
+                                @break
+
+                            @case('cib')
+                                <div class="relative grid h-14 w-14 place-items-center rotate-45 border-2 border-current">
+                                    <span class="-rotate-45 text-2xl font-black">CIB</span>
+                                </div>
+                                @break
+
+                            @case('aiag')
+                                <div class="grid h-14 w-14 place-items-center rounded-full border-2 border-current">
+                                    <span class="text-lg font-black">AIAG</span>
+                                </div>
+                                @break
+
+                            @case('cips')
+                                <div class="flex items-end gap-1">
+                                    <span class="text-4xl font-light">CIPS</span>
+                                    <span class="mb-1 grid grid-cols-3 gap-0.5">
+                                        @for($i = 0; $i < 9; $i++)
+                                            <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+                                        @endfor
+                                    </span>
+                                </div>
+                                @break
+
+                            @case('ari')
+                                <div class="grid place-items-center">
+                                    <div class="grid h-11 w-11 place-items-center rounded-full border-2 border-current">
+                                        <span class="text-3xl leading-none">A</span>
+                                    </div>
+                                    <p class="mt-1 max-w-[130px] text-center text-[9px] font-semibold uppercase leading-tight">Administracion de Rentas Inmobiliarias</p>
+                                </div>
+                                @break
+
+                            @case('patronato')
+                                <div class="text-center leading-none">
+                                    <div class="mx-auto mb-1 h-8 w-8 rounded-full border-2 border-current"></div>
+                                    <p class="text-lg font-bold">Patronato</p>
+                                    <p class="text-sm font-semibold">Pro Ninos</p>
+                                </div>
+                                @break
+
+                            @case('realtor')
+                                <div class="grid h-20 w-24 place-items-center bg-white/10 p-2">
+                                    <div class="text-center leading-none">
+                                        <p class="text-5xl font-black">R</p>
+                                        <p class="text-xs font-bold">REALTOR</p>
+                                    </div>
+                                </div>
+                                @break
+                        @endswitch
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
         @if($showNewsletter)
         <div class="footer-divider border-b border-white/10">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 text-center">
@@ -304,6 +433,30 @@
 @endif
 
 <style>
+    .smp-public-footer .footer-partners {
+        background-color: var(--fe-footer-partners_bg, #020202);
+        border-color: var(--fe-footer-divider, rgba(255,255,255,0.1)) !important;
+    }
+
+    .smp-public-footer .footer-partners-track {
+        scrollbar-width: none;
+    }
+
+    .smp-public-footer .footer-partners-track::-webkit-scrollbar {
+        display: none;
+    }
+
+    .smp-public-footer .footer-partner-logo {
+        color: var(--fe-footer-partners_logo, #ffffff);
+        opacity: 0.9;
+    }
+
+    .smp-public-footer .footer-partner-logo img {
+        max-height: 64px;
+        width: auto;
+        filter: brightness(0) invert(1);
+    }
+
     .smp-public-footer .footer-divider {
         border-color: var(--fe-footer-divider, rgba(255,255,255,0.1)) !important;
     }
