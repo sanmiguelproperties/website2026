@@ -79,6 +79,7 @@ class MLSSyncController extends Controller
             'api_key' => 'sometimes|nullable|string|max:500',
             'base_url' => 'sometimes|string|url|max:500',
             'images_base_url' => 'sometimes|nullable|string|url|max:500',
+            'media_sync_mode' => 'sometimes|string|in:download,external_url',
             'rate_limit' => 'sometimes|integer|min:1|max:100',
             'timeout' => 'sometimes|integer|min:5|max:120',
             'batch_size' => 'sometimes|integer|min:10|max:200',
@@ -201,6 +202,7 @@ class MLSSyncController extends Controller
             'mode' => 'sometimes|string|in:full,incremental',
             'limit' => 'sometimes|integer|min:0|max:10000',
             'offset' => 'sometimes|integer|min:1',
+            'media_sync_mode' => 'sometimes|string|in:download,external_url',
         ]);
 
         if ($validator->fails()) {
@@ -234,9 +236,16 @@ class MLSSyncController extends Controller
         $this->notifySyncIssueIfNeeded($result);
 
         $imagesSynced = 0;
+        $imagesLinked = 0;
         if ($result['success']) {
-            $imagesResult = $this->syncService->syncExistingPropertyImages((int) ($options['limit'] ?? 50));
+            $imagesResult = $this->syncService->syncExistingPropertyImages(
+                (int) ($options['limit'] ?? 50),
+                false,
+                0,
+                $options['media_sync_mode'] ?? null
+            );
             $imagesSynced = $imagesResult['dispatched'] ?? 0;
+            $imagesLinked = $imagesResult['linked'] ?? 0;
         }
 
         if ($result['success']) {
@@ -245,7 +254,9 @@ class MLSSyncController extends Controller
                 'MLS_SYNC_WITH_IMAGES_SUCCESS',
                 [
                     'stats' => $result['stats'],
+                    'linked_images' => $imagesLinked,
                     'images_dispatched' => $imagesSynced,
+                    'media_sync_mode' => $options['media_sync_mode'] ?? null,
                     'log_summary' => $this->summarizeLog($result['log'] ?? []),
                 ]
             );
@@ -276,6 +287,7 @@ class MLSSyncController extends Controller
             'limit' => 'sometimes|integer|min:0|max:5000',
             'offset' => 'sometimes|integer|min:0',
             'force' => 'sometimes|boolean',
+            'media_sync_mode' => 'sometimes|string|in:download,external_url',
         ]);
 
         if ($validator->fails()) {
@@ -299,13 +311,14 @@ class MLSSyncController extends Controller
         $limit = (int) ($options['limit'] ?? 0); // 0 = sin límite, procesa todas
         $offset = (int) ($options['offset'] ?? 0);
         $force = (bool) ($options['force'] ?? false);
+        $mediaSyncMode = $options['media_sync_mode'] ?? null;
 
         // Obtener total de propiedades MLS para mostrar progreso
         $totalProperties = Property::where('source', 'mls')
             ->whereNotNull('mls_public_id')
             ->count();
 
-        $result = $this->syncService->syncExistingPropertyImages($limit, $force, $offset);
+        $result = $this->syncService->syncExistingPropertyImages($limit, $force, $offset, $mediaSyncMode);
         $this->notifySyncIssueIfNeeded([
             'success' => ((int) ($result['errors'] ?? 0)) === 0,
             'message' => 'Sincronizacion de imagenes MLS completada con incidencias.',
@@ -329,6 +342,7 @@ class MLSSyncController extends Controller
                 'processed_properties' => $result['processed'] ?? 0,
                 'linked_images' => $result['linked'] ?? 0,
                 'dispatched_jobs' => $result['dispatched'] ?? 0,
+                'media_sync_mode' => $result['media_sync_mode'] ?? $mediaSyncMode,
                 'skipped' => $result['skipped'] ?? 0,
                 'errors' => $result['errors'] ?? 0,
                 'next_offset' => $offset + ($result['processed'] ?? 0),
@@ -353,6 +367,7 @@ class MLSSyncController extends Controller
             'batch_size' => 'sometimes|integer|min:10|max:100',
             'force' => 'sometimes|boolean',
             'offset' => 'sometimes|integer|min:0',
+            'media_sync_mode' => 'sometimes|string|in:download,external_url',
         ]);
 
         if ($validator->fails()) {
@@ -376,8 +391,9 @@ class MLSSyncController extends Controller
         $batchSize = (int) ($options['batch_size'] ?? 50);
         $force = (bool) ($options['force'] ?? false);
         $offset = isset($options['offset']) ? (int) $options['offset'] : null;
+        $mediaSyncMode = $options['media_sync_mode'] ?? null;
 
-        $result = $this->syncService->syncImagesProgressive($batchSize, $force, $offset);
+        $result = $this->syncService->syncImagesProgressive($batchSize, $force, $offset, $mediaSyncMode);
         $this->notifySyncIssueIfNeeded([
             'success' => ($result['success'] ?? false) && ((int) ($result['errors'] ?? 0)) === 0,
             'message' => 'Sincronizacion progresiva de imagenes MLS requiere revision.',
@@ -400,6 +416,7 @@ class MLSSyncController extends Controller
                     'processed_this_batch' => $result['processed'],
                     'linked_images' => $result['linked'],
                     'dispatched_jobs' => $result['dispatched'],
+                    'media_sync_mode' => $result['media_sync_mode'] ?? $mediaSyncMode,
                     'errors' => $result['errors'],
                     'next_offset' => $result['next_offset'],
                     'completed' => $result['completed'],
@@ -1014,6 +1031,7 @@ class MLSSyncController extends Controller
             'skip_media' => 'sometimes|boolean',
             'offset' => 'sometimes|integer|min:0',
             'mode' => 'sometimes|string|in:full,incremental',
+            'media_sync_mode' => 'sometimes|string|in:download,external_url',
         ]);;
 
         if ($validator->fails()) {
@@ -1041,13 +1059,15 @@ class MLSSyncController extends Controller
         $skipMedia = (bool) ($options['skip_media'] ?? true);
         $offset = isset($options['offset']) ? (int) $options['offset'] : null;
         $mode = $options['mode'] ?? null;
+        $mediaSyncMode = $options['media_sync_mode'] ?? null;
 
         try {
             $result = $this->syncService->syncPropertiesProgressive(
                 $batchSize,
                 $skipMedia,
                 $offset,
-                $mode
+                $mode,
+                $mediaSyncMode
             );
             $this->notifySyncIssueIfNeeded([
                 'success' => ($result['success'] ?? false) && ((int) ($result['errors'] ?? 0)) === 0,

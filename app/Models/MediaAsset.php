@@ -52,7 +52,7 @@ class MediaAsset extends Model
     public function getServingUrlAttribute(): ?string
     {
         // Si tiene path local, generar URL desde storage público
-        if (!empty($this->storage_path)) {
+        if (!empty($this->storage_path) && Storage::disk('public')->exists($this->storage_path)) {
             return Storage::disk('public')->url($this->storage_path);
         }
 

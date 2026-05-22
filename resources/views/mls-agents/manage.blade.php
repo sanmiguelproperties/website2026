@@ -12,7 +12,7 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
-      <button id="btn-sync-mls" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition shadow-soft">
+      <button id="btn-sync-mls" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition shadow-soft" title="Sincroniza agentes y registra sus fotos como URLs externas, sin descargar archivos">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
@@ -1007,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show modal
     modal.classList.remove('hidden');
     title.textContent = 'Sincronizando agentes…';
-    message.textContent = 'Procesando agentes del MLS por lotes. No cierres esta ventana.';
+    message.textContent = 'Procesando agentes del MLS por lotes. Las fotos se registran como URLs externas.';
     spinner.classList.remove('hidden');
     result.classList.remove('hidden');
     result.innerHTML = `

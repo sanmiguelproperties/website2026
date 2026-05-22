@@ -75,6 +75,9 @@ return [
         // Ej: si el API devuelve "/storage/agents/1.jpg" y MLS_IMAGES_BASE_URL="https://ampisanmigueldeallende.com",
         // el sistema construirá "https://ampisanmigueldeallende.com/storage/agents/1.jpg".
         'images_base_url' => env('MLS_IMAGES_BASE_URL'),
+        // download: guarda archivos en storage/app/public/mls.
+        // external_url: crea MediaAsset con la URL remota y no descarga archivos.
+        'media_sync_mode' => env('MLS_MEDIA_SYNC_MODE', 'download'),
         'rate_limit' => env('MLS_RATE_LIMIT', 10), // requests per second
         'timeout' => env('MLS_TIMEOUT', 30), // seconds
         'batch_size' => env('MLS_BATCH_SIZE', 50), // properties per batch

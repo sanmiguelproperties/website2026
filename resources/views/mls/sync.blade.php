@@ -172,6 +172,17 @@
             </p>
           </div>
 
+          <div>
+            <label class="block text-sm font-medium mb-1.5">Modo de imagenes MLS</label>
+            <select id="config-media-sync-mode" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] focus:border-[var(--c-primary)] focus:outline-none transition">
+              <option value="download">Descargar al hosting</option>
+              <option value="external_url">Usar URLs externas</option>
+            </select>
+            <p class="mt-1 text-xs text-[var(--c-muted)]">
+              Controla el boton de imagenes de propiedades. En URLs externas se crea el MediaAsset sin guardar archivos en storage/app/public/mls.
+            </p>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-sm font-medium mb-1.5">Rate Limit</label>
@@ -428,6 +439,27 @@ document.addEventListener('DOMContentLoaded', () => {
   let isSyncing = false;
   let currentConfig = null;
 
+  function selectedMediaSyncMode() {
+    return $('#config-media-sync-mode')?.value || currentConfig?.media_sync_mode || 'download';
+  }
+
+  function updateMediaModeUi() {
+    const mode = selectedMediaSyncMode();
+    const buttonText = $('#btn-sync-images-text');
+    const button = $('#btn-sync-images');
+
+    if (!buttonText || !button) return;
+
+    if (mode === 'external_url') {
+      buttonText.textContent = 'Usar imagenes externas';
+      button.title = 'Crea media con URLs externas del MLS sin descargar archivos al hosting';
+      return;
+    }
+
+    buttonText.textContent = 'Descargar imagenes';
+    button.title = 'Descarga las imagenes de las propiedades ya sincronizadas';
+  }
+
   // Load status
   async function loadStatus() {
     try {
@@ -529,7 +561,9 @@ document.addEventListener('DOMContentLoaded', () => {
         $('#config-timeout').value = currentConfig.timeout || 30;
         $('#config-batch-size').value = currentConfig.batch_size || 50;
         $('#config-sync-mode').value = currentConfig.sync_mode || 'full';
+        $('#config-media-sync-mode').value = currentConfig.media_sync_mode || 'download';
         $('#config-notes').value = currentConfig.notes || '';
+        updateMediaModeUi();
       }
     } catch (e) {
       console.error('Error loading config:', e);
@@ -546,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
       timeout: parseInt($('#config-timeout').value) || 30,
       batch_size: parseInt($('#config-batch-size').value) || 50,
       sync_mode: $('#config-sync-mode').value || 'full',
+      media_sync_mode: selectedMediaSyncMode(),
       notes: $('#config-notes').value || null,
     };
 
@@ -788,6 +823,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function syncImages() {
     if (isSyncing) return;
     
+    const mediaSyncMode = selectedMediaSyncMode();
+    const usingExternalUrls = mediaSyncMode === 'external_url';
     isSyncing = true;
     $('#btn-sync-images').disabled = true;
     $('#btn-sync-images-text').textContent = 'Procesando...';
@@ -797,7 +834,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Limpiar log
     $('#sync-log').innerHTML = '';
-    addLogEntry('info', 'Iniciando descarga progresiva de imágenes...');
+    addLogEntry('info', usingExternalUrls
+      ? 'Iniciando sincronizacion de URLs externas de imagenes...'
+      : 'Iniciando descarga progresiva de imagenes...');
     
     // Acumular estadísticas
     let totalLinked = 0;
@@ -827,7 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
         $('#sync-progress-text').textContent = `Procesando lote ${batchCount + 1}...`;
         
         // Construir parámetros de la request
-        const params = { batch_size: 50, force: false };
+        const params = { batch_size: 50, force: false, media_sync_mode: mediaSyncMode };
         
         // Incluir offset si ya tenemos uno
         if (currentOffset !== null) {
@@ -843,8 +882,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const data = payload.data || {};
           
           // Acumular estadísticas
-          totalLinked += data.linked || 0;
-          totalDispatched += data.dispatched || 0;
+          const linkedThisBatch = data.linked_images || data.linked || 0;
+          const dispatchedThisBatch = data.dispatched_jobs || data.dispatched || 0;
+          totalLinked += linkedThisBatch;
+          totalDispatched += dispatchedThisBatch;
           totalProcessed += data.processed_this_batch || 0;
           totalErrors += data.errors || 0;
           batchCount++;
@@ -854,6 +895,9 @@ document.addEventListener('DOMContentLoaded', () => {
           $('#images-progress-bar').style.width = `${progress}%`;
           $('#images-progress-percent').textContent = `${progress.toFixed(1)}%`;
           $('#images-progress-text').textContent = `Procesando lote ${batchCount}: ${data.processed_this_batch || 0} propiedades (${progress.toFixed(1)}% completado)`;
+          if (usingExternalUrls) {
+            $('#images-progress-text').textContent = `Procesando lote ${batchCount}: ${data.processed_this_batch || 0} propiedades con URLs externas (${progress.toFixed(1)}% completado)`;
+          }
           
           addLogEntry('info', `📦 Lote ${batchCount}: ${data.processed_this_batch || 0} propiedades procesadas, ${data.linked_images || 0} imágenes vinculadas, ${data.dispatched_jobs || 0} jobs dispatchados`);
           
@@ -868,7 +912,11 @@ document.addEventListener('DOMContentLoaded', () => {
               addLogEntry('warning', `⚠️ Errores encontrados: ${totalErrors}`);
             }
             
-            if (totalDispatched > 0) {
+            if (usingExternalUrls) {
+              addLogEntry('info', `Modo URLs externas completado: ${totalLinked} media vinculados sin jobs de descarga`);
+            }
+
+            if (!usingExternalUrls && totalDispatched > 0) {
               addLogEntry('info', '⏳ Las imágenes se están descargando en segundo plano');
             }
             
@@ -903,7 +951,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       isSyncing = false;
       $('#btn-sync-images').disabled = false;
-      $('#btn-sync-images-text').textContent = 'Descargar imágenes';
+      updateMediaModeUi();
       $('#sync-progress').classList.add('hidden');
     }
   }
@@ -1036,6 +1084,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#btn-delete-api-key').addEventListener('click', deleteApiKey);
   $('#btn-delete-mls-properties').addEventListener('click', deleteAllMLSProperties);
   $('#btn-force-unlock').addEventListener('click', forceUnlock);
+  $('#config-media-sync-mode').addEventListener('change', updateMediaModeUi);
   
   $('#config-form').addEventListener('submit', (e) => {
     e.preventDefault();

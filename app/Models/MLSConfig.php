@@ -19,6 +19,7 @@ class MLSConfig extends Model
         'api_key',
         'base_url',
         'images_base_url',
+        'media_sync_mode',
         'rate_limit',
         'timeout',
         'batch_size',
@@ -154,6 +155,7 @@ class MLSConfig extends Model
             $config = static::create([
                 'name' => 'Principal',
                 'base_url' => 'https://ampisanmigueldeallende.com/api/v1',
+                'media_sync_mode' => 'download',
                 'rate_limit' => 10,
                 'timeout' => 30,
                 'batch_size' => 50,

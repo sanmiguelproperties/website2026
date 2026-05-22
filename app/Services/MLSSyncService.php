@@ -15,6 +15,7 @@ use App\Services\LocationTaxonomyService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Servicio de sincronización con MLS AMPI San Miguel de Allende API.
@@ -38,6 +39,7 @@ class MLSSyncService
     protected string $apiKey = '';
     protected string $baseUrl = 'https://ampisanmigueldeallende.com/api/v1';
     protected ?string $imagesBaseUrl = null;
+    protected string $mediaSyncMode = 'download';
     protected int $rateLimit = 10;
     protected int $timeout = 30;
     protected int $batchSize = 50;
@@ -92,6 +94,7 @@ class MLSSyncService
             $this->apiKey = is_string($decryptedKey) ? $decryptedKey : '';
             $this->baseUrl = $this->config->base_url ?? 'https://ampisanmigueldeallende.com/api/v1';
             $this->imagesBaseUrl = $this->config->images_base_url ? (string) $this->config->images_base_url : null;
+            $this->mediaSyncMode = $this->resolveMediaSyncMode($this->config->media_sync_mode ?? null);
             $this->rateLimit = $this->config->rate_limit ?? 10;
             $this->timeout = $this->config->timeout ?? 30;
             $this->batchSize = $this->config->batch_size ?? 50;
@@ -105,6 +108,7 @@ class MLSSyncService
             $this->imagesBaseUrl = is_string($envImagesBaseUrl) && trim($envImagesBaseUrl) !== ''
                 ? trim($envImagesBaseUrl)
                 : null;
+            $this->mediaSyncMode = $this->resolveMediaSyncMode(config('services.mls.media_sync_mode', 'download'));
             $this->rateLimit = (int) config('services.mls.rate_limit', 10);
             $this->timeout = (int) config('services.mls.timeout', 30);
             $this->batchSize = (int) config('services.mls.batch_size', 50);
@@ -117,6 +121,15 @@ class MLSSyncService
     public function reloadConfiguration(): void
     {
         $this->loadConfiguration();
+    }
+
+    protected function resolveMediaSyncMode(mixed $mode = null): string
+    {
+        $mode = is_string($mode) ? trim($mode) : '';
+
+        return in_array($mode, ['download', 'external_url'], true)
+            ? $mode
+            : 'download';
     }
 
     /**
@@ -169,11 +182,12 @@ class MLSSyncService
 
         $this->log('info', "================================================");
         $this->log('info', '[SYNC START] INICIANDO SINCRONIZACIÓN MLS');
-        $this->log('info', "[SYNC CONFIG] Mode: " . ($options['mode'] ?? 'default') . " | Limit: " . ($options['limit'] ?? 0) . " | Offset: " . ($options['offset'] ?? 1) . " | Skip Media: " . (($options['skip_media'] ?? false) ? 'SÍ' : 'NO') . " | Resume from Checkpoint: " . (($options['resume_from_checkpoint'] ?? false) ? 'SÍ' : 'NO'));
+        $this->log('info', "[SYNC CONFIG] Mode: " . ($options['mode'] ?? 'default') . " | Limit: " . ($options['limit'] ?? 0) . " | Offset: " . ($options['offset'] ?? 1) . " | Skip Media: " . (($options['skip_media'] ?? false) ? 'SÍ' : 'NO') . " | Media Mode: " . $this->resolveMediaSyncMode($options['media_sync_mode'] ?? $this->mediaSyncMode) . " | Resume from Checkpoint: " . (($options['resume_from_checkpoint'] ?? false) ? 'SÍ' : 'NO'));
         $this->log('info', "[SYNC API] Base URL: {$this->baseUrl} | Rate Limit: {$this->rateLimit}/seg | Timeout: {$this->timeout}s | Batch Size: {$this->batchSize}");
 
         // Guardar opción skip_media para usar en syncProperty
         $this->skipMedia = $options['skip_media'] ?? false;
+        $this->mediaSyncMode = $this->resolveMediaSyncMode($options['media_sync_mode'] ?? $this->mediaSyncMode);
 
         if (!$this->isConfigured()) {
             $this->log('error', '[SYNC ERROR] MLS no está configurado');
@@ -1337,7 +1351,8 @@ class MLSSyncService
             return;
         }
 
-        $this->log('info', "[MEDIA SYNC] Propiedad: {$property->mls_public_id} | Photos a procesar: " . count($photos) . " | Videos a procesar: " . count($videos));
+        $mediaSyncMode = $this->resolveMediaSyncMode($this->mediaSyncMode);
+        $this->log('info', "[MEDIA SYNC] Propiedad: {$property->mls_public_id} | Photos a procesar: " . count($photos) . " | Videos a procesar: " . count($videos) . " | Media Mode: {$mediaSyncMode}");
 
         $position = 0;
         $imageUrls = [];
@@ -1362,7 +1377,15 @@ class MLSSyncService
             // Verificar si ya existe un MediaAsset para esta URL
             $existingMediaAsset = MediaAsset::where('url', $url)->first();
 
-            if ($existingMediaAsset && $existingMediaAsset->storage_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($existingMediaAsset->storage_path)) {
+            if ($mediaSyncMode === 'external_url') {
+                $mediaAsset = $this->getOrCreateExternalImageMediaAsset(
+                    $url,
+                    is_array($photo) ? $photo : ['url' => $url]
+                );
+                $this->log('info', "[MEDIA EXTERNAL] Registrando URL externa sin descarga: {$url}");
+                $this->linkMediaAssetToProperty($property, $mediaAsset, $photo, $position);
+                $imagesLinked++;
+            } elseif ($existingMediaAsset && $existingMediaAsset->storage_path && Storage::disk('public')->exists($existingMediaAsset->storage_path)) {
                 // La imagen ya existe localmente, crear/vincular relación directamente
                 $this->log('info', "[MEDIA LINK] Imagen ya existe localmente, vinculando: {$url}");
                 $this->linkMediaAssetToProperty($property, $existingMediaAsset, $photo, $position);
@@ -1438,6 +1461,10 @@ class MLSSyncService
                 'raw_payload' => json_encode($photoData),
             ]);
 
+            if ($position === 0 && (int) $property->cover_media_asset_id !== (int) $mediaAsset->id) {
+                $property->update(['cover_media_asset_id' => $mediaAsset->id]);
+            }
+
             $this->log('info', "[MEDIA LINK UPDATE] MediaAsset ID: {$mediaAsset->id} | Propiedad: {$property->mls_public_id} | Position: {$position} | URL: {$sourceUrl}");
         } else {
             // Primera imagen como portada
@@ -1476,6 +1503,56 @@ class MLSSyncService
             'url' => $url,
             'name' => $metadata['title'] ?? $metadata['name'] ?? basename(parse_url($url, PHP_URL_PATH)),
             'alt' => $metadata['alt'] ?? $metadata['title'] ?? null,
+        ]);
+    }
+
+    /**
+     * Crea o actualiza un MediaAsset remoto. Limpia datos locales para que
+     * serving_url use MediaAsset.url y no /storage/mls.
+     */
+    protected function getOrCreateExternalImageMediaAsset(string $url, array $metadata = []): MediaAsset
+    {
+        $name = $metadata['title'] ?? $metadata['name'] ?? basename(parse_url($url, PHP_URL_PATH));
+        $alt = $metadata['alt'] ?? $metadata['title'] ?? null;
+
+        $existing = MediaAsset::where('url', $url)->first();
+
+        if ($existing) {
+            $updates = [
+                'type' => 'image',
+                'provider' => $existing->provider ?: 'mls',
+                'storage_path' => null,
+                'mime_type' => null,
+                'size_bytes' => null,
+                'checksum' => null,
+                'downloaded_at' => null,
+            ];
+
+            if ($name && !$existing->name) {
+                $updates['name'] = $name;
+            }
+
+            if ($alt && !$existing->alt) {
+                $updates['alt'] = $alt;
+            }
+
+            $existing->update($updates);
+            $existing->refresh();
+
+            return $existing;
+        }
+
+        return MediaAsset::create([
+            'type' => 'image',
+            'provider' => 'mls',
+            'url' => $url,
+            'storage_path' => null,
+            'mime_type' => null,
+            'size_bytes' => null,
+            'checksum' => null,
+            'downloaded_at' => null,
+            'name' => $name,
+            'alt' => $alt,
         ]);
     }
 
@@ -2245,21 +2322,12 @@ class MLSSyncService
                 if ($photoUrl) {
                     $this->log('info', "[AGENTS SYNC] Foto URL FINAL para #{$mlsAgentId}: " . substr($photoUrl, 0, 140));
                     $this->log('info', "[AGENTS SYNC] Nota: la foto del agente se registra como URL remota (MediaAsset.url). No se descarga automáticamente en este proceso.");
-                    $mediaAsset = MediaAsset::where('url', $photoUrl)->first();
-                    if (!$mediaAsset) {
-                        $agentName = $attributes['name'] ?? "Agent #{$mlsAgentId}";
-                        $mediaAsset = MediaAsset::create([
-                            'type' => 'image',
-                            'provider' => 'mls',
-                            'url' => $photoUrl,
-                            'name' => "Foto de {$agentName}",
-                            'alt' => $agentName,
-                            'created_at' => now(),
-                        ]);
-                        $this->log('info', "[AGENTS SYNC] MediaAsset creado para foto de agente #{$mlsAgentId} | media_asset_id: {$mediaAsset->id} | url: " . substr($photoUrl, 0, 140));
-                    } else {
-                        $this->log('info', "[AGENTS SYNC] MediaAsset existente reutilizado para agente #{$mlsAgentId} | media_asset_id: {$mediaAsset->id}");
-                    }
+                    $agentName = $attributes['name'] ?? "Agent #{$mlsAgentId}";
+                    $mediaAsset = $this->getOrCreateExternalImageMediaAsset($photoUrl, [
+                        'title' => "Foto de {$agentName}",
+                        'alt' => $agentName,
+                    ]);
+                    $this->log('info', "[AGENTS SYNC] MediaAsset externo listo para agente #{$mlsAgentId} | media_asset_id: {$mediaAsset->id}");
                     $attributes['photo_media_asset_id'] = $mediaAsset->id;
                 } else {
                     $this->log('info', "[AGENTS SYNC] Sin foto para agente #{$mlsAgentId}");
@@ -2728,11 +2796,13 @@ class MLSSyncService
      * @param int $offset Número de propiedades a saltar (para paginación)
      * @return array Resultado con estadísticas detalladas
      */
-    public function syncExistingPropertyImages(int $limit = 0, bool $force = false, int $offset = 0): array
+    public function syncExistingPropertyImages(int $limit = 0, bool $force = false, int $offset = 0, ?string $mediaSyncMode = null): array
     {
         $limitText = $limit > 0 ? (string) $limit : 'TODAS';
+        $mediaSyncMode = $this->resolveMediaSyncMode($mediaSyncMode ?? $this->mediaSyncMode);
         $this->log('info', "[IMAGES SYNC START] ================================");
         $this->log('info', "[IMAGES SYNC START] Iniciando sincronización de imágenes | Límite: {$limitText} | Force: " . ($force ? 'SÍ' : 'NO') . " | Offset: {$offset}");
+        $this->log('info', "[IMAGES SYNC MODE] {$mediaSyncMode}");
 
         // Obtener el total de propiedades MLS para mostrar progreso
         $totalMlsProperties = Property::where('source', 'mls')
@@ -2821,15 +2891,6 @@ class MLSSyncService
                     continue;
                 }
 
-                // URLs de imágenes ya vinculadas (solo si no es force)
-                $existingUrls = $force ? [] : $property->mediaAssets()
-                    ->wherePivot('role', 'image')
-                    ->pluck('url')
-                    ->toArray();
-
-                $existingUrlsCount = count($existingUrls);
-                $this->log('info', "[IMAGES SYNC] Propiedad: {$property->mls_public_id} | URLs ya vinculadas: {$existingUrlsCount}");
-
                 $imagesInThisProperty = 0;
                 $imagesLinkedInThisProperty = 0;
                 $imagesDispatchedInThisProperty = 0;
@@ -2847,19 +2908,21 @@ class MLSSyncService
 
                     $imagesInThisProperty++;
 
-                    // Si no es force y ya existe, skip
-                    if (!$force && in_array($url, $existingUrls)) {
-                        $this->log('debug', "[IMAGES ALREADY] Propiedad: {$property->mls_public_id} | Imagen ya vinculada: " . substr($url, 0, 80) . "...");
-                        $imagesAlreadyLinked++;
-                        continue;
-                    }
-
                     $this->log('info', "[IMAGES PROCESS] Propiedad: {$property->mls_public_id} | Foto posición {$index}: " . substr($url, 0, 80) . "...");
 
                     // Verificar si ya existe un MediaAsset para esta URL
                     $existingMediaAsset = MediaAsset::where('url', $url)->first();
 
-                    if ($existingMediaAsset && $existingMediaAsset->storage_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($existingMediaAsset->storage_path)) {
+                    if ($mediaSyncMode === 'external_url') {
+                        $mediaAsset = $this->getOrCreateExternalImageMediaAsset(
+                            $url,
+                            is_array($photo) ? $photo : ['url' => $url]
+                        );
+                        $this->log('info', "[IMAGES EXTERNAL] Propiedad: {$property->mls_public_id} | MediaAsset remoto para: " . substr($url, 0, 60) . "...");
+                        $this->linkMediaAssetToProperty($property, $mediaAsset, $photo, $index);
+                        $linked++;
+                        $imagesLinkedInThisProperty++;
+                    } elseif ($existingMediaAsset && $existingMediaAsset->storage_path && Storage::disk('public')->exists($existingMediaAsset->storage_path)) {
                         // La imagen ya existe localmente, vincular directamente
                         $this->log('info', "[IMAGES LINK] Propiedad: {$property->mls_public_id} | Imagen ya existe localmente, vinculando: " . substr($url, 0, 60) . "...");
                         $this->linkMediaAssetToProperty($property, $existingMediaAsset, $photo, $index);
@@ -2948,6 +3011,7 @@ class MLSSyncService
             'images_already_linked' => $imagesAlreadyLinked,
             'images_dispatched' => $imagesDispatched,
             'errors_list' => $errorsList,
+            'media_sync_mode' => $mediaSyncMode,
             'message' => "{$processed}/{$totalMlsProperties} propiedades procesadas | {$linked} vinculadas | {$dispatched} dispatched | {$errors} errores",
         ];
     }
@@ -2962,9 +3026,11 @@ class MLSSyncService
      * @param int|null $startOffset Offset inicial (si es null, usa el offset basado en last_synced_at)
      * @return array Resultado con estadísticas detalladas y next_offset para continuar
      */
-    public function syncImagesProgressive(int $batchSize = 50, bool $force = false, ?int $startOffset = null): array
+    public function syncImagesProgressive(int $batchSize = 50, bool $force = false, ?int $startOffset = null, ?string $mediaSyncMode = null): array
     {
+        $mediaSyncMode = $this->resolveMediaSyncMode($mediaSyncMode ?? $this->mediaSyncMode);
         $this->log('info', '[IMAGES SYNC PROGRESSIVE START] ================================');
+        $this->log('info', "[IMAGES SYNC PROGRESSIVE MODE] {$mediaSyncMode}");
         $this->log('info', "[IMAGES SYNC PROGRESSIVE] Iniciando sincronización progresiva | Batch size: {$batchSize} | Force: " . ($force ? 'SÍ' : 'NO') . " | Offset inicial: " . ($startOffset !== null ? (string) $startOffset : 'AUTO'));
 
         // Obtener el total de propiedades MLS
@@ -3015,7 +3081,7 @@ class MLSSyncService
         }
 
         // Procesar un lote
-        $result = $this->syncExistingPropertyImages($batchSize, $force, $currentOffset);
+        $result = $this->syncExistingPropertyImages($batchSize, $force, $currentOffset, $mediaSyncMode);
         $processedInThisBatch = $result['processed'] ?? 0;
 
         // Calcular si hay más propiedades por procesar
@@ -3033,6 +3099,7 @@ class MLSSyncService
             'linked' => $result['linked'] ?? 0,
             'dispatched' => $result['dispatched'] ?? 0,
             'errors' => $result['errors'] ?? 0,
+            'media_sync_mode' => $mediaSyncMode,
             'next_offset' => $completed ? 0 : $newOffset,
             'completed' => $completed,
             'progress_percentage' => $progressPercentage,
@@ -3083,6 +3150,19 @@ class MLSSyncService
             })
             ->count();
 
+        $withExternalImages = Property::where('source', 'mls')
+            ->whereNotNull('mls_public_id')
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('media_assets')
+                    ->join('property_media_assets', 'media_assets.id', '=', 'property_media_assets.media_asset_id')
+                    ->whereColumn('property_media_assets.property_id', 'properties.id')
+                    ->where('property_media_assets.role', 'image')
+                    ->whereNotNull('media_assets.url')
+                    ->whereNull('media_assets.storage_path');
+            })
+            ->count();
+
         $lastSyncedProperty = Property::where('source', 'mls')
             ->whereNotNull('mls_public_id')
             ->whereNotNull('last_synced_at')
@@ -3093,6 +3173,8 @@ class MLSSyncService
             'total' => $totalProperties,
             'synced_recently' => $syncedRecently,
             'with_local_images' => $withLocalImages,
+            'with_external_images' => $withExternalImages,
+            'media_sync_mode' => $this->mediaSyncMode,
             'pending' => $totalProperties - $syncedRecently,
             'progress_percentage' => round(($syncedRecently / $totalProperties) * 100, 2),
             'last_synced_at' => $lastSyncedProperty?->last_synced_at?->toIso8601String(),
@@ -3118,7 +3200,8 @@ class MLSSyncService
         int $batchSize = 10,
         bool $skipMedia = true,
         ?int $startOffset = null,
-        ?string $mode = null
+        ?string $mode = null,
+        ?string $mediaSyncMode = null
     ): array {
         $this->resetCounters();
         
@@ -3196,6 +3279,7 @@ class MLSSyncService
             // Determinar modo
             $syncMode = $mode ?? ($this->config?->sync_mode ?? 'incremental');
             $this->skipMedia = $skipMedia;
+            $this->mediaSyncMode = $this->resolveMediaSyncMode($mediaSyncMode ?? $this->mediaSyncMode);
             
             // OPTIMIZACIÓN: Obtener solo el total de propiedades del MLS (una petición rápida)
             $this->log('info', '[SYNC PROGRESSIVE] Obteniendo total de propiedades del MLS...');
@@ -3582,6 +3666,7 @@ class MLSSyncService
             'api_key' => $this->getObfuscatedApiKey(),
             'base_url' => $this->baseUrl,
             'images_base_url' => $this->imagesBaseUrl,
+            'media_sync_mode' => $this->mediaSyncMode,
             'rate_limit' => $this->rateLimit,
             'timeout' => $this->timeout,
             'batch_size' => $this->batchSize,

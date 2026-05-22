@@ -349,6 +349,7 @@ class MLSAgentController extends Controller
                     'created' => $result['created'] ?? 0,
                     'updated' => $result['updated'] ?? 0,
                     'errors' => $result['errors'] ?? 0,
+                    'media_sync_mode' => 'external_url',
                     'next_offset' => $result['next_offset'] ?? 0,
                     'completed' => $result['completed'] ?? false,
                     'progress_percentage' => $result['progress_percentage'] ?? 0,
