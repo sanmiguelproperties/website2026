@@ -10,8 +10,6 @@ use App\Models\MediaAsset;
 use App\Models\MLSAgent;
 use App\Models\MLSConfig;
 use App\Models\Property;
-use App\Models\Tag;
-use App\Services\LocationTaxonomyService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -36,38 +34,63 @@ use Illuminate\Support\Facades\Storage;
 class MLSSyncService
 {
     protected ?MLSConfig $config = null;
+
     protected string $apiKey = '';
+
     protected string $baseUrl = 'https://ampisanmigueldeallende.com/api/v1';
+
     protected ?string $imagesBaseUrl = null;
+
     protected string $mediaSyncMode = 'download';
+
     protected int $rateLimit = 10;
+
     protected int $timeout = 30;
+
     protected int $batchSize = 50;
 
     // Nuevos parámetros para sincronización progresiva
     protected int $progressiveBatchSize = 10; // Lote más pequeño para servidores limitados
+
     protected int $maxExecutionTimeWarning = 45; // Warning a los 45 segundos
+
     protected int $lockTtlSeconds = 7200; // 2 horas TTL para el lock
+
     protected int $progressiveLockTtlSeconds = 300; // 5 minutos TTL para sincronización progresiva (expira más rápido si el proceso muere)
 
     protected array $syncLog = [];
+
     protected int $created = 0;
+
     protected int $updated = 0;
+
     protected int $unpublished = 0;
+
     protected int $errors = 0;
+
     protected int $totalFetched = 0;
+
     protected bool $skipMedia = false;
-    
+
     // Nuevas propiedades para manejo robusto de errores
     protected array $errorDetails = [];
+
     protected array $failedProperties = [];
+
     protected ?string $lastSuccessfulMlsId = null;
+
     protected bool $circuitBreakerOpen = false;
+
     protected int $circuitBreakerFailures = 0;
+
     protected ?\Carbon\Carbon $circuitBreakerOpenedAt = null;
+
     protected int $circuitBreakerThreshold = 5;
+
     protected int $circuitBreakerTimeoutSeconds = 300; // 5 minutos
+
     protected ?string $syncLockKey = null;
+
     protected bool $isLocked = false;
 
     public function __construct()
@@ -137,7 +160,7 @@ class MLSSyncService
      */
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return ! empty($this->apiKey);
     }
 
     /**
@@ -148,13 +171,13 @@ class MLSSyncService
         if (empty($this->apiKey)) {
             return '[no configurada]';
         }
-        
+
         $length = strlen($this->apiKey);
         if ($length <= 8) {
             return str_repeat('*', $length);
         }
-        
-        return substr($this->apiKey, 0, 4) . str_repeat('*', $length - 8) . substr($this->apiKey, -4);
+
+        return substr($this->apiKey, 0, 4).str_repeat('*', $length - 8).substr($this->apiKey, -4);
     }
 
     /**
@@ -168,29 +191,30 @@ class MLSSyncService
     /**
      * Ejecuta la sincronización completa.
      *
-     * @param array $options Opciones de sincronización
-     *   - 'mode': 'full' o 'incremental' (default: configuración)
-     *   - 'limit': Número máximo de propiedades a sincronizar (0 = sin límite)
-     *   - 'offset': Página inicial (para retomar)
-     *   - 'skip_media': Si es true, no sincroniza medios (imágenes/videos)
-     *   - 'resume_from_checkpoint': Si es true, retoma desde el último checkpoint
+     * @param  array  $options  Opciones de sincronización
+     *                          - 'mode': 'full' o 'incremental' (default: configuración)
+     *                          - 'limit': Número máximo de propiedades a sincronizar (0 = sin límite)
+     *                          - 'offset': Página inicial (para retomar)
+     *                          - 'skip_media': Si es true, no sincroniza medios (imágenes/videos)
+     *                          - 'resume_from_checkpoint': Si es true, retoma desde el último checkpoint
      * @return array Resultado de la sincronización con estadísticas
      */
     public function sync(array $options = []): array
     {
         $this->resetCounters();
 
-        $this->log('info', "================================================");
+        $this->log('info', '================================================');
         $this->log('info', '[SYNC START] INICIANDO SINCRONIZACIÓN MLS');
-        $this->log('info', "[SYNC CONFIG] Mode: " . ($options['mode'] ?? 'default') . " | Limit: " . ($options['limit'] ?? 0) . " | Offset: " . ($options['offset'] ?? 1) . " | Skip Media: " . (($options['skip_media'] ?? false) ? 'SÍ' : 'NO') . " | Media Mode: " . $this->resolveMediaSyncMode($options['media_sync_mode'] ?? $this->mediaSyncMode) . " | Resume from Checkpoint: " . (($options['resume_from_checkpoint'] ?? false) ? 'SÍ' : 'NO'));
+        $this->log('info', '[SYNC CONFIG] Mode: '.($options['mode'] ?? 'default').' | Limit: '.($options['limit'] ?? 0).' | Offset: '.($options['offset'] ?? 1).' | Skip Media: '.(($options['skip_media'] ?? false) ? 'SÍ' : 'NO').' | Media Mode: '.$this->resolveMediaSyncMode($options['media_sync_mode'] ?? $this->mediaSyncMode).' | Resume from Checkpoint: '.(($options['resume_from_checkpoint'] ?? false) ? 'SÍ' : 'NO'));
         $this->log('info', "[SYNC API] Base URL: {$this->baseUrl} | Rate Limit: {$this->rateLimit}/seg | Timeout: {$this->timeout}s | Batch Size: {$this->batchSize}");
 
         // Guardar opción skip_media para usar en syncProperty
         $this->skipMedia = $options['skip_media'] ?? false;
         $this->mediaSyncMode = $this->resolveMediaSyncMode($options['media_sync_mode'] ?? $this->mediaSyncMode);
 
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             $this->log('error', '[SYNC ERROR] MLS no está configurado');
+
             return [
                 'success' => false,
                 'message' => 'MLS no está configurado. Configura la API Key desde el panel de administración o en el archivo .env',
@@ -201,6 +225,7 @@ class MLSSyncService
         // Verificar circuit breaker
         if ($this->isCircuitBreakerOpen()) {
             $this->log('error', '[SYNC ERROR] Circuit breaker está abierto. La API ha fallado repetidamente. Intenta más tarde.');
+
             return [
                 'success' => false,
                 'message' => 'Circuit breaker abierto. La API ha fallado repetidamente. Intenta más tarde.',
@@ -210,7 +235,7 @@ class MLSSyncService
         }
 
         // Adquirir lock para evitar sincronizaciones simultáneas
-        if (!$this->acquireSyncLock()) {
+        if (! $this->acquireSyncLock()) {
             return [
                 'success' => false,
                 'message' => 'Ya existe una sincronización en curso. Intenta más tarde.',
@@ -245,6 +270,7 @@ class MLSSyncService
             if ($properties === null) {
                 $this->log('error', '[SYNC ERROR] Error al obtener propiedades del MLS');
                 $this->recordCircuitBreakerFailure();
+
                 return [
                     'success' => false,
                     'message' => 'Error al obtener propiedades del MLS',
@@ -253,7 +279,7 @@ class MLSSyncService
                 ];
             }
 
-            $this->log('info', '[SYNC] Propiedades obtenidas del MLS: ' . count($properties));
+            $this->log('info', '[SYNC] Propiedades obtenidas del MLS: '.count($properties));
             $this->totalFetched = count($properties);
 
             // Paso 2: Sincronizar cada propiedad
@@ -261,50 +287,52 @@ class MLSSyncService
             $this->log('info', '[SYNC] Iniciando sincronización de propiedades...');
 
             $resumeMode = $resumeFromCheckpoint && $checkpoint !== null;
-            $foundCheckpoint = !$resumeMode;
+            $foundCheckpoint = ! $resumeMode;
 
             foreach ($properties as $index => $propertyData) {
                 $mlsId = $propertyData['mls_id'] ?? null;
-                
+
                 // Validar datos de la propiedad
                 $validation = $this->validatePropertyData($propertyData);
-                if (!$validation['valid']) {
-                    $this->log('warning', "[SYNC VALIDATION] Propiedad {$mlsId} tiene errores de validación: " . implode(', ', $validation['errors']));
+                if (! $validation['valid']) {
+                    $this->log('warning', "[SYNC VALIDATION] Propiedad {$mlsId} tiene errores de validación: ".implode(', ', $validation['errors']));
                     $this->recordError($mlsId ?? 'unknown', 'validation', implode(', ', $validation['errors']));
                     $this->errors++;
+
                     continue;
                 }
 
                 // Si estamos en modo resume, saltar hasta encontrar el checkpoint
-                if ($resumeMode && !$foundCheckpoint) {
+                if ($resumeMode && ! $foundCheckpoint) {
                     if ($mlsId === $checkpoint['last_mls_id']) {
                         $foundCheckpoint = true;
                         $this->log('info', "[SYNC CHECKPOINT] Checkpoint encontrado en MLS ID {$mlsId}, continuando...");
                     } else {
                         $this->log('debug', "[SYNC CHECKPOINT] Saltando MLS ID {$mlsId} (buscando checkpoint...)");
+
                         continue;
                     }
                 }
 
                 if ($mlsId) {
                     $mlsIds[] = $mlsId;
-                    $this->log('info', "[SYNC PROPERTY] ({" . ($index + 1) . "/" . count($properties) . ") MLS ID: {$mlsId}");
-                    
+                    $this->log('info', '[SYNC PROPERTY] ({'.($index + 1).'/'.count($properties).") MLS ID: {$mlsId}");
+
                     try {
                         $this->syncProperty($propertyData);
-                        
+
                         // Guardar checkpoint después de cada propiedad exitosa
                         $this->saveCheckpoint($mlsId);
                         $this->lastSuccessfulMlsId = $mlsId;
-                        
+
                         // Registrar éxito en circuit breaker
                         $this->recordCircuitBreakerSuccess();
                     } catch (\Throwable $e) {
-                        $this->log('error', "[SYNC PROPERTY ERROR] Error al sincronizar propiedad {$mlsId}: " . $e->getMessage());
+                        $this->log('error', "[SYNC PROPERTY ERROR] Error al sincronizar propiedad {$mlsId}: ".$e->getMessage());
                         $this->recordError($mlsId, 'sync', $e->getMessage(), $e);
                         $this->errors++;
                         $this->recordCircuitBreakerFailure();
-                        
+
                         // Continuar con la siguiente propiedad
                         continue;
                     }
@@ -312,14 +340,14 @@ class MLSSyncService
 
                 // Rate limiting
                 usleep((int) (1000000 / $this->rateLimit));
-                
+
                 // Liberar memoria periódicamente
                 if (($index + 1) % 50 === 0) {
                     gc_collect_cycles();
                 }
             }
 
-            $this->log('info', "[SYNC] Propiedades procesadas: " . count($mlsIds));
+            $this->log('info', '[SYNC] Propiedades procesadas: '.count($mlsIds));
 
             // Paso 3: Despublicar propiedades que ya no están en el MLS (solo en modo full)
             // DESHABILITADO: Por decisión del usuario, las propiedades del MLS siempre permanecen publicadas
@@ -337,7 +365,7 @@ class MLSSyncService
 
             $this->log('info', '[SYNC COMPLETE] Sincronización completada');
             $this->log('info', '================================================');
-            $this->log('info', '[SYNC STATS] Creadas: ' . $this->created . ' | Actualizadas: ' . $this->updated . ' | Despublicadas: ' . $this->unpublished . ' | Errores: ' . $this->errors);
+            $this->log('info', '[SYNC STATS] Creadas: '.$this->created.' | Actualizadas: '.$this->updated.' | Despublicadas: '.$this->unpublished.' | Errores: '.$this->errors);
             $this->log('info', '================================================');
 
             // Guardar resultado en la configuración
@@ -356,15 +384,15 @@ class MLSSyncService
             ];
 
         } catch (\Throwable $e) {
-            $this->log('error', '[SYNC CRITICAL ERROR] ' . $e->getMessage());
+            $this->log('error', '[SYNC CRITICAL ERROR] '.$e->getMessage());
             $this->recordError('critical', 'critical', $e->getMessage(), $e);
-            Log::error('MLS sync error: ' . $e->getMessage(), [
+            Log::error('MLS sync error: '.$e->getMessage(), [
                 'exception' => $e,
             ]);
 
             return [
                 'success' => false,
-                'message' => 'Error durante la sincronización: ' . $e->getMessage(),
+                'message' => 'Error durante la sincronización: '.$e->getMessage(),
                 'stats' => $this->getStats(),
                 'log' => $this->syncLog,
                 'error_details' => $this->errorDetails,
@@ -380,9 +408,8 @@ class MLSSyncService
      * Obtiene todas las propiedades del MLS usando el endpoint de búsqueda.
      * El MLS requiere autenticación con API Key.
      *
-     * @param int $startPage Página inicial
-     * @param int $limit Límite de propiedades (0 = sin límite)
-     * @return array|null
+     * @param  int  $startPage  Página inicial
+     * @param  int  $limit  Límite de propiedades (0 = sin límite)
      */
     protected function fetchAllProperties(int $startPage = 1, int $limit = 0): ?array
     {
@@ -410,14 +437,14 @@ class MLSSyncService
                     return null;
                 }
                 // Si falla en páginas posteriores, terminar con lo que tenemos
-                $this->log('warning', "Error al obtener página {$page}, continuando con " . count($allProperties) . " propiedades");
+                $this->log('warning', "Error al obtener página {$page}, continuando con ".count($allProperties).' propiedades');
                 break;
             }
 
             // La estructura de respuesta del MLS puede variar
             $properties = $response['data'] ?? $response['properties'] ?? $response;
-            
-            if (!is_array($properties)) {
+
+            if (! is_array($properties)) {
                 $this->log('warning', "Respuesta inesperada del MLS en página {$page}");
                 break;
             }
@@ -434,9 +461,9 @@ class MLSSyncService
             $totalPages = $response['last_page'] ?? $response['pagination']['total_pages'] ?? $response['meta']['total_pages'] ?? null;
             $currentPage = $response['current_page'] ?? $response['pagination']['current_page'] ?? $page;
             $perPageFromResponse = $response['per_page'] ?? $response['pagination']['per_page'] ?? $perPage;
-            
+
             $this->log('debug', "[PAGINATION] current_page: {$currentPage}, total_pages: {$totalPages}, per_page: {$perPageFromResponse}");
-            
+
             // Determinar si hay más páginas por procesar
             if ($totalPages !== null) {
                 // Usar información explícita del API sobre paginación
@@ -464,7 +491,7 @@ class MLSSyncService
     protected function fetchTotalPropertiesCount(): ?array
     {
         $this->log('debug', '[COUNT] Obteniendo total de propiedades del MLS...');
-        
+
         // Hacer una petición con per_page=1 para obtener solo la información de paginación
         $response = $this->makeRequest('GET', '/properties/search', [
             'page' => 1,
@@ -473,18 +500,19 @@ class MLSSyncService
 
         if ($response === null) {
             $this->log('warning', '[COUNT] Error al obtener total de propiedades');
+
             return null;
         }
-        
+
         // Los campos de paginación pueden estar en el nivel raíz (data key) o en 'pagination'/'meta'
         // El MLS AMPI San Miguel usa el formato Laravel/Pagination estándar en el nivel raíz
         $totalItems = $response['total'] ?? $response['pagination']['total'] ?? $response['meta']['total'] ?? $response['total_items'] ?? null;
         $totalPages = $response['last_page'] ?? $response['pagination']['total_pages'] ?? $response['meta']['last_page'] ?? null;
         $perPage = $response['per_page'] ?? $response['pagination']['per_page'] ?? $response['meta']['per_page'] ?? 10;
-        
-        $this->log('debug', "[COUNT] Raw response keys: " . implode(', ', array_keys($response)));
+
+        $this->log('debug', '[COUNT] Raw response keys: '.implode(', ', array_keys($response)));
         $this->log('debug', "[COUNT] Found - total: {$totalItems}, last_page: {$totalPages}, per_page: {$perPage}");
-        
+
         // Si no hay info de paginación, intentar obtener de otra manera
         if ($totalItems === null && $totalPages !== null) {
             $properties = $response['data'] ?? $response['properties'] ?? $response;
@@ -492,16 +520,16 @@ class MLSSyncService
                 $totalItems = count($properties) * $totalPages;
             }
         }
-        
+
         // Si aún no tenemos total, hacer una estimación o devolver 0
         if ($totalItems === null) {
             // Intentar obtener el total de otra página
             $this->log('warning', '[COUNT] No se pudo obtener el total exacto, estimando...');
             $totalItems = 0;
         }
-        
+
         $this->log('debug', "[COUNT] Total propiedades: {$totalItems}, Páginas: {$totalPages}, Por página: {$perPage}");
-        
+
         return [
             'total' => (int) $totalItems,
             'total_pages' => $totalPages ? (int) $totalPages : null,
@@ -515,49 +543,50 @@ class MLSSyncService
     protected function syncProperty(array $propertyData): void
     {
         $mlsId = $propertyData['mls_id'] ?? null;
-        if (!$mlsId) {
+        if (! $mlsId) {
             $this->log('warning', 'Propiedad sin mls_id, omitiendo');
+
             return;
         }
 
-        $this->log('info', "[SYNC START] ============================================");
+        $this->log('info', '[SYNC START] ============================================');
         $this->log('info', "[SYNC START] Iniciando sincronización de propiedad MLS: {$mlsId}");
-        $this->log('debug', "[SYNC DATA] Datos recibidos: " . json_encode(array_keys($propertyData)));
+        $this->log('debug', '[SYNC DATA] Datos recibidos: '.json_encode(array_keys($propertyData)));
 
         try {
             DB::transaction(function () use ($mlsId, $propertyData) {
                 $agencyId = $this->getDefaultAgencyId();
-                
+
                 // Buscar por mls_id (ID interno del MLS, campo 'id' en el API)
                 // que corresponde al campo mls_id en la tabla properties
                 $internalMlsId = $propertyData['id'] ?? null;
-                
+
                 $existingProperty = null;
                 if ($internalMlsId) {
                     $existingProperty = Property::where('agency_id', $agencyId)
                         ->where('mls_id', $internalMlsId)
                         ->first();
                 }
-                
+
                 // Si no encontramos por mls_id, buscar por mls_public_id como fallback
-                if (!$existingProperty && $mlsId) {
+                if (! $existingProperty && $mlsId) {
                     $existingProperty = Property::where('agency_id', $agencyId)
                         ->where('mls_public_id', (string) $mlsId)
                         ->first();
                 }
 
                 $isNew = $existingProperty === null;
-                $this->log('info', "[SYNC STATUS] Propiedad: {$mlsId} | Es nueva: " . ($isNew ? 'SÍ' : 'NO'));
+                $this->log('info', "[SYNC STATUS] Propiedad: {$mlsId} | Es nueva: ".($isNew ? 'SÍ' : 'NO'));
 
                 // LOG: Estado actual de media antes de sincronizar
-                if (!$isNew && $existingProperty) {
+                if (! $isNew && $existingProperty) {
                     $existingMediaCount = $existingProperty->mediaAssets()->count();
                     $existingImages = $existingProperty->mediaAssets()->wherePivot('role', 'image')->count();
                     $this->log('info', "[SYNC PRE-MEDIA] Propiedad: {$mlsId} | Media assets actuales: {$existingMediaCount} | Imágenes: {$existingImages}");
                 }
 
                 // Determinar si necesitamos obtener el detalle completo
-                $needsDetail = $isNew || !$existingProperty?->raw_payload;
+                $needsDetail = $isNew || ! $existingProperty?->raw_payload;
 
                 // Si es propiedad nueva o no tiene payload, obtener el detalle del API
                 $fullData = $propertyData;
@@ -567,9 +596,9 @@ class MLSSyncService
                     if ($detailData) {
                         // El detalle puede tener una estructura diferente, fusionar
                         $fullData = array_merge($propertyData, $detailData);
-                        $this->log('info', "[SYNC DETAIL] Detalle obtenido | Photos: " . count($detailData['photos'] ?? []) . " | Videos: " . count($detailData['videos'] ?? []));
+                        $this->log('info', '[SYNC DETAIL] Detalle obtenido | Photos: '.count($detailData['photos'] ?? []).' | Videos: '.count($detailData['videos'] ?? []));
                     } else {
-                        $this->log('warning', "[SYNC DETAIL] No se pudo obtener detalle, usando datos básicos");
+                        $this->log('warning', '[SYNC DETAIL] No se pudo obtener detalle, usando datos básicos');
                     }
                 }
 
@@ -592,48 +621,48 @@ class MLSSyncService
 
                 // Sincronizar relaciones - envolver en try-catch individual para no fallar toda la propiedad
                 $this->log('info', "[SYNC RELATIONS] Iniciando sync de relaciones para: {$mlsId}");
-                
+
                 try {
                     $this->syncPropertyLocation($property, $fullData);
                     $this->log('info', "[SYNC LOCATION] Completado para: {$mlsId}");
                 } catch (\Throwable $e) {
-                    $this->log('error', "[SYNC LOCATION ERROR] {$mlsId}: " . $e->getMessage());
+                    $this->log('error', "[SYNC LOCATION ERROR] {$mlsId}: ".$e->getMessage());
                 }
-                
+
                 try {
                     $this->syncPropertyOperations($property, $fullData);
                     $this->log('info', "[SYNC OPERATIONS] Completado para: {$mlsId}");
                 } catch (\Throwable $e) {
-                    $this->log('error', "[SYNC OPERATIONS ERROR] {$mlsId}: " . $e->getMessage());
+                    $this->log('error', "[SYNC OPERATIONS ERROR] {$mlsId}: ".$e->getMessage());
                 }
-                
+
                 try {
                     $this->syncPropertyFeatures($property, $fullData);
                     $this->log('info', "[SYNC FEATURES] Completado para: {$mlsId}");
                 } catch (\Throwable $e) {
-                    $this->log('error', "[SYNC FEATURES ERROR] {$mlsId}: " . $e->getMessage());
+                    $this->log('error', "[SYNC FEATURES ERROR] {$mlsId}: ".$e->getMessage());
                 }
-                
+
                 // Los medios son opcionales - si fallan, solo se loguea pero no falla la propiedad
                 try {
                     $this->syncPropertyMedia($property, $fullData);
                     $this->log('info', "[SYNC MEDIA] Completado para: {$mlsId}");
                 } catch (\Throwable $e) {
-                    $this->log('warning', "[SYNC MEDIA SKIP] {$mlsId}: " . $e->getMessage() . " | La propiedad se sincronizó sin medios");
+                    $this->log('warning', "[SYNC MEDIA SKIP] {$mlsId}: ".$e->getMessage().' | La propiedad se sincronizó sin medios');
                 }
-                
+
                 // Sincronizar agentes MLS de la propiedad
                 try {
                     $this->syncPropertyMlsAgents($property, $fullData);
                     $this->log('info', "[SYNC AGENTS] Completado para: {$mlsId}");
                 } catch (\Throwable $e) {
-                    $this->log('warning', "[SYNC AGENTS SKIP] {$mlsId}: " . $e->getMessage());
+                    $this->log('warning', "[SYNC AGENTS SKIP] {$mlsId}: ".$e->getMessage());
                 }
 
-                $this->log('info', "[SYNC END] ============================================");
+                $this->log('info', '[SYNC END] ============================================');
             });
         } catch (\Throwable $e) {
-            $this->log('error', "[SYNC ERROR] Error al sincronizar propiedad MLS {$mlsId}: " . $e->getMessage());
+            $this->log('error', "[SYNC ERROR] Error al sincronizar propiedad MLS {$mlsId}: ".$e->getMessage());
             $this->errors++;
         }
     }
@@ -649,9 +678,9 @@ class MLSSyncService
     {
         // Limpiar el prefijo "SMA-" si existe, ya que el API espera solo la parte numérica
         $numericMlsId = preg_replace('/^SMA-/i', '', $mlsId);
-        
+
         $this->log('debug', "[FETCH DETAIL] MLS ID original: {$mlsId} | Numérico: {$numericMlsId}");
-        
+
         return $this->makeRequest('GET', "/property/mls/{$numericMlsId}");
     }
 
@@ -662,7 +691,7 @@ class MLSSyncService
      * donde {id} es el ID interno de la propiedad (campo 'id' en el API),
      * NO el mls_id (campo 'mls_id' como "SMA-1200").
      *
-     * @param int $propertyInternalId ID interno de la propiedad en el MLS
+     * @param  int  $propertyInternalId  ID interno de la propiedad en el MLS
      * @return array|null Array con 'id' y 'photos' o null si falla
      */
     public function fetchPropertyPhotos(int $propertyInternalId): ?array
@@ -676,7 +705,7 @@ class MLSSyncService
      * El endpoint /api/v1/property/{id}/features devuelve los IDs de features
      * asociados a la propiedad.
      *
-     * @param int $propertyInternalId ID interno de la propiedad en el MLS
+     * @param  int  $propertyInternalId  ID interno de la propiedad en el MLS
      * @return array|null Array con 'id' y 'features' (array de IDs) o null si falla
      */
     public function fetchPropertyFeatureIds(int $propertyInternalId): ?array
@@ -687,7 +716,7 @@ class MLSSyncService
     /**
      * Obtiene los agentes de una propiedad específica del MLS.
      *
-     * @param int $propertyInternalId ID interno de la propiedad en el MLS
+     * @param  int  $propertyInternalId  ID interno de la propiedad en el MLS
      * @return array|null Array con 'id' y 'agents' (array de IDs) o null si falla
      */
     public function fetchPropertyAgentIds(int $propertyInternalId): ?array
@@ -729,10 +758,10 @@ class MLSSyncService
         // Extraer el ID de la propiedad
         $mlsId = $data['mls_id'] ?? null;
         $internalId = $data['id'] ?? null;
-        
+
         // Extraer agentes (el MLS puede devolver un array de IDs)
         $agents = $data['agents'] ?? [];
-        $primaryAgentId = is_array($agents) && !empty($agents) ? (string) $agents[0] : null;
+        $primaryAgentId = is_array($agents) && ! empty($agents) ? (string) $agents[0] : null;
 
         // Determinar si está publicado
         // IMPORTANTE: Para propiedades del MLS, siempre publicamos por defecto (true)
@@ -747,7 +776,7 @@ class MLSSyncService
 
         // Construir descripción general a partir de las descripciones bilingües
         $description = $data['description'] ?? null;
-        if (!$description) {
+        if (! $description) {
             // Priorizar descripción completa en inglés, luego español
             $description = $data['description_full_en']
                 ?? $data['description_full_es']
@@ -767,14 +796,14 @@ class MLSSyncService
         return [
             'agency_id' => $this->getDefaultAgencyId(),
             'source' => 'mls',
-            
+
             // Campos del MLS
             'mls_id' => $internalId,
             'mls_public_id' => (string) $mlsId,
             'mls_folder_name' => $data['folder_name'] ?? null,
             'mls_neighborhood' => $data['neighborhood'] ?? null,
             'mls_office_id' => $data['office_id'] ?? null,
-            
+
             // Estado y publicación
             'published' => $isPublished,
             'status' => $data['status'] ?? null,
@@ -782,7 +811,7 @@ class MLSSyncService
             'is_approved' => $data['is_approved'] ?? false,
             'allow_integration' => $data['allow_integration'] ?? true,
             'for_rent' => $forRent,
-            
+
             // Fechas del MLS
             'mls_created_at' => isset($data['created_at'])
                 ? \Carbon\Carbon::parse($data['created_at'])
@@ -791,7 +820,7 @@ class MLSSyncService
                 ? \Carbon\Carbon::parse($data['updated_at'])
                 : null,
             'last_synced_at' => now(),
-            
+
             // Contenido básico
             'title' => $data['name'] ?? $data['title'] ?? null,
             'description' => $description,
@@ -801,7 +830,7 @@ class MLSSyncService
             'description_full_es' => $data['description_full_es'] ?? null,
             'url' => $data['url'] ?? null,
             'property_type_name' => $data['category'] ?? $data['property_type'] ?? null,
-            
+
             // Características numéricas
             'bedrooms' => $this->parseNumeric($data['bedrooms'] ?? null),
             'bathrooms' => $this->parseDecimal($data['bathrooms'] ?? null),
@@ -815,7 +844,7 @@ class MLSSyncService
             'construction_feet' => $this->parseDecimal($data['construction_feet'] ?? null),
             'floors' => $this->parseNumeric($data['floors'] ?? null),
             'year_built' => $this->parseNumeric($data['year_built'] ?? null),
-            
+
             // Precios - El precio principal va a las operations,
             // expenses es para gastos de mantenimiento (HOA/maintenance fees)
             'expenses' => $this->parseDecimal($data['expenses'] ?? $data['maintenance_fee'] ?? null),
@@ -823,7 +852,7 @@ class MLSSyncService
             'payment' => $data['payment'] ?? null,
             'selling_office_commission' => $data['selling_office_commission'] ?? null,
             'showing_terms' => $data['showing_terms'] ?? null,
-            
+
             // Características adicionales del MLS
             'furnished' => $data['furnished'] ?? null,
             'with_yard' => $this->parseBoolean($data['with_yard'] ?? null),
@@ -833,11 +862,11 @@ class MLSSyncService
             'casita' => $this->parseBoolean($data['casita'] ?? null),
             'casita_bedrooms' => $data['casita_bedrooms'] ?? null,
             'casita_bathrooms' => $data['casita_bathrooms'] ?? null,
-            
+
             // URLs de medios
             'virtual_tour_url' => $data['virtual_tour_url'] ?? $data['virtual_tour'] ?? null,
             'video_url' => $data['video_url'] ?? null,
-            
+
             'raw_payload' => $data,
         ];
     }
@@ -887,8 +916,9 @@ class MLSSyncService
                 $parts = explode('.', $number);
                 if (count($parts) > 2) {
                     $decimal = array_pop($parts);
-                    $number = implode('', $parts) . '.' . $decimal;
+                    $number = implode('', $parts).'.'.$decimal;
                 }
+
                 return is_numeric($number) ? (float) $number : null;
             }
         }
@@ -930,18 +960,18 @@ class MLSSyncService
             ->orderBy('id')
             ->first();
 
-        if (!$agency) {
+        if (! $agency) {
             $agency = Agency::query()->orderBy('id')->first();
         }
-        
-        if (!$agency) {
+
+        if (! $agency) {
             $agency = Agency::create([
                 'id' => 1,
                 'name' => 'Agencia Sincronizada',
                 'is_primary' => false,
             ]);
         }
-        
+
         return $agency->id;
     }
 
@@ -980,13 +1010,14 @@ class MLSSyncService
 
         // Si todos los campos están vacíos, no crear ubicación
         $hasData = collect($location)->filter()->isNotEmpty();
-        if (!$hasData) {
+        if (! $hasData) {
             $this->log('debug', "[LOCATION SYNC] No hay datos de ubicación para: {$property->mls_public_id}");
+
             return;
         }
 
         $hasExisting = $property->location()->exists();
-        $this->log('debug', "[LOCATION SYNC] Propiedad: {$property->mls_public_id} | Tiene ubicación existente: " . ($hasExisting ? 'SÍ' : 'NO'));
+        $this->log('debug', "[LOCATION SYNC] Propiedad: {$property->mls_public_id} | Tiene ubicación existente: ".($hasExisting ? 'SÍ' : 'NO'));
 
         $resolvedTaxonomy = LocationTaxonomyService::resolveHierarchy(
             $location['country'] ?? null,
@@ -1063,17 +1094,18 @@ class MLSSyncService
                         'type' => $operationType,
                         'amount' => $price,
                         'currency' => $currency,
-                    ]
+                    ],
                 ];
             }
         }
 
         if (empty($operations)) {
-            $this->log('debug', "[OPERATIONS SYNC] No hay operaciones que sincronizar");
+            $this->log('debug', '[OPERATIONS SYNC] No hay operaciones que sincronizar');
+
             return;
         }
 
-        $this->log('info', "[OPERATIONS SYNC] Propiedad: {$property->mls_public_id} | Operaciones a sincronizar: " . count($operations));
+        $this->log('info', "[OPERATIONS SYNC] Propiedad: {$property->mls_public_id} | Operaciones a sincronizar: ".count($operations));
 
         // Eliminar operaciones existentes
         $property->operations()->delete();
@@ -1115,7 +1147,7 @@ class MLSSyncService
             $featureResponse = $this->fetchPropertyFeatureIds((int) $data['id']);
             if ($featureResponse && isset($featureResponse['features'])) {
                 $features = $featureResponse['features'];
-                $this->log('info', "[FEATURES SYNC] Obtenidos " . count($features) . " features del endpoint dedicado");
+                $this->log('info', '[FEATURES SYNC] Obtenidos '.count($features).' features del endpoint dedicado');
             }
         }
 
@@ -1124,15 +1156,16 @@ class MLSSyncService
         $this->log('debug', "[FEATURES SYNC START] Propiedad: {$property->mls_public_id} | Features actuales: {$existingFeaturesCount}");
 
         if (empty($features)) {
-            $this->log('debug', "[FEATURES SYNC] No hay features en los datos");
+            $this->log('debug', '[FEATURES SYNC] No hay features en los datos');
+
             // No limpiar features existentes si no hay datos - podrían haberse importado antes
             return;
         }
 
-        $this->log('info', "[FEATURES SYNC] Propiedad: {$property->mls_public_id} | Features a sincronizar: " . count($features));
+        $this->log('info', "[FEATURES SYNC] Propiedad: {$property->mls_public_id} | Features a sincronizar: ".count($features));
 
         $featureIds = [];
-        
+
         // Obtener catálogo de features del MLS si hay IDs enteros (cachear por la duración del sync)
         static $featureCatalog = null;
         $hasIntegerIds = false;
@@ -1142,9 +1175,9 @@ class MLSSyncService
                 break;
             }
         }
-        
+
         if ($hasIntegerIds && $featureCatalog === null) {
-            $this->log('debug', "[FEATURES SYNC] Detectados IDs enteros, obteniendo catálogo de features del MLS...");
+            $this->log('debug', '[FEATURES SYNC] Detectados IDs enteros, obteniendo catálogo de features del MLS...');
             $catalogResponse = $this->fetchFeatures();
             if ($catalogResponse && is_array($catalogResponse)) {
                 $featureCatalog = [];
@@ -1155,10 +1188,10 @@ class MLSSyncService
                         $featureCatalog[$item['id']] = $item['name'];
                     }
                 }
-                $this->log('info', "[FEATURES SYNC] Catálogo cargado con " . count($featureCatalog) . " features");
+                $this->log('info', '[FEATURES SYNC] Catálogo cargado con '.count($featureCatalog).' features');
             } else {
                 $featureCatalog = [];
-                $this->log('warning', "[FEATURES SYNC] No se pudo obtener catálogo de features");
+                $this->log('warning', '[FEATURES SYNC] No se pudo obtener catálogo de features');
             }
         }
 
@@ -1205,10 +1238,10 @@ class MLSSyncService
 
     /**
      * Sincroniza los agentes MLS de una propiedad.
-     * 
+     *
      * El API MLS devuelve agentes como un array de IDs enteros via:
      * GET /api/v1/property/{id}/agents → { "id": 1200, "agents": [27, 45] }
-     * 
+     *
      * Este método:
      * 1. Obtiene los IDs de agentes de la propiedad del API
      * 2. Busca o crea los agentes en la tabla mls_agents
@@ -1218,54 +1251,56 @@ class MLSSyncService
     {
         // Obtener IDs de agentes del API
         $agentIds = $data['agents'] ?? [];
-        
+
         // LOG: Verificar qué viene en los datos del API para diagnóstico
         $hasAgentsField = array_key_exists('agents', $data);
         $hasIdField = array_key_exists('id', $data);
         $internalId = $data['id'] ?? null;
-        
-        $this->log('debug', "[AGENTS SYNC] Propiedad: {$property->mls_public_id} | " .
-            "Campo 'agents' presente: " . ($hasAgentsField ? 'SÍ (count: ' . count($agentIds) . ')' : 'NO') . " | " .
-            "Campo 'id' presente: " . ($hasIdField ? "SÍ ({$internalId})" : 'NO'));
-        
+
+        $this->log('debug', "[AGENTS SYNC] Propiedad: {$property->mls_public_id} | ".
+            "Campo 'agents' presente: ".($hasAgentsField ? 'SÍ (count: '.count($agentIds).')' : 'NO').' | '.
+            "Campo 'id' presente: ".($hasIdField ? "SÍ ({$internalId})" : 'NO'));
+
         // Si no hay agentes en los datos, intentar obtenerlos del endpoint dedicado
         if (empty($agentIds) && $internalId) {
             $this->log('info', "[AGENTS SYNC] Obteniendo agentes del endpoint dedicado /property/{$internalId}/agents");
             $agentResponse = $this->fetchPropertyAgentIds((int) $internalId);
-            
+
             if ($agentResponse === null) {
                 $this->log('warning', "[AGENTS SYNC] El endpoint /property/{$internalId}/agents devolvió null (error de API)");
             } elseif (isset($agentResponse['agents'])) {
                 $agentIds = $agentResponse['agents'];
-                $this->log('info', "[AGENTS SYNC] Obtenidos " . count($agentIds) . " agentes del endpoint dedicado: [" . implode(', ', $agentIds) . "]");
+                $this->log('info', '[AGENTS SYNC] Obtenidos '.count($agentIds).' agentes del endpoint dedicado: ['.implode(', ', $agentIds).']');
             } else {
-                $this->log('warning', "[AGENTS SYNC] Respuesta del endpoint no contiene campo 'agents'. Keys: " . implode(', ', array_keys($agentResponse)));
+                $this->log('warning', "[AGENTS SYNC] Respuesta del endpoint no contiene campo 'agents'. Keys: ".implode(', ', array_keys($agentResponse)));
             }
-        } elseif (empty($agentIds) && !$internalId) {
-            $this->log('warning', "[AGENTS SYNC] No se puede obtener agentes: no hay campo 'id' ni campo 'agents' en los datos. Keys disponibles: " . implode(', ', array_keys($data)));
+        } elseif (empty($agentIds) && ! $internalId) {
+            $this->log('warning', "[AGENTS SYNC] No se puede obtener agentes: no hay campo 'id' ni campo 'agents' en los datos. Keys disponibles: ".implode(', ', array_keys($data)));
         }
 
         if (empty($agentIds)) {
             $this->log('debug', "[AGENTS SYNC] No hay agentes para propiedad: {$property->mls_public_id}");
+
             return;
         }
 
-        $this->log('info', "[AGENTS SYNC] Propiedad: {$property->mls_public_id} | Agentes a sincronizar: " . count($agentIds) . " → [" . implode(', ', $agentIds) . "]");
+        $this->log('info', "[AGENTS SYNC] Propiedad: {$property->mls_public_id} | Agentes a sincronizar: ".count($agentIds).' → ['.implode(', ', $agentIds).']');
 
         $localAgentIds = [];
-        
+
         foreach ($agentIds as $index => $mlsAgentId) {
-            if (!is_numeric($mlsAgentId)) {
-                $this->log('warning', "[AGENTS SYNC] Agente ID no numérico omitido: " . var_export($mlsAgentId, true));
+            if (! is_numeric($mlsAgentId)) {
+                $this->log('warning', '[AGENTS SYNC] Agente ID no numérico omitido: '.var_export($mlsAgentId, true));
+
                 continue;
             }
-            
+
             $mlsAgentId = (int) $mlsAgentId;
-            
+
             // Buscar o crear el agente en la tabla local
             $agent = MLSAgent::where('mls_agent_id', $mlsAgentId)->first();
-            
-            if (!$agent) {
+
+            if (! $agent) {
                 // Crear un agente placeholder - se completará cuando se sincronicen los agentes
                 $agent = MLSAgent::create([
                     'mls_agent_id' => $mlsAgentId,
@@ -1277,12 +1312,13 @@ class MLSSyncService
             } else {
                 $this->log('debug', "[AGENTS SYNC] Agente existente: MLS ID #{$mlsAgentId} → local ID #{$agent->id} ({$agent->name})");
             }
-            
+
             $localAgentIds[$agent->id] = ['is_primary' => $index === 0];
         }
 
         if (empty($localAgentIds)) {
             $this->log('warning', "[AGENTS SYNC] No se pudo vincular ningún agente a propiedad: {$property->mls_public_id}");
+
             return;
         }
 
@@ -1290,8 +1326,8 @@ class MLSSyncService
         $beforeCount = $property->mlsAgents()->count();
         $property->mlsAgents()->sync($localAgentIds);
         $afterCount = $property->mlsAgents()->count();
-        
-        $this->log('info', "[AGENTS SYNC END] Propiedad: {$property->mls_public_id} | Antes: {$beforeCount} | Después: {$afterCount} | Agentes vinculados: " . implode(', ', array_keys($localAgentIds)));
+
+        $this->log('info', "[AGENTS SYNC END] Propiedad: {$property->mls_public_id} | Antes: {$beforeCount} | Después: {$afterCount} | Agentes vinculados: ".implode(', ', array_keys($localAgentIds)));
     }
 
     /**
@@ -1307,16 +1343,17 @@ class MLSSyncService
         // Si skipMedia está activo, no sincronizar medios
         if ($this->skipMedia) {
             $this->log('info', "[MEDIA SKIP] skipMedia=true, omitiendo sincronización de medios para: {$property->mls_public_id}");
+
             return;
         }
-        
+
         $photos = $data['photos'] ?? $data['images'] ?? [];
         $videos = $data['videos'] ?? [];
 
         // LOG: Estado antes de sincronizar
         $existingMediaCount = $property->mediaAssets()->count();
         $existingImageCount = $property->mediaAssets()->wherePivot('role', 'image')->count();
-        $this->log('info', "[MEDIA SYNC START] Propiedad: {$property->mls_public_id} | Imágenes existentes: {$existingImageCount} | Videos existentes: " . ($existingMediaCount - $existingImageCount));
+        $this->log('info', "[MEDIA SYNC START] Propiedad: {$property->mls_public_id} | Imágenes existentes: {$existingImageCount} | Videos existentes: ".($existingMediaCount - $existingImageCount));
 
         // Si no hay fotos en los datos, intentar obtenerlas del endpoint dedicado de fotos
         // El endpoint de detalle del MLS no incluye fotos - están en un endpoint separado
@@ -1325,34 +1362,35 @@ class MLSSyncService
             $photosResponse = $this->fetchPropertyPhotos((int) $data['id']);
             if ($photosResponse && isset($photosResponse['photos'])) {
                 $photos = $photosResponse['photos'];
-                $this->log('info', "[MEDIA SYNC] Obtenidas " . count($photos) . " fotos del endpoint dedicado");
+                $this->log('info', '[MEDIA SYNC] Obtenidas '.count($photos).' fotos del endpoint dedicado');
             }
         }
 
         // Fallback: verificar en el raw_payload existente
-        if (empty($photos) && !empty($data['raw_payload']['photos'])) {
+        if (empty($photos) && ! empty($data['raw_payload']['photos'])) {
             $photos = $data['raw_payload']['photos'];
-            $this->log('info', "[MEDIA FROM PAYLOAD] Usando fotos del raw_payload existente para: {$property->mls_public_id} | Fotos: " . count($photos));
+            $this->log('info', "[MEDIA FROM PAYLOAD] Usando fotos del raw_payload existente para: {$property->mls_public_id} | Fotos: ".count($photos));
         }
 
-        if (empty($videos) && !empty($data['raw_payload']['videos'])) {
+        if (empty($videos) && ! empty($data['raw_payload']['videos'])) {
             $videos = $data['raw_payload']['videos'];
-            $this->log('info', "[MEDIA FROM PAYLOAD] Usando videos del raw_payload existente para: {$property->mls_public_id} | Videos: " . count($videos));
+            $this->log('info', "[MEDIA FROM PAYLOAD] Usando videos del raw_payload existente para: {$property->mls_public_id} | Videos: ".count($videos));
         }
-        
+
         // Si hay video_url en los datos, agregarlo a videos
-        if (empty($videos) && !empty($data['video_url'])) {
+        if (empty($videos) && ! empty($data['video_url'])) {
             $videos = [$data['video_url']];
             $this->log('info', "[MEDIA VIDEO] Usando video_url de los datos: {$data['video_url']}");
         }
 
         if (empty($photos) && empty($videos)) {
             $this->log('warning', "[MEDIA SYNC SKIP] Propiedad: {$property->mls_public_id} | No tiene photos ni videos");
+
             return;
         }
 
         $mediaSyncMode = $this->resolveMediaSyncMode($this->mediaSyncMode);
-        $this->log('info', "[MEDIA SYNC] Propiedad: {$property->mls_public_id} | Photos a procesar: " . count($photos) . " | Videos a procesar: " . count($videos) . " | Media Mode: {$mediaSyncMode}");
+        $this->log('info', "[MEDIA SYNC] Propiedad: {$property->mls_public_id} | Photos a procesar: ".count($photos).' | Videos a procesar: '.count($videos)." | Media Mode: {$mediaSyncMode}");
 
         $position = 0;
         $imageUrls = [];
@@ -1362,10 +1400,11 @@ class MLSSyncService
 
         // Procesar fotos -收集 URLs y crear relaciones para imágenes existentes
         foreach ($photos as $index => $photo) {
-            $url = is_string($photo) ? $photo : ($photo['url'] ?? $photo['src'] ?? null);
-            if (!$url) {
+            $url = $this->getPhotoUrl($photo);
+            if (! $url) {
                 $this->log('warning', "[MEDIA SKIP] Foto sin URL en posición {$index} | Propiedad: {$property->mls_public_id}");
                 $imagesSkipped++;
+
                 continue;
             }
 
@@ -1373,9 +1412,6 @@ class MLSSyncService
 
             // LOG: Procesando cada imagen
             $this->log('debug', "[MEDIA PROCESS] Foto posición {$index}: {$url}");
-
-            // Verificar si ya existe un MediaAsset para esta URL
-            $existingMediaAsset = MediaAsset::where('url', $url)->first();
 
             if ($mediaSyncMode === 'external_url') {
                 $mediaAsset = $this->getOrCreateExternalImageMediaAsset(
@@ -1385,26 +1421,31 @@ class MLSSyncService
                 $this->log('info', "[MEDIA EXTERNAL] Registrando URL externa sin descarga: {$url}");
                 $this->linkMediaAssetToProperty($property, $mediaAsset, $photo, $position);
                 $imagesLinked++;
-            } elseif ($existingMediaAsset && $existingMediaAsset->storage_path && Storage::disk('public')->exists($existingMediaAsset->storage_path)) {
-                // La imagen ya existe localmente, crear/vincular relación directamente
-                $this->log('info', "[MEDIA LINK] Imagen ya existe localmente, vinculando: {$url}");
-                $this->linkMediaAssetToProperty($property, $existingMediaAsset, $photo, $position);
-                $imagesLinked++;
             } else {
-                // La imagen no existe localmente, preparar metadata para el job
-                $mediaData = [
-                    'url' => $url,
-                    'title' => is_array($photo) ? ($photo['title'] ?? $photo['alt'] ?? null) : null,
-                    'alt' => is_array($photo) ? ($photo['alt'] ?? null) : null,
-                    'position' => $position,
-                ];
+                // Verificar si ya existe un MediaAsset local para esta URL
+                $existingMediaAsset = MediaAsset::where('url', $url)->first();
 
-                // LOG: Dispatch job
-                $this->log('info', "[MEDIA DISPATCH] Imagen no existe, dispatchando job: {$url}");
+                if ($existingMediaAsset && $existingMediaAsset->storage_path && Storage::disk('public')->exists($existingMediaAsset->storage_path)) {
+                    // La imagen ya existe localmente, crear/vincular relación directamente
+                    $this->log('info', "[MEDIA LINK] Imagen ya existe localmente, vinculando: {$url}");
+                    $this->linkMediaAssetToProperty($property, $existingMediaAsset, $photo, $position);
+                    $imagesLinked++;
+                } else {
+                    // La imagen no existe localmente, preparar metadata para el job
+                    $mediaData = [
+                        'url' => $url,
+                        'title' => is_array($photo) ? ($photo['title'] ?? $photo['alt'] ?? null) : null,
+                        'alt' => is_array($photo) ? ($photo['alt'] ?? null) : null,
+                        'position' => $position,
+                    ];
 
-                // Dispatch job para descargar la imagen
-                DownloadPropertyImageJob::dispatch($property->id, $mediaData);
-                $imagesDispatched++;
+                    // LOG: Dispatch job
+                    $this->log('info', "[MEDIA DISPATCH] Imagen no existe, dispatchando job: {$url}");
+
+                    // Dispatch job para descargar la imagen
+                    DownloadPropertyImageJob::dispatch($property->id, $mediaData);
+                    $imagesDispatched++;
+                }
             }
 
             $position++;
@@ -1413,7 +1454,7 @@ class MLSSyncService
         // Procesar videos (solo registrar, sin descarga)
         foreach ($videos as $video) {
             $url = is_string($video) ? $video : ($video['url'] ?? null);
-            if (!$url) {
+            if (! $url) {
                 continue;
             }
 
@@ -1426,7 +1467,7 @@ class MLSSyncService
                     'position' => $position,
                     'source_url' => $url,
                     'raw_payload' => json_encode(is_array($video) ? $video : ['url' => $video]),
-                ]
+                ],
             ]);
 
             $position++;
@@ -1528,11 +1569,11 @@ class MLSSyncService
                 'downloaded_at' => null,
             ];
 
-            if ($name && !$existing->name) {
+            if ($name && ! $existing->name) {
                 $updates['name'] = $name;
             }
 
-            if ($alt && !$existing->alt) {
+            if ($alt && ! $existing->alt) {
                 $updates['alt'] = $alt;
             }
 
@@ -1556,13 +1597,87 @@ class MLSSyncService
         ]);
     }
 
+    protected function getPhotoUrl(mixed $photo): ?string
+    {
+        $url = is_string($photo) ? $photo : (is_array($photo) ? ($photo['url'] ?? $photo['src'] ?? null) : null);
+
+        return is_string($url) && trim($url) !== '' ? trim($url) : null;
+    }
+
+    protected function getCachedPropertyPhotos(Property $property): array
+    {
+        $payload = $property->raw_payload;
+
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        $photos = $payload['photos'] ?? $payload['images'] ?? [];
+
+        return is_array($photos) ? $photos : [];
+    }
+
+    protected function externalPhotosAlreadySynced(Property $property, array $photos): array
+    {
+        $items = [];
+
+        foreach ($photos as $index => $photo) {
+            $url = $this->getPhotoUrl($photo);
+            if (! $url) {
+                continue;
+            }
+
+            $items[] = [
+                'url' => $url,
+                'position' => $index,
+            ];
+        }
+
+        if (empty($items)) {
+            return ['synced' => false, 'count' => 0];
+        }
+
+        $urls = array_values(array_unique(array_column($items, 'url')));
+        $mediaByUrl = MediaAsset::whereIn('url', $urls)->get()->keyBy('url');
+
+        if ($mediaByUrl->count() < count($urls)) {
+            return ['synced' => false, 'count' => count($items)];
+        }
+
+        $mediaIds = $mediaByUrl->pluck('id')->all();
+        $linkedById = $property->mediaAssets()
+            ->wherePivot('role', 'image')
+            ->whereIn('media_assets.id', $mediaIds)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($items as $item) {
+            $mediaAsset = $mediaByUrl->get($item['url']);
+            if (! $mediaAsset || ! empty($mediaAsset->storage_path)) {
+                return ['synced' => false, 'count' => count($items)];
+            }
+
+            $linked = $linkedById->get($mediaAsset->id);
+            if (! $linked || (int) ($linked->pivot->position ?? -1) !== (int) $item['position']) {
+                return ['synced' => false, 'count' => count($items)];
+            }
+        }
+
+        $firstMedia = $mediaByUrl->get($items[0]['url']);
+        if ($firstMedia && (int) $property->cover_media_asset_id !== (int) $firstMedia->id) {
+            return ['synced' => false, 'count' => count($items)];
+        }
+
+        return ['synced' => true, 'count' => count($items)];
+    }
+
     /**
      * Despublica propiedades que ya no están en el MLS.
      */
     protected function unpublishRemovedProperties(array $currentMlsIds): void
     {
         $agencyId = $this->getDefaultAgencyId();
-        
+
         // Convertir a strings para comparación
         $currentMlsIds = array_map('strval', $currentMlsIds);
 
@@ -1638,21 +1753,21 @@ class MLSSyncService
             return $value;
         }
 
-        return mb_substr($value, 0, $max) . '…(truncated)';
+        return mb_substr($value, 0, $max).'…(truncated)';
     }
 
     /**
      * Realiza una petición HTTP a la API del MLS con reintentos automáticos.
      *
-     * @param string $method Método HTTP (GET, POST, etc.)
-     * @param string $endpoint Endpoint de la API
-     * @param array $query Parámetros de query string
-     * @param int|null $customTimeout Timeout personalizado para esta petición
+     * @param  string  $method  Método HTTP (GET, POST, etc.)
+     * @param  string  $endpoint  Endpoint de la API
+     * @param  array  $query  Parámetros de query string
+     * @param  int|null  $customTimeout  Timeout personalizado para esta petición
      * @return array|null Los datos de respuesta o null si todos los reintentos fallan
      */
     protected function makeRequest(string $method, string $endpoint, array $query = [], ?int $customTimeout = null): ?array
     {
-        $url = rtrim($this->baseUrl, '/') . '/' . ltrim($endpoint, '/');
+        $url = rtrim($this->baseUrl, '/').'/'.ltrim($endpoint, '/');
         $lastException = null;
         $lastResponseBody = null;
         $requestStartTime = microtime(true);
@@ -1667,7 +1782,7 @@ class MLSSyncService
                 $this->httpLog('════════════════════════════════════════════');
                 $this->httpLog("REQUEST intento {$attempt}/{$this->maxRetries} | {$method} {$endpoint}");
                 $this->httpLog("REQUEST url={$url}");
-                $this->httpLog('REQUEST query=' . $this->truncateForLog(json_encode($query)));
+                $this->httpLog('REQUEST query='.$this->truncateForLog(json_encode($query)));
                 $this->httpLog("REQUEST timeout={$timeout}s");
 
                 $response = Http::withHeaders([
@@ -1687,9 +1802,9 @@ class MLSSyncService
                 // Verificar si headers es un objeto o array
                 $headers = $response->headers();
                 if (is_object($headers) && method_exists($headers, 'all')) {
-                    $this->httpLog('RESPONSE headers=' . $this->truncateForLog(json_encode($headers->all())));
+                    $this->httpLog('RESPONSE headers='.$this->truncateForLog(json_encode($headers->all())));
                 } else {
-                    $this->httpLog('RESPONSE headers=' . $this->truncateForLog(json_encode($headers)));
+                    $this->httpLog('RESPONSE headers='.$this->truncateForLog(json_encode($headers)));
                 }
 
                 if ($response->failed()) {
@@ -1697,13 +1812,14 @@ class MLSSyncService
                     $responseBody = $response->body();
 
                     $this->httpLog("ERROR http_status={$statusCode} | intento {$attempt}/{$this->maxRetries}");
-                    $this->httpLog('ERROR response_body=' . ($this->truncateForLog($responseBody) ?? 'NULL'));
+                    $this->httpLog('ERROR response_body='.($this->truncateForLog($responseBody) ?? 'NULL'));
 
                     // Si es error 5xx (error del servidor), reintentar
                     if ($statusCode >= 500 && $attempt < $this->maxRetries) {
                         $delay = $this->retryDelays[$attempt - 1] ?? 5;
                         $this->httpLog("RETRY server_error status={$statusCode} delay_s={$delay}");
                         sleep($delay);
+
                         continue;
                     }
 
@@ -1717,11 +1833,12 @@ class MLSSyncService
 
                 // Log del payload (recortado)
                 $rawJson = json_encode($responseData, JSON_PRETTY_PRINT);
-                $this->httpLog('RESPONSE json=' . ($this->truncateForLog($rawJson) ?? 'NULL'));
+                $this->httpLog('RESPONSE json='.($this->truncateForLog($rawJson) ?? 'NULL'));
 
                 // Validar estructura de respuesta
-                if (!$this->validateApiResponse($responseData)) {
+                if (! $this->validateApiResponse($responseData)) {
                     $this->httpLog('ERROR invalid_api_response_structure');
+
                     return null;
                 }
 
@@ -1731,24 +1848,27 @@ class MLSSyncService
                     $errorData = $responseData['data'] ?? null;
                     $errorErrors = $responseData['errors'] ?? null;
 
-                    $this->httpLog("ERROR json_success_false code={$errorCode} message=" . $this->truncateForLog((string) $errorMessage));
-                    $this->httpLog('ERROR json_data=' . $this->truncateForLog(json_encode($errorData)));
-                    $this->httpLog('ERROR json_errors=' . $this->truncateForLog(json_encode($errorErrors)));
+                    $this->httpLog("ERROR json_success_false code={$errorCode} message=".$this->truncateForLog((string) $errorMessage));
+                    $this->httpLog('ERROR json_data='.$this->truncateForLog(json_encode($errorData)));
+                    $this->httpLog('ERROR json_errors='.$this->truncateForLog(json_encode($errorErrors)));
 
                     // Errores de servidor (como SERVER_ERROR) requieren reintento
                     if (in_array($errorCode, ['SERVER_ERROR', 'TIMEOUT', 'CONNECTION_ERROR', 'SERVICE_UNAVAILABLE']) && $attempt < $this->maxRetries) {
                         $delay = $this->retryDelays[$attempt - 1] ?? 5;
                         $this->httpLog("RETRY api_error code={$errorCode} delay_s={$delay}");
                         sleep($delay);
+
                         continue;
                     }
 
                     // Otros errores de API (auth, validation, etc.) no reintentar
                     $this->httpLog("SKIP non_retryable_api_error code={$errorCode}");
+
                     return null;
                 }
 
                 $this->httpLog("SUCCESS {$method} {$endpoint} status={$response->status()} time_ms={$responseTime}");
+
                 return $responseData;
 
             } catch (\Illuminate\Http\Client\ConnectionException $e) {
@@ -1757,7 +1877,7 @@ class MLSSyncService
                 $errorFile = $e->getFile();
                 $errorLine = $e->getLine();
 
-                $this->httpLog("EXCEPTION connection type={$errorClass} file={$errorFile}:{$errorLine} message=" . $this->truncateForLog($e->getMessage()));
+                $this->httpLog("EXCEPTION connection type={$errorClass} file={$errorFile}:{$errorLine} message=".$this->truncateForLog($e->getMessage()));
                 $this->httpLog("EXCEPTION attempt={$attempt}/{$this->maxRetries}");
 
                 if ($attempt < $this->maxRetries) {
@@ -1771,7 +1891,7 @@ class MLSSyncService
                 $errorFile = $e->getFile();
                 $errorLine = $e->getLine();
 
-                $this->httpLog("TIMEOUT type={$errorClass} file={$errorFile}:{$errorLine} message=" . $this->truncateForLog($e->getMessage()));
+                $this->httpLog("TIMEOUT type={$errorClass} file={$errorFile}:{$errorLine} message=".$this->truncateForLog($e->getMessage()));
                 $this->httpLog("TIMEOUT attempt={$attempt}/{$this->maxRetries}");
 
                 if ($attempt < $this->maxRetries) {
@@ -1785,7 +1905,7 @@ class MLSSyncService
                 $errorFile = $e->getFile();
                 $errorLine = $e->getLine();
 
-                $this->httpLog("EXCEPTION general type={$errorClass} file={$errorFile}:{$errorLine} message=" . $this->truncateForLog($e->getMessage()));
+                $this->httpLog("EXCEPTION general type={$errorClass} file={$errorFile}:{$errorLine} message=".$this->truncateForLog($e->getMessage()));
                 $this->httpLog("EXCEPTION attempt={$attempt}/{$this->maxRetries}");
 
                 if ($attempt < $this->maxRetries) {
@@ -1798,7 +1918,7 @@ class MLSSyncService
 
         // Todos los reintentos fallaron
         $this->httpLog("FAIL all_retries_failed method={$method} endpoint={$endpoint} retries={$this->maxRetries}");
-        $this->httpLog('FAIL last_response=' . $this->truncateForLog(json_encode($lastResponseBody)));
+        $this->httpLog('FAIL last_response='.$this->truncateForLog(json_encode($lastResponseBody)));
 
         Log::error('MLS API - Todos los reintentos fallaron', [
             'method' => $method,
@@ -1829,9 +1949,9 @@ class MLSSyncService
 
     /**
      * Obtiene los agentes disponibles del MLS con paginación.
-     * 
-     * @param int $page Página a obtener
-     * @param int $perPage Agentes por página (max 100)
+     *
+     * @param  int  $page  Página a obtener
+     * @param  int  $perPage  Agentes por página (max 100)
      * @return array|null Respuesta paginada del API
      */
     public function fetchAgents(int $page = 1, int $perPage = 100): ?array
@@ -1845,7 +1965,7 @@ class MLSSyncService
     /**
      * Obtiene el detalle de un agente específico del MLS.
      *
-     * @param int $agentId ID del agente en el MLS
+     * @param  int  $agentId  ID del agente en el MLS
      * @return array|null Datos del agente
      */
     public function fetchAgentDetail(int $agentId): ?array
@@ -1879,7 +1999,7 @@ class MLSSyncService
      */
     public function syncOfficesProgressive(int $page = 1, int $perPage = 25, bool $withDetail = false): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'MLS no está configurado',
@@ -1895,7 +2015,7 @@ class MLSSyncService
         }
 
         $items = $response['data'] ?? $response['offices'] ?? $response;
-        if (!is_array($items)) {
+        if (! is_array($items)) {
             return [
                 'success' => false,
                 'message' => 'Respuesta inesperada del MLS al listar offices',
@@ -1909,8 +2029,9 @@ class MLSSyncService
         foreach ($items as $officeData) {
             try {
                 $officeId = $officeData['id'] ?? null;
-                if (!$officeId) {
+                if (! $officeId) {
                     $errors++;
+
                     continue;
                 }
 
@@ -1952,8 +2073,8 @@ class MLSSyncService
                     'tiktok' => $payload['tiktok'] ?? null,
                     'instagram' => $payload['instagram'] ?? null,
                     'paid' => (bool) ($payload['paid'] ?? false),
-                    'mls_created_at' => !empty($payload['created_at']) ? \Carbon\Carbon::parse($payload['created_at']) : null,
-                    'mls_updated_at' => !empty($payload['updated_at']) ? \Carbon\Carbon::parse($payload['updated_at']) : null,
+                    'mls_created_at' => ! empty($payload['created_at']) ? \Carbon\Carbon::parse($payload['created_at']) : null,
+                    'mls_updated_at' => ! empty($payload['updated_at']) ? \Carbon\Carbon::parse($payload['updated_at']) : null,
                     'last_synced_at' => now(),
                     'raw_payload' => $payload,
                 ];
@@ -1972,7 +2093,7 @@ class MLSSyncService
                 usleep((int) (1000000 / $this->rateLimit));
             } catch (\Throwable $e) {
                 $errors++;
-                $this->log('error', '[OFFICES SYNC ERROR] ' . $e->getMessage());
+                $this->log('error', '[OFFICES SYNC ERROR] '.$e->getMessage());
             }
         }
 
@@ -2000,7 +2121,7 @@ class MLSSyncService
      */
     protected function normalizeMlsUrl(?string $url): ?string
     {
-        if (!$url) {
+        if (! $url) {
             return null;
         }
 
@@ -2016,15 +2137,16 @@ class MLSSyncService
 
         // Protocol-relative (//cdn...)
         if (str_starts_with($url, '//')) {
-            return 'https:' . $url;
+            return 'https:'.$url;
         }
 
         // 1) Si se configuró explícitamente, usar imagesBaseUrl
         if ($this->imagesBaseUrl && filter_var($this->imagesBaseUrl, FILTER_VALIDATE_URL)) {
             $base = rtrim($this->imagesBaseUrl, '/');
+
             return str_starts_with($url, '/')
-                ? $base . $url
-                : $base . '/' . $url;
+                ? $base.$url
+                : $base.'/'.$url;
         }
 
         // 2) Fallback: construir origen (scheme + host + port) desde baseUrl
@@ -2033,20 +2155,20 @@ class MLSSyncService
         $host = $parsed['host'] ?? null;
         $port = $parsed['port'] ?? null;
 
-        if (!$host) {
+        if (! $host) {
             // Fallback: si no se puede parsear, devolver original
             return $url;
         }
 
-        $origin = $scheme . '://' . $host . ($port ? ':' . $port : '');
+        $origin = $scheme.'://'.$host.($port ? ':'.$port : '');
 
         // Si es ruta absoluta (/path)
         if (str_starts_with($url, '/')) {
-            return $origin . $url;
+            return $origin.$url;
         }
 
         // Si es ruta relativa (path)
-        return $origin . '/' . $url;
+        return $origin.'/'.$url;
     }
 
     /**
@@ -2055,13 +2177,13 @@ class MLSSyncService
      * Busca en múltiples campos posibles porque la API MLS AMPI
      * puede usar diferentes nombres de campo para la foto del agente.
      *
-     * @param array $agentData Datos del agente desde el API
+     * @param  array  $agentData  Datos del agente desde el API
      * @return string|null URL de la foto o null si no se encontró
      */
     protected function extractAgentPhotoUrl(array $agentData): ?string
     {
         $isProbablyRelativePath = function (mixed $value): bool {
-            if (!is_string($value)) {
+            if (! is_string($value)) {
                 return false;
             }
 
@@ -2115,7 +2237,7 @@ class MLSSyncService
 
         foreach ($photoFields as $field) {
             $value = $agentData[$field] ?? null;
-            if (!empty($value) && is_string($value)) {
+            if (! empty($value) && is_string($value)) {
                 // Validar que parece una URL válida
                 if (filter_var($value, FILTER_VALIDATE_URL) || $isProbablyRelativePath($value)) {
                     return $value;
@@ -2147,7 +2269,7 @@ class MLSSyncService
                     break;
                 }
             }
-            if ($found && is_string($current) && !empty($current)) {
+            if ($found && is_string($current) && ! empty($current)) {
                 if (filter_var($current, FILTER_VALIDATE_URL) || $isProbablyRelativePath($current)) {
                     return $current;
                 }
@@ -2160,17 +2282,17 @@ class MLSSyncService
     /**
      * Sincroniza agentes del MLS en modo progresivo (por lotes).
      * Procesa una página de agentes y retorna el offset para continuar.
-     * 
-     * @param int $batchSize Agentes por lote (default: 20)
-     * @param int|null $startOffset Offset inicial (null = desde 0)
+     *
+     * @param  int  $batchSize  Agentes por lote (default: 20)
+     * @param  int|null  $startOffset  Offset inicial (null = desde 0)
      * @return array Resultado con estadísticas y next_offset
      */
     public function syncAgentsProgressive(int $batchSize = 20, ?int $startOffset = null): array
     {
         $this->log('info', '[AGENTS SYNC PROGRESSIVE START] ===================================');
-        $this->log('info', "[AGENTS SYNC PROGRESSIVE] Batch: {$batchSize} | Offset: " . ($startOffset ?? 'AUTO'));
+        $this->log('info', "[AGENTS SYNC PROGRESSIVE] Batch: {$batchSize} | Offset: ".($startOffset ?? 'AUTO'));
 
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'MLS no está configurado',
@@ -2194,7 +2316,7 @@ class MLSSyncService
         }
 
         // LOG (info): estructura recibida del API para depuración
-        $this->log('info', '[AGENTS API] Respuesta /agents keys: ' . (is_array($response) ? implode(', ', array_keys($response)) : gettype($response)));
+        $this->log('info', '[AGENTS API] Respuesta /agents keys: '.(is_array($response) ? implode(', ', array_keys($response)) : gettype($response)));
 
         // Extraer datos de paginación (algunos APIs anidan en data)
         $agents = $response['data'] ?? $response['agents'] ?? $response;
@@ -2202,14 +2324,14 @@ class MLSSyncService
         $lastPage = $response['last_page'] ?? null;
         $currentPageFromResponse = $response['current_page'] ?? $currentPage;
 
-        if (!is_array($agents)) {
+        if (! is_array($agents)) {
             return [
                 'success' => false,
                 'message' => 'Respuesta inesperada del MLS',
             ];
         }
 
-        $this->log('info', "[AGENTS SYNC PROGRESSIVE] Agentes en esta página: " . count($agents) . " | Total: " . ($totalAgents ?? '?') . " | Página: {$currentPageFromResponse}/" . ($lastPage ?? '?'));
+        $this->log('info', '[AGENTS SYNC PROGRESSIVE] Agentes en esta página: '.count($agents).' | Total: '.($totalAgents ?? '?')." | Página: {$currentPageFromResponse}/".($lastPage ?? '?'));
 
         if (empty($agents)) {
             return [
@@ -2233,13 +2355,14 @@ class MLSSyncService
         foreach ($agents as $agentData) {
             try {
                 $mlsAgentId = $agentData['id'] ?? null;
-                if (!$mlsAgentId) {
+                if (! $mlsAgentId) {
                     $errors++;
+
                     continue;
                 }
 
                 // LOG: Mostrar las claves recibidas del API para diagnóstico
-                $this->log('debug', "[AGENTS SYNC] Agent ID #{$mlsAgentId} keys: " . implode(', ', array_keys($agentData)));
+                $this->log('debug', "[AGENTS SYNC] Agent ID #{$mlsAgentId} keys: ".implode(', ', array_keys($agentData)));
 
                 // Extraer foto de perfil: buscar en múltiples campos posibles
                 // La API MLS AMPI puede usar diferentes nombres según la versión/endpoint
@@ -2247,8 +2370,8 @@ class MLSSyncService
                 $photoUrl = $this->normalizeMlsUrl($rawPhotoUrl);
 
                 // LOG (info): resultado de extracción/normalización
-                $this->log('info', "[AGENTS PHOTO] Agent #{$mlsAgentId} | raw_photo_url: " . ($rawPhotoUrl ? substr((string) $rawPhotoUrl, 0, 140) : 'NULL') .
-                    " | normalized: " . ($photoUrl ? substr((string) $photoUrl, 0, 140) : 'NULL'));
+                $this->log('info', "[AGENTS PHOTO] Agent #{$mlsAgentId} | raw_photo_url: ".($rawPhotoUrl ? substr((string) $rawPhotoUrl, 0, 140) : 'NULL').
+                    ' | normalized: '.($photoUrl ? substr((string) $photoUrl, 0, 140) : 'NULL'));
 
                 $attributes = [
                     'name' => $agentData['name'] ?? $agentData['full_name'] ?? null,
@@ -2273,7 +2396,7 @@ class MLSSyncService
                     $this->log('debug', "[AGENTS SYNC] No hay foto en listado para #{$mlsAgentId}, intentando detalle individual...");
                     $agentDetailResponse = $this->fetchAgentDetail((int) $mlsAgentId);
                     if ($agentDetailResponse) {
-                        $this->log('info', "[AGENTS API] Respuesta /agent/{$mlsAgentId} keys: " . implode(', ', array_keys($agentDetailResponse)));
+                        $this->log('info', "[AGENTS API] Respuesta /agent/{$mlsAgentId} keys: ".implode(', ', array_keys($agentDetailResponse)));
 
                         // Muchos APIs envuelven el payload real en data/agent
                         $agentDetail = $agentDetailResponse['data']
@@ -2281,31 +2404,31 @@ class MLSSyncService
                             ?? $agentDetailResponse;
 
                         if ($agentDetail !== $agentDetailResponse && is_array($agentDetail)) {
-                            $this->log('info', "[AGENTS API] /agent/{$mlsAgentId} payload anidado detectado. Keys payload: " . implode(', ', array_keys($agentDetail)));
+                            $this->log('info', "[AGENTS API] /agent/{$mlsAgentId} payload anidado detectado. Keys payload: ".implode(', ', array_keys($agentDetail)));
                         }
 
-                        $this->log('debug', "[AGENTS SYNC] Detalle de agente #{$mlsAgentId} keys(payload): " . (is_array($agentDetail) ? implode(', ', array_keys($agentDetail)) : gettype($agentDetail)));
+                        $this->log('debug', "[AGENTS SYNC] Detalle de agente #{$mlsAgentId} keys(payload): ".(is_array($agentDetail) ? implode(', ', array_keys($agentDetail)) : gettype($agentDetail)));
 
                         $detailRawPhotoUrl = is_array($agentDetail) ? $this->extractAgentPhotoUrl($agentDetail) : null;
                         $detailPhotoUrl = $this->normalizeMlsUrl($detailRawPhotoUrl);
                         if ($detailPhotoUrl) {
                             $photoUrl = $detailPhotoUrl;
                             $attributes['photo_url'] = $photoUrl;
-                            $this->log('info', "[AGENTS PHOTO] Foto encontrada en detalle para #{$mlsAgentId} | raw: " . ($detailRawPhotoUrl ? substr((string) $detailRawPhotoUrl, 0, 140) : 'NULL') .
-                                " | normalized: " . substr((string) $photoUrl, 0, 140));
+                            $this->log('info', "[AGENTS PHOTO] Foto encontrada en detalle para #{$mlsAgentId} | raw: ".($detailRawPhotoUrl ? substr((string) $detailRawPhotoUrl, 0, 140) : 'NULL').
+                                ' | normalized: '.substr((string) $photoUrl, 0, 140));
                         }
 
                         // También actualizar campos que podrían venir solo en el detalle
-                        if (empty($attributes['bio']) && !empty($agentDetail['bio'] ?? $agentDetail['biography'] ?? $agentDetail['description'] ?? null)) {
+                        if (empty($attributes['bio']) && ! empty($agentDetail['bio'] ?? $agentDetail['biography'] ?? $agentDetail['description'] ?? null)) {
                             $attributes['bio'] = $agentDetail['bio'] ?? $agentDetail['biography'] ?? $agentDetail['description'] ?? null;
                         }
-                        if (empty($attributes['website']) && !empty($agentDetail['website'] ?? $agentDetail['web'] ?? null)) {
+                        if (empty($attributes['website']) && ! empty($agentDetail['website'] ?? $agentDetail['web'] ?? null)) {
                             $attributes['website'] = $agentDetail['website'] ?? $agentDetail['web'] ?? null;
                         }
-                        if (empty($attributes['license_number']) && !empty($agentDetail['license_number'] ?? $agentDetail['license'] ?? null)) {
+                        if (empty($attributes['license_number']) && ! empty($agentDetail['license_number'] ?? $agentDetail['license'] ?? null)) {
                             $attributes['license_number'] = $agentDetail['license_number'] ?? $agentDetail['license'] ?? null;
                         }
-                        
+
                         // Guardar el payload combinado
                         if (is_array($agentDetail)) {
                             $attributes['raw_payload'] = array_merge($agentData, $agentDetail);
@@ -2313,15 +2436,15 @@ class MLSSyncService
                     } else {
                         $this->log('debug', "[AGENTS SYNC] No se pudo obtener detalle individual para #{$mlsAgentId}");
                     }
-                    
+
                     // Rate limiting después de la petición adicional
                     usleep((int) (1000000 / $this->rateLimit));
                 }
 
                 // Si hay foto URL, crear o reutilizar un MediaAsset con la URL externa
                 if ($photoUrl) {
-                    $this->log('info', "[AGENTS SYNC] Foto URL FINAL para #{$mlsAgentId}: " . substr($photoUrl, 0, 140));
-                    $this->log('info', "[AGENTS SYNC] Nota: la foto del agente se registra como URL remota (MediaAsset.url). No se descarga automáticamente en este proceso.");
+                    $this->log('info', "[AGENTS SYNC] Foto URL FINAL para #{$mlsAgentId}: ".substr($photoUrl, 0, 140));
+                    $this->log('info', '[AGENTS SYNC] Nota: la foto del agente se registra como URL remota (MediaAsset.url). No se descarga automáticamente en este proceso.');
                     $agentName = $attributes['name'] ?? "Agent #{$mlsAgentId}";
                     $mediaAsset = $this->getOrCreateExternalImageMediaAsset($photoUrl, [
                         'title' => "Foto de {$agentName}",
@@ -2345,7 +2468,7 @@ class MLSSyncService
                 }
             } catch (\Throwable $e) {
                 $agentIdForLog = $agentData['id'] ?? '?';
-                $this->log('error', "[AGENTS SYNC ERROR] Agent ID {$agentIdForLog}: " . $e->getMessage());
+                $this->log('error', "[AGENTS SYNC ERROR] Agent ID {$agentIdForLog}: ".$e->getMessage());
                 $errors++;
             }
         }
@@ -2373,7 +2496,7 @@ class MLSSyncService
         return [
             'success' => true,
             'message' => $completed
-                ? "Sincronización de agentes completada"
+                ? 'Sincronización de agentes completada'
                 : "Lote procesado. Continúa con offset {$newOffset}",
             'total_in_mls' => $totalAgents ?? ($completed ? $newOffset : null),
             'processed' => $processedCount,
@@ -2422,7 +2545,7 @@ class MLSSyncService
      */
     protected function isCircuitBreakerOpen(): bool
     {
-        if (!$this->circuitBreakerOpen) {
+        if (! $this->circuitBreakerOpen) {
             return false;
         }
 
@@ -2430,6 +2553,7 @@ class MLSSyncService
         if ($this->circuitBreakerOpenedAt && $this->circuitBreakerOpenedAt->addSeconds($this->circuitBreakerTimeoutSeconds)->isPast()) {
             $this->log('info', '[CIRCUIT BREAKER] Tiempo de espera cumplido, intentando recuperar...');
             $this->resetCircuitBreaker();
+
             return false;
         }
 
@@ -2443,7 +2567,7 @@ class MLSSyncService
     protected function recordCircuitBreakerFailure(): void
     {
         $this->circuitBreakerFailures++;
-        
+
         if ($this->circuitBreakerFailures >= $this->circuitBreakerThreshold) {
             $this->circuitBreakerOpen = true;
             $this->circuitBreakerOpenedAt = now();
@@ -2459,7 +2583,7 @@ class MLSSyncService
     protected function recordCircuitBreakerSuccess(): void
     {
         $this->circuitBreakerFailures = 0;
-        
+
         if ($this->circuitBreakerOpen) {
             $this->circuitBreakerOpen = false;
             $this->circuitBreakerOpenedAt = null;
@@ -2481,33 +2605,36 @@ class MLSSyncService
      * Intenta adquirir un lock para evitar sincronizaciones simultáneas.
      * Usa un TTL largo para que el lock no expire durante sincronizaciones largas.
      *
-     * @param int $ttlSeconds TTL del lock en segundos (default: 2 horas para sync completo, 5 min para progresivo)
+     * @param  int  $ttlSeconds  TTL del lock en segundos (default: 2 horas para sync completo, 5 min para progresivo)
      * @return bool True si se adquirió el lock, false si ya existe una sincronización en curso
      */
-    protected function acquireSyncLock(int $ttlSeconds = null): bool
+    protected function acquireSyncLock(?int $ttlSeconds = null): bool
     {
         $this->syncLockKey = 'mls_sync_lock';
         $ttl = $ttlSeconds ?? $this->lockTtlSeconds;
-        
+
         try {
             // Usar lock con TTL para que se libere automáticamente después del tiempo límite
             $this->isLocked = \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, $ttl)->block(5);
-            
-            if (!$this->isLocked) {
+
+            if (! $this->isLocked) {
                 $this->log('warning', '[SYNC LOCK] Ya existe una sincronización en curso. Intenta más tarde.');
+
                 return false;
             }
-            
+
             // Guardar timestamp del lock para detectar locks obsoletos
             $now = now()->toIso8601String();
             \Illuminate\Support\Facades\Cache::put('mls_sync_locked_at', $now, $ttl);
             \Illuminate\Support\Facades\Cache::put('mls_sync_lock_age', $now, $ttl);
             \Illuminate\Support\Facades\Cache::put('mls_sync_lock_ttl', $ttl, $ttl);
-            
-            $this->log('info', '[SYNC LOCK] Lock adquirido exitosamente (TTL: ' . $ttl . 's)');
+
+            $this->log('info', '[SYNC LOCK] Lock adquirido exitosamente (TTL: '.$ttl.'s)');
+
             return true;
         } catch (\Throwable $e) {
-            $this->log('error', '[SYNC LOCK] Error al adquirir lock: ' . $e->getMessage());
+            $this->log('error', '[SYNC LOCK] Error al adquirir lock: '.$e->getMessage());
+
             return false;
         }
     }
@@ -2518,7 +2645,7 @@ class MLSSyncService
      * - Ha estado activo por más de 30 minutos (tiempo máximo de sincronización)
      * - Ha estado activo por más de 5 minutos y force=true (para permitir liberación manual)
      *
-     * @param bool $force Si es true, considera obsoleto cualquier lock activo para permitir liberación manual
+     * @param  bool  $force  Si es true, considera obsoleto cualquier lock activo para permitir liberación manual
      * @return bool True si el lock está obsoleto y puede ser liberado
      */
     public function isLockStale(bool $force = false): bool
@@ -2530,36 +2657,38 @@ class MLSSyncService
                 $lockedAtCarbon = \Carbon\Carbon::parse($lockedAt);
                 $minutesAgo = $lockedAtCarbon->diffInMinutes(now());
                 $secondsAgo = $lockedAtCarbon->diffInSeconds(now());
-                
-                $this->log('info', '[SYNC LOCK] Lock activo desde hace ' . $minutesAgo . ' minutos');
-                
+
+                $this->log('info', '[SYNC LOCK] Lock activo desde hace '.$minutesAgo.' minutos');
+
                 // Si force=true, considerar obsoleto cualquier lock activo (para liberación manual)
                 if ($force) {
                     $this->log('info', '[SYNC LOCK] force=true, considerando lock como obsoleto para liberación manual');
+
                     return true;
                 }
-                
+
                 // Si el lock tiene más de 30 minutos, considerarlo obsoleto
                 if ($minutesAgo > 30) {
                     return true;
                 }
-                
+
                 // Si el lock tiene más de 5 minutos, probablemente el proceso murió
                 // (un lote de 20 propiedades no debería tomar más de 5 minutos)
                 if ($secondsAgo > 300) {
                     $this->log('warning', '[SYNC LOCK] Lock activo por más de 5 minutos, probablemente el proceso murió');
+
                     return true;
                 }
-                
+
                 // Lock está activo y dentro del tiempo límite, no está obsoleto
                 return false;
             }
-            
+
             // Si no hay timestamp, verificar si el lock de caché existe usando tryLock sin bloquear
             try {
                 $lock = \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, 1, 'default');
                 // Intentar adquirir sin bloquear - si falla, significa que está en uso
-                if (!$lock->get(true)) {
+                if (! $lock->get(true)) {
                     // El lock existe pero no podemos adquirirlo
                     $lockAge = \Illuminate\Support\Facades\Cache::get('mls_sync_lock_age');
                     if ($lockAge) {
@@ -2571,12 +2700,13 @@ class MLSSyncService
                 }
             } catch (\Throwable $e) {
                 // Si no podemos verificar, asumir que no está obsoleto
-                $this->log('warning', '[SYNC LOCK] Error verificando lock: ' . $e->getMessage());
+                $this->log('warning', '[SYNC LOCK] Error verificando lock: '.$e->getMessage());
             }
-            
+
             return false;
         } catch (\Throwable $e) {
-            $this->log('error', '[SYNC LOCK] Error verificando estado del lock: ' . $e->getMessage());
+            $this->log('error', '[SYNC LOCK] Error verificando estado del lock: '.$e->getMessage());
+
             return false;
         }
     }
@@ -2584,31 +2714,34 @@ class MLSSyncService
     /**
      * Fuerza la liberación del lock si está obsoleto.
      *
-     * @param bool $force Si es true, libera el lock aunque no esté obsoleto
+     * @param  bool  $force  Si es true, libera el lock aunque no esté obsoleto
      * @return bool True si se liberó el lock, false si no se pudo
      */
     public function forceReleaseLock(bool $force = false): bool
     {
         try {
             // Verificar si está obsoleto primero (a menos que force=true)
-            if (!$force && !$this->isLockStale()) {
+            if (! $force && ! $this->isLockStale()) {
                 $this->log('warning', '[SYNC LOCK] No se puede forzar liberación: el lock no está obsoleto');
+
                 return false;
             }
-            
+
             // Forzar liberación del lock
             \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, 1, 'default')->forceRelease();
-            
+
             // Limpiar todos los campos relacionados con el lock
             \Illuminate\Support\Facades\Cache::forget('mls_sync_locked_at');
             \Illuminate\Support\Facades\Cache::forget('mls_sync_lock_age');
             \Illuminate\Support\Facades\Cache::forget('mls_sync_lock_ttl');
-            
+
             $this->isLocked = false;
-            $this->log('info', '[SYNC LOCK] Lock ' . ($force ? 'liberado forzosamente' : 'obsoleto liberado forzosamente'));
+            $this->log('info', '[SYNC LOCK] Lock '.($force ? 'liberado forzosamente' : 'obsoleto liberado forzosamente'));
+
             return true;
         } catch (\Throwable $e) {
-            $this->log('error', '[SYNC LOCK] Error forzando liberación del lock: ' . $e->getMessage());
+            $this->log('error', '[SYNC LOCK] Error forzando liberación del lock: '.$e->getMessage());
+
             return false;
         }
     }
@@ -2624,27 +2757,27 @@ class MLSSyncService
                 // Usar forceRelease para garantizar liberación del lock
                 // Esto es necesario porque el lock fue adquirido con TTL y block()
                 \Illuminate\Support\Facades\Cache::lock($this->syncLockKey, 1, 'default')->forceRelease();
-                
+
                 // Limpiar todos los campos relacionados con el lock
                 \Illuminate\Support\Facades\Cache::forget('mls_sync_locked_at');
                 \Illuminate\Support\Facades\Cache::forget('mls_sync_lock_age');
                 \Illuminate\Support\Facades\Cache::forget('mls_sync_lock_ttl');
-                
+
                 $this->isLocked = false;
                 $this->log('info', '[SYNC LOCK] Lock liberado exitosamente');
             } catch (\Throwable $e) {
-                $this->log('error', '[SYNC LOCK] Error al liberar lock: ' . $e->getMessage());
+                $this->log('error', '[SYNC LOCK] Error al liberar lock: '.$e->getMessage());
             }
         }
     }
 
     /**
      * Registra un error detallado para análisis posterior.
-     * 
-     * @param string $mlsId ID de la propiedad que falló
-     * @param string $errorType Tipo de error (api, database, validation, etc.)
-     * @param string $message Mensaje de error
-     * @param \Throwable|null $exception Excepción si está disponible
+     *
+     * @param  string  $mlsId  ID de la propiedad que falló
+     * @param  string  $errorType  Tipo de error (api, database, validation, etc.)
+     * @param  string  $message  Mensaje de error
+     * @param  \Throwable|null  $exception  Excepción si está disponible
      */
     protected function recordError(string $mlsId, string $errorType, string $message, ?\Throwable $exception = null): void
     {
@@ -2665,7 +2798,7 @@ class MLSSyncService
         }
 
         $this->errorDetails[] = $errorDetail;
-        
+
         if ($mlsId) {
             $this->failedProperties[] = $mlsId;
         }
@@ -2676,32 +2809,32 @@ class MLSSyncService
 
     /**
      * Valida la estructura de datos de una propiedad del API.
-     * 
-     * @param array $propertyData Datos de la propiedad
+     *
+     * @param  array  $propertyData  Datos de la propiedad
      * @return array Array con ['valid' => bool, 'errors' => array]
      */
     protected function validatePropertyData(array $propertyData): array
     {
         $errors = [];
-        
+
         // Campos requeridos
         $requiredFields = ['mls_id', 'id'];
         foreach ($requiredFields as $field) {
-            if (!isset($propertyData[$field]) || empty($propertyData[$field])) {
+            if (! isset($propertyData[$field]) || empty($propertyData[$field])) {
                 $errors[] = "Campo requerido faltante: {$field}";
             }
         }
 
         // Validar tipos de datos
-        if (isset($propertyData['price']) && !is_numeric($propertyData['price'])) {
+        if (isset($propertyData['price']) && ! is_numeric($propertyData['price'])) {
             $errors[] = "El campo 'price' debe ser numérico";
         }
 
-        if (isset($propertyData['bedrooms']) && !is_numeric($propertyData['bedrooms'])) {
+        if (isset($propertyData['bedrooms']) && ! is_numeric($propertyData['bedrooms'])) {
             $errors[] = "El campo 'bedrooms' debe ser numérico";
         }
 
-        if (isset($propertyData['bathrooms']) && !is_numeric($propertyData['bathrooms'])) {
+        if (isset($propertyData['bathrooms']) && ! is_numeric($propertyData['bathrooms'])) {
             $errors[] = "El campo 'bathrooms' debe ser numérico";
         }
 
@@ -2713,8 +2846,8 @@ class MLSSyncService
 
     /**
      * Valida la estructura de respuesta del API.
-     * 
-     * @param array|null $response Respuesta del API
+     *
+     * @param  array|null  $response  Respuesta del API
      * @return bool True si la respuesta es válida
      */
     protected function validateApiResponse(?array $response): bool
@@ -2724,8 +2857,9 @@ class MLSSyncService
         }
 
         // Verificar que sea un array
-        if (!is_array($response)) {
+        if (! is_array($response)) {
             $this->log('error', '[API VALIDATION] La respuesta no es un array');
+
             return false;
         }
 
@@ -2739,24 +2873,26 @@ class MLSSyncService
 
     /**
      * Obtiene el último checkpoint de sincronización.
-     * 
+     *
      * @return array|null Checkpoint con ['last_mls_id' => string, 'timestamp' => string]
      */
     protected function getLastCheckpoint(): ?array
     {
         try {
             $checkpoint = \Illuminate\Support\Facades\Cache::get('mls_sync_checkpoint');
+
             return $checkpoint;
         } catch (\Throwable $e) {
-            $this->log('error', '[CHECKPOINT] Error al obtener checkpoint: ' . $e->getMessage());
+            $this->log('error', '[CHECKPOINT] Error al obtener checkpoint: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * Guarda un checkpoint de sincronización.
-     * 
-     * @param string $mlsId Último MLS ID procesado exitosamente
+     *
+     * @param  string  $mlsId  Último MLS ID procesado exitosamente
      */
     protected function saveCheckpoint(string $mlsId): void
     {
@@ -2765,11 +2901,11 @@ class MLSSyncService
                 'last_mls_id' => $mlsId,
                 'timestamp' => now()->toIso8601String(),
             ];
-            
+
             \Illuminate\Support\Facades\Cache::put('mls_sync_checkpoint', $checkpoint, 86400); // 24 horas
             $this->log('info', "[CHECKPOINT] Guardado: MLS ID {$mlsId}");
         } catch (\Throwable $e) {
-            $this->log('error', '[CHECKPOINT] Error al guardar checkpoint: ' . $e->getMessage());
+            $this->log('error', '[CHECKPOINT] Error al guardar checkpoint: '.$e->getMessage());
         }
     }
 
@@ -2782,7 +2918,7 @@ class MLSSyncService
             \Illuminate\Support\Facades\Cache::forget('mls_sync_checkpoint');
             $this->log('info', '[CHECKPOINT] Checkpoint limpiado');
         } catch (\Throwable $e) {
-            $this->log('error', '[CHECKPOINT] Error al limpiar checkpoint: ' . $e->getMessage());
+            $this->log('error', '[CHECKPOINT] Error al limpiar checkpoint: '.$e->getMessage());
         }
     }
 
@@ -2791,17 +2927,17 @@ class MLSSyncService
      * Obtiene el detalle de cada propiedad para extraer las fotos.
      * Vincula imágenes existentes directamente y dispatcha jobs solo para imágenes nuevas.
      *
-     * @param int $limit Número máximo de propiedades a procesar (0 = sin límite, procesa todas)
-     * @param bool $force Forzar re-descarga de imágenes existentes
-     * @param int $offset Número de propiedades a saltar (para paginación)
+     * @param  int  $limit  Número máximo de propiedades a procesar (0 = sin límite, procesa todas)
+     * @param  bool  $force  Forzar re-descarga de imágenes existentes
+     * @param  int  $offset  Número de propiedades a saltar (para paginación)
      * @return array Resultado con estadísticas detalladas
      */
     public function syncExistingPropertyImages(int $limit = 0, bool $force = false, int $offset = 0, ?string $mediaSyncMode = null): array
     {
         $limitText = $limit > 0 ? (string) $limit : 'TODAS';
         $mediaSyncMode = $this->resolveMediaSyncMode($mediaSyncMode ?? $this->mediaSyncMode);
-        $this->log('info', "[IMAGES SYNC START] ================================");
-        $this->log('info', "[IMAGES SYNC START] Iniciando sincronización de imágenes | Límite: {$limitText} | Force: " . ($force ? 'SÍ' : 'NO') . " | Offset: {$offset}");
+        $this->log('info', '[IMAGES SYNC START] ================================');
+        $this->log('info', "[IMAGES SYNC START] Iniciando sincronización de imágenes | Límite: {$limitText} | Force: ".($force ? 'SÍ' : 'NO')." | Offset: {$offset}");
         $this->log('info', "[IMAGES SYNC MODE] {$mediaSyncMode}");
 
         // Obtener el total de propiedades MLS para mostrar progreso
@@ -2815,18 +2951,19 @@ class MLSSyncService
         $query = Property::where('source', 'mls')
             ->whereNotNull('mls_public_id')
             ->offset($offset);
-        
+
         // Aplicar límite si es > 0
         if ($limit > 0) {
             $query->limit($limit);
         }
-        
+
         $properties = $query->orderBy('id')->get();
 
-        $this->log('info', "[IMAGES SYNC] Propiedades a procesar: " . $properties->count() . " / {$totalMlsProperties} (offset: {$offset})");
+        $this->log('info', '[IMAGES SYNC] Propiedades a procesar: '.$properties->count()." / {$totalMlsProperties} (offset: {$offset})");
 
         if ($properties->isEmpty()) {
-            $this->log('warning', "[IMAGES SYNC] No se encontraron propiedades MLS para procesar");
+            $this->log('warning', '[IMAGES SYNC] No se encontraron propiedades MLS para procesar');
+
             return [
                 'linked' => 0,
                 'dispatched' => 0,
@@ -2848,47 +2985,90 @@ class MLSSyncService
         $errorsList = [];
 
         foreach ($properties as $property) {
-            $this->log('info', "[IMAGES SYNC PROCESS] ---------------------------");
+            $this->log('info', '[IMAGES SYNC PROCESS] ---------------------------');
             $this->log('info', "[IMAGES SYNC] Procesando propiedad: {$property->mls_public_id} | ID: {$property->id}");
 
-            // LOG: Estado actual de media assets
-            $currentMediaCount = $property->mediaAssets()->count();
-            $currentImagesCount = $property->mediaAssets()->wherePivot('role', 'image')->count();
-            $currentLocalImagesCount = $property->mediaAssets()
-                ->wherePivot('role', 'image')
-                ->whereNotNull('storage_path')
-                ->count();
-            $this->log('info', "[IMAGES SYNC PRE] Propiedad: {$property->mls_public_id} | Media: {$currentMediaCount} | Imágenes: {$currentImagesCount} | Imágenes locales: {$currentLocalImagesCount}");
+            if ($mediaSyncMode === 'external_url' && ! $force) {
+                $this->log('info', "[IMAGES SYNC PRE] Propiedad: {$property->mls_public_id} | Modo externo con validacion rapida");
+            } else {
+
+                // LOG: Estado actual de media assets
+                $currentMediaCount = $property->mediaAssets()->count();
+                $currentImagesCount = $property->mediaAssets()->wherePivot('role', 'image')->count();
+                $currentLocalImagesCount = $property->mediaAssets()
+                    ->wherePivot('role', 'image')
+                    ->whereNotNull('storage_path')
+                    ->count();
+                $this->log('info', "[IMAGES SYNC PRE] Propiedad: {$property->mls_public_id} | Media: {$currentMediaCount} | Imágenes: {$currentImagesCount} | Imágenes locales: {$currentLocalImagesCount}");
+
+            }
 
             try {
-                // Obtener el detalle de la propiedad
-                $this->log('debug', "[IMAGES SYNC] Obteniendo detalle del API para: {$property->mls_public_id}");
-                $detailData = $this->fetchPropertyDetail($property->mls_public_id);
+                $detailData = null;
+                $photos = [];
+                $usingCachedPhotos = false;
 
-                if (!$detailData) {
-                    $this->log('error', "[IMAGES SYNC ERROR] No se pudo obtener detalle de propiedad: {$property->mls_public_id}");
-                    $errors++;
-                    $errorsList[] = [
-                        'mls_public_id' => $property->mls_public_id,
-                        'error' => 'No se pudo obtener detalle del API',
-                    ];
-                    continue;
+                if ($mediaSyncMode === 'external_url' && ! $force) {
+                    $photos = $this->getCachedPropertyPhotos($property);
+                    $usingCachedPhotos = ! empty($photos);
+
+                    if ($usingCachedPhotos) {
+                        $this->log('debug', "[IMAGES SYNC FAST] Usando fotos cacheadas en raw_payload para: {$property->mls_public_id}");
+                    }
                 }
 
-                $photos = $detailData['photos'] ?? [];
-                $this->log('info', "[IMAGES SYNC] Propiedad: {$property->mls_public_id} | Fotos en API: " . count($photos));
+                if (empty($photos)) {
+                    // Obtener el detalle de la propiedad
+                    $this->log('debug', "[IMAGES SYNC] Obteniendo detalle del API para: {$property->mls_public_id}");
+                    $detailData = $this->fetchPropertyDetail($property->mls_public_id);
+
+                    if (! $detailData) {
+                        $this->log('error', "[IMAGES SYNC ERROR] No se pudo obtener detalle de propiedad: {$property->mls_public_id}");
+                        $errors++;
+                        $errorsList[] = [
+                            'mls_public_id' => $property->mls_public_id,
+                            'error' => 'No se pudo obtener detalle del API',
+                        ];
+
+                        continue;
+                    }
+
+                    $photos = $detailData['photos'] ?? [];
+                }
+
+                $photosSource = $usingCachedPhotos ? 'cache' : 'API';
+                $this->log('info', "[IMAGES SYNC] Propiedad: {$property->mls_public_id} | Fotos en {$photosSource}: ".count($photos));
 
                 if (empty($photos)) {
-                    $this->log('warning', "[IMAGES SYNC] Propiedad: {$property->mls_public_id} | No hay fotos en el API");
+                    $this->log('warning', "[IMAGES SYNC] Propiedad: {$property->mls_public_id} | No hay fotos en {$photosSource}");
                     $skipped++;
                     $imagesSkippedList[] = [
                         'mls_public_id' => $property->mls_public_id,
-                        'reason' => 'Sin fotos en el API',
+                        'reason' => "Sin fotos en {$photosSource}",
                     ];
                     $processed++;
                     // Actualizar last_synced_at incluso si no hay fotos
                     $property->update(['last_synced_at' => now()]);
+
                     continue;
+                }
+
+                if ($mediaSyncMode === 'external_url' && ! $force) {
+                    $alreadySynced = $this->externalPhotosAlreadySynced($property, $photos);
+
+                    if ($alreadySynced['synced']) {
+                        $this->log('info', "[IMAGES SYNC FAST] Propiedad: {$property->mls_public_id} | URLs externas ya sincronizadas, se omite reproceso");
+                        $skipped++;
+                        $imagesAlreadyLinked += $alreadySynced['count'];
+                        $imagesSkippedList[] = [
+                            'mls_public_id' => $property->mls_public_id,
+                            'reason' => 'URLs externas ya sincronizadas',
+                            'images' => $alreadySynced['count'],
+                        ];
+                        $processed++;
+
+                        continue;
+                    }
                 }
 
                 $imagesInThisProperty = 0;
@@ -2897,82 +3077,91 @@ class MLSSyncService
                 $imagesSkippedInThisProperty = 0;
 
                 foreach ($photos as $index => $photo) {
-                    $url = is_string($photo) ? $photo : ($photo['url'] ?? $photo['src'] ?? null);
+                    $url = $this->getPhotoUrl($photo);
 
-                    if (!$url) {
+                    if (! $url) {
                         $this->log('warning', "[IMAGES SKIP] Propiedad: {$property->mls_public_id} | Foto posición {$index} sin URL");
                         $imagesWithoutUrl++;
                         $imagesSkippedInThisProperty++;
+
                         continue;
                     }
 
                     $imagesInThisProperty++;
 
-                    $this->log('info', "[IMAGES PROCESS] Propiedad: {$property->mls_public_id} | Foto posición {$index}: " . substr($url, 0, 80) . "...");
-
-                    // Verificar si ya existe un MediaAsset para esta URL
-                    $existingMediaAsset = MediaAsset::where('url', $url)->first();
+                    $this->log('info', "[IMAGES PROCESS] Propiedad: {$property->mls_public_id} | Foto posición {$index}: ".substr($url, 0, 80).'...');
 
                     if ($mediaSyncMode === 'external_url') {
                         $mediaAsset = $this->getOrCreateExternalImageMediaAsset(
                             $url,
                             is_array($photo) ? $photo : ['url' => $url]
                         );
-                        $this->log('info', "[IMAGES EXTERNAL] Propiedad: {$property->mls_public_id} | MediaAsset remoto para: " . substr($url, 0, 60) . "...");
+                        $this->log('info', "[IMAGES EXTERNAL] Propiedad: {$property->mls_public_id} | MediaAsset remoto para: ".substr($url, 0, 60).'...');
                         $this->linkMediaAssetToProperty($property, $mediaAsset, $photo, $index);
                         $linked++;
                         $imagesLinkedInThisProperty++;
-                    } elseif ($existingMediaAsset && $existingMediaAsset->storage_path && Storage::disk('public')->exists($existingMediaAsset->storage_path)) {
-                        // La imagen ya existe localmente, vincular directamente
-                        $this->log('info', "[IMAGES LINK] Propiedad: {$property->mls_public_id} | Imagen ya existe localmente, vinculando: " . substr($url, 0, 60) . "...");
-                        $this->linkMediaAssetToProperty($property, $existingMediaAsset, $photo, $index);
-                        $linked++;
-                        $imagesLinkedInThisProperty++;
                     } else {
-                        // La imagen no existe localmente, dispatchar job
-                        $mediaData = [
-                            'url' => $url,
-                            'title' => is_array($photo) ? ($photo['title'] ?? null) : null,
-                            'position' => $index,
-                        ];
+                        // Verificar si ya existe un MediaAsset local para esta URL
+                        $existingMediaAsset = MediaAsset::where('url', $url)->first();
 
-                        $this->log('info', "[IMAGES DISPATCH] Propiedad: {$property->mls_public_id} | Dispatching job para: " . substr($url, 0, 60) . "...");
-                        DownloadPropertyImageJob::dispatch($property->id, $mediaData);
-                        $dispatched++;
-                        $imagesDispatchedInThisProperty++;
-                        $imagesDispatched[] = [
-                            'property_mls_id' => $property->mls_public_id,
-                            'url' => $url,
-                            'position' => $index,
-                        ];
+                        if ($existingMediaAsset && $existingMediaAsset->storage_path && Storage::disk('public')->exists($existingMediaAsset->storage_path)) {
+                            // La imagen ya existe localmente, vincular directamente
+                            $this->log('info', "[IMAGES LINK] Propiedad: {$property->mls_public_id} | Imagen ya existe localmente, vinculando: ".substr($url, 0, 60).'...');
+                            $this->linkMediaAssetToProperty($property, $existingMediaAsset, $photo, $index);
+                            $linked++;
+                            $imagesLinkedInThisProperty++;
+                        } else {
+                            // La imagen no existe localmente, dispatchar job
+                            $mediaData = [
+                                'url' => $url,
+                                'title' => is_array($photo) ? ($photo['title'] ?? null) : null,
+                                'position' => $index,
+                            ];
+
+                            $this->log('info', "[IMAGES DISPATCH] Propiedad: {$property->mls_public_id} | Dispatching job para: ".substr($url, 0, 60).'...');
+                            DownloadPropertyImageJob::dispatch($property->id, $mediaData);
+                            $dispatched++;
+                            $imagesDispatchedInThisProperty++;
+                            $imagesDispatched[] = [
+                                'property_mls_id' => $property->mls_public_id,
+                                'url' => $url,
+                                'position' => $index,
+                            ];
+                        }
                     }
                 }
 
                 // Actualizar el raw_payload con los datos del API pero EXCLUIR campos de estado
                 // para evitar que la sincronización de imágenes cambie el estado de publicación
-                $detailDataFiltered = array_diff_key($detailData, array_flip(['is_published', 'allow_integration', 'status', 'is_approved', 'published']));
-                $property->update([
-                    'raw_payload' => array_merge($property->raw_payload ?: [], $detailDataFiltered),
-                    'last_synced_at' => now(),
-                ]);
+                $updateData = ['last_synced_at' => now()];
+
+                if ($detailData !== null) {
+                    $detailDataFiltered = array_diff_key($detailData, array_flip(['is_published', 'allow_integration', 'status', 'is_approved', 'published']));
+                    $existingPayload = is_array($property->raw_payload) ? $property->raw_payload : [];
+                    $updateData['raw_payload'] = array_merge($existingPayload, $detailDataFiltered);
+                }
+
+                $property->update($updateData);
 
                 // LOG: Resumen por propiedad
                 $finalMediaCount = $property->mediaAssets()->count();
                 $finalImagesCount = $property->mediaAssets()->wherePivot('role', 'image')->count();
-                $this->log('info', "[IMAGES SYNC POST] Propiedad: {$property->mls_public_id} | " .
-                    "Procesadas: {$imagesInThisProperty} | " .
-                    "Vinculadas: {$imagesLinkedInThisProperty} | " .
-                    "Dispatched: {$imagesDispatchedInThisProperty} | " .
-                    "Skipped: {$imagesSkippedInThisProperty} | " .
+                $this->log('info', "[IMAGES SYNC POST] Propiedad: {$property->mls_public_id} | ".
+                    "Procesadas: {$imagesInThisProperty} | ".
+                    "Vinculadas: {$imagesLinkedInThisProperty} | ".
+                    "Dispatched: {$imagesDispatchedInThisProperty} | ".
+                    "Skipped: {$imagesSkippedInThisProperty} | ".
                     "Total imágenes: {$finalImagesCount}");
 
                 $processed++;
 
-                // Rate limiting entre propiedades
-                usleep((int) (1000000 / $this->rateLimit));
+                // Rate limiting solo cuando se consultó el API del MLS.
+                if ($detailData !== null) {
+                    usleep((int) (1000000 / $this->rateLimit));
+                }
 
             } catch (\Throwable $e) {
-                $this->log('error', "[IMAGES SYNC ERROR] Error sincronizando imágenes de {$property->mls_public_id}: " . $e->getMessage());
+                $this->log('error', "[IMAGES SYNC ERROR] Error sincronizando imágenes de {$property->mls_public_id}: ".$e->getMessage());
                 $errors++;
                 $errorsList[] = [
                     'mls_public_id' => $property->mls_public_id,
@@ -2981,8 +3170,8 @@ class MLSSyncService
             }
         }
 
-        $this->log('info', "[IMAGES SYNC END] ================================");
-        $this->log('info', "[IMAGES SYNC SUMMARY]");
+        $this->log('info', '[IMAGES SYNC END] ================================');
+        $this->log('info', '[IMAGES SYNC SUMMARY]');
         $this->log('info', "[IMAGES SYNC SUMMARY] Total propiedades procesadas: {$processed}");
         $this->log('info', "[IMAGES SYNC SUMMARY] Imágenes vinculadas directamente: {$linked}");
         $this->log('info', "[IMAGES SYNC SUMMARY] Jobs dispatchados: {$dispatched}");
@@ -2990,11 +3179,11 @@ class MLSSyncService
         $this->log('info', "[IMAGES SYNC SUMMARY] Fotos sin URL: {$imagesWithoutUrl}");
         $this->log('info', "[IMAGES SYNC SUMMARY] Fotos ya vinculadas (skipped): {$imagesAlreadyLinked}");
         $this->log('info', "[IMAGES SYNC SUMMARY] Errores: {$errors}");
-        $this->log('info', "[IMAGES SYNC END] ================================");
+        $this->log('info', '[IMAGES SYNC END] ================================');
 
         // Log de errores detallados si los hay
-        if (!empty($errorsList)) {
-            $this->log('error', "[IMAGES SYNC ERRORS LIST]");
+        if (! empty($errorsList)) {
+            $this->log('error', '[IMAGES SYNC ERRORS LIST]');
             foreach ($errorsList as $error) {
                 $this->log('error', "[IMAGES SYNC ERROR] MLS ID: {$error['mls_public_id']} | Error: {$error['error']}");
             }
@@ -3021,9 +3210,9 @@ class MLSSyncService
      * Procesa todas las propiedades en lotes hasta completar la sincronización.
      * Ideal para sincronizaciones largas que no caben en una sola request HTTP.
      *
-     * @param int $batchSize Tamaño del lote (default: 50)
-     * @param bool $force Forzar re-descarga de imágenes existentes
-     * @param int|null $startOffset Offset inicial (si es null, usa el offset basado en last_synced_at)
+     * @param  int  $batchSize  Tamaño del lote (default: 50)
+     * @param  bool  $force  Forzar re-descarga de imágenes existentes
+     * @param  int|null  $startOffset  Offset inicial (si es null, usa el offset basado en last_synced_at)
      * @return array Resultado con estadísticas detalladas y next_offset para continuar
      */
     public function syncImagesProgressive(int $batchSize = 50, bool $force = false, ?int $startOffset = null, ?string $mediaSyncMode = null): array
@@ -3031,7 +3220,7 @@ class MLSSyncService
         $mediaSyncMode = $this->resolveMediaSyncMode($mediaSyncMode ?? $this->mediaSyncMode);
         $this->log('info', '[IMAGES SYNC PROGRESSIVE START] ================================');
         $this->log('info', "[IMAGES SYNC PROGRESSIVE MODE] {$mediaSyncMode}");
-        $this->log('info', "[IMAGES SYNC PROGRESSIVE] Iniciando sincronización progresiva | Batch size: {$batchSize} | Force: " . ($force ? 'SÍ' : 'NO') . " | Offset inicial: " . ($startOffset !== null ? (string) $startOffset : 'AUTO'));
+        $this->log('info', "[IMAGES SYNC PROGRESSIVE] Iniciando sincronización progresiva | Batch size: {$batchSize} | Force: ".($force ? 'SÍ' : 'NO').' | Offset inicial: '.($startOffset !== null ? (string) $startOffset : 'AUTO'));
 
         // Obtener el total de propiedades MLS
         $totalMlsProperties = Property::where('source', 'mls')
@@ -3066,6 +3255,7 @@ class MLSSyncService
         // Verificar si ya procesamos todo
         if ($currentOffset >= $totalMlsProperties) {
             $this->log('info', '[IMAGES SYNC PROGRESSIVE] Ya se procesaron todas las propiedades');
+
             return [
                 'success' => true,
                 'total_in_db' => $totalMlsProperties,
@@ -3090,7 +3280,7 @@ class MLSSyncService
 
         $progressPercentage = $totalMlsProperties > 0 ? round(($newOffset / $totalMlsProperties) * 100, 2) : 100;
 
-        $this->log('info', "[IMAGES SYNC PROGRESSIVE] Lote completado | Procesadas: {$processedInThisBatch} | Offset actual: {$newOffset} | Total: {$totalMlsProperties} | Progreso: {$progressPercentage}% | Completado: " . ($completed ? 'SÍ' : 'NO'));
+        $this->log('info', "[IMAGES SYNC PROGRESSIVE] Lote completado | Procesadas: {$processedInThisBatch} | Offset actual: {$newOffset} | Total: {$totalMlsProperties} | Progreso: {$progressPercentage}% | Completado: ".($completed ? 'SÍ' : 'NO'));
 
         return [
             'success' => true,
@@ -3186,14 +3376,14 @@ class MLSSyncService
      * Sincroniza propiedades MLS en modo progresivo.
      * Procesa un lote de propiedades y retorna el offset para continuar.
      * Ideal para sincronizaciones largas que requieren múltiples llamadas HTTP cortas.
-     * 
+     *
      * OPTIMIZADO: Ahora obtiene solo el total de propiedades del MLS
      * y procesa las propiedades de una en una usando paginación del API.
      *
-     * @param int $batchSize Tamaño del lote (número de propiedades a procesar por llamada)
-     * @param bool $skipMedia Si true, no sincroniza medios
-     * @param int|null $startOffset Offset inicial (si es null, usa el checkpoint o comienza desde 0)
-     * @param string|null $mode Modo de sincronización ('full' o 'incremental')
+     * @param  int  $batchSize  Tamaño del lote (número de propiedades a procesar por llamada)
+     * @param  bool  $skipMedia  Si true, no sincroniza medios
+     * @param  int|null  $startOffset  Offset inicial (si es null, usa el checkpoint o comienza desde 0)
+     * @param  string|null  $mode  Modo de sincronización ('full' o 'incremental')
      * @return array Resultado con estadísticas detalladas y next_offset para continuar
      */
     public function syncPropertiesProgressive(
@@ -3204,14 +3394,14 @@ class MLSSyncService
         ?string $mediaSyncMode = null
     ): array {
         $this->resetCounters();
-        
+
         $this->log('info', '[SYNC PROGRESSIVE START] ===================================');
-        $this->log('info', "[SYNC PROGRESSIVE] Iniciando sincronización progresiva | " .
-            "Batch: {$batchSize} | Skip Media: " . ($skipMedia ? 'SÍ' : 'NO') . " | " .
-            "Offset: " . ($startOffset !== null ? (string) $startOffset : 'AUTO'));
+        $this->log('info', '[SYNC PROGRESSIVE] Iniciando sincronización progresiva | '.
+            "Batch: {$batchSize} | Skip Media: ".($skipMedia ? 'SÍ' : 'NO').' | '.
+            'Offset: '.($startOffset !== null ? (string) $startOffset : 'AUTO'));
 
         // Verificar si ya está configurado
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'MLS no está configurado',
@@ -3230,7 +3420,7 @@ class MLSSyncService
 
         // Determinar el offset inicial
         $currentOffset = $startOffset ?? 0;
-        
+
         // Verificar checkpoint existente
         $checkpoint = $this->getLastCheckpoint();
         if ($startOffset === null && $checkpoint) {
@@ -3240,10 +3430,10 @@ class MLSSyncService
 
         // Usar batch size especificado (ahora representa propiedades por llamada, no páginas)
         $propertiesPerPage = min($batchSize, $this->progressiveBatchSize);
-        
+
         // Verificar tiempo de ejecución
         $startTime = microtime(true);
-        
+
         // Verificar y liberar lock obsoleto si existe ANTES de intentar adquirir uno nuevo
         if ($this->isLockStale(true)) {
             $this->log('info', '[SYNC PROGRESSIVE] Lock obsoleto detectado, liberando antes de continuar');
@@ -3251,15 +3441,15 @@ class MLSSyncService
         }
 
         // Adquirir lock para evitar sincronizaciones simultáneas (TTL: 5 minutos para sync progresivo)
-        if (!$this->acquireSyncLock($this->progressiveLockTtlSeconds)) {
+        if (! $this->acquireSyncLock($this->progressiveLockTtlSeconds)) {
             // Verificar de nuevo si el lock es obsoleto
             if ($this->isLockStale(true)) {
                 // Forzar liberación y reintentar
                 $this->log('info', '[SYNC PROGRESSIVE] Lock activo pero obsoleto, forzando liberación y reintentando');
                 $this->forceReleaseLock(true);
-                
+
                 // Reintentar adquirir lock
-                if (!$this->acquireSyncLock($this->progressiveLockTtlSeconds)) {
+                if (! $this->acquireSyncLock($this->progressiveLockTtlSeconds)) {
                     return [
                         'success' => false,
                         'message' => 'Ya existe una sincronización en curso. Intenta más tarde.',
@@ -3280,13 +3470,14 @@ class MLSSyncService
             $syncMode = $mode ?? ($this->config?->sync_mode ?? 'incremental');
             $this->skipMedia = $skipMedia;
             $this->mediaSyncMode = $this->resolveMediaSyncMode($mediaSyncMode ?? $this->mediaSyncMode);
-            
+
             // OPTIMIZACIÓN: Obtener solo el total de propiedades del MLS (una petición rápida)
             $this->log('info', '[SYNC PROGRESSIVE] Obteniendo total de propiedades del MLS...');
             $totalInfo = $this->fetchTotalPropertiesCount();
-            
+
             if ($totalInfo === null) {
                 $this->recordCircuitBreakerFailure();
+
                 return [
                     'success' => false,
                     'message' => 'Error al obtener información del MLS',
@@ -3294,7 +3485,7 @@ class MLSSyncService
                     'circuit_breaker_failures' => $this->circuitBreakerFailures,
                 ];
             }
-            
+
             $totalProperties = $totalInfo['total'] ?? 0;
             $this->totalFetched = $totalProperties;
             $this->log('info', "[SYNC PROGRESSIVE] Total propiedades en MLS: {$totalProperties}");
@@ -3303,6 +3494,7 @@ class MLSSyncService
             if ($currentOffset >= $totalProperties) {
                 $this->log('info', '[SYNC PROGRESSIVE] Ya se procesaron todas las propiedades');
                 $this->clearCheckpoint();
+
                 return [
                     'success' => true,
                     'message' => 'Sincronización completada',
@@ -3321,12 +3513,13 @@ class MLSSyncService
             // OPTIMIZACIÓN: Calcular página actual y obtener solo esa página
             $currentPage = (int) floor($currentOffset / $propertiesPerPage) + 1;
             $this->log('info', "[SYNC PROGRESSIVE] Obteniendo página {$currentPage} del MLS ({$propertiesPerPage} propiedades)...");
-            
+
             // Obtener solo la página actual (no todas las propiedades)
             $properties = $this->fetchAllProperties($currentPage, $propertiesPerPage);
-            
+
             if ($properties === null) {
                 $this->recordCircuitBreakerFailure();
+
                 return [
                     'success' => false,
                     'message' => 'Error al obtener propiedades del MLS',
@@ -3338,6 +3531,7 @@ class MLSSyncService
             if (empty($properties)) {
                 $this->log('warning', '[SYNC PROGRESSIVE] No hay más propiedades que procesar');
                 $this->clearCheckpoint();
+
                 return [
                     'success' => true,
                     'message' => 'No hay más propiedades que procesar',
@@ -3349,26 +3543,27 @@ class MLSSyncService
                 ];
             }
 
-            $this->log('info', "[SYNC PROGRESSIVE] Procesando " . count($properties) . " propiedades de la página {$currentPage}");
+            $this->log('info', '[SYNC PROGRESSIVE] Procesando '.count($properties)." propiedades de la página {$currentPage}");
 
             // Procesar propiedades de esta página
             $processedInBatch = 0;
             $errorsInBatch = 0;
             $firstMlsIdInBatch = null;
             $lastMlsIdInBatch = null;
-            
+
             foreach ($properties as $index => $propertyData) {
                 $mlsId = $propertyData['mls_id'] ?? null;
-                
+
                 // Verificar tiempo de ejecución (advertir a los 45 segundos)
                 $elapsed = microtime(true) - $startTime;
                 if ($elapsed > $this->maxExecutionTimeWarning) {
-                    $this->log('warning', "[SYNC PROGRESSIVE] Tiempo de ejecución: " . round($elapsed, 2) . "s - continuando...");
+                    $this->log('warning', '[SYNC PROGRESSIVE] Tiempo de ejecución: '.round($elapsed, 2).'s - continuando...');
                 }
-                
-                if (!$mlsId) {
+
+                if (! $mlsId) {
                     $this->errors++;
                     $errorsInBatch++;
+
                     continue;
                 }
 
@@ -3392,7 +3587,7 @@ class MLSSyncService
 
                 // Rate limiting
                 usleep((int) (1000000 / $this->rateLimit));
-                
+
                 // Liberar memoria periódicamente
                 if (($index + 1) % 5 === 0) {
                     gc_collect_cycles();
@@ -3405,9 +3600,9 @@ class MLSSyncService
             $progressPercentage = $totalProperties > 0 ? round(($newOffset / $totalProperties) * 100, 2) : 100;
 
             // Guardar checkpoint
-            if (!$completed && $this->lastSuccessfulMlsId) {
+            if (! $completed && $this->lastSuccessfulMlsId) {
                 $this->saveProgressiveCheckpoint($newOffset, $syncMode, $skipMedia);
-            } else if ($completed) {
+            } elseif ($completed) {
                 $this->clearCheckpoint();
             }
 
@@ -3420,16 +3615,16 @@ class MLSSyncService
             // }
 
             $executionTime = round(microtime(true) - $startTime, 2);
-            
-            $this->log('info', "[SYNC PROGRESSIVE END] Lote completado | " .
-                "Procesadas: {$processedInBatch} | Errores: {$errorsInBatch} | " .
-                "Offset: {$newOffset}/{$totalProperties} | Progreso: {$progressPercentage}% | " .
+
+            $this->log('info', '[SYNC PROGRESSIVE END] Lote completado | '.
+                "Procesadas: {$processedInBatch} | Errores: {$errorsInBatch} | ".
+                "Offset: {$newOffset}/{$totalProperties} | Progreso: {$progressPercentage}% | ".
                 "Tiempo: {$executionTime}s");
 
             return [
                 'success' => true,
-                'message' => $completed 
-                    ? "Sincronización completada"
+                'message' => $completed
+                    ? 'Sincronización completada'
                     : "Lote procesado. Continúa con offset {$newOffset}",
                 'total_in_mls' => $totalProperties,
                 'processed' => $processedInBatch,
@@ -3445,12 +3640,12 @@ class MLSSyncService
             ];
 
         } catch (\Throwable $e) {
-            $this->log('error', '[SYNC PROGRESSIVE ERROR] ' . $e->getMessage());
+            $this->log('error', '[SYNC PROGRESSIVE ERROR] '.$e->getMessage());
             $this->recordError('critical', 'critical', $e->getMessage(), $e);
 
             return [
                 'success' => false,
-                'message' => 'Error durante la sincronización: ' . $e->getMessage(),
+                'message' => 'Error durante la sincronización: '.$e->getMessage(),
                 'stats' => $this->getStats(),
                 'errors' => $this->errors,
             ];
@@ -3473,11 +3668,11 @@ class MLSSyncService
                 'last_mls_id' => $this->lastSuccessfulMlsId,
                 'timestamp' => now()->toIso8601String(),
             ];
-            
+
             \Illuminate\Support\Facades\Cache::put('mls_sync_checkpoint', $checkpoint, 86400);
             $this->log('info', "[CHECKPOINT PROGRESSIVE] Guardado offset: {$offset}");
         } catch (\Throwable $e) {
-            $this->log('error', '[CHECKPOINT PROGRESSIVE] Error al guardar: ' . $e->getMessage());
+            $this->log('error', '[CHECKPOINT PROGRESSIVE] Error al guardar: '.$e->getMessage());
         }
     }
 
@@ -3489,22 +3684,22 @@ class MLSSyncService
     public function getPropertiesSyncProgress(): array
     {
         $checkpoint = $this->getLastCheckpoint();
-        
+
         // Verificar estado real del lock desde el caché
         $cacheLockExists = \Illuminate\Support\Facades\Cache::has('mls_sync_locked_at');
         $lockedAt = \Illuminate\Support\Facades\Cache::get('mls_sync_locked_at');
         $isActuallyLocked = false;
         $isStale = false;
-        
+
         if ($cacheLockExists && $lockedAt) {
             $lockedAtCarbon = \Carbon\Carbon::parse($lockedAt);
             $minutesAgo = $lockedAtCarbon->diffInMinutes(now());
             $secondsAgo = $lockedAtCarbon->diffInSeconds(now());
-            
+
             $isActuallyLocked = true;
             $isStale = $minutesAgo > 30 || $secondsAgo > 5;
         }
-        
+
         // Obtener total de propiedades en MLS
         $totalInMls = 0;
         try {
@@ -3531,7 +3726,7 @@ class MLSSyncService
             'checkpoint' => $checkpoint,
             'local_properties_count' => $localMlsCount,
             // Usar verificación real del caché, no la propiedad de instancia
-            'lock_active' => $isActuallyLocked, 
+            'lock_active' => $isActuallyLocked,
             'lock_stale' => $isStale,
         ];
     }
@@ -3582,7 +3777,7 @@ class MLSSyncService
             'threshold' => $this->circuitBreakerThreshold,
             'opened_at' => $this->circuitBreakerOpenedAt?->toIso8601String(),
             'timeout_seconds' => $this->circuitBreakerTimeoutSeconds,
-            'will_close_at' => $this->circuitBreakerOpenedAt 
+            'will_close_at' => $this->circuitBreakerOpenedAt
                 ? $this->circuitBreakerOpenedAt->addSeconds($this->circuitBreakerTimeoutSeconds)->toIso8601String()
                 : null,
         ];
@@ -3594,7 +3789,7 @@ class MLSSyncService
     public function getStatus(): array
     {
         $lastSync = null;
-        
+
         if ($this->config) {
             $lastSync = [
                 'last_sync_at' => $this->config->last_sync_at?->toIso8601String(),
@@ -3615,7 +3810,7 @@ class MLSSyncService
 
         $totalProperties = 0;
         $publishedProperties = 0;
-        
+
         if ($agencyId) {
             try {
                 $totalProperties = Property::where('agency_id', $agencyId)
@@ -3632,32 +3827,32 @@ class MLSSyncService
 
         // Obtener checkpoint
         $checkpoint = $this->getLastCheckpoint();
-        
+
         // Verificar estado real del lock desde el caché
         // No usamos $this->isLocked porque syncPropertiesProgressive() no usa lock
         $cacheLockExists = \Illuminate\Support\Facades\Cache::has('mls_sync_locked_at');
         $lockedAt = \Illuminate\Support\Facades\Cache::get('mls_sync_locked_at');
         $isActuallyLocked = false;
         $isStale = false;
-        
+
         if ($cacheLockExists && $lockedAt) {
             $lockedAtCarbon = \Carbon\Carbon::parse($lockedAt);
             $minutesAgo = $lockedAtCarbon->diffInMinutes(now());
             $secondsAgo = $lockedAtCarbon->diffInSeconds(now());
-            
+
             // Si hay más de 30 minutos o más de 5 segundos (para lock obsoleto), considerar obsoleto
             $isActuallyLocked = true;
             $isStale = $minutesAgo > 30 || $secondsAgo > 5;
-            
+
             if ($isStale) {
-                $this->log('info', '[STATUS] Lock en caché pero obsoleto: ' . $minutesAgo . ' minutos');
+                $this->log('info', '[STATUS] Lock en caché pero obsoleto: '.$minutesAgo.' minutos');
             }
         }
-        
+
         // Si syncPropertiesProgressive() se ejecutó, el lock debería estar limpio
         // Si hay un lock obsoleto, informarlo
         if ($isActuallyLocked && $isStale) {
-            $this->log('warning', '[STATUS] Lock obsoleto detectado: ' . $minutesAgo . ' minutos');
+            $this->log('warning', '[STATUS] Lock obsoleto detectado: '.$minutesAgo.' minutos');
         }
 
         return [
@@ -3682,7 +3877,7 @@ class MLSSyncService
             'circuit_breaker' => $this->getCircuitBreakerStatus(),
             'checkpoint' => $checkpoint,
             // Usar verificación real del caché, no la propiedad de instancia
-            'sync_locked' => $isActuallyLocked, 
+            'sync_locked' => $isActuallyLocked,
             'lock_stale' => $isStale,
             'can_force_unlock' => true, // Siempre permitir forzar unlock si el lock está obsoleto
         ];
@@ -3692,15 +3887,15 @@ class MLSSyncService
      * Fuerza la liberación del lock.
      * Útil cuando una sincronización anterior murió y dejó el lock activo.
      *
-     * @param bool $force Si es true, libera el lock aunque no esté obsoleto (requiere confirmación del usuario)
+     * @param  bool  $force  Si es true, libera el lock aunque no esté obsoleto (requiere confirmación del usuario)
      * @return array Resultado de la operación
      */
     public function forceUnlock(bool $force = false): array
     {
         $wasStale = $this->isLockStale($force);
-        
+
         // Verificar si podemos liberar
-        if (!$wasStale && !$force) {
+        if (! $wasStale && ! $force) {
             return [
                 'success' => false,
                 'message' => 'El lock no está obsoleto. Usa el botón "Desbloquear" en el panel para liberar forzosamente.',
@@ -3710,14 +3905,14 @@ class MLSSyncService
         }
 
         $released = $this->forceReleaseLock($force);
-        
+
         return [
             'success' => $released,
-            'message' => $released 
+            'message' => $released
                 ? 'Lock liberado exitosamente'
                 : 'Error al liberar el lock',
             'was_stale' => $wasStale,
-            'forced' => $force && !$wasStale,
+            'forced' => $force && ! $wasStale,
         ];
     }
 }
