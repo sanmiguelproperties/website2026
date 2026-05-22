@@ -70,7 +70,7 @@ class MLSSyncController extends Controller
      */
     public function updateConfig(Request $request): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'integrations.config.edit')) {
+        if (! Rbac::canAny($request->user('api'), 'integrations.config.edit')) {
             return $this->apiForbidden('No tienes permisos para editar credenciales del MLS', 'INTEGRATION_CONFIG_FORBIDDEN');
         }
 
@@ -93,11 +93,11 @@ class MLSSyncController extends Controller
         }
 
         $config = MLSConfig::getOrCreateDefault();
-        
+
         $data = $validator->validated();
-        
+
         // Si no se envía api_key explícitamente, no modificarla
-        if (!$request->has('api_key')) {
+        if (! $request->has('api_key')) {
             unset($data['api_key']);
         }
 
@@ -137,7 +137,7 @@ class MLSSyncController extends Controller
         $this->syncService->reloadConfiguration();
 
         // Verificar configuración antes de ejecutar
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado correctamente',
                 'MLS_NOT_CONFIGURED',
@@ -213,7 +213,7 @@ class MLSSyncController extends Controller
         $this->syncService->reloadConfiguration();
 
         // Verificar configuración antes de ejecutar
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado correctamente',
                 'MLS_NOT_CONFIGURED',
@@ -297,7 +297,7 @@ class MLSSyncController extends Controller
         // Recargar configuración
         $this->syncService->reloadConfiguration();
 
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado',
                 'MLS_NOT_CONFIGURED',
@@ -377,7 +377,7 @@ class MLSSyncController extends Controller
         // Recargar configuración
         $this->syncService->reloadConfiguration();
 
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado',
                 'MLS_NOT_CONFIGURED',
@@ -421,7 +421,7 @@ class MLSSyncController extends Controller
                     'next_offset' => $result['next_offset'],
                     'completed' => $result['completed'],
                     'progress_percentage' => $result['progress_percentage'],
-                    'hint' => $result['completed'] 
+                    'hint' => $result['completed']
                         ? 'La sincronización está completa. No necesitas hacer más llamadas.'
                         : "Para continuar la sincronización, llama nuevamente a este endpoint. Progress: {$result['progress_percentage']}%",
                 ]
@@ -464,7 +464,7 @@ class MLSSyncController extends Controller
         // Recargar configuración
         $this->syncService->reloadConfiguration();
 
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado',
                 'MLS_NOT_CONFIGURED',
@@ -495,7 +495,7 @@ class MLSSyncController extends Controller
                     'Accept' => 'application/json',
                 ])
                     ->timeout($timeout)
-                    ->get(rtrim($baseUrl, '/') . '/features');
+                    ->get(rtrim($baseUrl, '/').'/features');
 
                 $lastResponse = $response;
 
@@ -519,13 +519,14 @@ class MLSSyncController extends Controller
                 if ($response->status() >= 500 && $attempt < $maxRetries) {
                     $delay = $retryDelays[$attempt - 1] ?? 5;
                     sleep($delay);
+
                     continue;
                 }
 
                 // Error 4xx - no reintentar
                 $errorMessage = 'Error de conexión con el MLS';
                 $responseData = $response->json();
-                
+
                 if ($response->status() === 401) {
                     $errorMessage = 'API Key inválida o no autorizada';
                 } elseif ($response->status() === 403) {
@@ -557,7 +558,7 @@ class MLSSyncController extends Controller
 
         // Todos los reintentos fallaron
         return $this->apiError(
-            'Error de conexión con el MLS después de ' . $maxRetries . ' intentos',
+            'Error de conexión con el MLS después de '.$maxRetries.' intentos',
             'MLS_CONNECTION_FAILED_AFTER_RETRIES',
             [
                 'last_status_code' => $lastResponse?->status(),
@@ -575,7 +576,7 @@ class MLSSyncController extends Controller
      */
     public function deleteApiKey(): JsonResponse
     {
-        if (!Rbac::canAny(request()->user('api'), 'integrations.config.edit')) {
+        if (! Rbac::canAny(request()->user('api'), 'integrations.config.edit')) {
             return $this->apiForbidden('No tienes permisos para eliminar credenciales del MLS', 'INTEGRATION_CONFIG_FORBIDDEN');
         }
 
@@ -599,7 +600,7 @@ class MLSSyncController extends Controller
      */
     public function deleteAllMLSProperties(Request $request): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'integrations.config.edit')) {
+        if (! Rbac::canAny($request->user('api'), 'integrations.config.edit')) {
             return $this->apiForbidden('No tienes permisos para eliminar inventario MLS masivamente', 'INTEGRATION_CONFIG_FORBIDDEN');
         }
 
@@ -654,7 +655,7 @@ class MLSSyncController extends Controller
     {
         $this->syncService->reloadConfiguration();
 
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado',
                 'MLS_NOT_CONFIGURED',
@@ -692,7 +693,7 @@ class MLSSyncController extends Controller
     {
         $this->syncService->reloadConfiguration();
 
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado',
                 'MLS_NOT_CONFIGURED',
@@ -730,7 +731,7 @@ class MLSSyncController extends Controller
     {
         $this->syncService->reloadConfiguration();
 
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado',
                 'MLS_NOT_CONFIGURED',
@@ -768,7 +769,7 @@ class MLSSyncController extends Controller
     {
         $this->syncService->reloadConfiguration();
 
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado',
                 'MLS_NOT_CONFIGURED',
@@ -861,7 +862,7 @@ class MLSSyncController extends Controller
      */
     public function resetCircuitBreaker(): JsonResponse
     {
-        if (!Rbac::canAny(request()->user('api'), 'integrations.config.edit')) {
+        if (! Rbac::canAny(request()->user('api'), 'integrations.config.edit')) {
             return $this->apiForbidden('No tienes permisos para reiniciar controles tecnicos del MLS', 'INTEGRATION_CONFIG_FORBIDDEN');
         }
 
@@ -887,7 +888,7 @@ class MLSSyncController extends Controller
     {
         $checkpoint = $this->syncService->getLastCheckpoint();
 
-        if (!$checkpoint) {
+        if (! $checkpoint) {
             return $this->apiSuccess(
                 'No hay checkpoint disponible',
                 'MLS_CHECKPOINT_NOT_FOUND',
@@ -915,12 +916,12 @@ class MLSSyncController extends Controller
      */
     public function clearCheckpoint(): JsonResponse
     {
-        if (!Rbac::canAny(request()->user('api'), 'integrations.config.edit')) {
+        if (! Rbac::canAny(request()->user('api'), 'integrations.config.edit')) {
             return $this->apiForbidden('No tienes permisos para limpiar checkpoints del MLS', 'INTEGRATION_CONFIG_FORBIDDEN');
         }
 
-        // Nota: Este método requiere acceso a un método público en el servicio
-        // Por ahora, vamos a informar que esta funcionalidad está disponible
+        $this->syncService->clearCheckpoint();
+
         return $this->apiSuccess(
             'Checkpoint limpiado',
             'MLS_CHECKPOINT_CLEARED',
@@ -950,7 +951,7 @@ class MLSSyncController extends Controller
         $this->syncService->reloadConfiguration();
 
         // Verificar configuración antes de ejecutar
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado correctamente',
                 'MLS_NOT_CONFIGURED',
@@ -964,7 +965,7 @@ class MLSSyncController extends Controller
 
         // Verificar si hay checkpoint
         $checkpoint = $this->syncService->getLastCheckpoint();
-        if (!$checkpoint) {
+        if (! $checkpoint) {
             return $this->apiError(
                 'No hay checkpoint disponible',
                 'MLS_NO_CHECKPOINT',
@@ -1032,7 +1033,7 @@ class MLSSyncController extends Controller
             'offset' => 'sometimes|integer|min:0',
             'mode' => 'sometimes|string|in:full,incremental',
             'media_sync_mode' => 'sometimes|string|in:download,external_url',
-        ]);;
+        ]);
 
         if ($validator->fails()) {
             return $this->apiValidationError($validator->errors()->toArray());
@@ -1042,7 +1043,7 @@ class MLSSyncController extends Controller
         $this->syncService->reloadConfiguration();
 
         // Verificar configuración antes de ejecutar
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no está configurado correctamente',
                 'MLS_NOT_CONFIGURED',
@@ -1126,7 +1127,7 @@ class MLSSyncController extends Controller
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
             ];
-            
+
             // Log del error
             \Illuminate\Support\Facades\Log::error('MLS syncProgressive exception', [
                 'exception' => $e,
@@ -1134,7 +1135,7 @@ class MLSSyncController extends Controller
             ]);
 
             return $this->apiError(
-                'Error durante la sincronización: ' . $e->getMessage(),
+                'Error durante la sincronización: '.$e->getMessage(),
                 'MLS_SYNC_PROGRESSIVE_EXCEPTION',
                 [
                     'exception_class' => get_class($e),
@@ -1172,7 +1173,7 @@ class MLSSyncController extends Controller
      */
     public function forceUnlock(Request $request): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'integrations.config.edit')) {
+        if (! Rbac::canAny($request->user('api'), 'integrations.config.edit')) {
             return $this->apiForbidden('No tienes permisos para desbloquear sincronizaciones manualmente', 'INTEGRATION_CONFIG_FORBIDDEN');
         }
 

@@ -319,7 +319,13 @@ class MLSSyncService
                     $this->log('info', '[SYNC PROPERTY] ({'.($index + 1).'/'.count($properties).") MLS ID: {$mlsId}");
 
                     try {
-                        $this->syncProperty($propertyData);
+                        $synced = $this->syncProperty($propertyData);
+
+                        if (! $synced) {
+                            $this->recordCircuitBreakerFailure();
+
+                            continue;
+                        }
 
                         // Guardar checkpoint después de cada propiedad exitosa
                         $this->saveCheckpoint($mlsId);
@@ -540,13 +546,15 @@ class MLSSyncService
     /**
      * Sincroniza una propiedad individual desde el MLS.
      */
-    protected function syncProperty(array $propertyData): void
+    protected function syncProperty(array $propertyData): bool
     {
         $mlsId = $propertyData['mls_id'] ?? null;
         if (! $mlsId) {
             $this->log('warning', 'Propiedad sin mls_id, omitiendo');
 
-            return;
+            $this->errors++;
+
+            return false;
         }
 
         $this->log('info', '[SYNC START] ============================================');
@@ -561,21 +569,19 @@ class MLSSyncService
                 // que corresponde al campo mls_id en la tabla properties
                 $internalMlsId = $propertyData['id'] ?? null;
 
-                $existingProperty = null;
-                if ($internalMlsId) {
-                    $existingProperty = Property::where('agency_id', $agencyId)
-                        ->where('mls_id', $internalMlsId)
-                        ->first();
-                }
-
-                // Si no encontramos por mls_id, buscar por mls_public_id como fallback
-                if (! $existingProperty && $mlsId) {
-                    $existingProperty = Property::where('agency_id', $agencyId)
-                        ->where('mls_public_id', (string) $mlsId)
-                        ->first();
-                }
+                $existingProperty = $this->findExistingMlsProperty($internalMlsId, (string) $mlsId);
 
                 $isNew = $existingProperty === null;
+                if (! $isNew && (int) $existingProperty->agency_id !== $agencyId) {
+                    $this->log('warning', "[SYNC STATUS] Propiedad MLS {$mlsId} encontrada en agencia {$existingProperty->agency_id}; se actualizara con agencia {$agencyId}");
+                }
+
+                $wasTrashed = false;
+                if (! $isNew && method_exists($existingProperty, 'trashed') && $existingProperty->trashed()) {
+                    $wasTrashed = true;
+                    $existingProperty->restore();
+                    $this->log('info', "[SYNC RESTORE] Propiedad MLS restaurada: {$mlsId}");
+                }
                 $this->log('info', "[SYNC STATUS] Propiedad: {$mlsId} | Es nueva: ".($isNew ? 'SÍ' : 'NO'));
 
                 // LOG: Estado actual de media antes de sincronizar
@@ -586,7 +592,7 @@ class MLSSyncService
                 }
 
                 // Determinar si necesitamos obtener el detalle completo
-                $needsDetail = $isNew || ! $existingProperty?->raw_payload;
+                $needsDetail = $isNew || $wasTrashed || ! $existingProperty?->raw_payload;
 
                 // Si es propiedad nueva o no tiene payload, obtener el detalle del API
                 $fullData = $propertyData;
@@ -661,18 +667,47 @@ class MLSSyncService
 
                 $this->log('info', '[SYNC END] ============================================');
             });
+
+            return true;
         } catch (\Throwable $e) {
             $this->log('error', "[SYNC ERROR] Error al sincronizar propiedad MLS {$mlsId}: ".$e->getMessage());
             $this->errors++;
+
+            return false;
         }
     }
 
     /**
-     * Obtiene el detalle de una propiedad específica del MLS.
+     * Busca una propiedad MLS existente usando las mismas llaves unicas de la BD.
      *
-     * IMPORTANTE: El endpoint /property/mls/{mls_id} espera solo la parte numérica
-     * del MLS ID (ej: "1200"), NO el ID completo con prefijo (ej: "SMA-1200").
-     * Este método se encarga de limpiar el prefijo automáticamente.
+     * Incluye soft-deleted para que una resincronizacion no choque con indices unicos.
+     */
+    protected function findExistingMlsProperty(mixed $internalMlsId, string $publicMlsId): ?Property
+    {
+        $internalMlsId = is_numeric($internalMlsId) ? (int) $internalMlsId : null;
+        $publicMlsId = trim($publicMlsId);
+
+        if ($internalMlsId === null && $publicMlsId === '') {
+            return null;
+        }
+
+        return Property::withTrashed()
+            ->where(function ($query) use ($internalMlsId, $publicMlsId) {
+                if ($internalMlsId !== null) {
+                    $query->orWhere('mls_id', $internalMlsId);
+                }
+
+                if ($publicMlsId !== '') {
+                    $query->orWhere('mls_public_id', $publicMlsId);
+                }
+            })
+            ->orderByRaw("CASE WHEN source = 'mls' THEN 0 ELSE 1 END")
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
+     * Obtiene el detalle de una propiedad especifica del MLS.
      */
     public function fetchPropertyDetail(string $mlsId): ?array
     {
@@ -2912,7 +2947,7 @@ class MLSSyncService
     /**
      * Limpia el checkpoint de sincronización.
      */
-    protected function clearCheckpoint(): void
+    public function clearCheckpoint(): void
     {
         try {
             \Illuminate\Support\Facades\Cache::forget('mls_sync_checkpoint');
@@ -3574,10 +3609,16 @@ class MLSSyncService
                 $lastMlsIdInBatch = $mlsId;
 
                 try {
-                    $this->syncProperty($propertyData);
+                    $synced = $this->syncProperty($propertyData);
                     $processedInBatch++;
-                    $this->lastSuccessfulMlsId = $mlsId;
-                    $this->recordCircuitBreakerSuccess();
+
+                    if ($synced) {
+                        $this->lastSuccessfulMlsId = $mlsId;
+                        $this->recordCircuitBreakerSuccess();
+                    } else {
+                        $errorsInBatch++;
+                        $this->recordCircuitBreakerFailure();
+                    }
                 } catch (\Throwable $e) {
                     $this->recordError($mlsId, 'sync', $e->getMessage(), $e);
                     $this->errors++;
