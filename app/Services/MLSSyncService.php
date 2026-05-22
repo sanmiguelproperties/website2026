@@ -93,6 +93,14 @@ class MLSSyncService
 
     protected bool $isLocked = false;
 
+    protected ?int $defaultAgencyId = null;
+
+    protected array $currencyCache = [];
+
+    protected array $featureIdCache = [];
+
+    protected array $mlsAgentLocalIdCache = [];
+
     public function __construct()
     {
         $this->loadConfiguration();
@@ -422,7 +430,7 @@ class MLSSyncService
         $allProperties = [];
         $page = $startPage;
         $hasMore = true;
-        $perPage = min($this->batchSize, 100); // El MLS puede tener un límite máximo
+        $perPage = min($limit > 0 ? $limit : $this->batchSize, 100); // El MLS puede tener un límite máximo
 
         while ($hasMore) {
             // Si hay límite y ya alcanzamos, terminar
@@ -485,7 +493,7 @@ class MLSSyncService
             usleep((int) (1000000 / $this->rateLimit));
         }
 
-        return $allProperties;
+        return $limit > 0 ? array_slice($allProperties, 0, $limit) : $allProperties;
     }
 
     /**
@@ -496,6 +504,14 @@ class MLSSyncService
      */
     protected function fetchTotalPropertiesCount(): ?array
     {
+        $cacheKey = 'mls_total_properties_count:'.md5($this->baseUrl);
+        $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        if (is_array($cached) && isset($cached['total'])) {
+            $this->log('debug', "[COUNT] Total propiedades MLS desde cache: {$cached['total']}");
+
+            return $cached;
+        }
+
         $this->log('debug', '[COUNT] Obteniendo total de propiedades del MLS...');
 
         // Hacer una petición con per_page=1 para obtener solo la información de paginación
@@ -536,11 +552,15 @@ class MLSSyncService
 
         $this->log('debug', "[COUNT] Total propiedades: {$totalItems}, Páginas: {$totalPages}, Por página: {$perPage}");
 
-        return [
+        $result = [
             'total' => (int) $totalItems,
             'total_pages' => $totalPages ? (int) $totalPages : null,
             'per_page' => $perPage,
         ];
+
+        \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(15));
+
+        return $result;
     }
 
     /**
@@ -561,51 +581,40 @@ class MLSSyncService
         $this->log('info', "[SYNC START] Iniciando sincronización de propiedad MLS: {$mlsId}");
         $this->log('debug', '[SYNC DATA] Datos recibidos: '.json_encode(array_keys($propertyData)));
 
+        $agencyId = $this->getDefaultAgencyId();
+        $internalMlsId = $propertyData['id'] ?? null;
+        $existingProperty = $this->findExistingMlsProperty($internalMlsId, (string) $mlsId);
+        $fullData = $propertyData;
+
+        if ($this->shouldFetchPropertyDetail($fullData, $existingProperty)) {
+            $this->log('debug', "[SYNC DETAIL] Obteniendo detalle de propiedad MLS: {$mlsId}");
+            $detailData = $this->fetchPropertyDetail((string) $mlsId);
+            if ($detailData) {
+                $fullData = array_merge($propertyData, $detailData);
+                $this->log('info', '[SYNC DETAIL] Detalle obtenido | Photos: '.count($detailData['photos'] ?? []).' | Videos: '.count($detailData['videos'] ?? []));
+            } else {
+                $this->log('warning', '[SYNC DETAIL] No se pudo obtener detalle, usando datos basicos');
+            }
+        }
+
         try {
-            DB::transaction(function () use ($mlsId, $propertyData) {
-                $agencyId = $this->getDefaultAgencyId();
-
-                // Buscar por mls_id (ID interno del MLS, campo 'id' en el API)
-                // que corresponde al campo mls_id en la tabla properties
-                $internalMlsId = $propertyData['id'] ?? null;
-
-                $existingProperty = $this->findExistingMlsProperty($internalMlsId, (string) $mlsId);
-
+            DB::transaction(function () use ($mlsId, $fullData, $agencyId, $existingProperty) {
                 $isNew = $existingProperty === null;
                 if (! $isNew && (int) $existingProperty->agency_id !== $agencyId) {
                     $this->log('warning', "[SYNC STATUS] Propiedad MLS {$mlsId} encontrada en agencia {$existingProperty->agency_id}; se actualizara con agencia {$agencyId}");
                 }
 
-                $wasTrashed = false;
                 if (! $isNew && method_exists($existingProperty, 'trashed') && $existingProperty->trashed()) {
-                    $wasTrashed = true;
                     $existingProperty->restore();
                     $this->log('info', "[SYNC RESTORE] Propiedad MLS restaurada: {$mlsId}");
                 }
                 $this->log('info', "[SYNC STATUS] Propiedad: {$mlsId} | Es nueva: ".($isNew ? 'SÍ' : 'NO'));
 
                 // LOG: Estado actual de media antes de sincronizar
-                if (! $isNew && $existingProperty) {
+                if (! $isNew && $existingProperty && ! $this->skipMedia) {
                     $existingMediaCount = $existingProperty->mediaAssets()->count();
                     $existingImages = $existingProperty->mediaAssets()->wherePivot('role', 'image')->count();
                     $this->log('info', "[SYNC PRE-MEDIA] Propiedad: {$mlsId} | Media assets actuales: {$existingMediaCount} | Imágenes: {$existingImages}");
-                }
-
-                // Determinar si necesitamos obtener el detalle completo
-                $needsDetail = $isNew || $wasTrashed || ! $existingProperty?->raw_payload;
-
-                // Si es propiedad nueva o no tiene payload, obtener el detalle del API
-                $fullData = $propertyData;
-                if ($needsDetail) {
-                    $this->log('debug', "[SYNC DETAIL] Obteniendo detalle de propiedad MLS: {$mlsId}");
-                    $detailData = $this->fetchPropertyDetail((string) $mlsId);
-                    if ($detailData) {
-                        // El detalle puede tener una estructura diferente, fusionar
-                        $fullData = array_merge($propertyData, $detailData);
-                        $this->log('info', '[SYNC DETAIL] Detalle obtenido | Photos: '.count($detailData['photos'] ?? []).' | Videos: '.count($detailData['videos'] ?? []));
-                    } else {
-                        $this->log('warning', '[SYNC DETAIL] No se pudo obtener detalle, usando datos básicos');
-                    }
                 }
 
                 // Preparar datos de la propiedad
@@ -675,6 +684,32 @@ class MLSSyncService
 
             return false;
         }
+    }
+
+    /**
+     * Define si hace falta pedir el detalle completo de la propiedad al MLS.
+     */
+    protected function shouldFetchPropertyDetail(array $propertyData, ?Property $existingProperty): bool
+    {
+        if ($this->skipMedia) {
+            return false;
+        }
+
+        if (! empty($propertyData['photos'])
+            || ! empty($propertyData['images'])
+            || ! empty($propertyData['videos'])) {
+            return false;
+        }
+
+        if ($existingProperty === null) {
+            return true;
+        }
+
+        if (method_exists($existingProperty, 'trashed') && $existingProperty->trashed()) {
+            return true;
+        }
+
+        return empty($existingProperty->raw_payload);
     }
 
     /**
@@ -988,6 +1023,10 @@ class MLSSyncService
      */
     protected function getDefaultAgencyId(): int
     {
+        if ($this->defaultAgencyId !== null) {
+            return $this->defaultAgencyId;
+        }
+
         // La agencia principal se gestiona manualmente desde el admin interno.
         // La sincronizacion debe usar una agencia NO principal cuando exista.
         $agency = Agency::query()
@@ -1007,7 +1046,7 @@ class MLSSyncService
             ]);
         }
 
-        return $agency->id;
+        return $this->defaultAgencyId = $agency->id;
     }
 
     /**
@@ -1147,7 +1186,7 @@ class MLSSyncService
 
         foreach ($operations as $op) {
             $currencyCode = $op['currency'] ?? 'USD';
-            $currency = Currency::where('code', $currencyCode)->first();
+            $currency = $this->findCurrencyByCode($currencyCode);
 
             $property->operations()->create([
                 'operation_type' => $op['type'] ?? 'sale',
@@ -1164,6 +1203,17 @@ class MLSSyncService
         $this->log('info', "[OPERATIONS SYNC END] Propiedad: {$property->mls_public_id} | Operaciones finales: {$finalOperationsCount}");
     }
 
+    protected function findCurrencyByCode(string $currencyCode): ?Currency
+    {
+        $currencyCode = strtoupper(trim($currencyCode));
+
+        if (! array_key_exists($currencyCode, $this->currencyCache)) {
+            $this->currencyCache[$currencyCode] = Currency::where('code', $currencyCode)->first();
+        }
+
+        return $this->currencyCache[$currencyCode];
+    }
+
     /**
      * Sincroniza las características de la propiedad.
      *
@@ -1174,7 +1224,7 @@ class MLSSyncService
      */
     protected function syncPropertyFeatures(Property $property, array $data): void
     {
-        $features = $data['features'] ?? [];
+        $features = $data['features'] ?? $data['feature_ids'] ?? [];
 
         // Si no hay features en los datos, intentar obtenerlos del endpoint dedicado
         if (empty($features) && isset($data['id'])) {
@@ -1250,6 +1300,20 @@ class MLSSyncService
                 continue;
             }
 
+            $featureIds[] = $this->getFeatureId($featureName, $featureCategory);
+        }
+
+        $property->features()->sync($featureIds);
+
+        $finalFeaturesCount = $property->features()->count();
+        $this->log('info', "[FEATURES SYNC END] Propiedad: {$property->mls_public_id} | Features finales: {$finalFeaturesCount}");
+    }
+
+    protected function getFeatureId(string $featureName, ?string $featureCategory): int
+    {
+        $cacheKey = mb_strtolower($featureCategory ?? '').'|'.mb_strtolower($featureName);
+
+        if (! isset($this->featureIdCache[$cacheKey])) {
             $feature = Feature::firstOrCreate(
                 [
                     'name' => $featureName,
@@ -1262,30 +1326,45 @@ class MLSSyncService
                 ]
             );
 
-            $featureIds[] = $feature->id;
+            $this->featureIdCache[$cacheKey] = $feature->id;
         }
 
-        $property->features()->sync($featureIds);
+        return $this->featureIdCache[$cacheKey];
+    }
 
-        $finalFeaturesCount = $property->features()->count();
-        $this->log('info', "[FEATURES SYNC END] Propiedad: {$property->mls_public_id} | Features finales: {$finalFeaturesCount}");
+    /**
+     * Obtiene el ID local de un agente MLS, cacheado durante la ejecucion.
+     */
+    protected function getLocalMlsAgentId(int $mlsAgentId, mixed $officeId = null): int
+    {
+        if (! isset($this->mlsAgentLocalIdCache[$mlsAgentId])) {
+            $agent = MLSAgent::where('mls_agent_id', $mlsAgentId)->first();
+
+            if (! $agent) {
+                $agent = MLSAgent::create([
+                    'mls_agent_id' => $mlsAgentId,
+                    'name' => "Agente MLS #{$mlsAgentId}",
+                    'mls_office_id' => $officeId,
+                    'is_active' => true,
+                ]);
+                $this->log('info', "[AGENTS SYNC] Agente placeholder creado: MLS ID #{$mlsAgentId} -> local ID #{$agent->id}");
+            } else {
+                $this->log('debug', "[AGENTS SYNC] Agente MLS #{$mlsAgentId} -> local ID #{$agent->id}");
+            }
+
+            $this->mlsAgentLocalIdCache[$mlsAgentId] = $agent->id;
+        }
+
+        return $this->mlsAgentLocalIdCache[$mlsAgentId];
     }
 
     /**
      * Sincroniza los agentes MLS de una propiedad.
-     *
-     * El API MLS devuelve agentes como un array de IDs enteros via:
-     * GET /api/v1/property/{id}/agents → { "id": 1200, "agents": [27, 45] }
-     *
-     * Este método:
-     * 1. Obtiene los IDs de agentes de la propiedad del API
-     * 2. Busca o crea los agentes en la tabla mls_agents
-     * 3. Vincula los agentes a la propiedad via la tabla pivot
      */
     protected function syncPropertyMlsAgents(Property $property, array $data): void
     {
         // Obtener IDs de agentes del API
-        $agentIds = $data['agents'] ?? [];
+        $agentIds = $data['agents'] ?? $data['agent_ids'] ?? [];
 
         // LOG: Verificar qué viene en los datos del API para diagnóstico
         $hasAgentsField = array_key_exists('agents', $data);
@@ -1332,23 +1411,8 @@ class MLSSyncService
 
             $mlsAgentId = (int) $mlsAgentId;
 
-            // Buscar o crear el agente en la tabla local
-            $agent = MLSAgent::where('mls_agent_id', $mlsAgentId)->first();
-
-            if (! $agent) {
-                // Crear un agente placeholder - se completará cuando se sincronicen los agentes
-                $agent = MLSAgent::create([
-                    'mls_agent_id' => $mlsAgentId,
-                    'name' => "Agente MLS #{$mlsAgentId}",
-                    'mls_office_id' => $data['office_id'] ?? null,
-                    'is_active' => true,
-                ]);
-                $this->log('info', "[AGENTS SYNC] Agente placeholder creado: MLS ID #{$mlsAgentId} → local ID #{$agent->id}");
-            } else {
-                $this->log('debug', "[AGENTS SYNC] Agente existente: MLS ID #{$mlsAgentId} → local ID #{$agent->id} ({$agent->name})");
-            }
-
-            $localAgentIds[$agent->id] = ['is_primary' => $index === 0];
+            $localAgentId = $this->getLocalMlsAgentId($mlsAgentId, $data['office_id'] ?? null);
+            $localAgentIds[$localAgentId] = ['is_primary' => $index === 0];
         }
 
         if (empty($localAgentIds)) {
@@ -2951,6 +3015,7 @@ class MLSSyncService
     {
         try {
             \Illuminate\Support\Facades\Cache::forget('mls_sync_checkpoint');
+            \Illuminate\Support\Facades\Cache::forget('mls_total_properties_count:'.md5($this->baseUrl));
             $this->log('info', '[CHECKPOINT] Checkpoint limpiado');
         } catch (\Throwable $e) {
             $this->log('error', '[CHECKPOINT] Error al limpiar checkpoint: '.$e->getMessage());
