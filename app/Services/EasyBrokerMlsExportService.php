@@ -28,13 +28,6 @@ class EasyBrokerMlsExportService
      */
     protected array $locationQueryCache = [];
 
-    /**
-     * Cache de validación de URLs de imágenes para evitar múltiples HEAD/GET.
-     *
-     * @var array<string, bool>
-     */
-    protected array $imageUrlValidationCache = [];
-
     public function __construct()
     {
         $this->reloadConfiguration();
@@ -609,41 +602,41 @@ class EasyBrokerMlsExportService
             }
         }
 
-        // Fallback: usar imágenes en raw_payload cuando no hay vínculos locales.
-        if (empty($images)) {
-            $rawImages = [];
+        // Complementar con raw_payload para no perder fotos externas del MLS
+        // cuando la propiedad tambien tiene imagenes locales ya vinculadas.
+        $rawImages = [];
 
-            if (isset($rawPayload['images']) && is_array($rawPayload['images'])) {
-                $rawImages = array_merge($rawImages, $rawPayload['images']);
+        if (isset($rawPayload['images']) && is_array($rawPayload['images'])) {
+            $rawImages = array_merge($rawImages, $rawPayload['images']);
+        }
+        if (isset($rawPayload['photos']) && is_array($rawPayload['photos'])) {
+            $rawImages = array_merge($rawImages, $rawPayload['photos']);
+        }
+
+        foreach ($rawImages as $rawImage) {
+            $candidate = $this->parseRawImageCandidate($rawImage);
+            if ($candidate === null) {
+                continue;
             }
-            if (isset($rawPayload['photos']) && is_array($rawPayload['photos'])) {
-                $rawImages = array_merge($rawImages, $rawPayload['photos']);
+
+            $dedupKey = $this->normalizeUrlKey($candidate['url']);
+            if (isset($seen[$dedupKey])) {
+                continue;
             }
 
-            foreach ($rawImages as $rawImage) {
-                $candidate = $this->parseRawImageCandidate($rawImage);
-                if ($candidate === null) {
-                    continue;
-                }
+            $seen[$dedupKey] = true;
+            $images[] = $candidate;
 
-                $dedupKey = $this->normalizeUrlKey($candidate['url']);
-                if (isset($seen[$dedupKey])) {
-                    continue;
-                }
-
-                $seen[$dedupKey] = true;
-                $images[] = $candidate;
-
-                if (count($images) >= 50) {
-                    break;
-                }
+            if (count($images) >= 50) {
+                break;
             }
         }
 
-        if ($mediaAssets->isNotEmpty() && empty($images)) {
-            Log::warning('[EasyBrokerMlsExport] Sin URLs de imágenes públicas/alcanzables para enviar', [
+        if (($mediaAssets->isNotEmpty() || !empty($rawImages)) && empty($images)) {
+            Log::warning('[EasyBrokerMlsExport] Sin URLs de imágenes públicas compatibles para enviar', [
                 'property_id' => $property->id,
                 'media_assets_count' => $mediaAssets->count(),
+                'raw_images_count' => count($rawImages),
             ]);
         }
 
@@ -699,7 +692,7 @@ class EasyBrokerMlsExportService
             }
 
             $url = trim($candidate);
-            if ($this->isValidEasyBrokerImageUrl($url) && $this->isReachableImageUrl($url)) {
+            if ($this->isValidEasyBrokerImageUrl($url)) {
                 return $url;
             }
         }
@@ -778,51 +771,6 @@ class EasyBrokerMlsExportService
     protected function normalizeUrlKey(string $url): string
     {
         return strtolower(trim($url));
-    }
-
-    protected function isReachableImageUrl(string $url): bool
-    {
-        $cacheKey = $this->normalizeUrlKey($url);
-        if (array_key_exists($cacheKey, $this->imageUrlValidationCache)) {
-            return $this->imageUrlValidationCache[$cacheKey];
-        }
-
-        $timeout = max(3, min($this->timeout, 8));
-        $reachable = false;
-
-        try {
-            $head = Http::timeout($timeout)
-                ->withHeaders([
-                    'Accept' => 'image/*,*/*;q=0.8',
-                    'User-Agent' => 'SanMiguelProperties-EasyBroker/1.0',
-                ])
-                ->head($url);
-
-            if ($head->successful()) {
-                $contentType = strtolower((string) $head->header('Content-Type'));
-                $reachable = $contentType === '' || str_starts_with($contentType, 'image/');
-            } elseif (in_array($head->status(), [403, 405], true)) {
-                // Algunos orígenes bloquean HEAD; intentar GET con rango mínimo.
-                $get = Http::timeout($timeout)
-                    ->withHeaders([
-                        'Accept' => 'image/*,*/*;q=0.8',
-                        'Range' => 'bytes=0-0',
-                        'User-Agent' => 'SanMiguelProperties-EasyBroker/1.0',
-                    ])
-                    ->get($url);
-
-                if ($get->successful() || $get->status() === 206) {
-                    $contentType = strtolower((string) $get->header('Content-Type'));
-                    $reachable = $contentType === '' || str_starts_with($contentType, 'image/');
-                }
-            }
-        } catch (\Throwable $e) {
-            $reachable = false;
-        }
-
-        $this->imageUrlValidationCache[$cacheKey] = $reachable;
-
-        return $reachable;
     }
 
     protected function buildOperationsPayload(Property $property, array $rawPayload, Collection $operations): array
