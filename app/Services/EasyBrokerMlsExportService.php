@@ -73,7 +73,7 @@ class EasyBrokerMlsExportService
     {
         $response = $this->makeRequest('GET', '/property_types');
 
-        if (!$response['ok']) {
+        if (! $response['ok']) {
             return [];
         }
 
@@ -92,6 +92,7 @@ class EasyBrokerMlsExportService
         foreach ($items as $item) {
             if (is_string($item) && trim($item) !== '') {
                 $types[] = trim($item);
+
                 continue;
             }
 
@@ -220,14 +221,14 @@ class EasyBrokerMlsExportService
             ->values()
             ->all();
 
-        if (!empty($tagNames)) {
+        if (! empty($tagNames)) {
             $payload['tags'] = array_values(array_unique($tagNames));
         }
 
         $imagesPayload = [];
         if ($includeImages) {
             $imagesPayload = $this->buildImagesPayload($property, $rawPayload, $mediaAssets);
-            if (!empty($imagesPayload)) {
+            if (! empty($imagesPayload)) {
                 $payload['images'] = $imagesPayload;
             }
         }
@@ -280,7 +281,7 @@ class EasyBrokerMlsExportService
             $options['target_status'] ?? 'not_published'
         );
 
-        if (!empty($draft['missing_required'])) {
+        if (! empty($draft['missing_required'])) {
             return [
                 'success' => false,
                 'action' => 'skipped',
@@ -300,13 +301,13 @@ class EasyBrokerMlsExportService
         $requestMethod = 'POST';
         $requestEndpoint = '/properties';
 
-        if (!empty($property->easybroker_public_id)) {
+        if (! empty($property->easybroker_public_id)) {
             $action = 'updated';
             $requestMethod = 'PATCH';
-            $requestEndpoint = '/properties/' . $property->easybroker_public_id;
+            $requestEndpoint = '/properties/'.$property->easybroker_public_id;
             $response = $this->makeRequest($requestMethod, $requestEndpoint, $payload);
 
-            if (!$response['ok'] && $response['status'] === 404 && $createIfMissing) {
+            if (! $response['ok'] && $response['status'] === 404 && $createIfMissing) {
                 $action = 'created';
                 $requestMethod = 'POST';
                 $requestEndpoint = '/properties';
@@ -318,7 +319,7 @@ class EasyBrokerMlsExportService
 
         // Si la API rechaza ubicación, intentar resolver nombre válido de colonia/ciudad y reintentar una sola vez.
         if (
-            !$response['ok']
+            ! $response['ok']
             && $response['status'] === 422
             && $this->shouldRetryLocationWithCatalog($response['body'])
         ) {
@@ -330,7 +331,7 @@ class EasyBrokerMlsExportService
             }
         }
 
-        if (!$response['ok']) {
+        if (! $response['ok']) {
             return [
                 'success' => false,
                 'action' => $action,
@@ -360,11 +361,11 @@ class EasyBrokerMlsExportService
             'easybroker_updated_at' => $updatedAt,
         ];
 
-        if (!empty($remotePublicId) && is_string($remotePublicId)) {
+        if (! empty($remotePublicId) && is_string($remotePublicId)) {
             $updates['easybroker_public_id'] = $remotePublicId;
         }
 
-        if (!empty($remoteAgentId)) {
+        if (! empty($remoteAgentId)) {
             $updates['easybroker_agent_id'] = (string) $remoteAgentId;
         }
 
@@ -449,7 +450,7 @@ class EasyBrokerMlsExportService
 
         $allowedMap = [];
         foreach ($allowedPropertyTypes as $type) {
-            if (!is_string($type) || trim($type) === '') {
+            if (! is_string($type) || trim($type) === '') {
                 continue;
             }
             $allowedMap[$this->normalizeString($type)] = trim($type);
@@ -536,7 +537,7 @@ class EasyBrokerMlsExportService
 
         $parts = array_values(array_filter([$neighborhood, $city, $state], fn ($v) => is_string($v) && trim($v) !== ''));
 
-        if (!empty($parts)) {
+        if (! empty($parts)) {
             return implode(', ', $parts);
         }
 
@@ -559,18 +560,28 @@ class EasyBrokerMlsExportService
 
         $coverId = $this->asInt($property->cover_media_asset_id);
 
-        $orderedMedia = $mediaAssets
-            ->filter(function ($asset) {
-                $role = strtolower(trim((string) ($asset->pivot?->role ?? '')));
-                return $role === '' || $role === 'image';
-            })
-            ->sortBy(function ($asset) use ($coverId) {
-                $isCover = $coverId !== null && $this->asInt($asset->id) === $coverId ? 0 : 1;
-                $position = $this->asInt($asset->pivot?->position) ?? 9999;
+        $coverAsset = $coverId !== null
+            ? (
+                $property->relationLoaded('coverMediaAsset')
+                    ? $property->coverMediaAsset
+                    : $property->coverMediaAsset()->first()
+            )
+            : null;
 
-                return "{$isCover}-" . str_pad((string) $position, 6, '0', STR_PAD_LEFT);
-            })
-            ->values();
+        if ($coverAsset !== null && ! $this->isImageMediaAsset($coverAsset)) {
+            $coverAsset = null;
+        }
+
+        $orderedMedia = collect($coverAsset ? [$coverAsset] : [])
+            ->merge($mediaAssets
+                ->filter(fn ($asset) => $this->isImageMediaAsset($asset))
+                ->sortBy(function ($asset) use ($coverId) {
+                    $isCover = $coverId !== null && $this->asInt($asset->id) === $coverId ? 0 : 1;
+                    $position = $this->asInt($asset->pivot?->position) ?? 9999;
+
+                    return "{$isCover}-".str_pad((string) $position, 6, '0', STR_PAD_LEFT);
+                })
+                ->values());
 
         foreach ($orderedMedia as $asset) {
             $url = $this->resolveMediaAssetImageUrl($asset);
@@ -632,15 +643,28 @@ class EasyBrokerMlsExportService
             }
         }
 
-        if (($mediaAssets->isNotEmpty() || !empty($rawImages)) && empty($images)) {
+        if (($coverAsset !== null || $mediaAssets->isNotEmpty() || ! empty($rawImages)) && empty($images)) {
             Log::warning('[EasyBrokerMlsExport] Sin URLs de imágenes públicas compatibles para enviar', [
                 'property_id' => $property->id,
+                'has_cover_media_asset' => $coverAsset !== null,
                 'media_assets_count' => $mediaAssets->count(),
                 'raw_images_count' => count($rawImages),
             ]);
         }
 
         return $images;
+    }
+
+    protected function isImageMediaAsset(mixed $asset): bool
+    {
+        $type = strtolower(trim((string) ($asset->type ?? '')));
+        if ($type !== '' && $type !== 'image') {
+            return false;
+        }
+
+        $role = strtolower(trim((string) ($asset->pivot?->role ?? '')));
+
+        return $role === '' || in_array($role, ['image', 'cover', 'gallery', 'photo'], true);
     }
 
     /**
@@ -654,11 +678,7 @@ class EasyBrokerMlsExportService
         if (is_string($rawImage)) {
             $url = trim($rawImage);
         } elseif (is_array($rawImage)) {
-            $url = $this->firstNonEmpty([
-                $rawImage['url'] ?? null,
-                $rawImage['src'] ?? null,
-                $rawImage['source_url'] ?? null,
-            ]);
+            $url = $this->extractRawImageUrl($rawImage);
             $title = $this->sanitizeImageTitle($this->firstNonEmpty([
                 $rawImage['title'] ?? null,
                 $rawImage['alt'] ?? null,
@@ -666,7 +686,7 @@ class EasyBrokerMlsExportService
             ]));
         }
 
-        if ($url === null || !$this->isValidEasyBrokerImageUrl($url)) {
+        if ($url === null || ! $this->isValidEasyBrokerImageUrl($url)) {
             return null;
         }
 
@@ -678,6 +698,80 @@ class EasyBrokerMlsExportService
         return $item;
     }
 
+    protected function extractRawImageUrl(mixed $value, int $depth = 0): ?string
+    {
+        if ($depth > 3) {
+            return null;
+        }
+
+        if (is_string($value)) {
+            $value = trim($value);
+
+            return $value !== '' ? $value : null;
+        }
+
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $urlKeys = [
+            'url',
+            'src',
+            'source_url',
+            'image_url',
+            'photo_url',
+            'picture_url',
+            'original_url',
+            'full_url',
+            'large_url',
+            'medium_url',
+            'small_url',
+            'thumbnail_url',
+            'secure_url',
+            'display_url',
+            'file_url',
+            'public_url',
+            'href',
+            'link',
+            'original',
+            'full',
+            'large',
+            'medium',
+            'small',
+            'thumbnail',
+            'image',
+            'photo',
+            'picture',
+            'file',
+            'media',
+            'urls',
+        ];
+
+        foreach ($urlKeys as $key) {
+            if (! array_key_exists($key, $value)) {
+                continue;
+            }
+
+            $url = $this->extractRawImageUrl($value[$key], $depth + 1);
+            if ($url !== null) {
+                return $url;
+            }
+        }
+
+        foreach ($value as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $url = $this->extractRawImageUrl($item, $depth + 1);
+            if ($url !== null) {
+                return $url;
+            }
+        }
+
+        return null;
+    }
+
     protected function resolveMediaAssetImageUrl(mixed $asset): ?string
     {
         $candidates = [
@@ -687,7 +781,7 @@ class EasyBrokerMlsExportService
         ];
 
         foreach ($candidates as $candidate) {
-            if (!is_string($candidate) || trim($candidate) === '') {
+            if (! is_string($candidate) || trim($candidate) === '') {
                 continue;
             }
 
@@ -716,30 +810,60 @@ class EasyBrokerMlsExportService
 
     protected function isValidEasyBrokerImageUrl(string $url): bool
     {
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        if (! filter_var($url, FILTER_VALIDATE_URL)) {
             return false;
         }
 
         $parts = parse_url($url);
-        if (!is_array($parts)) {
+        if (! is_array($parts)) {
             return false;
         }
 
         $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        if (!in_array($scheme, ['http', 'https'], true)) {
+        if (! in_array($scheme, ['http', 'https'], true)) {
             return false;
         }
 
         $host = strtolower((string) ($parts['host'] ?? ''));
-        if ($host === '' || !$this->isPublicHost($host)) {
+        if ($host === '' || ! $this->isPublicHost($host)) {
             return false;
         }
 
         $path = (string) ($parts['path'] ?? '');
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'heic'];
 
-        return in_array($extension, $allowedExtensions, true);
+        if ($extension === '') {
+            return true;
+        }
+
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'heic', 'webp', 'avif'];
+        if (in_array($extension, $allowedExtensions, true)) {
+            return true;
+        }
+
+        $blockedExtensions = [
+            'pdf',
+            'svg',
+            'mp4',
+            'mov',
+            'avi',
+            'webm',
+            'mkv',
+            'mp3',
+            'wav',
+            'zip',
+            'rar',
+            'doc',
+            'docx',
+            'xls',
+            'xlsx',
+            'ppt',
+            'pptx',
+            'txt',
+            'csv',
+        ];
+
+        return ! in_array($extension, $blockedExtensions, true);
     }
 
     protected function isPublicHost(string $host): bool
@@ -753,11 +877,11 @@ class EasyBrokerMlsExportService
             return false;
         }
 
-        if (!str_contains($host, '.')) {
+        if (! str_contains($host, '.')) {
             return false;
         }
 
-        if (!filter_var($host, FILTER_VALIDATE_IP)) {
+        if (! filter_var($host, FILTER_VALIDATE_IP)) {
             return true;
         }
 
@@ -808,7 +932,7 @@ class EasyBrokerMlsExportService
             $payload[] = $item;
         }
 
-        if (!empty($payload)) {
+        if (! empty($payload)) {
             return $this->uniqueOperations($payload);
         }
 
@@ -885,7 +1009,7 @@ class EasyBrokerMlsExportService
     protected function shouldRetryLocationWithCatalog(array $body): bool
     {
         $errors = $body['errors'] ?? null;
-        if (!is_array($errors)) {
+        if (! is_array($errors)) {
             return false;
         }
 
@@ -902,7 +1026,7 @@ class EasyBrokerMlsExportService
     protected function buildLocationFallbackPayload(array $payload, Property $property): ?array
     {
         $currentLocation = $payload['location'] ?? null;
-        if (!is_array($currentLocation)) {
+        if (! is_array($currentLocation)) {
             return null;
         }
 
@@ -1006,8 +1130,9 @@ class EasyBrokerMlsExportService
             'query' => $query,
         ]);
 
-        if (!$response['ok'] || !is_array($response['body'])) {
+        if (! $response['ok'] || ! is_array($response['body'])) {
             $this->locationQueryCache[$cacheKey] = null;
+
             return null;
         }
 
@@ -1030,7 +1155,7 @@ class EasyBrokerMlsExportService
         $bestFullName = null;
 
         foreach ($localities as $item) {
-            if (!is_array($item)) {
+            if (! is_array($item)) {
                 continue;
             }
 
@@ -1082,7 +1207,7 @@ class EasyBrokerMlsExportService
     protected function makeRequest(string $method, string $endpoint, array $payload = []): array
     {
         $method = strtoupper($method);
-        $url = rtrim($this->baseUrl, '/') . $endpoint;
+        $url = rtrim($this->baseUrl, '/').$endpoint;
 
         try {
             $client = Http::withHeaders([
@@ -1158,7 +1283,7 @@ class EasyBrokerMlsExportService
                 }
             }
 
-            if (!empty($flattened)) {
+            if (! empty($flattened)) {
                 return implode(' | ', $flattened);
             }
         }
@@ -1168,7 +1293,7 @@ class EasyBrokerMlsExportService
 
     protected function parseDate(mixed $value): ?Carbon
     {
-        if (!is_string($value) || trim($value) === '') {
+        if (! is_string($value) || trim($value) === '') {
             return null;
         }
 
@@ -1182,7 +1307,7 @@ class EasyBrokerMlsExportService
     protected function firstNonEmpty(array $candidates): ?string
     {
         foreach ($candidates as $candidate) {
-            if (!is_string($candidate)) {
+            if (! is_string($candidate)) {
                 continue;
             }
 
@@ -1210,7 +1335,7 @@ class EasyBrokerMlsExportService
             $parts = explode('.', $number);
             if (count($parts) > 2) {
                 $decimal = array_pop($parts);
-                $number = implode('', $parts) . '.' . $decimal;
+                $number = implode('', $parts).'.'.$decimal;
             }
 
             if (is_numeric($number)) {
@@ -1249,7 +1374,6 @@ class EasyBrokerMlsExportService
 
     protected function isBlank(mixed $value): bool
     {
-        return !is_string($value) || trim($value) === '';
+        return ! is_string($value) || trim($value) === '';
     }
 }
-

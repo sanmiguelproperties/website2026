@@ -62,6 +62,52 @@ class EasyBrokerMlsExportServiceTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_it_includes_cover_media_asset_even_when_it_is_not_attached_to_gallery(): void
+    {
+        $property = $this->makeExportableProperty();
+        $externalUrl = 'https://img.example-cdn.com/property-photo?w=1200&q=85';
+
+        $coverAsset = MediaAsset::create([
+            'type' => 'image',
+            'provider' => 'external',
+            'url' => $externalUrl,
+            'storage_path' => null,
+            'name' => 'External cover photo',
+        ]);
+
+        $property->update(['cover_media_asset_id' => $coverAsset->id]);
+
+        $draft = $this->buildDraft($property);
+
+        $this->assertSame(1, $draft['resolved']['images_count']);
+        $this->assertSame($externalUrl, $draft['payload']['images'][0]['url']);
+    }
+
+    public function test_it_treats_cover_role_media_assets_as_images(): void
+    {
+        $property = $this->makeExportableProperty();
+        $externalUrl = 'https://cdn.example.com/listings/photo-1.jpg';
+
+        $coverAsset = MediaAsset::create([
+            'type' => 'image',
+            'provider' => 'external',
+            'url' => $externalUrl,
+            'storage_path' => null,
+            'name' => 'Cover role photo',
+        ]);
+
+        $property->mediaAssets()->attach($coverAsset->id, [
+            'role' => 'cover',
+            'position' => 0,
+            'source_url' => $externalUrl,
+        ]);
+
+        $draft = $this->buildDraft($property);
+
+        $this->assertSame(1, $draft['resolved']['images_count']);
+        $this->assertSame($externalUrl, $draft['payload']['images'][0]['url']);
+    }
+
     public function test_it_supplements_linked_images_with_external_urls_from_raw_payload(): void
     {
         $localUrl = 'https://cdn.sanmiguelproperties.com/storage/mls/local-photo.jpg';
@@ -101,6 +147,28 @@ class EasyBrokerMlsExportServiceTest extends TestCase
             array_column($draft['payload']['images'], 'url')
         );
         $this->assertSame('Exterior', $draft['payload']['images'][1]['title']);
+    }
+
+    public function test_it_extracts_external_image_urls_from_common_raw_payload_fields(): void
+    {
+        $externalUrl = 'https://mls-cdn.example.com/photo-token-123?width=1600';
+
+        $property = $this->makeExportableProperty([
+            'raw_payload' => [
+                'photos' => [
+                    [
+                        'image_url' => $externalUrl,
+                        'title' => 'Primary exterior',
+                    ],
+                ],
+            ],
+        ]);
+
+        $draft = $this->buildDraft($property);
+
+        $this->assertSame(1, $draft['resolved']['images_count']);
+        $this->assertSame($externalUrl, $draft['payload']['images'][0]['url']);
+        $this->assertSame('Primary exterior', $draft['payload']['images'][0]['title']);
     }
 
     private function buildDraft(Property $property): array
