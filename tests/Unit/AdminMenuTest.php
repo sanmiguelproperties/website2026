@@ -21,6 +21,7 @@ class AdminMenuTest extends TestCase
         $this->assertFalse(AdminMenu::groupVisible($user, 2));
         $this->assertFalse(AdminMenu::groupVisible($user, 6));
         $this->assertFalse(AdminMenu::groupVisible($user, 7));
+        $this->assertFalse(AdminMenu::groupVisible($user, 8));
     }
 
     public function test_crm_group_contains_clients_leads_and_calendar_items(): void
@@ -83,6 +84,22 @@ class AdminMenuTest extends TestCase
         $this->assertFalse(AdminMenu::groupVisible($user, 2));
         $this->assertFalse(AdminMenu::groupVisible($user, 5));
         $this->assertTrue(AdminMenu::groupVisible($configurationUser, 5));
+    }
+
+    public function test_tutorial_items_live_in_internal_help_group(): void
+    {
+        $viewer = new AdminMenuUser(['menu.tutorials.view']);
+        $manager = new AdminMenuUser(['menu.tutorial-videos.view']);
+
+        $this->assertTrue(AdminMenu::canAccessItem($viewer, 'tutorials'));
+        $this->assertTrue(AdminMenu::canAccessRoute($viewer, 'tutorials'));
+        $this->assertTrue(AdminMenu::groupVisible($viewer, 8));
+        $this->assertFalse(AdminMenu::canAccessItem($viewer, 'tutorial-videos'));
+
+        $this->assertTrue(AdminMenu::canAccessItem($manager, 'tutorial-videos'));
+        $this->assertTrue(AdminMenu::canAccessRoute($manager, 'tutorial-videos'));
+        $this->assertTrue(AdminMenu::groupVisible($manager, 8));
+        $this->assertFalse(AdminMenu::groupVisible($manager, 3));
     }
 
     public function test_corporate_email_items_use_menu_permissions(): void

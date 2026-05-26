@@ -30,6 +30,7 @@ use App\Http\Controllers\CorporateEmailController;
 use App\Http\Controllers\AgencyTeamMemberController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PublicLeadController;
+use App\Http\Controllers\TutorialVideoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,6 +57,15 @@ Route::middleware(['auth.api', 'admin.api:notifications.view'])->prefix('notific
     Route::get('/', [NotificationController::class, 'index']);
     Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::patch('/{notification}', [NotificationController::class, 'markAsRead']);
+});
+
+Route::middleware(['auth.api', 'admin.api:tutorials.view|tutorials.manage'])->prefix('tutorial-videos')->group(function () {
+    Route::get('/', [TutorialVideoController::class, 'index']);
+    Route::get('{tutorialVideo}', [TutorialVideoController::class, 'show'])->where('tutorialVideo', '[0-9]+');
+    Route::post('/', [TutorialVideoController::class, 'store'])->middleware('admin.api:tutorials.manage');
+    Route::put('{tutorialVideo}', [TutorialVideoController::class, 'update'])->where('tutorialVideo', '[0-9]+')->middleware('admin.api:tutorials.manage');
+    Route::patch('{tutorialVideo}', [TutorialVideoController::class, 'update'])->where('tutorialVideo', '[0-9]+')->middleware('admin.api:tutorials.manage');
+    Route::delete('{tutorialVideo}', [TutorialVideoController::class, 'destroy'])->where('tutorialVideo', '[0-9]+')->middleware('admin.api:tutorials.manage');
 });
 
 // Media Manager routes

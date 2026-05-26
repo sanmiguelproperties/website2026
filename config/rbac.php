@@ -28,6 +28,8 @@ return [
         'menu.cms.posts.view',
         'menu.cms.menus.view',
         'menu.cms.settings.view',
+        'menu.tutorials.view',
+        'menu.tutorial-videos.view',
         'menu.currencies.view',
         'menu.color-themes.view',
         'menu.frontend-colors.view',
@@ -147,6 +149,9 @@ return [
         'cms.view',
         'cms.manage',
 
+        'tutorials.view',
+        'tutorials.manage',
+
         'catalogs.view',
         'catalogs.manage',
 
@@ -196,6 +201,8 @@ return [
                 'menu.cms.posts.view',
                 'menu.cms.menus.view',
                 'menu.cms.settings.view',
+                'menu.tutorials.view',
+                'menu.tutorial-videos.view',
                 'menu.notifications.view',
 
                 'properties.view',
@@ -268,6 +275,8 @@ return [
                 'corporate-email.send.any',
 
                 'cms.view',
+                'tutorials.view',
+                'tutorials.manage',
                 'catalogs.view',
                 'integrations.view',
                 'integrations.logs.view',
@@ -290,6 +299,7 @@ return [
                 'menu.cms.menus.view',
                 'menu.cms.settings.view',
                 'menu.easybroker.view',
+                'menu.tutorials.view',
                 'menu.notifications.view',
 
                 'properties.view',
@@ -310,6 +320,7 @@ return [
 
                 'cms.view',
                 'cms.manage',
+                'tutorials.view',
                 'catalogs.view',
                 'catalogs.manage',
 
@@ -337,6 +348,7 @@ return [
                 'menu.corporate-email.inbox.view',
                 'menu.corporate-email.outbox.view',
                 'menu.corporate-email.compose.view',
+                'menu.tutorials.view',
                 'menu.notifications.view',
 
                 'properties.view',
@@ -381,6 +393,8 @@ return [
 
                 'corporate-email.view',
                 'corporate-email.send',
+
+                'tutorials.view',
 
                 'commissions.view.own',
                 'marketing.view',

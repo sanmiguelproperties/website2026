@@ -447,9 +447,42 @@
               </div>
             </div>
           </section>
+          @endif
+
+          @if($dashCanMenuGroup(8))
+          <section class="rounded-2xl overflow-hidden ring-1 ring-[var(--c-border)]">
+            <button id="dash-acc-btn-8" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[var(--c-elev)] hover:bg-[var(--c-elev)]/80 transition" aria-controls="dash-acc-panel-8" aria-expanded="false">
+              <span class="flex items-center gap-3">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 15.5v-7A2.5 2.5 0 0 1 4.5 6h15A2.5 2.5 0 0 1 22 8.5Z"/><path d="m10 9 5 3-5 3V9Z"/></svg>
+                <span class="text-sm font-medium">Ayuda interna</span>
+              </span>
+              <svg class="size-4 -rotate-90 transition-transform" id="dash-acc-icon-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div id="dash-acc-panel-8" class="hidden cv-auto">
+              <div class="p-2 bg-[var(--c-surface)] min-h-0">
+                @if($dashCanMenuItem('tutorials'))
+                <a href="{{ route('tutorials') }}" data-route="tutorials" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 15.5v-7A2.5 2.5 0 0 1 4.5 6h15A2.5 2.5 0 0 1 22 8.5Z"/><path d="m10 9 5 3-5 3V9Z"/></svg>
+                  </span>
+                  Tutoriales
+                </a>
+                @endif
+
+                @if($dashCanMenuItem('tutorial-videos'))
+                <a href="{{ route('tutorial-videos') }}" data-route="tutorial-videos" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/><path d="m10 8 5 3-5 3V8Z"/></svg>
+                  </span>
+                  Administrar videos
+                </a>
+                @endif
+              </div>
+            </div>
+          </section>
+          @endif
 
           <!-- Grupo 3: Ajustes -->
-          @endif
 
           @if($dashCanMenuGroup(3))
           <section class="rounded-2xl overflow-hidden ring-1 ring-[var(--c-border)]">
@@ -631,6 +664,8 @@
         'cms.posts': 4,
         'cms.menus': 4,
         'cms.settings': 4,
+        'tutorials': 8,
+        'tutorial-videos': 8,
         'notifications': 3,
       };
 
@@ -679,6 +714,7 @@
         { btn: 'dash-acc-btn-7', panel: 'dash-acc-panel-7', icon: 'dash-acc-icon-7', defaultOpen: currentGroup === 7 },
         { btn: 'dash-acc-btn-5', panel: 'dash-acc-panel-5', icon: 'dash-acc-icon-5', defaultOpen: currentGroup === 5 },
         { btn: 'dash-acc-btn-4', panel: 'dash-acc-panel-4', icon: 'dash-acc-icon-4', defaultOpen: currentGroup === 4 },
+        { btn: 'dash-acc-btn-8', panel: 'dash-acc-panel-8', icon: 'dash-acc-icon-8', defaultOpen: currentGroup === 8 },
         { btn: 'dash-acc-btn-3', panel: 'dash-acc-panel-3', icon: 'dash-acc-icon-3', defaultOpen: currentGroup === 3 },
       ];
 

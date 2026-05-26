@@ -36,6 +36,8 @@ class AdminMenu
         'cms.posts' => 'menu.cms.posts.view',
         'cms.menus' => 'menu.cms.menus.view',
         'cms.settings' => 'menu.cms.settings.view',
+        'tutorials' => 'menu.tutorials.view',
+        'tutorial-videos' => 'menu.tutorial-videos.view',
 
         'notifications' => 'menu.notifications.view',
     ];
@@ -47,6 +49,7 @@ class AdminMenu
         7 => ['easybroker.mls-export', 'mls', 'mls-agents', 'mls-offices'],
         5 => ['corporate-email.configuration', 'corporate-email.inbox', 'corporate-email.outbox', 'corporate-email.compose'],
         4 => ['cms.pages', 'cms.posts', 'cms.menus', 'cms.settings'],
+        8 => ['tutorials', 'tutorial-videos'],
         3 => ['currencies', 'color-themes', 'frontend-colors', 'easybroker', 'notifications'],
     ];
 
@@ -81,6 +84,8 @@ class AdminMenu
         'cms.posts' => 'cms.posts',
         'cms.menus' => 'cms.menus',
         'cms.settings' => 'cms.settings',
+        'tutorials' => 'tutorials',
+        'tutorial-videos' => 'tutorial-videos',
 
         'notifications' => 'notifications',
     ];

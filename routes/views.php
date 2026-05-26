@@ -413,6 +413,14 @@ Route::middleware('auth')->group(function () {
             return view('notifications.manage');
         })->name('notifications')->middleware('admin:notifications.view');
 
+        Route::get('/tutorials', function () {
+            return view('tutorials.index');
+        })->name('tutorials')->middleware('admin:tutorials.view');
+
+        Route::get('/tutorial-videos', function () {
+            return view('tutorial-videos.manage');
+        })->name('tutorial-videos')->middleware('admin:tutorials.manage');
+
         // CMS
         Route::get('/cms/pages', function () {
             return view('cms.pages.manage');
