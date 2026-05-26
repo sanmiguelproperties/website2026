@@ -2,14 +2,25 @@
 
 @php
   $isEn = ($locale ?? app()->getLocale()) === 'en';
-  $txt = fn (string $key, string $es, string $en) => $pageData?->field($key) ?? ($isEn ? $en : $es);
+  $currentLocale = $locale ?? app()->getLocale();
+  $txt = function (string $key, string $es, string $en) use ($pageData, $currentLocale, $isEn): string {
+    $value = $pageData?->field($key, $currentLocale);
+
+    return $value !== null ? $value : ($isEn ? $en : $es);
+  };
+  $legacyPageTitle = $pageData?->field('page_title', $currentLocale);
+  $pageTitlePrefix = $txt('page_title_prefix', 'Explora nuestras', 'Explore our');
+  if ($pageData?->field('page_title_prefix', $currentLocale) === null && filled($legacyPageTitle)) {
+    $pageTitlePrefix = $legacyPageTitle;
+  }
+  $pageTitleHighlight = $txt('page_title_highlight', 'propiedades', 'properties');
   $zonePage = $zonePage ?? null;
   $isZoneLanding = $zonePage instanceof \App\Models\ZonePage;
-  $zoneTitle = $isZoneLanding ? $zonePage->title($locale ?? app()->getLocale()) : null;
-  $zoneDescription = $isZoneLanding ? $zonePage->description($locale ?? app()->getLocale()) : null;
-  $defaultPageTitle = $pageData?->entity?->title($locale ?? app()->getLocale()) ?? ($isEn ? 'Properties' : 'Propiedades');
+  $zoneTitle = $isZoneLanding ? $zonePage->title($currentLocale) : null;
+  $zoneDescription = $isZoneLanding ? $zonePage->description($currentLocale) : null;
+  $defaultPageTitle = $pageData?->entity?->title($currentLocale) ?? ($isEn ? 'Properties' : 'Propiedades');
   $pageTitle = $isZoneLanding
-    ? ($zonePage->metaTitle($locale ?? app()->getLocale()) ?: $zoneTitle ?: $defaultPageTitle)
+    ? ($zonePage->metaTitle($currentLocale) ?: $zoneTitle ?: $defaultPageTitle)
     : $defaultPageTitle;
   $rich = static fn (?string $html, ?string $fallback = null): string => \App\Support\RichTextSanitizer::sanitize($html, $fallback);
 @endphp
@@ -198,7 +209,10 @@
             </div>
           @else
             <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight" style="color: var(--fe-properties-title, #1C1C1C);">
-              {{ $txt('page_title_prefix', 'Explora nuestras', 'Explore our') }} <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $txt('page_title_highlight', 'propiedades', 'properties') }}</span>
+              {{ $pageTitlePrefix }}
+              @if(trim($pageTitleHighlight) !== '')
+                <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">{{ $pageTitleHighlight }}</span>
+              @endif
             </h1>
             <div class="mt-4 text-lg rich-content" style="color: var(--fe-properties-subtitle, #5B5B5B);">
               {!! $rich($txt('page_subtitle', 'Filtra por tipo y encuentra la propiedad ideal.', 'Filter by type and find the right property for you.')) !!}

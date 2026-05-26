@@ -241,6 +241,7 @@ class CmsPageData
     public Collection $fieldValues;
     protected ?string $locale;
     protected array $indexedValues = [];
+    protected array $activeFieldDefinitionIds = [];
 
     public function __construct($entity, Collection $fieldGroups, Collection $fieldValues, ?string $locale = null)
     {
@@ -248,7 +249,30 @@ class CmsPageData
         $this->fieldGroups = $fieldGroups;
         $this->fieldValues = $fieldValues;
         $this->locale = $locale;
+        $this->activeFieldDefinitionIds = $this->collectActiveFieldDefinitionIds();
         $this->buildIndex();
+    }
+
+    protected function collectActiveFieldDefinitionIds(): array
+    {
+        $ids = [];
+
+        foreach ($this->fieldGroups as $group) {
+            foreach ($group->fieldDefinitions as $fieldDefinition) {
+                $ids[(int) $fieldDefinition->id] = true;
+
+                foreach ($fieldDefinition->children as $childDefinition) {
+                    $ids[(int) $childDefinition->id] = true;
+                }
+            }
+        }
+
+        return $ids;
+    }
+
+    protected function belongsToActiveFieldGroup(CmsFieldValue $value): bool
+    {
+        return isset($this->activeFieldDefinitionIds[(int) $value->field_definition_id]);
     }
 
     /**
@@ -257,7 +281,7 @@ class CmsPageData
     protected function buildIndex(): void
     {
         foreach ($this->fieldValues as $value) {
-            if ($value->fieldDefinition && is_null($value->parent_value_id)) {
+            if ($value->fieldDefinition && is_null($value->parent_value_id) && $this->belongsToActiveFieldGroup($value)) {
                 $key = $value->fieldDefinition->field_key;
                 $this->indexedValues[$key] = $value;
             }
@@ -321,6 +345,7 @@ class CmsPageData
                 return $v->fieldDefinition
                     && $v->fieldDefinition->field_key === $fieldKey
                     && $v->fieldDefinition->type === 'repeater'
+                    && $this->belongsToActiveFieldGroup($v)
                     && is_null($v->parent_value_id);
             })
             ->sortBy('row_index');

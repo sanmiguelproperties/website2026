@@ -223,11 +223,13 @@ class CmsFieldValueController extends Controller
             'parent_value_id' => null,
         ];
 
-        $values = [
-            'value_es' => $data['value_es'] ?? null,
-            'value_en' => $data['value_en'] ?? null,
-            'media_asset_id' => $data['media_asset_id'] ?? null,
-        ];
+        $values = [];
+
+        foreach (['value_es', 'value_en', 'media_asset_id'] as $column) {
+            if (array_key_exists($column, $data)) {
+                $values[$column] = $data[$column];
+            }
+        }
 
         CmsFieldValue::updateOrCreate($attributes, $values);
     }

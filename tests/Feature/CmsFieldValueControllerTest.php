@@ -7,7 +7,9 @@ use App\Models\CmsFieldDefinition;
 use App\Models\CmsFieldGroup;
 use App\Models\CmsFieldValue;
 use App\Models\CmsPage;
+use App\Services\CmsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class CmsFieldValueControllerTest extends TestCase
@@ -101,5 +103,136 @@ class CmsFieldValueControllerTest extends TestCase
         $this->assertCount(2, $rows);
         $this->assertSame('Pregunta 1', $rows[0]['faq_question']['value_es']);
         $this->assertSame('Respuesta 2', $rows[1]['faq_answer']['value_es']);
+    }
+
+    public function test_update_preserves_spanish_value_when_only_english_content_changes(): void
+    {
+        $page = CmsPage::create([
+            'slug' => 'properties-test',
+            'title_es' => 'Propiedades',
+            'title_en' => 'Properties',
+            'template' => 'public.properties-index',
+            'status' => 'published',
+            'is_active' => true,
+        ]);
+
+        $group = CmsFieldGroup::create([
+            'name' => 'Hero',
+            'slug' => 'properties-test-hero',
+            'location_type' => 'page',
+            'location_identifier' => 'properties-test',
+            'is_active' => true,
+        ]);
+
+        $field = CmsFieldDefinition::create([
+            'field_group_id' => $group->id,
+            'field_key' => 'page_title_prefix',
+            'type' => 'text',
+            'label_es' => 'Titulo',
+            'label_en' => 'Title',
+            'is_translatable' => true,
+            'sort_order' => 1,
+        ]);
+
+        CmsFieldValue::create([
+            'field_definition_id' => $field->id,
+            'entity_type' => 'page',
+            'entity_id' => $page->id,
+            'value_es' => 'Explora nuestras',
+            'value_en' => 'Explore our',
+        ]);
+
+        $this->assertSame('Explore our', CmsService::getPageData('properties-test', 'en')?->field('page_title_prefix'));
+
+        $request = Request::create('/api/cms/field-values/page/' . $page->id, 'PUT', [
+            'fields' => [
+                'page_title_prefix' => [
+                    'value_en' => 'Updated English heading',
+                ],
+            ],
+        ]);
+
+        $response = app(CmsFieldValueController::class)->update($request, 'page', $page->id);
+        $payload = $response->getData(true);
+
+        $this->assertTrue($payload['success']);
+
+        $value = CmsFieldValue::query()
+            ->where('field_definition_id', $field->id)
+            ->where('entity_type', 'page')
+            ->where('entity_id', $page->id)
+            ->firstOrFail();
+
+        $this->assertSame('Explora nuestras', $value->value_es);
+        $this->assertSame('Updated English heading', $value->value_en);
+        $this->assertSame('Updated English heading', CmsService::getPageData('properties-test', 'en')?->field('page_title_prefix'));
+    }
+
+    public function test_page_data_ignores_values_from_inactive_or_legacy_field_groups(): void
+    {
+        $page = CmsPage::create([
+            'slug' => 'properties-test',
+            'title_es' => 'Propiedades',
+            'title_en' => 'Properties',
+            'template' => 'public.properties-index',
+            'status' => 'published',
+            'is_active' => true,
+        ]);
+
+        $activeGroup = CmsFieldGroup::create([
+            'name' => 'Textos de propiedades',
+            'slug' => 'properties-test-active',
+            'location_type' => 'page',
+            'location_identifier' => 'properties-test',
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $legacyGroup = CmsFieldGroup::create([
+            'name' => 'Textos legacy propiedades',
+            'slug' => 'properties-test-legacy',
+            'location_type' => 'page',
+            'location_identifier' => 'properties-legacy',
+            'is_active' => false,
+            'sort_order' => 999,
+        ]);
+
+        $activeField = CmsFieldDefinition::create([
+            'field_group_id' => $activeGroup->id,
+            'field_key' => 'page_subtitle',
+            'type' => 'textarea',
+            'label_es' => 'Subtitulo',
+            'label_en' => 'Subtitle',
+            'is_translatable' => true,
+            'sort_order' => 1,
+        ]);
+
+        $legacyField = CmsFieldDefinition::create([
+            'field_group_id' => $legacyGroup->id,
+            'field_key' => 'page_subtitle',
+            'type' => 'textarea',
+            'label_es' => 'Subtitulo viejo',
+            'label_en' => 'Old subtitle',
+            'is_translatable' => true,
+            'sort_order' => 1,
+        ]);
+
+        CmsFieldValue::create([
+            'field_definition_id' => $activeField->id,
+            'entity_type' => 'page',
+            'entity_id' => $page->id,
+            'value_es' => 'Subtitulo activo',
+            'value_en' => 'Active subtitle',
+        ]);
+
+        CmsFieldValue::create([
+            'field_definition_id' => $legacyField->id,
+            'entity_type' => 'page',
+            'entity_id' => $page->id,
+            'value_es' => 'Subtitulo legacy',
+            'value_en' => 'Legacy subtitle',
+        ]);
+
+        $this->assertSame('Active subtitle', CmsService::getPageData('properties-test', 'en')?->field('page_subtitle'));
     }
 }
