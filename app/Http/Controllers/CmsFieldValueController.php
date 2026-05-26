@@ -26,16 +26,35 @@ class CmsFieldValueController extends Controller
                 ->where('entity_id', $entityType === 'global' ? null : $entityId)
                 ->with(['fieldDefinition.fieldGroup', 'mediaAsset', 'children.fieldDefinition', 'children.mediaAsset'])
                 ->whereNull('parent_value_id') // solo raíz
+                ->orderBy('field_definition_id')
+                ->orderBy('row_index')
+                ->orderBy('id')
                 ->get();
 
             // Organizar por grupo
             $organized = [];
             foreach ($values as $value) {
+                if (!$value->fieldDefinition) {
+                    continue;
+                }
+
                 $groupSlug = $value->fieldDefinition?->fieldGroup?->slug ?? 'ungrouped';
                 if (!isset($organized[$groupSlug])) {
                     $organized[$groupSlug] = [];
                 }
-                $organized[$groupSlug][$value->fieldDefinition->field_key] = $this->formatValueForApi($value);
+
+                $fieldKey = $value->fieldDefinition->field_key;
+
+                if ($value->fieldDefinition->isRepeater()) {
+                    if (!isset($organized[$groupSlug][$fieldKey])) {
+                        $organized[$groupSlug][$fieldKey] = $this->formatRepeaterForApi($value);
+                    }
+
+                    $organized[$groupSlug][$fieldKey]['rows'][] = $this->formatRepeaterRowForApi($value);
+                    continue;
+                }
+
+                $organized[$groupSlug][$fieldKey] = $this->formatValueForApi($value);
             }
 
             return $this->jsonSuccess($organized, 'Valores obtenidos');
@@ -346,5 +365,46 @@ class CmsFieldValueController extends Controller
         }
 
         return $result;
+    }
+
+    protected function formatRepeaterForApi(CmsFieldValue $value): array
+    {
+        return [
+            'id' => $value->id,
+            'field_key' => $value->fieldDefinition->field_key,
+            'type' => $value->fieldDefinition->type,
+            'value_es' => $value->value_es,
+            'value_en' => $value->value_en,
+            'media_asset_id' => $value->media_asset_id,
+            'media_asset' => $value->mediaAsset,
+            'rows' => [],
+        ];
+    }
+
+    protected function formatRepeaterRowForApi(CmsFieldValue $parentValue): array
+    {
+        $row = [
+            '_id' => $parentValue->id,
+            '_row_index' => $parentValue->row_index,
+        ];
+
+        $children = $parentValue->children
+            ->sortBy(fn (CmsFieldValue $childValue) => $childValue->fieldDefinition?->sort_order ?? 0);
+
+        foreach ($children as $childValue) {
+            if (!$childValue->fieldDefinition) {
+                continue;
+            }
+
+            $row[$childValue->fieldDefinition->field_key] = [
+                'id' => $childValue->id,
+                'value_es' => $childValue->value_es,
+                'value_en' => $childValue->value_en,
+                'media_asset_id' => $childValue->media_asset_id,
+                'media_asset' => $childValue->mediaAsset,
+            ];
+        }
+
+        return $row;
     }
 }

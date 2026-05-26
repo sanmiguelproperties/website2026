@@ -175,12 +175,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Renderizar field groups con campos ──
   function renderFieldGroups() {
     const body = $('#drawer-body');
-    if (!fieldGroups.length) {
+    const visibleGroups = fieldGroups
+      .map(group => ({
+        ...group,
+        field_definitions: (group.field_definitions || []).filter(shouldShowFieldForCurrentPage)
+      }))
+      .filter(group => group.field_definitions.length > 0);
+
+    if (!visibleGroups.length) {
       body.innerHTML = `<div class="text-center py-12"><p class="text-[var(--c-muted)]">Esta página no tiene field groups definidos.</p></div>`;
       return;
     }
 
-    body.innerHTML = fieldGroups.map(group => `
+    body.innerHTML = visibleGroups.map(group => `
       <div class="rounded-2xl border border-[var(--c-border)] bg-[var(--c-elev)] overflow-hidden" data-group-slug="${esc(group.slug)}">
         <div class="px-5 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface)]">
           <h4 class="font-semibold text-[var(--c-text)]">${esc(group.name)}</h4>
@@ -206,6 +213,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     initCmsMediaPickers(body);
+  }
+
+  function shouldShowFieldForCurrentPage(fd) {
+    if (currentPageSlug !== 'contact') return true;
+
+    const key = String(fd?.field_key || '');
+    const hiddenContactKeys = new Set(['contact_hero_badge', 'contact_label_address']);
+    if (hiddenContactKeys.has(key)) return false;
+
+    return key.startsWith('contact_') || key.startsWith('i18n_contact_');
   }
 
   function renderMediaField({ key, label, type, mediaId = '', mediaUrl = '', context = 'field', repeaterKey = '', rowIndex = 0, subKey = '' }) {

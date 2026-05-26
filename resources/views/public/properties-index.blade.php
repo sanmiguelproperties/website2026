@@ -188,7 +188,7 @@
       </div>
 
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div class="{{ $isZoneLanding ? 'max-w-6xl' : 'max-w-3xl' }}">
+        <div class="w-full max-w-none">
           @if($isZoneLanding)
             <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight" style="color: var(--fe-properties-title, #1C1C1C);">
               {{ $zoneTitle ?? ($isEn ? 'Properties by zone' : 'Propiedades por zona') }}

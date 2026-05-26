@@ -132,6 +132,14 @@
         'operation_type' => 'sale',
         'min_price' => 1500000,
     ]);
+    $rentPropertiesHref = route('public.properties.index', [
+        'operation_type' => 'rental',
+    ]);
+    $salePropertiesHref = route('public.properties.index', [
+        'operation_type' => 'sale',
+    ]);
+    $rentMenuLabel = $txt('header_nav_properties_rent', 'Renta', 'Rent');
+    $saleMenuLabel = $txt('header_nav_properties_sale', 'Venta', 'Sale');
     $terrainPropertiesHref = route('public.properties.index', [
         'property_type_name' => 'Land and Lots',
     ]);
@@ -302,11 +310,36 @@
             || str_contains($href, 'property_type_name=commercial')
             || $href === $commercialHref;
     };
+    $isRentSubmenuItem = static function (array $entry) use ($rentPropertiesHref): bool {
+        $label = Str::lower(trim((string) ($entry['label'] ?? '')));
+        $href = Str::lower(trim((string) ($entry['href'] ?? '')));
+        $rentHref = Str::lower($rentPropertiesHref);
+
+        return in_array($label, ['renta', 'rent', 'rental', 'en renta', 'for rent'], true)
+            || str_contains($href, 'operation_type=rental')
+            || str_contains($href, 'operation_type=rent')
+            || str_contains($href, 'operation_type=renta')
+            || $href === $rentHref;
+    };
+    $isSaleSubmenuItem = static function (array $entry) use ($salePropertiesHref): bool {
+        $label = Str::lower(trim((string) ($entry['label'] ?? '')));
+        $href = Str::lower(trim((string) ($entry['href'] ?? '')));
+        $saleHref = Str::lower($salePropertiesHref);
+
+        return in_array($label, ['venta', 'sale', 'en venta', 'for sale'], true)
+            || str_contains($href, 'operation_type=sale')
+            || str_contains($href, 'operation_type=venta')
+            || $href === $saleHref;
+    };
     $buildPropertiesSubmenuItems = static function ($item) use (
         $resolveMenuLink,
         $txt,
         $currentLocale,
         $luxuryPropertiesHref,
+        $rentPropertiesHref,
+        $salePropertiesHref,
+        $rentMenuLabel,
+        $saleMenuLabel,
         $terrainPropertiesHref,
         $terrainMenuLabel,
         $commercialPropertiesHref,
@@ -314,7 +347,9 @@
         $localizedMenuLabel,
         $isLuxurySubmenuItem,
         $isTerrainSubmenuItem,
-        $isCommercialSubmenuItem
+        $isCommercialSubmenuItem,
+        $isRentSubmenuItem,
+        $isSaleSubmenuItem
     ): array {
         $baseLink = $resolveMenuLink($item);
         $allPropertiesItem = [
@@ -326,6 +361,8 @@
         $children = $item->children ?? collect();
         $regularItems = [];
         $luxuryItem = null;
+        $rentItem = null;
+        $saleItem = null;
         $terrainItem = null;
         $commercialItem = null;
 
@@ -339,6 +376,16 @@
 
             if ($isLuxurySubmenuItem($entry)) {
                 $luxuryItem = $luxuryItem ?? $entry;
+                continue;
+            }
+
+            if ($isRentSubmenuItem($entry)) {
+                $rentItem = $rentItem ?? $entry;
+                continue;
+            }
+
+            if ($isSaleSubmenuItem($entry)) {
+                $saleItem = $saleItem ?? $entry;
                 continue;
             }
 
@@ -360,6 +407,16 @@
             'href' => $luxuryPropertiesHref,
             'target' => '_self',
         ];
+        $rentItem = $rentItem ?? [
+            'label' => $rentMenuLabel,
+            'href' => $rentPropertiesHref,
+            'target' => '_self',
+        ];
+        $saleItem = $saleItem ?? [
+            'label' => $saleMenuLabel,
+            'href' => $salePropertiesHref,
+            'target' => '_self',
+        ];
         $terrainItem = $terrainItem ?? [
             'label' => $terrainMenuLabel,
             'href' => $terrainPropertiesHref,
@@ -370,7 +427,7 @@
             'href' => $commercialPropertiesHref,
             'target' => '_self',
         ];
-        $submenuItems = array_merge([$luxuryItem, $terrainItem, $commercialItem, $allPropertiesItem], $regularItems);
+        $submenuItems = array_merge([$rentItem, $saleItem, $luxuryItem, $terrainItem, $commercialItem, $allPropertiesItem], $regularItems);
 
         return collect($submenuItems)
             ->filter(fn (array $entry) => trim((string) ($entry['label'] ?? '')) !== '')
@@ -603,6 +660,12 @@
                                     </div>
                                 </div>
                             @endif
+                            <a href="{{ $rentPropertiesHref }}" class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                {{ $rentMenuLabel }}
+                            </a>
+                            <a href="{{ $salePropertiesHref }}" class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
+                                {{ $saleMenuLabel }}
+                            </a>
                             <a href="{{ $luxuryPropertiesHref }}" class="header-dropdown-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900">
                                 {{ $txt('header_nav_properties_luxury', 'Lujo', 'Luxury') }}
                             </a>
@@ -850,6 +913,16 @@
                                     </div>
                                 </div>
                             @endif
+                            <a href="{{ $rentPropertiesHref }}"
+                               @click="mobileMenuOpen = false; open = false"
+                               class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
+                                {{ $rentMenuLabel }}
+                            </a>
+                            <a href="{{ $salePropertiesHref }}"
+                               @click="mobileMenuOpen = false; open = false"
+                               class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
+                                {{ $saleMenuLabel }}
+                            </a>
                             <a href="{{ $luxuryPropertiesHref }}"
                                @click="mobileMenuOpen = false; open = false"
                                class="header-mobile-link block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900">
