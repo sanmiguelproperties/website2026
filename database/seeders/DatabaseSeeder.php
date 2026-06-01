@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             CmsContentSeeder::class,
             CmsPublicTextSeeder::class,
             PropertySeeder::class,
+            ManualContentSeeder::class,
         ]);
     }
 }

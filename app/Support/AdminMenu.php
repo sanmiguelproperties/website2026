@@ -10,8 +10,6 @@ class AdminMenu
         'dashboard' => 'menu.dashboard.view',
         'properties' => 'menu.properties.view',
         'zones' => 'menu.zones.view',
-        'team-members' => 'menu.team-members.view',
-        'agencies' => 'menu.agencies.view',
         'clients' => 'menu.clients.view',
         'property-contact-requests' => 'menu.property-contact-requests.view',
         'calendar' => 'menu.calendar.view',
@@ -36,6 +34,8 @@ class AdminMenu
         'cms.posts' => 'menu.cms.posts.view',
         'cms.menus' => 'menu.cms.menus.view',
         'cms.settings' => 'menu.cms.settings.view',
+        'manual' => 'menu.manual.view',
+        'manual-articles' => 'menu.manual-articles.view',
         'tutorials' => 'menu.tutorials.view',
         'tutorial-videos' => 'menu.tutorial-videos.view',
 
@@ -43,13 +43,13 @@ class AdminMenu
     ];
 
     private const GROUP_ITEMS = [
-        1 => ['dashboard', 'properties', 'zones', 'team-members', 'agencies'],
+        1 => ['dashboard', 'properties', 'zones'],
         6 => ['clients', 'property-contact-requests', 'calendar'],
         2 => ['users', 'rbac'],
         7 => ['easybroker.mls-export', 'mls', 'mls-agents', 'mls-offices'],
         5 => ['corporate-email.configuration', 'corporate-email.inbox', 'corporate-email.outbox', 'corporate-email.compose'],
         4 => ['cms.pages', 'cms.posts', 'cms.menus', 'cms.settings'],
-        8 => ['tutorials', 'tutorial-videos'],
+        8 => ['manual', 'tutorials', 'manual-articles', 'tutorial-videos'],
         3 => ['currencies', 'color-themes', 'frontend-colors', 'easybroker', 'notifications'],
     ];
 
@@ -57,8 +57,6 @@ class AdminMenu
         'dashboard' => 'dashboard',
         'properties' => 'properties',
         'zones' => 'zones',
-        'team-members' => 'team-members',
-        'agencies' => 'agencies',
         'clients' => 'clients',
         'clients.show' => 'clients',
         'property-contact-requests' => 'property-contact-requests',
@@ -84,6 +82,8 @@ class AdminMenu
         'cms.posts' => 'cms.posts',
         'cms.menus' => 'cms.menus',
         'cms.settings' => 'cms.settings',
+        'manual' => 'manual',
+        'manual-articles' => 'manual-articles',
         'tutorials' => 'tutorials',
         'tutorial-videos' => 'tutorial-videos',
 

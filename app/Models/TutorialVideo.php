@@ -61,6 +61,19 @@ class TutorialVideo extends Model
         return "https://img.youtube.com/vi/{$this->youtube_video_id}/hqdefault.jpg";
     }
 
+    public function toManualArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'description' => $this->description,
+            'youtube_url' => $this->youtube_url,
+            'youtube_embed_url' => $this->youtube_embed_url,
+            'youtube_thumbnail_url' => $this->youtube_thumbnail_url,
+            'is_active' => $this->is_active,
+        ];
+    }
+
     public static function extractYoutubeVideoId(?string $url): ?string
     {
         $url = trim((string) $url);

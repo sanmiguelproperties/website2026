@@ -9,8 +9,6 @@ return [
         'menu.dashboard.view',
         'menu.properties.view',
         'menu.zones.view',
-        'menu.team-members.view',
-        'menu.agencies.view',
         'menu.clients.view',
         'menu.property-contact-requests.view',
         'menu.calendar.view',
@@ -28,6 +26,8 @@ return [
         'menu.cms.posts.view',
         'menu.cms.menus.view',
         'menu.cms.settings.view',
+        'menu.manual.view',
+        'menu.manual-articles.view',
         'menu.tutorials.view',
         'menu.tutorial-videos.view',
         'menu.currencies.view',
@@ -151,6 +151,8 @@ return [
 
         'tutorials.view',
         'tutorials.manage',
+        'manual.view',
+        'manual.manage',
 
         'catalogs.view',
         'catalogs.manage',
@@ -185,8 +187,6 @@ return [
                 'menu.dashboard.view',
                 'menu.properties.view',
                 'menu.zones.view',
-                'menu.team-members.view',
-                'menu.agencies.view',
                 'menu.clients.view',
                 'menu.property-contact-requests.view',
                 'menu.calendar.view',
@@ -201,6 +201,8 @@ return [
                 'menu.cms.posts.view',
                 'menu.cms.menus.view',
                 'menu.cms.settings.view',
+                'menu.manual.view',
+                'menu.manual-articles.view',
                 'menu.tutorials.view',
                 'menu.tutorial-videos.view',
                 'menu.notifications.view',
@@ -277,6 +279,8 @@ return [
                 'cms.view',
                 'tutorials.view',
                 'tutorials.manage',
+                'manual.view',
+                'manual.manage',
                 'catalogs.view',
                 'integrations.view',
                 'integrations.logs.view',
@@ -299,6 +303,7 @@ return [
                 'menu.cms.menus.view',
                 'menu.cms.settings.view',
                 'menu.easybroker.view',
+                'menu.manual.view',
                 'menu.tutorials.view',
                 'menu.notifications.view',
 
@@ -321,6 +326,7 @@ return [
                 'cms.view',
                 'cms.manage',
                 'tutorials.view',
+                'manual.view',
                 'catalogs.view',
                 'catalogs.manage',
 
@@ -348,6 +354,7 @@ return [
                 'menu.corporate-email.inbox.view',
                 'menu.corporate-email.outbox.view',
                 'menu.corporate-email.compose.view',
+                'menu.manual.view',
                 'menu.tutorials.view',
                 'menu.notifications.view',
 
@@ -395,6 +402,7 @@ return [
                 'corporate-email.send',
 
                 'tutorials.view',
+                'manual.view',
 
                 'commissions.view.own',
                 'marketing.view',

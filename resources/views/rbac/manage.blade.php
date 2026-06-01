@@ -188,9 +188,9 @@ document.addEventListener('DOMContentLoaded', function() {
     {
       key: 'real-estate',
       label: 'Inmobiliaria',
-      description: 'Dashboard, propiedades, zonas, equipo y agencias.',
-      prefixes: ['properties.', 'menu.properties.', 'menu.zones.', 'menu.team-members.', 'menu.agencies.', 'catalogs.'],
-      exact: ['menu.properties.view', 'menu.zones.view', 'menu.team-members.view', 'menu.agencies.view'],
+      description: 'Dashboard, propiedades y zonas.',
+      prefixes: ['properties.', 'menu.properties.', 'menu.zones.', 'catalogs.'],
+      exact: ['menu.properties.view', 'menu.zones.view'],
     },
     {
       key: 'crm',

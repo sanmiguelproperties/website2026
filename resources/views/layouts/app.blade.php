@@ -181,29 +181,6 @@
                 </a>
                 @endif
 
-                @if($dashCanMenuItem('team-members'))
-                <a href="{{ route('team-members') }}" data-route="team-members" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
-                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                      <circle cx="9" cy="7" r="4"/>
-                      <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                  </span>
-                  Equipo
-                </a>
-                @endif
-
-                @if($dashCanMenuItem('agencies'))
-                <a href="{{ route('agencies') }}" data-route="agencies" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
-                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M7 21V8"/><path d="M17 21V8"/><path d="M7 8l5-5 5 5"/></svg>
-                  </span>
-                  Agencias
-                </a>
-                @endif
-
               </div>
             </div>
           </section>
@@ -460,12 +437,30 @@
             </button>
             <div id="dash-acc-panel-8" class="hidden cv-auto">
               <div class="p-2 bg-[var(--c-surface)] min-h-0">
+                @if($dashCanMenuItem('manual'))
+                <a href="{{ route('manual') }}" data-route="manual" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>
+                  </span>
+                  Manual de uso
+                </a>
+                @endif
+
                 @if($dashCanMenuItem('tutorials'))
                 <a href="{{ route('tutorials') }}" data-route="tutorials" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
                   <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 15.5v-7A2.5 2.5 0 0 1 4.5 6h15A2.5 2.5 0 0 1 22 8.5Z"/><path d="m10 9 5 3-5 3V9Z"/></svg>
                   </span>
-                  Tutoriales
+                  Videotutoriales
+                </a>
+                @endif
+
+                @if($dashCanMenuItem('manual-articles'))
+                <a href="{{ route('manual-articles') }}" data-route="manual-articles" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--c-elev)] transition text-sm">
+                  <span class="size-8 grid place-items-center rounded-xl ring-1 ring-[var(--c-border)] bg-[var(--c-elev)]">
+                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/><path d="M4 8h7"/><path d="M4 12h4"/></svg>
+                  </span>
+                  Administrar manual
                 </a>
                 @endif
 
@@ -640,8 +635,6 @@
         'dashboard': 1,
         'properties': 1,
         'zones': 1,
-        'team-members': 1,
-        'agencies': 1,
         'clients': 6,
         'clients.show': 6,
         'property-contact-requests': 6,
@@ -664,6 +657,8 @@
         'cms.posts': 4,
         'cms.menus': 4,
         'cms.settings': 4,
+        'manual': 8,
+        'manual-articles': 8,
         'tutorials': 8,
         'tutorial-videos': 8,
         'notifications': 3,

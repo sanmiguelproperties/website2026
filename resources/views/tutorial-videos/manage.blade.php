@@ -3,6 +3,9 @@
 @section('title', 'Administrar videos tutoriales')
 
 @section('content')
+@php
+  $canManageManual = \App\Support\Rbac::canAny(auth()->user(), 'manual.manage');
+@endphp
 <div class="space-y-5">
   <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
     <div>
@@ -10,6 +13,12 @@
       <p class="mt-1 text-[var(--c-muted)]">Administra titulos y enlaces externos de YouTube para la ayuda interna.</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
+      @if($canManageManual)
+        <a href="{{ route('manual-articles') }}" class="inline-flex items-center gap-2 rounded-lg border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm font-semibold hover:bg-[var(--c-surface)]">
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+          Administrar manual
+        </a>
+      @endif
       <a href="{{ route('tutorials') }}" class="inline-flex items-center gap-2 rounded-lg border border-[var(--c-border)] bg-[var(--c-elev)] px-3 py-2 text-sm font-semibold hover:bg-[var(--c-surface)]">
         <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 15.5v-7A2.5 2.5 0 0 1 4.5 6h15A2.5 2.5 0 0 1 22 8.5Z"/><path d="m10 9 5 3-5 3V9Z"/></svg>
         Ver tutoriales

@@ -243,23 +243,8 @@ Route::get('/nosotros', function () use ($publicContext) {
     return view('public.about', $context);
 })->name('about');
 
-Route::get('/equipo', function () use ($publicContext, $locale) {
-    $currentLocale = $locale();
-    $context = $publicContext('about', [
-        'seoTitleOverride' => $currentLocale === 'en'
-            ? 'Team - San Miguel Properties'
-            : 'Equipo - San Miguel Properties',
-        'seoDescriptionOverride' => $currentLocale === 'en'
-            ? 'Meet the complete team behind San Miguel Properties.'
-            : 'Conoce al equipo completo que impulsa San Miguel Properties.',
-    ]);
-
-    return view('public.team', $context);
-})->name('public.team');
-
-Route::get('/team', function () {
-    return redirect()->route('public.team', [], 301);
-})->name('public.team.legacy');
+Route::redirect('/equipo', '/nosotros#equipo', 301)->name('public.team');
+Route::redirect('/team', '/nosotros#equipo', 301)->name('public.team.legacy');
 
 // Auth view routes
 Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login')->middleware('guest');
@@ -320,14 +305,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/zones', function () {
             return view('zones.manage');
         })->name('zones')->middleware('admin:settings.manage');
-
-        Route::get('/team-members', function () {
-            return view('team.manage');
-        })->name('team-members')->middleware('admin:users.view');
-
-        Route::get('/agencies', function () {
-            return view('agencies.manage');
-        })->name('agencies')->middleware('admin:catalogs.manage');
 
         Route::get('/clients', [ClientController::class, 'index'])
             ->name('clients')
@@ -420,6 +397,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/tutorial-videos', function () {
             return view('tutorial-videos.manage');
         })->name('tutorial-videos')->middleware('admin:tutorials.manage');
+
+        Route::get('/manual', function () {
+            return view('manual.index');
+        })->name('manual')->middleware('admin:manual.view');
+
+        Route::get('/manual-articles', function () {
+            return view('manual.manage');
+        })->name('manual-articles')->middleware('admin:manual.manage');
 
         // CMS
         Route::get('/cms/pages', function () {

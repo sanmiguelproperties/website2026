@@ -286,8 +286,8 @@ class EasyBrokerSyncService
      */
     protected function getDefaultAgencyId(): int
     {
-        // La agencia principal se gestiona manualmente desde el admin interno.
-        // La sincronizacion debe usar una agencia NO principal cuando exista.
+        // agencies sigue siendo un catalogo tecnico para conservar agency_id.
+        // Preferimos una agencia no principal para respetar datos locales heredados.
         $agency = Agency::query()
             ->where('is_primary', false)
             ->orderBy('id')

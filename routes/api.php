@@ -27,10 +27,11 @@ use App\Http\Controllers\MLSSyncController;
 use App\Http\Controllers\MLSAgentController;
 use App\Http\Controllers\MLSOfficeController;
 use App\Http\Controllers\CorporateEmailController;
-use App\Http\Controllers\AgencyTeamMemberController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PublicLeadController;
 use App\Http\Controllers\TutorialVideoController;
+use App\Http\Controllers\ManualArticleController;
+use App\Http\Controllers\ManualSectionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +69,23 @@ Route::middleware(['auth.api', 'admin.api:tutorials.view|tutorials.manage'])->pr
     Route::delete('{tutorialVideo}', [TutorialVideoController::class, 'destroy'])->where('tutorialVideo', '[0-9]+')->middleware('admin.api:tutorials.manage');
 });
 
+Route::middleware(['auth.api', 'admin.api:manual.view|manual.manage'])->prefix('manual')->group(function () {
+    Route::get('sections', [ManualSectionController::class, 'index']);
+    Route::get('videos', [ManualArticleController::class, 'videos'])->middleware('admin.api:manual.manage');
+    Route::get('articles', [ManualArticleController::class, 'index']);
+    Route::get('articles/{manualArticle}', [ManualArticleController::class, 'show'])->where('manualArticle', '[0-9]+');
+
+    Route::post('sections', [ManualSectionController::class, 'store'])->middleware('admin.api:manual.manage');
+    Route::put('sections/{manualSection}', [ManualSectionController::class, 'update'])->where('manualSection', '[0-9]+')->middleware('admin.api:manual.manage');
+    Route::patch('sections/{manualSection}', [ManualSectionController::class, 'update'])->where('manualSection', '[0-9]+')->middleware('admin.api:manual.manage');
+    Route::delete('sections/{manualSection}', [ManualSectionController::class, 'destroy'])->where('manualSection', '[0-9]+')->middleware('admin.api:manual.manage');
+
+    Route::post('articles', [ManualArticleController::class, 'store'])->middleware('admin.api:manual.manage');
+    Route::put('articles/{manualArticle}', [ManualArticleController::class, 'update'])->where('manualArticle', '[0-9]+')->middleware('admin.api:manual.manage');
+    Route::patch('articles/{manualArticle}', [ManualArticleController::class, 'update'])->where('manualArticle', '[0-9]+')->middleware('admin.api:manual.manage');
+    Route::delete('articles/{manualArticle}', [ManualArticleController::class, 'destroy'])->where('manualArticle', '[0-9]+')->middleware('admin.api:manual.manage');
+});
+
 // Media Manager routes
 Route::middleware(['auth.api', 'admin.api:documents.view'])->group(function () {
     Route::apiResource('media', MediaAssetController::class);
@@ -94,9 +112,6 @@ Route::middleware(['auth.api', 'admin.api:documents.view'])->group(function () {
     Route::post('property-contact-requests', [PropertyContactRequestController::class, 'store'])
         ->middleware('throttle:10,1');
 
-    // Equipo de trabajo (pÃºblico)
-    Route::get('team-members', [AgencyTeamMemberController::class, 'indexPublic']);
-    Route::get('team-members/departments', [AgencyTeamMemberController::class, 'departmentsPublic']);
   });
 
 // User Management routes protegidas con autenticación Passport
@@ -116,8 +131,7 @@ Route::middleware(['auth.api', 'admin.api:settings.manage'])->group(function () 
 
 // EasyBroker / Inventario routes (protegidas con autenticación Passport)
   Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () {
-    Route::patch('agencies/{agency}/primary', [AgencyController::class, 'setPrimary']);
-    Route::apiResource('agencies', AgencyController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::get('agencies', [AgencyController::class, 'index'])->name('agencies.index');
     Route::apiResource('features', FeatureController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('tags', TagController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('locations-catalog', LocationCatalogController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
@@ -147,16 +161,6 @@ Route::middleware(['auth.api', 'admin.api:settings.manage'])->group(function () 
     Route::post('zone-pages/sync', [ZonePageController::class, 'sync']);
     Route::get('zone-pages/{zonePage}', [ZonePageController::class, 'show'])->where('zonePage', '[0-9]+');
     Route::put('zone-pages/{zonePage}', [ZonePageController::class, 'update'])->where('zonePage', '[0-9]+');
-});
-
-Route::middleware(['auth.api', 'admin.api:users.view'])->group(function () {
-    Route::get('team-members/departments', [AgencyTeamMemberController::class, 'departments']);
-    Route::get('team-members', [AgencyTeamMemberController::class, 'index']);
-    Route::post('team-members', [AgencyTeamMemberController::class, 'store']);
-    Route::get('team-members/{teamMember}', [AgencyTeamMemberController::class, 'show'])->where('teamMember', '[0-9]+');
-    Route::put('team-members/{teamMember}', [AgencyTeamMemberController::class, 'update'])->where('teamMember', '[0-9]+');
-    Route::patch('team-members/{teamMember}', [AgencyTeamMemberController::class, 'update'])->where('teamMember', '[0-9]+');
-    Route::delete('team-members/{teamMember}', [AgencyTeamMemberController::class, 'destroy'])->where('teamMember', '[0-9]+');
 });
 
 // RBAC routes protegidas con autenticación Passport

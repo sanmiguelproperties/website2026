@@ -39,6 +39,15 @@ class AdminMenuTest extends TestCase
         $this->assertFalse(AdminMenu::groupVisible($user, 1));
     }
 
+    public function test_legacy_real_estate_agencies_item_is_not_exposed(): void
+    {
+        $user = new AdminMenuUser(['menu.agencies.view']);
+
+        $this->assertFalse(AdminMenu::canAccessItem($user, 'agencies'));
+        $this->assertFalse(AdminMenu::canAccessRoute($user, 'agencies'));
+        $this->assertFalse(AdminMenu::groupVisible($user, 1));
+    }
+
     public function test_first_accessible_route_follows_menu_order(): void
     {
         $user = new AdminMenuUser(['menu.easybroker.view']);
@@ -88,14 +97,20 @@ class AdminMenuTest extends TestCase
 
     public function test_tutorial_items_live_in_internal_help_group(): void
     {
+        $manualViewer = new AdminMenuUser(['menu.manual.view']);
         $viewer = new AdminMenuUser(['menu.tutorials.view']);
-        $manager = new AdminMenuUser(['menu.tutorial-videos.view']);
+        $manager = new AdminMenuUser(['menu.manual-articles.view', 'menu.tutorial-videos.view']);
 
+        $this->assertTrue(AdminMenu::canAccessItem($manualViewer, 'manual'));
+        $this->assertTrue(AdminMenu::canAccessRoute($manualViewer, 'manual'));
+        $this->assertTrue(AdminMenu::groupVisible($manualViewer, 8));
         $this->assertTrue(AdminMenu::canAccessItem($viewer, 'tutorials'));
         $this->assertTrue(AdminMenu::canAccessRoute($viewer, 'tutorials'));
         $this->assertTrue(AdminMenu::groupVisible($viewer, 8));
         $this->assertFalse(AdminMenu::canAccessItem($viewer, 'tutorial-videos'));
 
+        $this->assertTrue(AdminMenu::canAccessItem($manager, 'manual-articles'));
+        $this->assertTrue(AdminMenu::canAccessRoute($manager, 'manual-articles'));
         $this->assertTrue(AdminMenu::canAccessItem($manager, 'tutorial-videos'));
         $this->assertTrue(AdminMenu::canAccessRoute($manager, 'tutorial-videos'));
         $this->assertTrue(AdminMenu::groupVisible($manager, 8));

@@ -24,6 +24,8 @@
           'clients' => [['Inicio', route('dashboard')], ['CRM', '#'], ['Clientes', '#']],
           'clients.show' => [['Inicio', route('dashboard')], ['CRM', '#'], ['Cliente', '#']],
           'calendar' => [['Inicio', route('dashboard')], ['CRM', '#'], ['Agenda de visitas', '#']],
+          'manual' => [['Inicio', route('dashboard')], ['Ayuda interna', '#'], ['Manual de uso', '#']],
+          'manual-articles' => [['Inicio', route('dashboard')], ['Ayuda interna', '#'], ['Administrar manual', '#']],
           'tutorials' => [['Inicio', route('dashboard')], ['Ayuda interna', '#'], ['Tutoriales', '#']],
           'tutorial-videos' => [['Inicio', route('dashboard')], ['Ayuda interna', '#'], ['Administrar videos', '#']],
           'mls-agents' => [['Inicio', route('dashboard')], ['Admin', '#'], ['Agentes MLS', '#']],
