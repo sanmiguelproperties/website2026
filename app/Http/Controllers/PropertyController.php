@@ -15,11 +15,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
 class PropertyController extends Controller
 {
     protected ?MLSOffice $cachedPrimaryPublicMlsOffice = null;
+
     protected bool $didResolvePrimaryPublicMlsOffice = false;
 
     /**
@@ -47,19 +47,27 @@ class PropertyController extends Controller
             $query->where('mls_office_id', (int) $request->input('mls_office_id'));
         }
 
-        // Filtrar por agente MLS (por su ID del MLS: mls_agents.mls_agent_id)
-        // Ãštil para la vista pÃºblica de detalle de agente.
+        // Filtrar por ID externo del MLS o por el identificador de un perfil manual local.
         if ($request->filled('mls_agent_id')) {
-            $mlsAgentId = (int) $request->input('mls_agent_id');
-            $query->whereHas('mlsAgents', function ($q) use ($mlsAgentId) {
-                // IMPORTANTE:
-                // En el whereHas() se hace JOIN entre la tabla pivot `property_mls_agent`
-                // (que tambiÃ©n tiene una columna llamada `mls_agent_id`) y la tabla
-                // `mls_agents` (que tiene el campo externo `mls_agent_id`).
-                // Si no calificamos el nombre de columna, MySQL puede marcarlo como
-                // ambiguo y el endpoint termina fallando / devolviendo vacÃ­o en frontend.
-                $q->where('mls_agents.mls_agent_id', $mlsAgentId);
-            });
+            $mlsAgentPublicId = (string) $request->input('mls_agent_id');
+
+            if (preg_match('/^local-([0-9]+)$/', $mlsAgentPublicId, $matches)) {
+                $query->whereHas('mlsAgents', fn ($agentQuery) => $agentQuery
+                    ->where('mls_agents.id', (int) $matches[1])
+                    ->where('mls_agents.is_manual', true));
+            } elseif (preg_match('/^[0-9]+$/', $mlsAgentPublicId)) {
+                $query->whereHas('mlsAgents', function ($q) use ($mlsAgentPublicId) {
+                    // IMPORTANTE:
+                    // En el whereHas() se hace JOIN entre la tabla pivot `property_mls_agent`
+                    // (que tambiÃ©n tiene una columna llamada `mls_agent_id`) y la tabla
+                    // `mls_agents` (que tiene el campo externo `mls_agent_id`).
+                    // Si no calificamos el nombre de columna, MySQL puede marcarlo como
+                    // ambiguo y el endpoint termina fallando / devolviendo vacÃ­o en frontend.
+                    $q->where('mls_agents.mls_agent_id', (int) $mlsAgentPublicId);
+                });
+            } else {
+                $query->whereRaw('1 = 0');
+            }
         }
 
         if ($request->filled('search')) {
@@ -160,13 +168,13 @@ class PropertyController extends Controller
         $sort = $request->input('sort', 'desc');
         $order = $request->input('order', 'updated_at');
         $validOrders = ['created_at', 'updated_at', 'title', 'property_type_name'];
-        if (!in_array($order, $validOrders, true)) {
+        if (! in_array($order, $validOrders, true)) {
             $order = 'updated_at';
         }
         $sort = $sort === 'asc' ? 'asc' : 'desc';
 
         $homeFeaturedPropertyIds = $this->homeFeaturedPropertyIdsForRequest($request, $order, $sort);
-        if (!empty($homeFeaturedPropertyIds)) {
+        if (! empty($homeFeaturedPropertyIds)) {
             $caseParts = [];
             $bindings = [];
 
@@ -177,7 +185,7 @@ class PropertyController extends Controller
             }
 
             $bindings[] = count($homeFeaturedPropertyIds);
-            $query->orderByRaw('CASE ' . implode(' ', $caseParts) . ' ELSE ? END', $bindings);
+            $query->orderByRaw('CASE '.implode(' ', $caseParts).' ELSE ? END', $bindings);
         }
 
         $query->orderBy($order, $sort);
@@ -202,7 +210,7 @@ class PropertyController extends Controller
     {
         $locale = $this->resolvePublicLocale($request);
 
-        if (!$property->published) {
+        if (! $property->published) {
             return $this->apiError('Propiedad no disponible', 'PROPERTY_NOT_PUBLISHED', null, null, 404);
         }
 
@@ -216,7 +224,7 @@ class PropertyController extends Controller
             'operations.currency',
             'features',
             'tags',
-            'mediaAssets'
+            'mediaAssets',
         ]);
 
         $property = $this->transformPublicProperty($property, $locale);
@@ -281,7 +289,7 @@ class PropertyController extends Controller
             'title', 'published',
             'property_type_name', 'source',
         ];
-        if (!in_array($order, $validOrders, true)) {
+        if (! in_array($order, $validOrders, true)) {
             $order = 'updated_at';
         }
         $sort = $sort === 'asc' ? 'asc' : 'desc';
@@ -298,7 +306,7 @@ class PropertyController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'properties.create')) {
+        if (! Rbac::canAny($request->user('api'), 'properties.create')) {
             return $this->apiForbidden('No tienes permisos para crear propiedades', 'PROPERTIES_CREATE_FORBIDDEN');
         }
 
@@ -308,11 +316,11 @@ class PropertyController extends Controller
             'agency_id' => 'required|exists:agencies,id',
             'source' => 'nullable|string|in:manual,easybroker,mls',
             'agent_user_id' => 'nullable|exists:users,id',
-            
+
             // EasyBroker (opcionales - el centro de datos es el LMS)
             'easybroker_public_id' => 'nullable|string|max:50',
             'easybroker_agent_id' => 'nullable|string|max:50',
-            
+
             // MLS fields
             'mls_id' => 'nullable|integer',
             'mls_public_id' => 'nullable|string|max:50',
@@ -327,7 +335,7 @@ class PropertyController extends Controller
             'is_approved' => 'nullable|boolean',
             'allow_integration' => 'nullable|boolean',
             'for_rent' => 'nullable|boolean',
-            
+
             // Fechas
             'easybroker_created_at' => 'nullable|date',
             'easybroker_updated_at' => 'nullable|date',
@@ -368,7 +376,7 @@ class PropertyController extends Controller
             'floor' => 'nullable|string|max:20',
             'age' => 'nullable|string|max:20',
             'year_built' => 'nullable|integer|min:1800|max:2100',
-            
+
             // CaracterÃ­sticas MLS
             'furnished' => 'nullable|string|max:20',
             'with_yard' => 'nullable|boolean',
@@ -440,14 +448,14 @@ class PropertyController extends Controller
         }
 
         $this->normalizePropertyMutationForRole($data, $request->user('api'), true);
-        
+
         // Asignar source por defecto si no se especifica
-        if (!isset($data['source'])) {
+        if (! isset($data['source'])) {
             $data['source'] = 'manual';
         }
 
         // Verificar unicidad solo si hay easybroker_public_id
-        if (!empty($data['easybroker_public_id'])) {
+        if (! empty($data['easybroker_public_id'])) {
             $uniqueExists = Property::where('agency_id', $data['agency_id'])
                 ->where('easybroker_public_id', $data['easybroker_public_id'])
                 ->exists();
@@ -455,9 +463,9 @@ class PropertyController extends Controller
                 return $this->apiError('La propiedad ya existe para esa agencia (EasyBroker ID)', 'PROPERTY_ALREADY_EXISTS', null, null, 409);
             }
         }
-        
+
         // Verificar unicidad de MLS public ID si se proporciona
-        if (!empty($data['mls_public_id'])) {
+        if (! empty($data['mls_public_id'])) {
             $uniqueExists = Property::where('agency_id', $data['agency_id'])
                 ->where('mls_public_id', $data['mls_public_id'])
                 ->exists();
@@ -496,10 +504,10 @@ class PropertyController extends Controller
                         'neighborhood_catalog_id' => $resolvedTaxonomy['neighborhood_catalog_id'] ?? ($location['neighborhood_catalog_id'] ?? null),
                     ]);
 
-                    if (!Schema::hasColumn('property_locations', 'country')) {
+                    if (! Schema::hasColumn('property_locations', 'country')) {
                         unset($location['country']);
                     }
-                    if (!LocationTaxonomyService::hasTaxonomyColumns()) {
+                    if (! LocationTaxonomyService::hasTaxonomyColumns()) {
                         unset(
                             $location['state_catalog_id'],
                             $location['city_catalog_id'],
@@ -560,11 +568,12 @@ class PropertyController extends Controller
      */
     public function show(Request $request, Property $property): JsonResponse
     {
-        if (!$this->canViewInternalProperty($request->user('api'), $property)) {
+        if (! $this->canViewInternalProperty($request->user('api'), $property)) {
             return $this->apiForbidden('No tienes permisos para ver esta propiedad', 'PROPERTY_VIEW_FORBIDDEN');
         }
 
         $property->load(['agency', 'agentUser.profileImage', 'mlsAgents.photoMediaAsset', 'coverMediaAsset', 'location', 'operations', 'features', 'tags', 'mediaAssets']);
+
         return $this->apiSuccess('Propiedad obtenida', 'PROPERTY_SHOWN', $property);
     }
 
@@ -573,7 +582,7 @@ class PropertyController extends Controller
      */
     public function update(Request $request, Property $property): JsonResponse
     {
-        if (!$this->canEditInternalProperty($request->user('api'), $property)) {
+        if (! $this->canEditInternalProperty($request->user('api'), $property)) {
             return $this->apiForbidden('No tienes permisos para editar esta propiedad', 'PROPERTY_EDIT_FORBIDDEN');
         }
 
@@ -583,11 +592,11 @@ class PropertyController extends Controller
             'agency_id' => 'sometimes|required|exists:agencies,id',
             'source' => 'sometimes|nullable|string|in:manual,easybroker,mls',
             'agent_user_id' => 'sometimes|nullable|exists:users,id',
-            
+
             // EasyBroker (opcionales)
             'easybroker_public_id' => 'sometimes|nullable|string|max:50',
             'easybroker_agent_id' => 'sometimes|nullable|string|max:50',
-            
+
             // MLS fields
             'mls_id' => 'sometimes|nullable|integer',
             'mls_public_id' => 'sometimes|nullable|string|max:50',
@@ -602,7 +611,7 @@ class PropertyController extends Controller
             'is_approved' => 'sometimes|nullable|boolean',
             'allow_integration' => 'sometimes|nullable|boolean',
             'for_rent' => 'sometimes|nullable|boolean',
-            
+
             // Fechas
             'easybroker_created_at' => 'sometimes|nullable|date',
             'easybroker_updated_at' => 'sometimes|nullable|date',
@@ -643,7 +652,7 @@ class PropertyController extends Controller
             'floor' => 'sometimes|nullable|string|max:20',
             'age' => 'sometimes|nullable|string|max:20',
             'year_built' => 'sometimes|nullable|integer|min:1800|max:2100',
-            
+
             // CaracterÃ­sticas MLS
             'furnished' => 'sometimes|nullable|string|max:20',
             'with_yard' => 'sometimes|nullable|boolean',
@@ -719,7 +728,7 @@ class PropertyController extends Controller
 
         $agencyId = $data['agency_id'] ?? $property->agency_id;
         $publicId = $data['easybroker_public_id'] ?? $property->easybroker_public_id;
-        if (!empty($publicId)) {
+        if (! empty($publicId)) {
             $uniqueExists = Property::where('agency_id', $agencyId)
                 ->where('easybroker_public_id', $publicId)
                 ->where('id', '!=', $property->id)
@@ -760,10 +769,10 @@ class PropertyController extends Controller
                         'neighborhood_catalog_id' => $resolvedTaxonomy['neighborhood_catalog_id'] ?? ($location['neighborhood_catalog_id'] ?? null),
                     ]);
 
-                    if (!Schema::hasColumn('property_locations', 'country')) {
+                    if (! Schema::hasColumn('property_locations', 'country')) {
                         unset($location['country']);
                     }
-                    if (!LocationTaxonomyService::hasTaxonomyColumns()) {
+                    if (! LocationTaxonomyService::hasTaxonomyColumns()) {
                         unset(
                             $location['state_catalog_id'],
                             $location['city_catalog_id'],
@@ -813,6 +822,7 @@ class PropertyController extends Controller
         }
 
         $property->load(['agency', 'agentUser.profileImage', 'mlsAgents.photoMediaAsset', 'coverMediaAsset', 'location', 'operations', 'features', 'tags', 'mediaAssets']);
+
         return $this->apiSuccess('Propiedad actualizada', 'PROPERTY_UPDATED', $property);
     }
 
@@ -821,20 +831,22 @@ class PropertyController extends Controller
      */
     public function destroy(Request $request, Property $property): JsonResponse
     {
-        if (!$this->canDeleteInternalProperty($request->user('api'), $property)) {
+        if (! $this->canDeleteInternalProperty($request->user('api'), $property)) {
             return $this->apiForbidden('No tienes permisos para eliminar propiedades', 'PROPERTY_DELETE_FORBIDDEN');
         }
 
         if ($request->boolean('force')) {
-            if (!Rbac::canAny($request->user('api'), 'records.delete.critical')) {
+            if (! Rbac::canAny($request->user('api'), 'records.delete.critical')) {
                 return $this->apiForbidden('Solo Administrador puede eliminar permanentemente', 'FORCE_DELETE_FORBIDDEN');
             }
 
             $property->forceDelete();
+
             return $this->apiSuccess('Propiedad eliminada permanentemente', 'PROPERTY_FORCE_DELETED', null);
         }
 
         $property->delete();
+
         return $this->apiSuccess('Propiedad enviada a papelera', 'PROPERTY_TRASHED', null);
     }
 
@@ -842,11 +854,11 @@ class PropertyController extends Controller
     {
         $property = Property::withTrashed()->find($propertyId);
 
-        if (!$property) {
+        if (! $property) {
             return $this->apiNotFound('Propiedad no encontrada', 'PROPERTY_NOT_FOUND');
         }
 
-        if (!$this->canViewInternalProperty($request->user('api'), $property) || !Rbac::canAny($request->user('api'), 'properties.restore')) {
+        if (! $this->canViewInternalProperty($request->user('api'), $property) || ! Rbac::canAny($request->user('api'), 'properties.restore')) {
             return $this->apiForbidden('No tienes permisos para restaurar esta propiedad', 'PROPERTY_RESTORE_FORBIDDEN');
         }
 
@@ -1004,15 +1016,15 @@ class PropertyController extends Controller
         $totalCount = Property::where('published', true)->count();
 
         return $this->apiSuccess('Opciones de filtro', 'FILTER_OPTIONS', [
-            'property_types'   => $propertyTypes,
-            'operation_types'  => $operationTypes,
-            'cities'           => $cities,
-            'regions'          => $regions,
-            'city_areas'       => $cityAreas,
-            'bedrooms'         => $bedroomValues,
-            'bathrooms'        => $bathroomValues,
-            'parking_spaces'   => $parkingValues,
-            'price_range'      => [
+            'property_types' => $propertyTypes,
+            'operation_types' => $operationTypes,
+            'cities' => $cities,
+            'regions' => $regions,
+            'city_areas' => $cityAreas,
+            'bedrooms' => $bedroomValues,
+            'bathrooms' => $bathroomValues,
+            'parking_spaces' => $parkingValues,
+            'price_range' => [
                 'min' => (float) ($priceRange->min_price ?? 0),
                 'max' => (float) ($priceRange->max_price ?? 0),
             ],
@@ -1036,6 +1048,7 @@ class PropertyController extends Controller
 
         if (Rbac::canAny($user, ['properties.view.own', 'properties.view.team'])) {
             Rbac::scopeOwned($query, $user);
+
             return;
         }
 
@@ -1044,7 +1057,7 @@ class PropertyController extends Controller
 
     private function homeFeaturedPropertyIdsForRequest(Request $request, string $order, string $sort): array
     {
-        if (!$request->boolean('home_featured_first')) {
+        if (! $request->boolean('home_featured_first')) {
             return [];
         }
 
@@ -1118,7 +1131,7 @@ class PropertyController extends Controller
     {
         $value = $request->input($key);
 
-        if ($value === null || $value === '' || !is_numeric($value)) {
+        if ($value === null || $value === '' || ! is_numeric($value)) {
             return null;
         }
 
@@ -1176,7 +1189,7 @@ class PropertyController extends Controller
         ];
 
         foreach ($restrictedFields as $field => [$permission, $message, $code]) {
-            if ($request->exists($field) && !Rbac::canAny($user, $permission)) {
+            if ($request->exists($field) && ! Rbac::canAny($user, $permission)) {
                 return $this->apiForbidden($message, $code);
             }
         }
@@ -1186,19 +1199,19 @@ class PropertyController extends Controller
 
     private function normalizePropertyMutationForRole(array &$data, $user, bool $isCreate): void
     {
-        if (!Rbac::canAny($user, 'properties.assign') && ($isCreate || array_key_exists('agent_user_id', $data))) {
+        if (! Rbac::canAny($user, 'properties.assign') && ($isCreate || array_key_exists('agent_user_id', $data))) {
             $data['agent_user_id'] = $user?->getAuthIdentifier();
         }
 
-        if ($isCreate && !Rbac::canAny($user, 'properties.publish')) {
+        if ($isCreate && ! Rbac::canAny($user, 'properties.publish')) {
             $data['published'] = false;
         }
 
-        if ($isCreate && !Rbac::canAny($user, 'properties.approve')) {
+        if ($isCreate && ! Rbac::canAny($user, 'properties.approve')) {
             $data['is_approved'] = false;
         }
 
-        if ($isCreate && !Rbac::canAny($user, 'integrations.manage')) {
+        if ($isCreate && ! Rbac::canAny($user, 'integrations.manage')) {
             $data['allow_integration'] = false;
         }
     }
@@ -1237,7 +1250,7 @@ class PropertyController extends Controller
             ? $property->getRelation('mlsOffice')
             : null;
 
-        if (!$originOffice && !empty($property->mls_office_id)) {
+        if (! $originOffice && ! empty($property->mls_office_id)) {
             $originOffice = MLSOffice::query()
                 ->where('mls_office_id', (int) $property->mls_office_id)
                 ->first();
@@ -1257,7 +1270,7 @@ class PropertyController extends Controller
 
             // Si la propiedad pertenece a otra agencia, ocultamos agentes en el endpoint público.
             $property->setRelation('agentUser', null);
-            $property->setRelation('mlsAgents', new EloquentCollection());
+            $property->setRelation('mlsAgents', new EloquentCollection);
         }
 
         $property->setAttribute('contact_agency', $this->toPublicOfficePayload($contactOffice));
@@ -1286,7 +1299,7 @@ class PropertyController extends Controller
 
     private function toPublicOfficePayload(?MLSOffice $office): ?array
     {
-        if (!$office) {
+        if (! $office) {
             return null;
         }
 
@@ -1301,7 +1314,3 @@ class PropertyController extends Controller
         ];
     }
 }
-
-
-
-

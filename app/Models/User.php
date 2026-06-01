@@ -3,12 +3,10 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Models\Agency;
-use App\Models\ColorTheme;
-use App\Models\MediaAsset;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
@@ -16,7 +14,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     /**
      * For Spatie\Permission: allow roles for both 'web' and 'api' guards.
@@ -93,6 +91,11 @@ class User extends Authenticatable
         return $this->hasMany(Property::class, 'agent_user_id');
     }
 
+    public function mlsAgent(): HasOne
+    {
+        return $this->hasOne(MLSAgent::class, 'user_id');
+    }
+
     /**
      * Get the color theme for the user.
      */
@@ -111,4 +114,3 @@ class User extends Authenticatable
         return $this->hasMany(CorporateEmailMessage::class);
     }
 }
-

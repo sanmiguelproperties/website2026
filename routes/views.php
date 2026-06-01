@@ -57,7 +57,7 @@ $ensureMlsAgentsPublicEnabled = static function () use ($isMlsAgentsPublicEnable
 Route::get('/idioma/{locale}', function (Request $request, string $locale) {
     $normalized = strtolower($locale);
 
-    if (!in_array($normalized, ['es', 'en'], true)) {
+    if (! in_array($normalized, ['es', 'en'], true)) {
         $normalized = 'es';
     }
 
@@ -92,7 +92,7 @@ Route::get('/zonas/{zoneSlug}', function (string $zoneSlug) use ($publicContext,
         ->where('is_active', true)
         ->first();
 
-    if (!$zonePage) {
+    if (! $zonePage) {
         ZonePageService::syncFromPublishedProperties();
         $zonePage = ZonePage::query()
             ->where('slug', $zoneSlug)
@@ -157,16 +157,16 @@ Route::get('/agentes/{mlsAgentId}', function (string $mlsAgentId) use ($publicCo
     $ensureMlsAgentsPublicEnabled();
 
     return view('public.mls-agent-detail', $publicContext('mls-agent-detail', [
-        'mlsAgentId' => (int) $mlsAgentId,
+        'mlsAgentId' => $mlsAgentId,
     ]));
 })
-    ->where('mlsAgentId', '[0-9]+')
+    ->where('mlsAgentId', '(?:[0-9]+|local-[0-9]+)')
     ->name('public.mls-agents.show');
 
 Route::get('/mls-offices/{mlsOfficeId}', function (string $mlsOfficeId) use ($ensureMlsOfficesPublicEnabled) {
     $ensureMlsOfficesPublicEnabled();
 
-    return redirect('/agencias/' . (int) $mlsOfficeId, 301);
+    return redirect('/agencias/'.(int) $mlsOfficeId, 301);
 })
     ->where('mlsOfficeId', '[0-9]+')
     ->name('public.mls-offices.legacy-show');
@@ -180,7 +180,7 @@ Route::get('/mls-agents', function () use ($ensureMlsAgentsPublicEnabled) {
 Route::get('/mls-agents/{mlsAgentId}', function (string $mlsAgentId) use ($ensureMlsAgentsPublicEnabled) {
     $ensureMlsAgentsPublicEnabled();
 
-    return redirect('/agentes/' . (int) $mlsAgentId, 301);
+    return redirect('/agentes/'.(int) $mlsAgentId, 301);
 })
     ->where('mlsAgentId', '[0-9]+')
     ->name('public.mls-agents.legacy-show');
@@ -196,11 +196,13 @@ Route::get('/propiedades/{propertyId}', function (string $propertyId) use ($publ
 // Contact and About pages
 Route::get('/contacto', function () use ($publicContext) {
     $context = $publicContext('contact');
+
     return view('public.contact', $context);
 })->name('public.contact');
 
 Route::get('/vendedores/vende-con-nosotros', function () use ($publicContext) {
     $context = $publicContext('sell-with-us');
+
     return view('public.sell-with-us', $context);
 })->name('public.sell-with-us');
 

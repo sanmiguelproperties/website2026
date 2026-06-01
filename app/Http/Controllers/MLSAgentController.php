@@ -5,15 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\MLSAgent;
 use App\Models\MLSOffice;
 use App\Models\Property;
+use App\Models\User;
 use App\Services\CmsService;
+use App\Services\MlsAgentProfileService;
 use App\Services\MLSSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Controlador para gestionar agentes del MLS AMPI San Miguel de Allende.
- * 
+ *
  * Proporciona endpoints para:
  * - Listar agentes MLS locales
  * - Ver detalle de un agente
@@ -23,11 +28,15 @@ use Illuminate\Support\Facades\Validator;
 class MLSAgentController extends Controller
 {
     protected MLSSyncService $syncService;
+
     protected ?MLSOffice $cachedPrimaryPublicMlsOffice = null;
+
     protected bool $didResolvePrimaryPublicMlsOffice = false;
 
-    public function __construct(MLSSyncService $syncService)
-    {
+    public function __construct(
+        MLSSyncService $syncService,
+        protected MlsAgentProfileService $mlsAgentProfiles
+    ) {
         $this->syncService = $syncService;
     }
 
@@ -75,7 +84,7 @@ class MLSAgentController extends Controller
         $sort = $request->input('sort', 'asc');
         $order = $request->input('order', 'name');
         $validOrders = ['name', 'email', 'mls_agent_id', 'office_name', 'created_at', 'updated_at', 'last_synced_at'];
-        if (!in_array($order, $validOrders, true)) {
+        if (! in_array($order, $validOrders, true)) {
             $order = 'name';
         }
         $sort = $sort === 'desc' ? 'desc' : 'asc';
@@ -93,7 +102,7 @@ class MLSAgentController extends Controller
      */
     public function indexPublic(Request $request): JsonResponse
     {
-        if (!$this->isMlsAgentsPublicEnabled()) {
+        if (! $this->isMlsAgentsPublicEnabled()) {
             return $this->apiNotFound('Seccion de agentes no disponible', 'PUBLIC_MLS_AGENTS_DISABLED');
         }
 
@@ -137,7 +146,7 @@ class MLSAgentController extends Controller
         $sort = $request->input('sort', 'asc');
         $order = $request->input('order', 'name');
         $validOrders = ['name', 'email', 'mls_agent_id', 'office_name', 'created_at', 'updated_at', 'last_synced_at'];
-        if (!in_array($order, $validOrders, true)) {
+        if (! in_array($order, $validOrders, true)) {
             $order = 'name';
         }
         $sort = $sort === 'desc' ? 'desc' : 'asc';
@@ -159,21 +168,17 @@ class MLSAgentController extends Controller
      * GET /api/public/mls-agents/{mlsAgentId}
      * Detalle pÃºblico de un agente MLS por su mls_agent_id (ID del MLS).
      */
-    public function showPublicByMlsId(Request $request, int $mlsAgentId): JsonResponse
+    public function showPublicByMlsId(Request $request, string $mlsAgentId): JsonResponse
     {
-        if (!$this->isMlsAgentsPublicEnabled()) {
+        if (! $this->isMlsAgentsPublicEnabled()) {
             return $this->apiNotFound('Seccion de agentes no disponible', 'PUBLIC_MLS_AGENTS_DISABLED');
         }
 
         $locale = $this->resolvePublicLocale($request);
 
-        $agent = MLSAgent::query()
-            ->where('mls_agent_id', $mlsAgentId)
-            ->with(['photoMediaAsset', 'office.imageMediaAsset'])
-            ->withCount('properties')
-            ->first();
+        $agent = $this->findPublicAgent($mlsAgentId);
 
-        if (!$agent) {
+        if (! $agent) {
             return $this->apiNotFound('Agente no encontrado', 'MLS_AGENT_NOT_FOUND');
         }
 
@@ -186,7 +191,7 @@ class MLSAgentController extends Controller
         }
 
         $officeSummary = null;
-        if (!empty($agent->mls_office_id)) {
+        if (! empty($agent->mls_office_id)) {
             $office = MLSOffice::query()
                 ->where('mls_office_id', (int) $agent->mls_office_id)
                 ->withCount(['agents', 'properties'])
@@ -222,20 +227,64 @@ class MLSAgentController extends Controller
     }
 
     /**
+     * GET /api/mls-agents/form-options
+     */
+    public function formOptions(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'agent_id' => 'nullable|integer|exists:mls_agents,id',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->apiValidationError($validator->errors()->toArray());
+        }
+
+        $agentId = $validator->validated()['agent_id'] ?? null;
+        $primaryOffice = MLSOffice::query()->primary()->orderBy('mls_office_id')->first();
+        $agent = $agentId ? MLSAgent::query()->find($agentId) : null;
+        $canLinkUser = $primaryOffice
+            && (! $agent || (int) $agent->mls_office_id === (int) $primaryOffice->mls_office_id);
+        $users = collect();
+
+        if ($canLinkUser) {
+            $users = User::query()
+                ->select(['id', 'name', 'email'])
+                ->with(['mlsAgent:id,user_id,name'])
+                ->whereHas('roles', fn ($query) => $query->whereIn('name', ['agente', 'agent']))
+                ->where(function ($query) use ($agentId): void {
+                    $query->whereDoesntHave('mlsAgent');
+
+                    if ($agentId) {
+                        $query->orWhereHas('mlsAgent', fn ($profile) => $profile->whereKey($agentId));
+                    }
+                })
+                ->distinct()
+                ->orderBy('name')
+                ->get();
+        }
+
+        return $this->apiSuccess('Opciones para el perfil MLS', 'MLS_AGENT_FORM_OPTIONS', [
+            'primary_office' => $primaryOffice,
+            'can_link_user' => (bool) $canLinkUser,
+            'users' => $users,
+        ]);
+    }
+
+    /**
      * POST /api/mls-agents
      * Crea un agente MLS manualmente.
      */
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'mls_agent_id' => 'required|integer|unique:mls_agents,mls_agent_id',
+            'mls_agent_id' => 'nullable|integer|min:1|unique:mls_agents,mls_agent_id',
             'name' => 'nullable|string|max:255',
             'first_name' => 'nullable|string|max:100',
             'last_name' => 'nullable|string|max:100',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'mobile' => 'nullable|string|max:50',
-            'mls_office_id' => 'nullable|integer',
+            'mls_office_id' => 'nullable|integer|exists:mls_offices,mls_office_id',
             'office_name' => 'nullable|string|max:255',
             'photo_url' => 'nullable|string',
             'photo_media_asset_id' => 'nullable|exists:media_assets,id',
@@ -244,14 +293,35 @@ class MLSAgentController extends Controller
             'bio_es' => 'nullable|string',
             'website' => 'nullable|string|max:255',
             'is_active' => 'nullable|boolean',
-            'user_id' => 'nullable|exists:users,id',
+            'user_id' => 'nullable|integer|exists:users,id|unique:mls_agents,user_id',
         ]);
 
         if ($validator->fails()) {
             return $this->apiValidationError($validator->errors()->toArray());
         }
 
-        $agent = MLSAgent::create($validator->validated());
+        $data = $validator->validated();
+        $userId = $data['user_id'] ?? null;
+        unset($data['user_id']);
+
+        $data['is_manual'] = empty($data['mls_agent_id']);
+
+        try {
+            $data = $this->mlsAgentProfiles->assignPrimaryOffice($data);
+
+            $agent = DB::transaction(function () use ($data, $userId): MLSAgent {
+                $agent = MLSAgent::create($data);
+
+                if ($userId) {
+                    $agent = $this->mlsAgentProfiles->linkUser($agent, User::query()->findOrFail($userId));
+                }
+
+                return $agent;
+            });
+        } catch (ValidationException $e) {
+            return $this->apiValidationError($e->errors());
+        }
+
         $agent->load(['photoMediaAsset', 'user']);
 
         return $this->apiCreated('Agente MLS creado', 'MLS_AGENT_CREATED', $agent);
@@ -264,14 +334,14 @@ class MLSAgentController extends Controller
     public function update(Request $request, MLSAgent $mlsAgent): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'mls_agent_id' => 'sometimes|integer|unique:mls_agents,mls_agent_id,' . $mlsAgent->id,
+            'mls_agent_id' => ['sometimes', 'nullable', 'integer', 'min:1', Rule::unique('mls_agents', 'mls_agent_id')->ignore($mlsAgent->id)],
             'name' => 'sometimes|nullable|string|max:255',
             'first_name' => 'sometimes|nullable|string|max:100',
             'last_name' => 'sometimes|nullable|string|max:100',
             'email' => 'sometimes|nullable|email|max:255',
             'phone' => 'sometimes|nullable|string|max:50',
             'mobile' => 'sometimes|nullable|string|max:50',
-            'mls_office_id' => 'sometimes|nullable|integer',
+            'mls_office_id' => 'sometimes|nullable|integer|exists:mls_offices,mls_office_id',
             'office_name' => 'sometimes|nullable|string|max:255',
             'photo_url' => 'sometimes|nullable|string',
             'photo_media_asset_id' => 'sometimes|nullable|exists:media_assets,id',
@@ -280,14 +350,41 @@ class MLSAgentController extends Controller
             'bio_es' => 'sometimes|nullable|string',
             'website' => 'sometimes|nullable|string|max:255',
             'is_active' => 'sometimes|nullable|boolean',
-            'user_id' => 'sometimes|nullable|exists:users,id',
+            'user_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id', Rule::unique('mls_agents', 'user_id')->ignore($mlsAgent->id)],
         ]);
 
         if ($validator->fails()) {
             return $this->apiValidationError($validator->errors()->toArray());
         }
 
-        $mlsAgent->update($validator->validated());
+        $data = $validator->validated();
+        $shouldUpdateUser = array_key_exists('user_id', $data);
+        $userId = $data['user_id'] ?? null;
+        unset($data['user_id']);
+
+        if (array_key_exists('mls_agent_id', $data)) {
+            $data['is_manual'] = empty($data['mls_agent_id']);
+        }
+
+        try {
+            if ($data['is_manual'] ?? $mlsAgent->is_manual) {
+                $data = $this->mlsAgentProfiles->assignPrimaryOffice($data);
+            }
+
+            DB::transaction(function () use ($mlsAgent, $data, $shouldUpdateUser, $userId): void {
+                $mlsAgent->update($data);
+
+                if ($shouldUpdateUser) {
+                    $user = $userId ? User::query()->findOrFail($userId) : null;
+                    $this->mlsAgentProfiles->linkUser($mlsAgent, $user);
+                } elseif ($mlsAgent->user_id) {
+                    $this->mlsAgentProfiles->ensureAgentBelongsToPrimaryOffice($mlsAgent);
+                }
+            });
+        } catch (ValidationException $e) {
+            return $this->apiValidationError($e->errors());
+        }
+
         $mlsAgent->load(['photoMediaAsset', 'user']);
 
         return $this->apiSuccess('Agente MLS actualizado', 'MLS_AGENT_UPDATED', $mlsAgent);
@@ -323,7 +420,7 @@ class MLSAgentController extends Controller
 
         $this->syncService->reloadConfiguration();
 
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError(
                 'MLS no estÃ¡ configurado',
                 'MLS_NOT_CONFIGURED',
@@ -387,7 +484,7 @@ class MLSAgentController extends Controller
 
         $this->syncService->reloadConfiguration();
 
-        if (!$this->syncService->isConfigured()) {
+        if (! $this->syncService->isConfigured()) {
             return $this->apiError('MLS no estÃ¡ configurado', 'MLS_NOT_CONFIGURED', null, null, 400);
         }
 
@@ -425,15 +522,16 @@ class MLSAgentController extends Controller
                 // Obtener agentes de esta propiedad del API
                 // mls_id corresponde al campo 'id' interno de la propiedad en el MLS
                 $propertyMlsId = $property->mls_id;
-                
+
                 if (empty($propertyMlsId)) {
                     \Illuminate\Support\Facades\Log::debug("[AGENT-RELATIONS] Property #{$property->id} sin mls_id, omitiendo");
                     $processed++;
+
                     continue;
                 }
 
                 \Illuminate\Support\Facades\Log::debug("[AGENT-RELATIONS] Obteniendo agentes para property #{$property->id} (mls_id: {$propertyMlsId})");
-                
+
                 $agentResponse = $this->syncService->fetchPropertyAgentIds((int) $propertyMlsId);
 
                 // Normalizar respuesta del API: puede venir como
@@ -447,12 +545,13 @@ class MLSAgentController extends Controller
                     }
                 }
 
-                if (!empty($agentIdsRaw) && is_array($agentIdsRaw)) {
+                if (! empty($agentIdsRaw) && is_array($agentIdsRaw)) {
                     // Convertir a lista de IDs enteros
                     $agentIds = [];
                     foreach ($agentIdsRaw as $a) {
                         if (is_numeric($a)) {
                             $agentIds[] = (int) $a;
+
                             continue;
                         }
 
@@ -460,6 +559,7 @@ class MLSAgentController extends Controller
                             $candidate = $a['id'] ?? $a['agent_id'] ?? $a['mls_agent_id'] ?? null;
                             if (is_numeric($candidate)) {
                                 $agentIds[] = (int) $candidate;
+
                                 continue;
                             }
                         }
@@ -475,21 +575,21 @@ class MLSAgentController extends Controller
 
                     // Usar json_encode para evitar 'Array to string conversion'
                     \Illuminate\Support\Facades\Log::debug(
-                        "[AGENT-RELATIONS] Property #{$property->id}: API devolviÃ³ " . count($agentIds) . " agentes: " . json_encode($agentIds)
+                        "[AGENT-RELATIONS] Property #{$property->id}: API devolviÃ³ ".count($agentIds).' agentes: '.json_encode($agentIds)
                     );
 
                     foreach ($agentIds as $index => $mlsAgentId) {
                         // Ya normalizamos a int, pero validar por seguridad
-                        if (!is_numeric($mlsAgentId)) {
+                        if (! is_numeric($mlsAgentId)) {
                             continue;
                         }
 
                         $mlsAgentIdInt = (int) $mlsAgentId;
                         $agent = MLSAgent::where('mls_agent_id', $mlsAgentIdInt)->first();
-                        
+
                         // Si el agente no existe localmente, crear un placeholder
                         // (similar al comportamiento de syncPropertyMlsAgents en MLSSyncService)
-                        if (!$agent) {
+                        if (! $agent) {
                             $agent = MLSAgent::create([
                                 'mls_agent_id' => $mlsAgentIdInt,
                                 'name' => "Agente MLS #{$mlsAgentIdInt}",
@@ -498,14 +598,14 @@ class MLSAgentController extends Controller
                             ]);
                             \Illuminate\Support\Facades\Log::info("[AGENT-RELATIONS] Agente placeholder creado: MLS ID #{$mlsAgentIdInt}");
                         }
-                        
+
                         $localAgentIds[$agent->id] = ['is_primary' => $index === 0];
                     }
 
-                    if (!empty($localAgentIds)) {
+                    if (! empty($localAgentIds)) {
                         $property->mlsAgents()->sync($localAgentIds);
                         $linked += count($localAgentIds);
-                        \Illuminate\Support\Facades\Log::info("[AGENT-RELATIONS] Property #{$property->id}: vinculados " . count($localAgentIds) . " agentes");
+                        \Illuminate\Support\Facades\Log::info("[AGENT-RELATIONS] Property #{$property->id}: vinculados ".count($localAgentIds).' agentes');
                     }
                 } else {
                     // Log diagnÃ³stico adicional cuando la respuesta es nula o no trae campo agents
@@ -514,11 +614,11 @@ class MLSAgentController extends Controller
                         "[AGENT-RELATIONS] Property #{$property->id} (mls_id: {$propertyMlsId}): API devolviÃ³ 0 agentes o respuesta nula. Response keys/type: {$keys}"
                     );
                 }
-                
+
                 $processed++;
             } catch (\Throwable $e) {
                 $errors++;
-                \Illuminate\Support\Facades\Log::error("[AGENT-RELATIONS] Error en property #{$property->id}: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error("[AGENT-RELATIONS] Error en property #{$property->id}: ".$e->getMessage());
             }
 
             // Rate limiting
@@ -636,7 +736,7 @@ class MLSAgentController extends Controller
         }
 
         $agentIds = $validator->validated()['mls_agent_ids'];
-        
+
         // El primer agente es el principal
         $syncData = [];
         foreach ($agentIds as $index => $agentId) {
@@ -652,6 +752,7 @@ class MLSAgentController extends Controller
             $property->mlsAgents
         );
     }
+
     private function resolvePublicLocale(Request $request): string
     {
         $candidate = strtolower((string) (
@@ -670,6 +771,26 @@ class MLSAgentController extends Controller
     private function isMlsAgentsPublicEnabled(): bool
     {
         return CmsService::settingBoolean('public_show_mls_agents', true);
+    }
+
+    private function findPublicAgent(string $publicId): ?MLSAgent
+    {
+        $query = MLSAgent::query()
+            ->with(['photoMediaAsset', 'office.imageMediaAsset'])
+            ->withCount('properties');
+
+        if (preg_match('/^local-([0-9]+)$/', $publicId, $matches)) {
+            return $query
+                ->whereKey((int) $matches[1])
+                ->where('is_manual', true)
+                ->first();
+        }
+
+        if (! preg_match('/^[0-9]+$/', $publicId)) {
+            return null;
+        }
+
+        return $query->where('mls_agent_id', (int) $publicId)->first();
     }
 
     private function isPublicOnlyPrimaryOfficeEnabled(): bool
@@ -695,6 +816,7 @@ class MLSAgentController extends Controller
     private function resolvePrimaryPublicMlsOfficeId(): ?int
     {
         $office = $this->resolvePrimaryPublicMlsOffice();
+
         return $office ? (int) $office->mls_office_id : null;
     }
 

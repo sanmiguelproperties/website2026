@@ -2,27 +2,34 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MLSAgent;
 use App\Models\User;
+use App\Services\MlsAgentProfileService;
 use App\Services\RbacMirror;
 use App\Support\Rbac;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+    public function __construct(
+        protected MlsAgentProfileService $mlsAgentProfiles
+    ) {}
+
     /**
      * GET /api/users
      */
     public function index(Request $request): JsonResponse
     {
-        $query = User::with(['profileImage', 'roles:id,name,guard_name']);
+        $query = User::with(['profileImage', 'roles:id,name,guard_name', 'mlsAgent.office']);
 
         if ($request->filled('search')) {
-            $search = trim((string)$request->input('search'));
+            $search = trim((string) $request->input('search'));
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
@@ -32,13 +39,13 @@ class UserController extends Controller
         $sort = $request->input('sort', 'desc');
         $order = $request->input('order', 'created_at');
         $validOrders = ['created_at', 'updated_at', 'name', 'email'];
-        if (!in_array($order, $validOrders, true)) {
+        if (! in_array($order, $validOrders, true)) {
             $order = 'created_at';
         }
         $sort = $sort === 'asc' ? 'asc' : 'desc';
         $query->orderBy($order, $sort);
 
-        $perPage = (int)$request->input('per_page', 15);
+        $perPage = (int) $request->input('per_page', 15);
         $perPage = max(1, min(100, $perPage));
         $data = $query->paginate($perPage);
 
@@ -50,7 +57,7 @@ class UserController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'users.create')) {
+        if (! Rbac::canAny($request->user('api'), 'users.create')) {
             return $this->apiForbidden('No tienes permisos para crear usuarios', 'USERS_CREATE_FORBIDDEN');
         }
 
@@ -77,7 +84,7 @@ class UserController extends Controller
         $user = User::create($userData);
 
         // Cargar la relación de imagen de perfil
-        $user->load(['profileImage', 'roles:id,name,guard_name']);
+        $user->load(['profileImage', 'roles:id,name,guard_name', 'mlsAgent.office']);
 
         return $this->apiCreated('Usuario creado exitosamente', 'USER_CREATED', $user);
     }
@@ -87,9 +94,9 @@ class UserController extends Controller
      */
     public function show(Request $request, $id): JsonResponse
     {
-        $user = User::with(['profileImage', 'roles:id,name,guard_name'])->find($id);
+        $user = User::with(['profileImage', 'roles:id,name,guard_name', 'mlsAgent.office'])->find($id);
 
-        if (!$user) {
+        if (! $user) {
             return $this->apiNotFound('Usuario no encontrado', 'USER_NOT_FOUND');
         }
 
@@ -101,13 +108,13 @@ class UserController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'users.edit')) {
+        if (! Rbac::canAny($request->user('api'), 'users.edit')) {
             return $this->apiForbidden('No tienes permisos para editar usuarios', 'USERS_EDIT_FORBIDDEN');
         }
 
         $user = User::find($id);
 
-        if (!$user) {
+        if (! $user) {
             return $this->apiNotFound('Usuario no encontrado', 'USER_NOT_FOUND');
         }
 
@@ -125,14 +132,14 @@ class UserController extends Controller
 
         $updateData = $validator->validated();
 
-        if (array_key_exists('is_active', $updateData) && !Rbac::canAny($request->user('api'), 'users.deactivate')) {
+        if (array_key_exists('is_active', $updateData) && ! Rbac::canAny($request->user('api'), 'users.deactivate')) {
             return $this->apiForbidden('No tienes permisos para activar o desactivar usuarios', 'USERS_DEACTIVATE_FORBIDDEN');
         }
 
         $currentUser = $request->user('api') ?? auth()->user();
         if (
             array_key_exists('is_active', $updateData)
-            && !$updateData['is_active']
+            && ! $updateData['is_active']
             && $currentUser
             && (int) $currentUser->id === (int) $user->id
         ) {
@@ -140,7 +147,7 @@ class UserController extends Controller
         }
 
         // Hash password if provided
-        if (isset($updateData['password']) && !empty($updateData['password'])) {
+        if (isset($updateData['password']) && ! empty($updateData['password'])) {
             $updateData['password'] = Hash::make($updateData['password']);
         } elseif (isset($updateData['password']) && empty($updateData['password'])) {
             unset($updateData['password']); // Don't update if empty
@@ -149,7 +156,7 @@ class UserController extends Controller
         $user->update($updateData);
 
         // Cargar la relación de imagen de perfil
-        $user->load(['profileImage', 'roles:id,name,guard_name']);
+        $user->load(['profileImage', 'roles:id,name,guard_name', 'mlsAgent.office']);
 
         return $this->apiSuccess('Usuario actualizado', 'USER_UPDATED', $user);
     }
@@ -159,13 +166,13 @@ class UserController extends Controller
      */
     public function destroy(Request $request, $id): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'users.delete')) {
+        if (! Rbac::canAny($request->user('api'), 'users.delete')) {
             return $this->apiForbidden('No tienes permisos para eliminar usuarios', 'USERS_DELETE_FORBIDDEN');
         }
 
         $user = User::find($id);
 
-        if (!$user) {
+        if (! $user) {
             return $this->apiNotFound('Usuario no encontrado', 'USER_NOT_FOUND');
         }
 
@@ -181,13 +188,120 @@ class UserController extends Controller
     }
 
     /**
+     * GET /api/users/mls-agent-options
+     */
+    public function mlsAgentOptions(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'nullable|integer|exists:users,id',
+            'search' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->apiValidationError($validator->errors()->toArray());
+        }
+
+        $data = $validator->validated();
+        $userId = $data['user_id'] ?? null;
+        $query = MLSAgent::query()
+            ->with(['office', 'user:id,name,email'])
+            ->whereHas('office', fn ($office) => $office->primary())
+            ->where(function ($query) use ($userId): void {
+                $query->whereNull('user_id');
+
+                if ($userId) {
+                    $query->orWhere('user_id', $userId);
+                }
+            });
+
+        if (! empty($data['search'])) {
+            $search = trim($data['search']);
+            $query->where(function ($query) use ($search): void {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('mls_agent_id', 'like', "%{$search}%");
+            });
+        }
+
+        return $this->apiSuccess(
+            'Perfiles MLS disponibles',
+            'USER_MLS_AGENT_OPTIONS',
+            $query->orderBy('name')->orderBy('id')->limit(200)->get()
+        );
+    }
+
+    /**
+     * PUT /api/users/{user}/mls-agent
+     */
+    public function updateMlsAgent(Request $request, User $user): JsonResponse
+    {
+        if (! Rbac::canAny($request->user('api'), 'users.edit')) {
+            return $this->apiForbidden('No tienes permisos para editar usuarios', 'USERS_EDIT_FORBIDDEN');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'mls_agent_profile_id' => 'nullable|integer|exists:mls_agents,id',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->apiValidationError($validator->errors()->toArray());
+        }
+
+        try {
+            $profileId = $validator->validated()['mls_agent_profile_id'] ?? null;
+            $currentProfile = $user->mlsAgent()->first();
+
+            if (! $profileId) {
+                if ($currentProfile) {
+                    $this->mlsAgentProfiles->linkUser($currentProfile, null);
+                }
+            } else {
+                $profile = MLSAgent::query()->findOrFail($profileId);
+                $this->mlsAgentProfiles->linkUser($profile, $user, true);
+            }
+        } catch (ValidationException $e) {
+            return $this->apiValidationError($e->errors());
+        }
+
+        return $this->apiSuccess(
+            'Perfil MLS relacionado',
+            'USER_MLS_AGENT_UPDATED',
+            $user->fresh()->load(['profileImage', 'roles:id,name,guard_name', 'mlsAgent.office'])
+        );
+    }
+
+    /**
+     * POST /api/users/{user}/mls-agent
+     */
+    public function createMlsAgent(Request $request, User $user): JsonResponse
+    {
+        if (! Rbac::canAny($request->user('api'), 'users.edit')) {
+            return $this->apiForbidden('No tienes permisos para editar usuarios', 'USERS_EDIT_FORBIDDEN');
+        }
+
+        try {
+            $profile = $this->mlsAgentProfiles->createForUser($user);
+        } catch (ValidationException $e) {
+            return $this->apiValidationError($e->errors());
+        }
+
+        return $this->apiCreated(
+            'Perfil MLS creado y relacionado',
+            'USER_MLS_AGENT_CREATED',
+            $profile->load(['photoMediaAsset', 'office', 'user'])
+        );
+    }
+
+    /**
      * GET /api/users/{id}/roles
      */
     public function getUserRoles($userId): JsonResponse
     {
         $user = User::with('roles')->find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return $this->apiNotFound('Usuario no encontrado', 'USER_NOT_FOUND');
         }
 
@@ -205,7 +319,7 @@ class UserController extends Controller
     {
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return $this->apiNotFound('Usuario no encontrado', 'USER_NOT_FOUND');
         }
 
@@ -219,13 +333,13 @@ class UserController extends Controller
      */
     public function assignRoles(Request $request, $userId): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'rbac.manage')) {
+        if (! Rbac::canAny($request->user('api'), 'rbac.manage')) {
             return $this->apiForbidden('No tienes permisos para administrar roles', 'RBAC_MANAGE_FORBIDDEN');
         }
 
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return $this->apiNotFound('Usuario no encontrado', 'USER_NOT_FOUND');
         }
 
@@ -253,12 +367,13 @@ class UserController extends Controller
             $currentUser
             && (int) $currentUser->id === (int) $user->id
             && Rbac::isSuperAdmin($user)
-            && !in_array(Rbac::SUPER_ADMIN, $roleNames, true)
+            && ! in_array(Rbac::SUPER_ADMIN, $roleNames, true)
         ) {
             return $this->apiForbidden('No puedes quitarte tu propio rol super-admin', 'SELF_SUPER_ADMIN_ROLE_FORBIDDEN');
         }
 
         app(RbacMirror::class)->syncUserRolesBothGuardsByNames($user, $roleNames);
+        $this->unlinkMlsProfileWhenUserIsNotAgent($user);
 
         $user->load(['roles' => fn ($query) => $query->orderBy('guard_name')->orderBy('name')]);
 
@@ -270,13 +385,13 @@ class UserController extends Controller
      */
     public function revokeRoles(Request $request, $userId): JsonResponse
     {
-        if (!Rbac::canAny($request->user('api'), 'rbac.manage')) {
+        if (! Rbac::canAny($request->user('api'), 'rbac.manage')) {
             return $this->apiForbidden('No tienes permisos para administrar roles', 'RBAC_MANAGE_FORBIDDEN');
         }
 
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return $this->apiNotFound('Usuario no encontrado', 'USER_NOT_FOUND');
         }
 
@@ -291,7 +406,19 @@ class UserController extends Controller
 
         $roleIds = $request->input('roles');
         $user->roles()->detach($roleIds);
+        $this->unlinkMlsProfileWhenUserIsNotAgent($user);
 
         return $this->apiSuccess('Roles revocados del usuario', 'USER_ROLES_REVOKED', $user->roles);
+    }
+
+    private function unlinkMlsProfileWhenUserIsNotAgent(User $user): void
+    {
+        $isAgent = $user->roles()
+            ->whereIn('name', ['agente', 'agent'])
+            ->exists();
+
+        if (! $isAgent && ($profile = $user->mlsAgent()->first())) {
+            $this->mlsAgentProfiles->linkUser($profile, null);
+        }
     }
 }

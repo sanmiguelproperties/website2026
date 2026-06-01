@@ -107,8 +107,8 @@
                 <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-700" x-text="labels.noAgents"></div>
               </template>
 
-              <template x-for="a in agents" :key="a.mls_agent_id">
-                <a :href="'/agentes/' + a.mls_agent_id" class="block rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100 transition">
+              <template x-for="a in agents" :key="a.public_id">
+                <a :href="'/agentes/' + a.public_id" class="block rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100 transition">
                   <div class="flex items-start gap-4">
                     <div class="size-12 rounded-2xl overflow-hidden border border-slate-200 bg-white grid place-items-center shrink-0">
                       <template x-if="a.photo"><img :src="a.photo" :alt="a.full_name" class="w-full h-full object-cover" loading="lazy" x-on:error="a.photo = null" /></template>

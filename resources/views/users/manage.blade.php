@@ -96,6 +96,15 @@
           </div>
         </div>
 
+        <!-- Public MLS agent profile -->
+        <div id="user-mls-agent-section" class="hidden rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] p-4">
+          <label for="user-mls-agent-profile-id" class="block text-sm font-medium text-[var(--c-text)] mb-1">Perfil público de agente</label>
+          <select id="user-mls-agent-profile-id" class="w-full px-3 py-2 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-lg">
+            <option value="">Sin perfil público relacionado</option>
+          </select>
+          <p id="user-mls-agent-help" class="mt-2 text-xs text-[var(--c-muted)]">Puedes vincular un perfil MLS existente o crear uno nuevo en la agencia MLS principal.</p>
+        </div>
+
         <!-- Password -->
         <div>
           <label for="user-password" class="block text-sm font-medium text-[var(--c-text)] mb-1">Contraseña</label>
@@ -149,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Modal close buttons
   document.getElementById('btn-cancel-user').addEventListener('click', () => closeUserModal());
+  document.getElementById('user-mls-agent-profile-id').addEventListener('change', updateMlsAgentHelp);
 
   // Functions
   function authHeaders(json = false) {
@@ -261,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <span class="text-xs px-2 py-0.5 rounded-full ${user.is_active === false ? 'bg-red-500/20 text-red-300' : 'bg-emerald-500/20 text-emerald-300'}">${user.is_active === false ? 'Inactivo' : 'Activo'}</span>
             </div>
             <p class="text-sm text-[var(--c-muted)] break-all">${escapeHtml(user.email || '')}</p>
-            <div class="mt-2 flex flex-wrap gap-1.5">${renderRoleBadges(user)}</div>
+            <div class="mt-2 flex flex-wrap gap-1.5">${renderRoleBadges(user)}${renderMlsAgentBadge(user)}</div>
           </div>
         </div>
         <div class="flex gap-2 shrink-0">
@@ -315,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
     container.appendChild(nextBtn);
   }
 
-  function openUserModal(user = null) {
+  async function openUserModal(user = null) {
     const modal = document.getElementById('user-modal');
     const title = document.getElementById('user-modal-title');
     const idField = document.getElementById('user-id');
@@ -354,6 +364,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     renderRoleCheckboxes(roleNamesFromUser(user));
+    updateMlsAgentProfileVisibility();
+    await loadMlsAgentOptions(user);
 
     // Set profile image value
     const mediaInput = modal.querySelector('input[name="profile_image_id"]');
@@ -413,9 +425,14 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
 
+        const profileData = await saveUserMlsAgent(savedUserId);
+        if (!profileData) {
+          return;
+        }
+
         closeUserModal();
         loadUsers(currentPage);
-        window.dispatchEvent(new CustomEvent('api:response', { detail: rolesData }));
+        window.dispatchEvent(new CustomEvent('api:response', { detail: profileData }));
       } else {
         showApiError('Error al guardar usuario', data);
       }
@@ -443,6 +460,68 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     showApiError('Error al guardar roles', data);
+    return null;
+  }
+
+  async function loadMlsAgentOptions(user = null) {
+    const select = document.getElementById('user-mls-agent-profile-id');
+    const params = new URLSearchParams();
+    if (user?.id) {
+      params.set('user_id', user.id);
+    }
+
+    select.disabled = true;
+    select.innerHTML = '<option value="">Cargando perfiles...</option>';
+
+    try {
+      const response = await fetch(`${API_BASE}/users/mls-agent-options?${params.toString()}`, {
+        headers: authHeaders()
+      });
+      const data = await readJson(response);
+
+      if (!response.ok || !data?.success) {
+        showApiError('Error al cargar perfiles MLS', data);
+        return;
+      }
+
+      select.innerHTML = '';
+      appendSelectOption(select, '', 'Sin perfil público relacionado');
+      appendSelectOption(select, '__create__', 'Crear perfil local nuevo en la agencia principal');
+
+      (data.data || []).forEach(profile => {
+        const profileName = profile.full_name || profile.name || `Agente #${profile.id}`;
+        const source = profile.is_manual ? 'local' : `MLS #${profile.mls_agent_id}`;
+        const office = profile.office?.name || profile.office_name || 'sin agencia';
+        appendSelectOption(select, profile.id, `${profileName} (${source}, ${office})`);
+      });
+
+      select.value = user?.mls_agent?.id ? String(user.mls_agent.id) : '';
+      select.disabled = false;
+      updateMlsAgentHelp();
+    } catch (error) {
+      showError('Error de conexión', 'No se pudieron cargar los perfiles MLS disponibles.');
+    }
+  }
+
+  async function saveUserMlsAgent(userId) {
+    const selected = selectedRoleNames().some(isAgentRoleName)
+      ? document.getElementById('user-mls-agent-profile-id').value
+      : '';
+    const isCreate = selected === '__create__';
+    const response = await fetch(`${API_BASE}/users/${userId}/mls-agent`, {
+      method: isCreate ? 'POST' : 'PUT',
+      headers: authHeaders(true),
+      body: isCreate ? null : JSON.stringify({
+        mls_agent_profile_id: selected ? Number(selected) : null
+      })
+    });
+    const data = await readJson(response);
+
+    if (response.ok && data?.success) {
+      return data;
+    }
+
+    showApiError('Error al guardar perfil MLS', data);
     return null;
   }
 
@@ -487,6 +566,7 @@ document.addEventListener('DOMContentLoaded', function() {
       checkbox.value = role.id;
       checkbox.checked = selected.has(role.name);
       checkbox.className = 'rounded border-[var(--c-border)] text-[var(--c-primary)]';
+      checkbox.addEventListener('change', updateMlsAgentProfileVisibility);
 
       const text = document.createElement('span');
       text.textContent = role.name;
@@ -495,12 +575,46 @@ document.addEventListener('DOMContentLoaded', function() {
       label.appendChild(text);
       container.appendChild(label);
     });
+
+    updateMlsAgentProfileVisibility();
   }
 
   function selectedRoleIds() {
     return Array.from(document.querySelectorAll('#user-roles-list input[type="checkbox"]:checked'))
       .map(checkbox => Number(checkbox.value))
       .filter(Number.isFinite);
+  }
+
+  function selectedRoleNames() {
+    const selectedIds = new Set(selectedRoleIds());
+    return availableRoles
+      .filter(role => selectedIds.has(Number(role.id)))
+      .map(role => role.name);
+  }
+
+  function isAgentRoleName(name) {
+    return name === 'agente' || name === 'agent';
+  }
+
+  function updateMlsAgentProfileVisibility() {
+    const section = document.getElementById('user-mls-agent-section');
+    section.classList.toggle('hidden', !selectedRoleNames().some(isAgentRoleName));
+  }
+
+  function updateMlsAgentHelp() {
+    const selected = document.getElementById('user-mls-agent-profile-id').value;
+    const help = document.getElementById('user-mls-agent-help');
+
+    help.textContent = selected === '__create__'
+      ? 'Al guardar se creará un perfil local con el nombre, correo e imagen del usuario dentro de la agencia MLS principal.'
+      : 'Puedes vincular un perfil MLS existente o crear uno nuevo en la agencia MLS principal.';
+  }
+
+  function appendSelectOption(select, value, label) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    select.appendChild(option);
   }
 
   function roleNamesFromUser(user) {
@@ -525,6 +639,16 @@ document.addEventListener('DOMContentLoaded', function() {
     return names.map(name => (
       `<span class="text-xs px-2 py-0.5 rounded-full bg-[var(--c-surface)] text-[var(--c-text)] border border-[var(--c-border)]">${escapeHtml(name)}</span>`
     )).join('');
+  }
+
+  function renderMlsAgentBadge(user) {
+    if (!roleNamesFromUser(user).some(isAgentRoleName)) {
+      return '';
+    }
+
+    return user.mls_agent
+      ? '<span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">Perfil público vinculado</span>'
+      : '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">Sin perfil público</span>';
   }
 
   function escapeHtml(value) {

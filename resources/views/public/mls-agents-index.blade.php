@@ -288,7 +288,7 @@
             const esc = (s) => String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'", '&#039;');
 
             grid.innerHTML = this.agents.map((a) => {
-              const name = a.full_name || a.name || `${tPublic('mls.agents.fallbackName', isEnLocale ? 'Agent' : 'Agente')} #${a.mls_agent_id}`;
+              const name = a.full_name || a.name || `${tPublic('mls.agents.fallbackName', isEnLocale ? 'Agent' : 'Agente')} #${a.mls_agent_id || a.id}`;
               const img = a.photo || null;
               const propsCount = a.properties_count ?? 0;
 
@@ -310,11 +310,11 @@
                         <p class="mt-1 text-sm text-slate-600 truncate">${esc(a.email || '—')}</p>
 
                         <div class="mt-3 flex flex-wrap gap-2">
-                          <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold" style="background-color: rgba(209,160,84,0.10); color: rgb(79,70,229);">MLS #${esc(a.mls_agent_id)}</span>
+                          <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold" style="background-color: rgba(209,160,84,0.10); color: rgb(79,70,229);">${a.is_manual ? tPublic('mls.agents.localProfile', isEnLocale ? 'Local profile' : 'Perfil local') : `MLS #${esc(a.mls_agent_id)}`}</span>
                         </div>
 
                         <div class="mt-5">
-                          <a href="/agentes/${esc(a.mls_agent_id)}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
+                          <a href="/agentes/${esc(a.public_id)}" class="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-white font-semibold transition-all duration-300 hover:shadow-lg hover:scale-[1.02]" style="background: linear-gradient(to right, var(--fe-primary-from, #D1A054), var(--fe-primary-to, #768D59));">
                             ${tPublic('common.details', isEnLocale ? 'View agent' : 'Ver agente')}
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                           </a>

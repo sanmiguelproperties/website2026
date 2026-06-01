@@ -202,16 +202,18 @@
           <!-- Identificadores -->
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div class="md:col-span-3">
-              <label class="block text-sm font-medium mb-1">MLS Agent ID <span class="text-red-400">*</span></label>
-              <input id="field-mls-agent-id" type="number" min="1" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="ID en el MLS" required />
+              <label class="block text-sm font-medium mb-1">MLS Agent ID</label>
+              <input id="field-mls-agent-id" type="number" min="1" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Vacío para perfil local" />
+              <p class="mt-1 text-xs text-[var(--c-muted)]">Déjalo vacío si el perfil no existe en el MLS externo.</p>
             </div>
             <div class="md:col-span-3">
               <label class="block text-sm font-medium mb-1">MLS Office ID</label>
-              <input id="field-mls-office-id" type="number" min="0" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="ID oficina MLS" />
+              <input id="field-mls-office-id" type="number" min="0" readonly class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] opacity-75" placeholder="ID oficina MLS" />
             </div>
             <div class="md:col-span-4">
               <label class="block text-sm font-medium mb-1">Oficina</label>
-              <input id="field-office-name" type="text" maxlength="255" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="Nombre de oficina" />
+              <input id="field-office-name" type="text" maxlength="255" readonly class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] opacity-75" placeholder="Nombre de oficina" />
+              <p class="mt-1 text-xs text-[var(--c-muted)]">Los agentes nuevos se asignan siempre a la agencia MLS principal.</p>
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm font-medium mb-1">Activo</label>
@@ -265,12 +267,11 @@
               <input id="field-website" type="url" maxlength="255" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="https://..." />
             </div>
             <div class="md:col-span-4">
-              <label class="block text-sm font-medium mb-1">Usuario local (user_id)</label>
-              <div class="flex gap-2">
-                <input id="field-user-id" type="number" min="1" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]" placeholder="ID de usuario" />
-                <button id="btn-find-user" type="button" class="px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)] hover:bg-[var(--c-surface)] transition">Buscar</button>
-              </div>
-              <p id="user-preview" class="mt-1 text-xs text-[var(--c-muted)]">—</p>
+              <label class="block text-sm font-medium mb-1">Usuario local relacionado</label>
+              <select id="field-user-id" class="w-full px-3 py-2 rounded-xl bg-[var(--c-elev)] border border-[var(--c-border)]">
+                <option value="">Sin usuario relacionado</option>
+              </select>
+              <p id="user-preview" class="mt-1 text-xs text-[var(--c-muted)]">Solo aparecen usuarios con rol agente y sin otro perfil relacionado.</p>
             </div>
           </div>          <!-- Bio -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -464,6 +465,11 @@ document.addEventListener('DOMContentLoaded', () => {
       perPage: 15,
       last: null,
     },
+    formOptions: {
+      primaryOffice: null,
+      canLinkUser: false,
+      users: [],
+    },
   };
 
   // ----------------------
@@ -531,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
     empty.classList.add('hidden');
 
     items.forEach((a) => {
-      const displayName = a.name || [a.first_name, a.last_name].filter(Boolean).join(' ') || `Agente #${a.mls_agent_id}`;
+      const displayName = a.name || [a.first_name, a.last_name].filter(Boolean).join(' ') || `Agente #${a.id}`;
       const email = a.email || '—';
       const office = a.office_name || (a.mls_office_id ? `Oficina #${a.mls_office_id}` : '—');
       const propertiesCount = a.properties_count ?? a.properties?.length ?? '—';
@@ -561,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
         <td class="py-3 pr-3 text-[var(--c-text)]">${escapeHtml(email)}</td>
         <td class="py-3 pr-3 text-[var(--c-text)]">${escapeHtml(office)}</td>
-        <td class="py-3 pr-3 text-[var(--c-muted)]">${escapeHtml(a.mls_agent_id)}</td>
+        <td class="py-3 pr-3 text-[var(--c-muted)]">${a.is_manual ? 'Perfil local' : escapeHtml(a.mls_agent_id)}</td>
         <td class="py-3 pr-3">${badgeActive(!!a.is_active)}</td>
         <td class="py-3 pr-3 text-[var(--c-text)]">
           <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-[var(--c-elev)] border border-[var(--c-border)]">
@@ -697,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#field-license-number').value = '';
     $('#field-website').value = '';
     $('#field-user-id').value = '';
-    $('#user-preview').textContent = '—';
+    $('#user-preview').textContent = 'Solo aparecen usuarios con rol agente y sin otro perfil relacionado.';
 
     // Bio
     $('#field-bio').value = '';
@@ -720,9 +726,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function fillFromAgent(a) {
     $('#agent-id').value = a.id;
 
-    const displayName = a.name || [a.first_name, a.last_name].filter(Boolean).join(' ') || `Agente #${a.mls_agent_id}`;
+    const displayName = a.name || [a.first_name, a.last_name].filter(Boolean).join(' ') || `Agente #${a.id}`;
     $('#agent-drawer-title').textContent = `Editar agente #${a.id}`;
-    $('#agent-drawer-subtitle').textContent = `MLS ID: ${a.mls_agent_id} • ${displayName}`;
+    $('#agent-drawer-subtitle').textContent = `${a.is_manual ? 'Perfil local' : `MLS ID: ${a.mls_agent_id}`} • ${displayName}`;
 
     $('#btn-agent-delete').classList.remove('hidden');
 
@@ -757,10 +763,12 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#field-license-number').value = a.license_number ?? '';
     $('#field-website').value = a.website ?? '';
     $('#field-user-id').value = a.user_id ?? '';
-    if (a.user) {
+    if (!state.formOptions.canLinkUser) {
+      $('#user-preview').textContent = 'Solo los perfiles de la agencia MLS principal pueden relacionarse con usuarios.';
+    } else if (a.user) {
       $('#user-preview').textContent = `${a.user.name || 'Usuario'} (${a.user.email || '—'})`;
     } else {
-      $('#user-preview').textContent = '—';
+      $('#user-preview').textContent = 'Sin usuario relacionado';
     }
 
     // Bio
@@ -820,6 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ----------------------
   async function openDrawerForCreate() {
     resetForm();
+    await loadFormOptions();
     setActiveTab('datos');
     openDrawer();
   }
@@ -832,6 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const payload = await apiFetch(`${API_BASE}/mls-agents/${id}`);
       if (payload?.success) {
+        await loadFormOptions(id);
         fillFromAgent(payload.data);
       } else {
         window.dispatchEvent(new CustomEvent('api:response', { detail: payload }));
@@ -876,19 +886,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = $('#agent-id').value;
 
     const payload = buildPayloadFromForm();
-
-    // Validación mínima de cliente
-    if (!payload.mls_agent_id) {
-      window.dispatchEvent(new CustomEvent('api:response', {
-        detail: {
-          success: false,
-          message: 'MLS Agent ID es obligatorio.',
-          code: 'CLIENT_VALIDATION',
-          errors: { mls_agent_id: ['Requerido'] }
-        }
-      }));
-      return;
-    }
 
     const isEdit = !!id;
     const url = isEdit ? `${API_BASE}/mls-agents/${id}` : `${API_BASE}/mls-agents`;
@@ -1188,24 +1185,53 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ----------------------
-  // User quick lookup
+  // Form options
   // ----------------------
-  async function findUserById() {
-    const id = toInt($('#field-user-id').value);
-    if (!id) {
-      $('#user-preview').textContent = '—';
+  async function loadFormOptions(agentId = null) {
+    const params = new URLSearchParams();
+    if (agentId) params.set('agent_id', agentId);
+
+    const payload = await apiFetch(`${API_BASE}/mls-agents/form-options?${params.toString()}`);
+    if (!payload?.success) return;
+
+    state.formOptions.primaryOffice = payload.data?.primary_office || null;
+    state.formOptions.canLinkUser = !!payload.data?.can_link_user;
+    state.formOptions.users = payload.data?.users || [];
+    renderUserOptions();
+
+    if (!agentId && state.formOptions.primaryOffice) {
+      $('#field-mls-office-id').value = state.formOptions.primaryOffice.mls_office_id || '';
+      $('#field-office-name').value = state.formOptions.primaryOffice.name || '';
+    }
+  }
+
+  function renderUserOptions() {
+    const select = $('#field-user-id');
+    const selected = select.value;
+    select.innerHTML = '<option value="">Sin usuario relacionado</option>';
+    select.disabled = !state.formOptions.canLinkUser;
+
+    if (!state.formOptions.canLinkUser) {
+      $('#user-preview').textContent = 'Solo los perfiles de la agencia MLS principal pueden relacionarse con usuarios.';
       return;
     }
 
-    try {
-      const payload = await apiFetch(`${API_BASE}/users/${id}`);
-      if (payload?.success) {
-        const u = payload.data;
-        $('#user-preview').textContent = `${u.name || 'Usuario'} (${u.email || '—'})`;
-      }
-    } catch (e) {
-      $('#user-preview').textContent = 'No encontrado';
-    }
+    state.formOptions.users.forEach(user => {
+      const option = document.createElement('option');
+      option.value = user.id;
+      option.textContent = `${user.name || 'Usuario'} (${user.email || '—'})`;
+      select.appendChild(option);
+    });
+
+    select.value = selected;
+    updateUserPreview();
+  }
+
+  function updateUserPreview() {
+    const option = $('#field-user-id').selectedOptions[0];
+    $('#user-preview').textContent = option?.value
+      ? option.textContent
+      : 'Solo aparecen usuarios con rol agente y sin otro perfil relacionado.';
   }
 
   // ----------------------
@@ -1265,8 +1291,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Attach properties
   $('#btn-attach-properties').addEventListener('click', attachProperties);
 
-  // User lookup
-  $('#btn-find-user').addEventListener('click', findUserById);
+  // User relation
+  $('#field-user-id').addEventListener('change', updateUserPreview);
 
   // Photo URL preview
   $('#field-photo-url').addEventListener('change', updatePhotoPreview);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,7 +21,9 @@ class MLSOffice extends Model
      * Usamos el ID del MLS como PK (no autoincrement).
      */
     protected $primaryKey = 'mls_office_id';
+
     public $incrementing = false;
+
     protected $keyType = 'int';
 
     protected $fillable = [
@@ -89,27 +92,27 @@ class MLSOffice extends Model
         if ($this->relationLoaded('imageMediaAsset') && $this->imageMediaAsset) {
             $asset = $this->imageMediaAsset;
 
-            if (!empty($asset->storage_path) && Storage::disk('public')->exists($asset->storage_path)) {
+            if (! empty($asset->storage_path) && Storage::disk('public')->exists($asset->storage_path)) {
                 return Storage::disk('public')->url($asset->storage_path);
             }
 
-            if (!empty($asset->url)) {
+            if (! empty($asset->url)) {
                 return $asset->url;
             }
         }
 
-        if (!empty($this->image_url)) {
+        if (! empty($this->image_url)) {
             return $this->image_url;
         }
 
         // image_path suele venir como path relativo del MLS (ej: "offices/xxx.jpg").
         // Si en el futuro se define una base URL en configuración, se puede resolver aquí.
-        return !empty($this->image_path) ? $this->image_path : null;
+        return ! empty($this->image_path) ? $this->image_path : null;
     }
 
     public function getHasImageAttribute(): bool
     {
-        return !empty($this->image);
+        return ! empty($this->image);
     }
 
     /**
@@ -131,10 +134,13 @@ class MLSOffice extends Model
         return $this->hasMany(MLSAgent::class, 'mls_office_id', 'mls_office_id');
     }
 
+    public function scopePrimary(Builder $query): Builder
+    {
+        return $query->where('is_primary', true);
+    }
+
     public function properties(): HasMany
     {
         return $this->hasMany(Property::class, 'mls_office_id', 'mls_office_id');
     }
 }
-
-

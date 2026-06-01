@@ -92,7 +92,7 @@ Route::middleware(['auth.api', 'admin.api:documents.view'])->group(function () {
 });
 
 // Rutas públicas para el portal inmobiliario (sin autenticación)
-  Route::prefix('public')->group(function () {
+Route::prefix('public')->group(function () {
     // Oficinas / Agencias MLS (público)
     Route::get('mls-offices', [MLSOfficeController::class, 'indexPublic']);
     Route::get('mls-offices/{mlsOffice}', [MLSOfficeController::class, 'showPublic']);
@@ -100,9 +100,9 @@ Route::middleware(['auth.api', 'admin.api:documents.view'])->group(function () {
 
     // Agentes MLS (público)
     Route::get('mls-agents', [MLSAgentController::class, 'indexPublic']);
-    // Nota: usamos mls_agent_id (ID del MLS) en la URL pública, no el PK local.
+    // Los perfiles sincronizados usan el ID MLS; los manuales usan local-{id}.
     Route::get('mls-agents/{mlsAgentId}', [MLSAgentController::class, 'showPublicByMlsId'])
-        ->where('mlsAgentId', '[0-9]+');
+        ->where('mlsAgentId', '(?:[0-9]+|local-[0-9]+)');
 
     Route::get('properties/filter-options', [PropertyController::class, 'filterOptions']);
     Route::get('properties', [PropertyController::class, 'indexPublic']);
@@ -112,10 +112,13 @@ Route::middleware(['auth.api', 'admin.api:documents.view'])->group(function () {
     Route::post('property-contact-requests', [PropertyContactRequestController::class, 'store'])
         ->middleware('throttle:10,1');
 
-  });
+});
 
 // User Management routes protegidas con autenticación Passport
 Route::middleware(['auth.api', 'admin.api:users.view'])->group(function () {
+    Route::get('users/mls-agent-options', [UserController::class, 'mlsAgentOptions']);
+    Route::put('users/{user}/mls-agent', [UserController::class, 'updateMlsAgent'])->where('user', '[0-9]+');
+    Route::post('users/{user}/mls-agent', [UserController::class, 'createMlsAgent'])->where('user', '[0-9]+');
     Route::apiResource('users', UserController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 
     Route::get('users/{userId}/roles', [UserController::class, 'getUserRoles']);
@@ -130,12 +133,12 @@ Route::middleware(['auth.api', 'admin.api:settings.manage'])->group(function () 
 });
 
 // EasyBroker / Inventario routes (protegidas con autenticación Passport)
-  Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () {
+Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () {
     Route::get('agencies', [AgencyController::class, 'index'])->name('agencies.index');
     Route::apiResource('features', FeatureController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('tags', TagController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::apiResource('locations-catalog', LocationCatalogController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-  });
+});
 
 Route::middleware(['auth.api', 'admin.api:properties.view'])->group(function () {
     Route::post('properties/{property}/restore', [PropertyController::class, 'restore'])->where('property', '[0-9]+');
@@ -187,15 +190,15 @@ Route::prefix('frontend-colors')->group(function () {
     // CSS para cualquier vista
     Route::get('css', [FrontendColorController::class, 'css']);
     Route::get('css/{viewSlug}', [FrontendColorController::class, 'cssForView']);
-    
+
     // Colores activos
     Route::get('active', [FrontendColorController::class, 'active']);
     Route::get('active/{viewSlug}', [FrontendColorController::class, 'activeForView']);
-    
+
     // Colores por defecto
     Route::get('defaults', [FrontendColorController::class, 'defaults']);
     Route::get('defaults/{viewSlug}', [FrontendColorController::class, 'defaultsForView']);
-    
+
     // Vistas disponibles (público para que el frontend sepa qué vistas existen)
     Route::get('views', [FrontendColorController::class, 'views']);
 });
@@ -205,28 +208,28 @@ Route::middleware(['auth.api', 'admin.api:settings.manage'])->prefix('frontend-c
     // Listado y creación
     Route::get('/', [FrontendColorController::class, 'index']);
     Route::post('/', [FrontendColorController::class, 'store']);
-    
+
     // Agrupado por vista
     Route::get('grouped', [FrontendColorController::class, 'groupedByView']);
-    
+
     // Grupos de colores
     Route::get('groups', [FrontendColorController::class, 'groups']);
     Route::get('groups/{viewSlug}', [FrontendColorController::class, 'groupsForView']);
-    
+
     // Configuraciones por vista
     Route::get('view/{viewSlug}', [FrontendColorController::class, 'viewConfigs']);
-    
+
     // CRUD individual
     Route::get('{id}', [FrontendColorController::class, 'show'])->where('id', '[0-9]+');
     Route::put('{id}', [FrontendColorController::class, 'update'])->where('id', '[0-9]+');
     Route::delete('{id}', [FrontendColorController::class, 'destroy'])->where('id', '[0-9]+');
-    
+
     // Acciones
     Route::post('{id}/activate', [FrontendColorController::class, 'activate'])->where('id', '[0-9]+');
     Route::post('{id}/reset-defaults', [FrontendColorController::class, 'resetDefaults'])->where('id', '[0-9]+');
     Route::post('{id}/duplicate', [FrontendColorController::class, 'duplicate'])->where('id', '[0-9]+');
     Route::get('{id}/export', [FrontendColorController::class, 'export'])->where('id', '[0-9]+');
-    
+
     // Importar
     Route::post('import', [FrontendColorController::class, 'import']);
 });
@@ -235,15 +238,15 @@ Route::middleware(['auth.api', 'admin.api:settings.manage'])->prefix('frontend-c
 Route::middleware(['auth.api', 'admin.api:integrations.view|integrations.logs.view|integrations.sync|integrations.config.edit'])->prefix('easybroker')->group(function () {
     // Estado de configuración
     Route::get('status', [EasyBrokerSyncController::class, 'status']);
-    
+
     // Gestión de configuración
     Route::get('config', [EasyBrokerSyncController::class, 'getConfig']);
     Route::put('config', [EasyBrokerSyncController::class, 'updateConfig']);
     Route::delete('config/api-key', [EasyBrokerSyncController::class, 'deleteApiKey']);
-    
+
     // Probar conexión
     Route::get('test-connection', [EasyBrokerSyncController::class, 'testConnection']);
-    
+
     // Ejecutar sincronización
     Route::post('sync', [EasyBrokerSyncController::class, 'sync']);
 
@@ -260,15 +263,15 @@ Route::middleware(['auth.api', 'admin.api:integrations.view|integrations.logs.vi
 Route::middleware(['auth.api', 'admin.api:integrations.view|integrations.logs.view|integrations.sync|integrations.config.edit'])->prefix('mls')->group(function () {
     // Estado de configuración
     Route::get('status', [MLSSyncController::class, 'status']);
-    
+
     // Gestión de configuración
     Route::get('config', [MLSSyncController::class, 'getConfig']);
     Route::put('config', [MLSSyncController::class, 'updateConfig']);
     Route::delete('config/api-key', [MLSSyncController::class, 'deleteApiKey']);
-    
+
     // Probar conexión
     Route::get('test-connection', [MLSSyncController::class, 'testConnection']);
-    
+
     // Ejecutar sincronización (solo datos, sin imágenes)
     Route::post('sync', [MLSSyncController::class, 'sync']);
 
@@ -277,69 +280,71 @@ Route::middleware(['auth.api', 'admin.api:integrations.view|integrations.logs.vi
 
     // Sincronizar imágenes de propiedades existentes
     Route::post('sync-images', [MLSSyncController::class, 'syncImages']);
-    
+
     // Sincronización progresiva de imágenes (procesa en lotes)
     Route::post('sync-images/progressive', [MLSSyncController::class, 'syncImagesProgressive']);
-    
+
     // Obtener progreso de sincronización de imágenes
     Route::get('sync-images/progress', [MLSSyncController::class, 'getImagesSyncProgress']);
-    
+
     // Catálogos del MLS
     Route::get('features', [MLSSyncController::class, 'features']);
     Route::get('neighborhoods', [MLSSyncController::class, 'neighborhoods']);
     Route::get('agents', [MLSSyncController::class, 'agents']);
     Route::get('allowed-values', [MLSSyncController::class, 'allowedValues']);
-    
+
     // Consultar propiedad específica del MLS
     Route::get('property/{mlsId}', [MLSSyncController::class, 'property']);
 
     // Eliminar todas las propiedades del MLS
     Route::delete('properties', [MLSSyncController::class, 'deleteAllMLSProperties']);
-    
+
     // Nuevas rutas para manejo robusto de errores
     // Obtener detalles de errores de la última sincronización
     Route::get('error-details', [MLSSyncController::class, 'getErrorDetails']);
-    
+
     // Obtener estado del circuit breaker
     Route::get('circuit-breaker', [MLSSyncController::class, 'getCircuitBreakerStatus']);
-    
+
     // Reiniciar circuit breaker manualmente
     Route::post('circuit-breaker/reset', [MLSSyncController::class, 'resetCircuitBreaker']);
-    
+
     // Obtener checkpoint de sincronización
     Route::get('checkpoint', [MLSSyncController::class, 'getCheckpoint']);
-    
+
     // Limpiar checkpoint de sincronización
     Route::delete('checkpoint', [MLSSyncController::class, 'clearCheckpoint']);
-    
+
     // Retomar sincronización desde checkpoint
     Route::post('sync/resume', [MLSSyncController::class, 'syncResume']);
-    
+
     // Sincronización progresiva de propiedades (para servidores con límites de tiempo)
     Route::post('sync/progressive', [MLSSyncController::class, 'syncProgressive']);
-    
+
     // Obtener progreso de sincronización de propiedades
     Route::get('sync/properties/progress', [MLSSyncController::class, 'getPropertiesSyncProgress']);
-    
+
     // Forzar liberación del lock (para desbloqueo de emergencia)
     Route::post('sync/unlock', [MLSSyncController::class, 'forceUnlock']);
 });
 
 // MLS Agents routes (protegidas con autenticación Passport)
 Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () {
+    Route::get('mls-agents/form-options', [MLSAgentController::class, 'formOptions']);
+
     // CRUD de agentes MLS
     Route::apiResource('mls-agents', MLSAgentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
-    
+
     // Sincronizar agentes desde el MLS API
     Route::post('mls-agents/sync', [MLSAgentController::class, 'syncAgents']);
-    
+
     // Re-sincronizar relaciones agente-propiedad (para propiedades existentes)
     Route::post('mls-agents/sync-property-agents', [MLSAgentController::class, 'syncPropertyAgentsRelations']);
-    
+
     // Asociar/desasociar propiedades a un agente
     Route::post('mls-agents/{mlsAgent}/properties', [MLSAgentController::class, 'attachProperties']);
     Route::delete('mls-agents/{mlsAgent}/properties', [MLSAgentController::class, 'detachProperties']);
-    
+
     // Agentes MLS de una propiedad
     Route::get('properties/{property}/mls-agents', [MLSAgentController::class, 'propertyAgents']);
     Route::post('properties/{property}/mls-agents', [MLSAgentController::class, 'syncPropertyAgents']);
@@ -361,7 +366,6 @@ Route::middleware(['auth.api', 'admin.api:catalogs.manage'])->group(function () 
     // Sincronizar offices desde el MLS API (progresivo)
     Route::post('mls-offices/sync', [MLSOfficeController::class, 'syncOffices']);
 });
-
 
 // Corporate Email routes propias del usuario autenticado
 Route::middleware(['auth.api', 'admin.api:corporate-email.view|corporate-email.send|corporate-email.accounts.manage'])->prefix('corporate-email')->group(function () {

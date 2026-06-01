@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * Modelo para agentes del MLS AMPI San Miguel de Allende.
- * 
+ *
  * Los agentes se sincronizan desde la API del MLS y se almacenan localmente
  * para poder relacionarlos con las propiedades.
  */
@@ -18,6 +18,7 @@ class MLSAgent extends Model
 
     protected $fillable = [
         'mls_agent_id',
+        'is_manual',
         'name',
         'first_name',
         'last_name',
@@ -51,6 +52,7 @@ class MLSAgent extends Model
 
     protected $casts = [
         'mls_agent_id' => 'integer',
+        'is_manual' => 'boolean',
         'mls_office_id' => 'integer',
         'is_active' => 'boolean',
         'last_synced_at' => 'datetime',
@@ -68,7 +70,7 @@ class MLSAgent extends Model
     /**
      * Atributos que se añaden automáticamente a la serialización JSON.
      */
-    protected $appends = ['photo', 'has_photo', 'full_name'];
+    protected $appends = ['photo', 'has_photo', 'full_name', 'public_id'];
 
     /**
      * Relación con el usuario local vinculado.
@@ -95,6 +97,7 @@ class MLSAgent extends Model
             ->withPivot('is_primary')
             ->withTimestamps();
     }
+
     /**
      * Returns the best bio for the active locale.
      */
@@ -136,9 +139,15 @@ class MLSAgent extends Model
     public function getFullNameAttribute(): string
     {
         if ($this->first_name || $this->last_name) {
-            return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
+            return trim(($this->first_name ?? '').' '.($this->last_name ?? ''));
         }
-        return $this->name ?? 'Agente #' . $this->mls_agent_id;
+
+        return $this->name ?? 'Agente #'.($this->mls_agent_id ?? $this->id);
+    }
+
+    public function getPublicIdAttribute(): string
+    {
+        return $this->is_manual ? 'local-'.$this->id : (string) $this->mls_agent_id;
     }
 
     /**
@@ -156,6 +165,7 @@ class MLSAgent extends Model
                 return $this->photoMediaAsset->url;
             }
         }
+
         // Prioridad 3: URL directa del MLS (campo photo_url)
         return $this->photo_url;
     }
@@ -165,10 +175,6 @@ class MLSAgent extends Model
      */
     public function getHasPhotoAttribute(): bool
     {
-        return !empty($this->photo);
+        return ! empty($this->photo);
     }
 }
-
-
-
-
