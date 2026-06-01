@@ -9,6 +9,7 @@ use App\Models\MLSAgent;
 use App\Models\MLSOffice;
 use App\Models\Property;
 use App\Models\User;
+use App\Services\HomeStatsService;
 use App\Services\MlsAgentProfileService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -90,6 +91,30 @@ class MlsAgentProfileServiceTest extends TestCase
         $this->expectException(ValidationException::class);
 
         app(MlsAgentProfileService::class)->linkUser($profile, $user);
+    }
+
+    public function test_it_accepts_agent_role_names_regardless_of_case(): void
+    {
+        $office = $this->createPrimaryOffice();
+        $user = $this->createAgentUser('AgEnTe');
+
+        $options = app(MLSAgentController::class)->formOptions(
+            Request::create('/api/mls-agents/form-options')
+        );
+
+        $this->assertContains(
+            $user->id,
+            collect($options->getData(true)['data']['users'])->pluck('id')->all()
+        );
+        $this->assertSame(
+            '1',
+            collect(HomeStatsService::make())->firstWhere('key', 'agents')['number']
+        );
+
+        $profile = app(MlsAgentProfileService::class)->createForUser($user);
+
+        $this->assertSame($user->id, $profile->user_id);
+        $this->assertSame($office->mls_office_id, $profile->mls_office_id);
     }
 
     public function test_it_rejects_linking_an_external_office_profile_to_an_agent_user(): void
@@ -190,13 +215,13 @@ class MlsAgentProfileServiceTest extends TestCase
         ]);
     }
 
-    private function createAgentUser(): User
+    private function createAgentUser(string $roleName = 'agente'): User
     {
         $user = User::factory()->create([
             'name' => 'Local Agent',
             'email' => 'local-agent@example.com',
         ]);
-        $role = Role::findOrCreate('agente', 'web');
+        $role = Role::findOrCreate($roleName, 'web');
         $user->assignRole($role);
 
         return $user;

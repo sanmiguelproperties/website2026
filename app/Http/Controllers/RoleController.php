@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use App\Services\RbacMirror;
+use App\Support\RoleName;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
@@ -62,7 +63,7 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $payload = [
-            'name' => trim((string) $request->input('name', '')),
+            'name' => RoleName::normalize($request->input('name', '')),
             'guard_name' => $request->input('guard_name', 'web'),
         ];
 
@@ -77,7 +78,9 @@ class RoleController extends Controller
 
         $guard = $payload['guard_name'] ?? 'web';
 
-        $duplicate = Role::where('name', $payload['name'])->where('guard_name', $guard)->exists();
+        $duplicate = Role::whereRaw('LOWER(TRIM(name)) = ?', [$payload['name']])
+            ->where('guard_name', $guard)
+            ->exists();
         if ($duplicate) {
             return $this->jsonError('El rol ya existe para el guard especificado', 409);
         }
@@ -123,7 +126,7 @@ class RoleController extends Controller
         }
 
         $payload = [
-            'name' => $request->has('name') ? trim((string) $request->input('name')) : $role->name,
+            'name' => $request->has('name') ? RoleName::normalize($request->input('name')) : $role->name,
             'guard_name' => $role->guard_name,
         ];
 
@@ -145,7 +148,7 @@ class RoleController extends Controller
 
         $exists = Role::where('id', '!=', $id)
             ->where('guard_name', $payload['guard_name'])
-            ->where('name', $payload['name'])
+            ->whereRaw('LOWER(TRIM(name)) = ?', [$payload['name']])
             ->exists();
 
         if ($exists) {

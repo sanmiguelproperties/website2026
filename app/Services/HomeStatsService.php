@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Property;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use Spatie\Permission\Models\Role;
 
 class HomeStatsService
 {
@@ -37,10 +36,6 @@ class HomeStatsService
         'apartments',
         'departamento',
         'departamentos',
-    ];
-
-    private const AGENT_ROLE_NAMES = [
-        'agente',
     ];
 
     public static function make(?CmsPageData $pageData = null, ?string $locale = null): array
@@ -130,19 +125,8 @@ class HomeStatsService
 
     private function countAgentUsers(): int
     {
-        $roleNames = Role::query()
-            ->whereIn('name', self::AGENT_ROLE_NAMES)
-            ->pluck('name')
-            ->unique()
-            ->values()
-            ->all();
-
-        if (empty($roleNames)) {
-            return 0;
-        }
-
         return User::query()
-            ->whereHas('roles', fn (Builder $query) => $query->whereIn('name', $roleNames))
+            ->withAgentRole()
             ->count();
     }
 

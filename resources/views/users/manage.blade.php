@@ -593,7 +593,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function isAgentRoleName(name) {
-    return name === 'agente' || name === 'agent';
+    return ['agente', 'agent'].includes(String(name || '').trim().toLowerCase());
   }
 
   function updateMlsAgentProfileVisibility() {

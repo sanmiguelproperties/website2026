@@ -11,7 +11,7 @@ class RbacNotifications
 {
     public static function notifyRoles(array $roles, Notification $notification): void
     {
-        $query = User::query()->role($roles);
+        $query = User::query()->withRoleNames($roles);
 
         if (Schema::hasColumn('users', 'is_active')) {
             $query->where('is_active', true);

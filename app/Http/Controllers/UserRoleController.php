@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Role;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
+use App\Services\RbacMirror;
+use App\Support\RoleName;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class UserRoleController extends Controller
@@ -20,16 +23,21 @@ class UserRoleController extends Controller
             return $this->apiNotFound();
         }
 
-        $validator = Validator::make($request->all(), [
+        $roleNames = RoleName::normalizeMany($request->input('roles', []));
+        $validator = Validator::make(['roles' => $roleNames], [
             'roles' => 'required|array',
-            'roles.*' => 'exists:roles,name',
+            'roles.*' => 'string',
         ]);
 
         if ($validator->fails()) {
             return $this->apiValidationError($validator->errors());
         }
 
-        $user->syncRoles($request->roles);
+        if ($missing = $this->missingRoleNames($roleNames)) {
+            return $this->apiValidationError(['roles' => ['No existen los roles: '.implode(', ', $missing)]]);
+        }
+
+        app(RbacMirror::class)->syncUserRolesBothGuardsByNames($user, $roleNames);
 
         return $this->apiSuccess('Roles asignados exitosamente', null, $user->load('roles'));
     }
@@ -45,16 +53,24 @@ class UserRoleController extends Controller
             return $this->apiNotFound();
         }
 
-        $validator = Validator::make($request->all(), [
+        $roleNames = RoleName::normalizeMany($request->input('roles', []));
+        $validator = Validator::make(['roles' => $roleNames], [
             'roles' => 'required|array',
-            'roles.*' => 'exists:roles,name',
+            'roles.*' => 'string',
         ]);
 
         if ($validator->fails()) {
             return $this->apiValidationError($validator->errors());
         }
 
-        $user->removeRole($request->roles);
+        if ($missing = $this->missingRoleNames($roleNames)) {
+            return $this->apiValidationError(['roles' => ['No existen los roles: '.implode(', ', $missing)]]);
+        }
+
+        $roleIds = Role::query()
+            ->whereIn(DB::raw('LOWER(TRIM(name))'), $roleNames)
+            ->pluck('id');
+        $user->roles()->detach($roleIds);
 
         return $this->apiSuccess('Roles removidos exitosamente', null, $user->load('roles'));
     }
@@ -85,5 +101,20 @@ class UserRoleController extends Controller
         }
 
         return $this->apiSuccess('Permisos del usuario obtenidos exitosamente', null, $user->getAllPermissions());
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function missingRoleNames(array $roleNames): array
+    {
+        $existing = Role::query()
+            ->whereIn(DB::raw('LOWER(TRIM(name))'), $roleNames)
+            ->pluck('name')
+            ->map(fn (string $name) => RoleName::normalize($name))
+            ->unique()
+            ->all();
+
+        return array_values(array_diff($roleNames, $existing));
     }
 }

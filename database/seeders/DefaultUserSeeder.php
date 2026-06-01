@@ -2,16 +2,18 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Role;
 use App\Models\User;
+use App\Services\RoleNameNormalizer;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
 
 class DefaultUserSeeder extends Seeder
 {
     public function run(): void
     {
         $guards = ['web', 'api'];
+        app(RoleNameNormalizer::class)->normalizeExistingRoles();
 
         if (
             !Role::where('name', 'super-admin')->where('guard_name', 'web')->exists()

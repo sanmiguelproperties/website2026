@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\Role;
+use App\Models\User;
+use App\Support\RoleName;
 use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
-use App\Models\User;
 
 class RbacMirror
 {
@@ -71,10 +72,7 @@ class RbacMirror
     public function mirrorRoleCreated(Role $role): void
     {
         $targetGuard = $this->otherGuard($role->guard_name);
-        $targetRole = Role::firstOrCreate([
-            'name' => $role->name,
-            'guard_name' => $targetGuard,
-        ]);
+        $targetRole = $this->firstOrCreateRole($role->name, $targetGuard);
 
         $this->synchronizeCounterpartRolePermissions($role, $targetRole, $targetGuard);
         $this->forgetCache();
@@ -84,15 +82,13 @@ class RbacMirror
     {
         $targetGuard = $this->otherGuard($role->guard_name);
         $lookupName = $oldName ?? $role->name;
-        $counterpart = Role::where('name', $lookupName)->where('guard_name', $targetGuard)->first();
-        if (!$counterpart) {
-            $counterpart = Role::firstOrCreate([
-                'name' => $lookupName,
-                'guard_name' => $targetGuard,
-            ]);
+        $counterpart = $this->findRoleByName($lookupName, $targetGuard);
+        if (! $counterpart) {
+            $counterpart = $this->firstOrCreateRole($lookupName, $targetGuard);
         }
-        if ($counterpart->name !== $role->name) {
-            $counterpart->name = $role->name;
+        $normalizedName = RoleName::normalize($role->name);
+        if ($counterpart->name !== $normalizedName) {
+            $counterpart->name = $normalizedName;
             $counterpart->save();
         }
 
@@ -105,7 +101,7 @@ class RbacMirror
     public function mirrorRoleDeleted(Role $role): void
     {
         $targetGuard = $this->otherGuard($role->guard_name);
-        $counterpart = Role::where('name', $role->name)->where('guard_name', $targetGuard)->first();
+        $counterpart = $this->findRoleByName($role->name, $targetGuard);
         if ($counterpart) {
             $counterpart->delete();
         }
@@ -145,10 +141,7 @@ class RbacMirror
 
     private function ensureRoleMirror(Role $sourceRole, string $targetGuard): Role
     {
-        return Role::firstOrCreate([
-            'name' => $sourceRole->name,
-            'guard_name' => $targetGuard,
-        ]);
+        return $this->firstOrCreateRole($sourceRole->name, $targetGuard);
     }
 
     private function synchronizeCounterpartRolePermissions(Role $sourceRole, Role $targetRole, string $targetGuard): void
@@ -182,17 +175,13 @@ class RbacMirror
 
     private function mapRolesToGuardByName(Collection $sourceRoles, string $targetGuard, bool $createMissing = false): Collection
     {
-        $names = $sourceRoles->pluck('name')->unique()->values();
-        $existing = Role::whereIn('name', $names)->where('guard_name', $targetGuard)->get()->keyBy('name');
+        $names = collect(RoleName::normalizeMany($sourceRoles->pluck('name')));
 
         $result = collect();
         foreach ($names as $name) {
-            $role = $existing->get($name);
-            if (!$role && $createMissing) {
-                $role = Role::firstOrCreate([
-                    'name' => $name,
-                    'guard_name' => $targetGuard,
-                ]);
+            $role = $this->findRoleByName($name, $targetGuard);
+            if (! $role && $createMissing) {
+                $role = $this->firstOrCreateRole($name, $targetGuard);
             }
             if ($role) {
                 $result->push($role);
@@ -214,11 +203,7 @@ class RbacMirror
      */
     public function syncUserRolesBothGuardsByNames(User $user, array $roleNames): void
     {
-        $names = collect($roleNames)
-            ->map(fn($v) => trim((string) $v))
-            ->filter(fn($v) => $v !== '')
-            ->unique()
-            ->values();
+        $names = collect(RoleName::normalizeMany($roleNames));
 
         // Si la lista viene vacía, se eliminan todos los roles (en ambos guards)
         if ($names->isEmpty()) {
@@ -232,10 +217,7 @@ class RbacMirror
 
         foreach ($names as $name) {
             foreach ($guards as $guard) {
-                $role = Role::firstOrCreate([
-                    'name' => $name,
-                    'guard_name' => $guard,
-                ]);
+                $role = $this->firstOrCreateRole($name, $guard);
                 $roleIds[] = $role->id;
             }
         }
@@ -250,10 +232,11 @@ class RbacMirror
      * Repara datos legados para dejar web/api con los mismos nombres de roles/permisos
      * y las mismas relaciones rol-permiso (usando la union de ambos guards).
      *
-     * @return array{permissions_created:int,roles_created:int,roles_synced:int}
+     * @return array{permissions_created:int,roles_created:int,roles_synced:int,roles_renamed:int,roles_merged:int}
      */
     public function repairUsingUnion(): array
     {
+        $normalization = app(RoleNameNormalizer::class)->normalizeExistingRoles();
         $permissionNames = Permission::whereIn('guard_name', self::BOTH_GUARDS)
             ->pluck('name')
             ->unique()
@@ -280,10 +263,7 @@ class RbacMirror
         $rolesCreated = 0;
         foreach ($roleNames as $name) {
             foreach (self::BOTH_GUARDS as $guard) {
-                $role = Role::firstOrCreate([
-                    'name' => $name,
-                    'guard_name' => $guard,
-                ]);
+                $role = $this->firstOrCreateRole($name, $guard);
                 if ($role->wasRecentlyCreated) {
                     $rolesCreated++;
                 }
@@ -295,7 +275,7 @@ class RbacMirror
             $unionPermissionNames = collect();
 
             foreach (self::BOTH_GUARDS as $guard) {
-                $role = Role::where('name', $roleName)->where('guard_name', $guard)->first();
+                $role = $this->findRoleByName($roleName, $guard);
                 if (!$role) {
                     continue;
                 }
@@ -307,7 +287,7 @@ class RbacMirror
             $unionPermissionNames = $unionPermissionNames->unique()->values();
 
             foreach (self::BOTH_GUARDS as $guard) {
-                $role = Role::where('name', $roleName)->where('guard_name', $guard)->first();
+                $role = $this->findRoleByName($roleName, $guard);
                 if (!$role) {
                     continue;
                 }
@@ -327,6 +307,24 @@ class RbacMirror
             'permissions_created' => $permissionsCreated,
             'roles_created' => $rolesCreated,
             'roles_synced' => $rolesSynced,
+            'roles_renamed' => $normalization['roles_renamed'],
+            'roles_merged' => $normalization['roles_merged'],
         ];
+    }
+
+    private function findRoleByName(string $name, string $guard): ?Role
+    {
+        return Role::query()
+            ->where('guard_name', $guard)
+            ->whereRaw('LOWER(TRIM(name)) = ?', [RoleName::normalize($name)])
+            ->first();
+    }
+
+    private function firstOrCreateRole(string $name, string $guard): Role
+    {
+        return $this->findRoleByName($name, $guard) ?? Role::create([
+            'name' => RoleName::normalize($name),
+            'guard_name' => $guard,
+        ]);
     }
 }

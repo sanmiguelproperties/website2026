@@ -2,11 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use App\Models\User;
+use App\Services\RoleNameNormalizer;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class EmergencySuperAdminSeeder extends Seeder
@@ -17,6 +18,7 @@ class EmergencySuperAdminSeeder extends Seeder
 
         // Limpia caché de permisos/roles de Spatie
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        app(RoleNameNormalizer::class)->normalizeExistingRoles();
 
         $email = 'gusgusnoriega@gmail.com';
         $name = 'Gustavo Noriega';

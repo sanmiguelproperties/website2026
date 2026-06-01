@@ -2,9 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Role;
 use App\Models\User;
+use App\Services\RoleNameNormalizer;
 use Illuminate\Console\Command;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class RbacGrantAdminAllCommand extends Command
@@ -21,6 +22,7 @@ class RbacGrantAdminAllCommand extends Command
         $dryRun = (bool) $this->option('dry-run');
         $replaceExisting = (bool) $this->option('replace-existing');
         $chunkSize = max(1, (int) $this->option('chunk'));
+        app(RoleNameNormalizer::class)->normalizeExistingRoles();
 
         $adminWeb = Role::firstOrCreate([
             'name' => 'super-admin',

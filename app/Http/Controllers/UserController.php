@@ -3,17 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\MLSAgent;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\MlsAgentProfileService;
 use App\Services\RbacMirror;
 use App\Support\Rbac;
+use App\Support\RoleName;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -367,7 +368,7 @@ class UserController extends Controller
             $currentUser
             && (int) $currentUser->id === (int) $user->id
             && Rbac::isSuperAdmin($user)
-            && ! in_array(Rbac::SUPER_ADMIN, $roleNames, true)
+            && ! in_array(Rbac::SUPER_ADMIN, RoleName::normalizeMany($roleNames), true)
         ) {
             return $this->apiForbidden('No puedes quitarte tu propio rol super-admin', 'SELF_SUPER_ADMIN_ROLE_FORBIDDEN');
         }
@@ -413,11 +414,7 @@ class UserController extends Controller
 
     private function unlinkMlsProfileWhenUserIsNotAgent(User $user): void
     {
-        $isAgent = $user->roles()
-            ->whereIn('name', ['agente', 'agent'])
-            ->exists();
-
-        if (! $isAgent && ($profile = $user->mlsAgent()->first())) {
+        if (! $user->hasAgentRole() && ($profile = $user->mlsAgent()->first())) {
             $this->mlsAgentProfiles->linkUser($profile, null);
         }
     }

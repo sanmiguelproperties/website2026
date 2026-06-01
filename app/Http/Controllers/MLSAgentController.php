@@ -250,7 +250,7 @@ class MLSAgentController extends Controller
             $users = User::query()
                 ->select(['id', 'name', 'email'])
                 ->with(['mlsAgent:id,user_id,name'])
-                ->whereHas('roles', fn ($query) => $query->whereIn('name', ['agente', 'agent']))
+                ->withAgentRole()
                 ->where(function ($query) use ($agentId): void {
                     $query->whereDoesntHave('mlsAgent');
 

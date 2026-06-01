@@ -111,11 +111,7 @@ class MlsAgentProfileService
 
     public function ensureUserIsAgent(User $user): void
     {
-        $hasAgentRole = $user->roles()
-            ->whereIn('name', ['agente', 'agent'])
-            ->exists();
-
-        if (! $hasAgentRole) {
+        if (! $user->hasAgentRole()) {
             throw ValidationException::withMessages([
                 'user_id' => ['El usuario debe tener el rol agente antes de relacionar un perfil MLS.'],
             ]);

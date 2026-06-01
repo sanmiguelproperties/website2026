@@ -3,18 +3,23 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\RoleName;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Passport\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
+
+    public const AGENT_ROLE_NAMES = ['agente', 'agent'];
 
     /**
      * For Spatie\Permission: allow roles for both 'web' and 'api' guards.
@@ -94,6 +99,49 @@ class User extends Authenticatable
     public function mlsAgent(): HasOne
     {
         return $this->hasOne(MLSAgent::class, 'user_id');
+    }
+
+    public function scopeWithAgentRole(Builder $query): Builder
+    {
+        return $query->withRoleNames(self::AGENT_ROLE_NAMES);
+    }
+
+    public function scopeWithRoleNames(Builder $query, iterable $names): Builder
+    {
+        $normalizedNames = RoleName::normalizeMany($names);
+
+        if ($normalizedNames === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('roles', fn (Builder $roles) => $roles
+            ->whereIn(DB::raw('LOWER(TRIM(name))'), $normalizedNames));
+    }
+
+    public function hasRoleNamed(string $name): bool
+    {
+        $normalizedName = RoleName::normalize($name);
+
+        if ($normalizedName === '') {
+            return false;
+        }
+
+        if ($this->relationLoaded('roles')) {
+            return $this->roles->contains(
+                fn ($role) => RoleName::normalize($role->name) === $normalizedName
+            );
+        }
+
+        return $this->roles()
+            ->whereRaw('LOWER(TRIM(name)) = ?', [$normalizedName])
+            ->exists();
+    }
+
+    public function hasAgentRole(): bool
+    {
+        return collect(self::AGENT_ROLE_NAMES)->contains(
+            fn (string $roleName) => $this->hasRoleNamed($roleName)
+        );
     }
 
     /**

@@ -11,8 +11,15 @@ class Rbac
 
     public static function isSuperAdmin(?Authenticatable $user): bool
     {
-        return $user !== null
-            && method_exists($user, 'hasRole')
+        if ($user === null) {
+            return false;
+        }
+
+        if (method_exists($user, 'hasRoleNamed')) {
+            return $user->hasRoleNamed(self::SUPER_ADMIN);
+        }
+
+        return method_exists($user, 'hasRole')
             && $user->hasRole(self::SUPER_ADMIN);
     }
 
